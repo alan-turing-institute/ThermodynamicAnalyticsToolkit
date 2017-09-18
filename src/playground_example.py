@@ -9,17 +9,20 @@
 
 import argparse, os, sys
 import random as rand
+import math
 import tensorflow as tf
 import numpy as np
 
+import matplotlib.pyplot as plt
+
 FLAGS = None
 
-TWOCIRCLES=1
-SQUARES=2
-TWOCLUSTERS=3
-SPIRAL=4
+TWOCIRCLES=0
+SQUARES=1
+TWOCLUSTERS=2
+SPIRAL=3
 
-def generate_input_data(dimension, data_type=SPIRAL):
+def generate_input_data(dimension, noise, data_type=SPIRAL):
     '''
     Generates the spiral input data where
     data_type decides which type to generate.
@@ -27,22 +30,46 @@ def generate_input_data(dimension, data_type=SPIRAL):
     '''
     returndata = []
     labels = []
+    r = 5
     if data_type == TWOCIRCLES:
-        for i in range(dimension):
-            xcoord = rand.random()*12-6
-            ycoord = rand.random()*12-6
-            norm = xcoord*xcoord+ycoord*ycoord
-            returndata.append([xcoord, ycoord])
-            labels.append(int(norm > 9))
+        for label in [1,-1]:
+            for i in range(int(dimension/2)):
+                if label == 1:
+                    radius = np.random.uniform(0,r*0.5)
+                else:
+                    radius = np.random.uniform(r*0.7, r)
+                angle = np.random.uniform(0,2*math.pi)
+                coords = [radius * math.sin(angle), radius * math.cos(angle)]
+                noisecoords = np.random.uniform(-r,r,2)*noise
+                norm = (coords[0]+noisecoords[0])*(coords[0]+noisecoords[0])+(coords[1]+noisecoords[1])*(coords[1]+noisecoords[1])
+                returndata.append(coords)
+                labels.append(1 if (norm < r*r*.25) else -1)
+                #print(str(returndata[-1])+" with norm "+str(norm)+" and radius "+str(radius)+": "+str(labels[-1]))
     elif data_type == SQUARES:
-        print("This is not implemented yet.")
-        pass
+        for i in range(dimension):
+            coords = np.random.uniform(-r,r,2)
+            padding = .3
+            coords[0] += padding * (1 if (coords[0] > 0) else -1)
+            coords[1] += padding * (1 if (coords[1] > 0) else -1)
+            noisecoords = np.random.uniform(-r,r,2)*noise
+            returndata.append(coords)
+            labels.append(1 if ((coords[0]+noisecoords[0])*(coords[1]+noisecoords[1]) >= 0) else -1)
     elif data_type == TWOCLUSTERS:
-        print("This is not implemented yet.")
-        pass
+        variance = 0.5+noise*(3.5*2)
+        for label in [1,-1]:
+            for i in range(int(dimension/2)):
+                coords = np.random.normal(label*2,variance,2)
+                returndata.append(coords)
+                labels.append(label)
     elif data_type == SPIRAL:
-        print("This is not implemented yet.")
-        pass
+        for deltaT in [0, math.pi]:
+            for i in range(int(dimension/2)):
+                radius = i/dimension*r
+                t = 3.5 * i/dimension* 2*math.pi + deltaT
+                coords = [radius*math.sin(t)+np.random.uniform(-1,1)*noise,
+                          radius*math.cos(t)+np.random.uniform(-1,1)*noise]
+                returndata.append(coords)
+                labels.append(1 if (deltaT == 0) else -1)
     else:
         print("Unknown input data type desired.")
     return [np.array(returndata), np.array(labels)]
@@ -64,20 +91,28 @@ def construct_neural_net(input_data, input_labels, steps):
         
 def main(_):
     print("Generating input data")
-    [input_data, input_labels] = generate_input_data(dimension=FLAGS.dimension, data_type=TWOCIRCLES)
-    print("Constructing neural network")
-    construct_neural_net(input_data, input_labels, FLAGS.max_steps)
+    [input_data, input_labels] = generate_input_data(
+        dimension=FLAGS.dimension,
+        noise=FLAGS.noise,
+        data_type=FLAGS.data_type)
+    print("Displaying data")
+    plt.scatter([val[0] for val in input_data], [val[1] for val in input_data],
+                s=FLAGS.dimension,
+                c=[('r' if (label == 1) else 'b') for label in input_labels])
+    plt.show()
+    #print("Constructing neural network")
+    #construct_neural_net(input_data, input_labels, FLAGS.max_steps)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--dimension', type=int, default=10,
-        help='Number of steps to run trainer.')
+        help='Number of samples to generate.')
     parser.add_argument('--max_steps', type=int, default=1000,
         help='Number of steps to run trainer.')
-    parser.add_argument('--learning_rate', type=float, default=0.001,
-        help='Initial learning rate')
-    parser.add_argument('--dropout', type=float, default=0.9,
-        help='Keep probability for training dropout.')
+    parser.add_argument('--noise', type=float, default=0,
+        help='Amount of noise in [0,1] to use.')
+    parser.add_argument('--data_type', type=int, default=SPIRAL,
+        help='Which data set to use: two circles, squares, two clusters, spiral.')
     parser.add_argument(
         '--data_dir',
         type=str,
