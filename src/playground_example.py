@@ -13,7 +13,11 @@ import math
 import tensorflow as tf
 import numpy as np
 
+import matplotlib as mpl
+mpl.use('Agg') # no display
 import matplotlib.pyplot as plt
+import io
+
 
 FLAGS = None
 
@@ -127,21 +131,30 @@ def nn_layer(input_tensor, input_dim, output_dim, layer_name, act=tf.nn.relu):
             tf.summary.histogram('activations', activations)
             return activations
 
+def get_plot_buf(input_data, input_labels):
+    ''' Plots labelled scatter data using matplotlib and returns the created
+    PNG as a text buffer
+    '''
+    plt.figure()
+    plt.scatter([val[0] for val in input_data], [val[1] for val in input_data],
+                s=FLAGS.dimension,
+                c=[('r' if (label[0] >= .9) else 'b') for label in input_labels])
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    plt.close()
+    buf.seek(0)
+    return buf
+
 def main(_):
     print("Generating input data")
     [input_data, input_labels] = generate_input_data(
         dimension=FLAGS.dimension,
         noise=FLAGS.noise,
         data_type=FLAGS.data_type)
-    
-    print("Displaying data")
-    plt.scatter([val[0] for val in input_data], [val[1] for val in input_data],
-                s=FLAGS.dimension,
-                c=[('r' if (label[0] == 1) else 'b') for label in input_labels])
-    plt.show()
-    
-    print("Constructing neural network")
+
     sess = tf.InteractiveSession()
+        
+    print("Constructing neural network")
     input_dimension = 2
     hidden_dimension = 4
 
@@ -227,6 +240,17 @@ def main(_):
     print ("Initializing global variables")
     tf.global_variables_initializer().run()
 
+    print("Adding graphing nodes")
+    plot_buf_truth = tf.placeholder(tf.string)
+    image_truth = tf.image.decode_png(plot_buf_truth, channels=4)
+    image_truth = tf.expand_dims(image_truth, 0) # make it batched
+    plot_image_summary_truth = tf.summary.image('truth', image_truth, max_outputs=1)
+    
+    plot_buf_train = tf.placeholder(tf.string)
+    image_train = tf.image.decode_png(plot_buf_train, channels=4)
+    image_train = tf.expand_dims(image_train, 0) # make it batched
+    plot_image_summary_train = tf.summary.image('train', image_train, max_outputs=1)
+    
     def feed_dict(train, _data, _labels):
         """Make a TensorFlow feed_dict: maps data onto Tensor placeholders."""
         if train:
@@ -236,14 +260,22 @@ def main(_):
             xs, ys = _data[:int(len(_data)/2)], _labels[:int(len(_labels)/2)]
             k = 1.
         #print("Size of data %d, size of labels %d" % (len(xs), len(ys)))
+        #return {plot_buf_truth: get_plot_buf(xs, ys), xinput: xs, y_: ys, keep_prob: k}
         return {xinput: xs, y_: ys, keep_prob: k}
 
 
+    plot_buf = get_plot_buf(input_data, input_labels)
+    plot_image_summary_ = sess.run(
+        plot_image_summary_truth,
+        feed_dict={plot_buf_truth: plot_buf.getvalue()})
+    train_writer.add_summary(plot_image_summary_, global_step=0)
     print("Starting to train")
     for i in range(FLAGS.max_steps):
 #        print("Current training step is %d" % i)
         if i % 10 == 0:  # Record summaries and test-set accuracy
-            summary, acc, ce, y_eval, yeval = sess.run([merged, accuracy, cross_entropy, y_, y], feed_dict=feed_dict(True, input_data, input_labels))
+            summary, acc, ce, y_eval, yeval = sess.run(
+                [merged, accuracy, cross_entropy, y_, y],
+                feed_dict=feed_dict(True, input_data, input_labels))
             test_writer.add_summary(summary, i)
             print('Accuracy at step %s: %s' % (i, acc))
             print('Cross-entropy at step %s: %s' % (i, ce))
@@ -253,12 +285,18 @@ def main(_):
             if i % 100 == 99:  # Record execution stats
                 run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
                 run_metadata = tf.RunMetadata()
-                summary, _ = sess.run([merged, train_step],
+                summary, _, xinputeval, y_eval, yeval = sess.run([merged, train_step, xinput, y_, y],
                                         feed_dict=feed_dict(False, input_data, input_labels),
                                         options=run_options,
                                         run_metadata=run_metadata)
                 train_writer.add_run_metadata(run_metadata, 'step%03d' % i)
                 train_writer.add_summary(summary, i)
+
+                plot_buf = get_plot_buf(xinputeval, yeval)
+                plot_image_summary_ = sess.run(
+                    plot_image_summary_train,
+                    feed_dict={plot_buf_train: plot_buf.getvalue()})
+                train_writer.add_summary(plot_image_summary_, global_step=i)
                 print('Adding run metadata for', i)
             else:  # Record a summary
                 summary, _ = sess.run([merged, train_step], feed_dict=feed_dict(False, input_data, input_labels))
