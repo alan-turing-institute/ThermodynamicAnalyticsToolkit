@@ -18,69 +18,9 @@ mpl.use('Agg') # no display
 import matplotlib.pyplot as plt
 import io
 
+from classification_datasets import classification_datasets as dataset
 
 FLAGS = None
-
-TWOCIRCLES=0
-SQUARES=1
-TWOCLUSTERS=2
-SPIRAL=3
-
-def generate_input_data(dimension, noise, data_type=SPIRAL):
-    '''
-    Generates the spiral input data where
-    data_type decides which type to generate.
-    All data resides in the domain [-6,6]^2.
-    '''
-    returndata = []
-    labels = []
-    r = 5
-    if data_type == TWOCIRCLES:
-        for label in [1,-1]:
-            for i in range(int(dimension/2)):
-                if label == 1:
-                    radius = np.random.uniform(0,r*0.5)
-                else:
-                    radius = np.random.uniform(r*0.7, r)
-                angle = np.random.uniform(0,2*math.pi)
-                coords = [radius * math.sin(angle), radius * math.cos(angle)]
-                noisecoords = np.random.uniform(-r,r,2)*noise
-                norm = (coords[0]+noisecoords[0])*(coords[0]+noisecoords[0])+(coords[1]+noisecoords[1])*(coords[1]+noisecoords[1])
-                returndata.append(coords)
-                labels.append([1, 0] if (norm < r*r*.25) else [0, 1])
-                #print(str(returndata[-1])+" with norm "+str(norm)+" and radius "+str(radius)+": "+str(labels[-1]))
-    elif data_type == SQUARES:
-        for i in range(dimension):
-            coords = np.random.uniform(-r,r,2)
-            padding = .3
-            coords[0] += padding * (1 if (coords[0] > 0) else -1)
-            coords[1] += padding * (1 if (coords[1] > 0) else -1)
-            noisecoords = np.random.uniform(-r,r,2)*noise
-            returndata.append(coords)
-            labels.append([1, 0] if ((coords[0]+noisecoords[0])*(coords[1]+noisecoords[1]) >= 0) else [0, 1])
-    elif data_type == TWOCLUSTERS:
-        variance = 0.5+noise*(3.5*2)
-        signs=[1,-1]
-        labels=[[1,0],[0,1]]
-        for i in range(2):
-            for j in range(int(dimension/2)):
-                coords = np.random.normal(signs[i]*2,variance,2)
-                returndata.append(coords)
-                labels.append(labels[i])
-    elif data_type == SPIRAL:
-        for deltaT in [0, math.pi]:
-            for i in range(int(dimension/2)):
-                radius = i/dimension*r
-                t = 3.5 * i/dimension* 2*math.pi + deltaT
-                coords = [radius*math.sin(t)+np.random.uniform(-1,1)*noise,
-                          radius*math.cos(t)+np.random.uniform(-1,1)*noise]
-                returndata.append(coords)
-                labels.append([1, 0] if (deltaT == 0) else [0, 1])
-    else:
-        print("Unknown input data type desired.")
-    randomize = np.arange(len(returndata))
-    np.random.shuffle(randomize)
-    return [np.array(returndata)[randomize], np.array(labels)[randomize]]
 
 # We can't initialize these variables to 0 - the network will get stuck.
 def weight_variable(shape):
@@ -147,7 +87,8 @@ def get_plot_buf(input_data, input_labels):
 
 def main(_):
     print("Generating input data")
-    [input_data, input_labels] = generate_input_data(
+    ds=dataset()
+    [input_data, input_labels] = ds.generate(
         dimension=FLAGS.dimension,
         noise=FLAGS.noise,
         data_type=FLAGS.data_type)
@@ -317,7 +258,7 @@ if __name__ == '__main__':
         help='Number of steps to run trainer.')
     parser.add_argument('--noise', type=float, default=0,
         help='Amount of noise in [0,1] to use.')
-    parser.add_argument('--data_type', type=int, default=SPIRAL,
+    parser.add_argument('--data_type', type=int, default=dataset.SPIRAL,
         help='Which data set to use: two circles, squares, two clusters, spiral.')
     parser.add_argument(
         '--log_dir',
