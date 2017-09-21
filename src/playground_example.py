@@ -15,21 +15,7 @@ from neuralnetwork import neuralnetwork
 
 FLAGS = None
 
-def main(_):
-    print("Generating input data")
-    ds=dataset()
-    [input_data, input_labels] = ds.generate(
-        dimension=FLAGS.dimension,
-        noise=FLAGS.noise,
-        data_type=FLAGS.data_type)
-
-    sess = tf.InteractiveSession()
-        
-    print("Constructing neural network")
-    nn=neuralnetwork()
-    input_dimension = 2
-    hidden_dimension = 4
-
+def create_input_layer(input_dimension, input_list):
     # Input placeholders
     with tf.name_scope('input'):
         xinput = tf.placeholder(tf.float32, [None, input_dimension], name='x-input')
@@ -44,7 +30,6 @@ def main(_):
         x22 = x2*x2
         sinx1 = tf.sin(x1)
         sinx2 = tf.sin(x2)
-        input_list = [1, 2]
         picked_list = []
         if 1 in input_list:
             picked_list.append(x1)
@@ -60,8 +45,27 @@ def main(_):
             picked_list.append(sinx2)
         x = tf.transpose(tf.stack(picked_list))
         print("x is "+str(x.get_shape()))
+    return xinput, x
 
-    nn.create(x, len(picked_list), [hidden_dimension], 2,
+def main(_):
+    print("Generating input data")
+    ds=dataset()
+    [input_data, input_labels] = ds.generate(
+        dimension=FLAGS.dimension,
+        noise=FLAGS.noise,
+        data_type=FLAGS.data_type)
+
+    sess = tf.InteractiveSession()
+        
+    print("Constructing neural network")
+    nn=neuralnetwork()
+    input_dimension = 2
+    input_list = [1, 2]
+    hidden_dimension = 4
+
+    xinput, x = create_input_layer(input_dimension, input_list)
+
+    nn.create(x, len(input_list), [hidden_dimension], 2,
               FLAGS.learning_rate)
     nn.add_writers(sess, FLAGS.log_dir)
     nn.init_graph(sess)
