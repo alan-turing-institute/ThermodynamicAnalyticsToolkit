@@ -8,82 +8,12 @@
 # (C) Frederik Heber 2017-09-18
 
 import argparse, os, sys
-import random as rand
-import math
 import tensorflow as tf
-import numpy as np
-
-import matplotlib as mpl
-mpl.use('Agg') # no display
-import matplotlib.pyplot as plt
-import io
 
 from classification_datasets import classification_datasets as dataset
+from neuralnetwork import neuralnetwork
 
 FLAGS = None
-
-# We can't initialize these variables to 0 - the network will get stuck.
-def weight_variable(shape):
-    """Create a weight variable with appropriate initialization."""
-    initial = tf.truncated_normal(shape, stddev=0.1)
-    return tf.Variable(initial)
-
-def bias_variable(shape):
-    """Create a bias variable with appropriate initialization."""
-    initial = tf.constant(0.1, shape=shape)
-    return tf.Variable(initial)
-
-def variable_summaries(var):
-    """Attach a lot of summaries to a Tensor (for TensorBoard visualization)."""
-    with tf.name_scope('summaries'):
-        mean = tf.reduce_mean(var)
-        tf.summary.scalar('mean', mean)
-    with tf.name_scope('stddev'):
-        stddev = tf.sqrt(tf.reduce_mean(tf.square(var - mean)))
-        tf.summary.scalar('stddev', stddev)
-        tf.summary.scalar('max', tf.reduce_max(var))
-        tf.summary.scalar('min', tf.reduce_min(var))
-        tf.summary.histogram('histogram', var)
-
-def nn_layer(input_tensor, input_dim, output_dim, layer_name, act=tf.nn.relu):
-    """Reusable code for making a simple neural net layer.
-    It does a matrix multiply, bias add, and then uses ReLU to nonlinearize.
-    It also sets up name scoping so that the resultant graph is easy to read,
-    and adds a number of summary ops.
-    """
-    print("Creating nn layer %s with %d, %d" % (layer_name, input_dim, output_dim))
-    # Adding a name scope ensures logical grouping of the layers in the graph.
-    with tf.name_scope(layer_name):
-        # This Variable will hold the state of the weights for the layer
-        with tf.name_scope('weights'):
-            weights = weight_variable([input_dim, output_dim])
-            variable_summaries(weights)
-        with tf.name_scope('biases'):
-            biases = bias_variable([output_dim])
-            variable_summaries(biases)
-        with tf.name_scope('Wx_plus_b'):
-            preactivate = tf.matmul(input_tensor, weights) + biases
-            tf.summary.histogram('pre_activations', preactivate)
-        if act == None:
-            return preactivate
-        else:
-            activations = act(preactivate, name='activation')
-            tf.summary.histogram('activations', activations)
-            return activations
-
-def get_plot_buf(input_data, input_labels):
-    ''' Plots labelled scatter data using matplotlib and returns the created
-    PNG as a text buffer
-    '''
-    plt.figure()
-    plt.scatter([val[0] for val in input_data], [val[1] for val in input_data],
-                s=FLAGS.dimension,
-                c=[('r' if (label[0] >= .9) else 'b') for label in input_labels])
-    buf = io.BytesIO()
-    plt.savefig(buf, format='png')
-    plt.close()
-    buf.seek(0)
-    return buf
 
 def main(_):
     print("Generating input data")
@@ -96,6 +26,7 @@ def main(_):
     sess = tf.InteractiveSession()
         
     print("Constructing neural network")
+    nn=neuralnetwork()
     input_dimension = 2
     hidden_dimension = 4
 
@@ -103,8 +34,6 @@ def main(_):
     with tf.name_scope('input'):
         xinput = tf.placeholder(tf.float32, [None, input_dimension], name='x-input')
         #print("xinput is "+str(xinput.get_shape()))
-        y_ = tf.placeholder(tf.float32, [None, 2], name='y-input')
-        #print("y_ is "+str(y_.get_shape()))
 
         # pick from the various available input columns
         x1 = xinput[:,0]
@@ -132,68 +61,17 @@ def main(_):
         x = tf.transpose(tf.stack(picked_list))
         print("x is "+str(x.get_shape()))
 
-    hidden1 = nn_layer(x, len(picked_list), hidden_dimension, 'layer1')
-    #print("hidden1 is "+str(hidden1.get_shape()))
+    nn.create(x, len(picked_list), [hidden_dimension], 2,
+              FLAGS.learning_rate)
+    nn.add_writers(sess, FLAGS.log_dir)
+    nn.init_graph(sess)
+    nn.add_graphing_train()
+    nn.graph_truth(sess, input_data, input_labels, FLAGS.dimension)
 
-    with tf.name_scope('dropout'):
-        keep_prob = tf.placeholder(tf.float32)
-        tf.summary.scalar('dropout_keep_probability', keep_prob)
-        dropped = tf.nn.dropout(hidden1, keep_prob)
-    #print("dropped is "+str(dropped.get_shape()))
-    
-    # Do not apply softmax activation yet, see below.
-    y = nn_layer(dropped, hidden_dimension, 2, 'output', act=tf.identity)
-    #print("y is "+str(y.get_shape()))
-
-    print ("Creating summaries")
-    with tf.name_scope('cross_entropy'):
-        # The raw formulation of cross-entropy,
-        #
-        # tf.reduce_mean(-tf.reduce_sum(y_ * tf.log(tf.softmax(y)),
-        #                               reduction_indices=[1]))
-        #
-        # can be numerically unstable.
-        #
-        # So here we use tf.nn.softmax_cross_entropy_with_logits on the
-        # raw outputs of the nn_layer above, and then average across
-        # the batch.
-        diff = tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y)
-        with tf.name_scope('total'):
-            cross_entropy = tf.reduce_mean(diff)
-    tf.summary.scalar('cross_entropy', cross_entropy)
-
-    with tf.name_scope('train'):
-        train_step = tf.train.GradientDescentOptimizer(FLAGS.learning_rate).minimize(
-                cross_entropy)
-
-    with tf.name_scope('accuracy'):
-        with tf.name_scope('correct_prediction'):
-            correct_prediction = tf.equal(tf.argmax(y,1), tf.argmax(y_,1))
-        with tf.name_scope('accuracy'):
-            accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-    tf.summary.scalar('accuracy', accuracy)
-
-    # Merge all the summaries and write them out to
-    # /tmp/tensorflow/mnist/logs/mnist_with_summaries (by default)
-    merged = tf.summary.merge_all()
-    train_writer = tf.summary.FileWriter(FLAGS.log_dir + '/train', sess.graph)
-    test_writer = tf.summary.FileWriter(FLAGS.log_dir + '/test')
-    print ("Initializing global variables")
-    tf.global_variables_initializer().run()
-
-    print("Adding graphing nodes")
-    plot_buf_truth = tf.placeholder(tf.string)
-    image_truth = tf.image.decode_png(plot_buf_truth, channels=4)
-    image_truth = tf.expand_dims(image_truth, 0) # make it batched
-    plot_image_summary_truth = tf.summary.image('truth', image_truth, max_outputs=1)
-    
-    plot_buf_train = tf.placeholder(tf.string)
-    image_train = tf.image.decode_png(plot_buf_train, channels=4)
-    image_train = tf.expand_dims(image_train, 0) # make it batched
-    plot_image_summary_train = tf.summary.image('train', image_train, max_outputs=1)
-    
     def feed_dict(train, _data, _labels):
         """Make a TensorFlow feed_dict: maps data onto Tensor placeholders."""
+        y_ = nn.get("y_")
+        keep_prob = nn.get("keep_prob")
         if train:
             xs, ys = _data[int(len(_data)/2):], _labels[int(len(_labels)/2):]
             k = FLAGS.dropout
@@ -204,18 +82,20 @@ def main(_):
         #return {plot_buf_truth: get_plot_buf(xs, ys), xinput: xs, y_: ys, keep_prob: k}
         return {xinput: xs, y_: ys, keep_prob: k}
 
-
-    plot_buf = get_plot_buf(input_data, input_labels)
-    plot_image_summary_ = sess.run(
-        plot_image_summary_truth,
-        feed_dict={plot_buf_truth: plot_buf.getvalue()})
-    train_writer.add_summary(plot_image_summary_, global_step=0)
+    testset_accuracy_nodes = list(map(lambda key: nn.get(key), [
+        "merged", "accuracy", "cross_entropy", "y_", "y"]))
+    trainset_accuracy_nodes = list(map(lambda key: nn.get(key), [
+        "merged", "train_step"]))+[xinput]+list(map(lambda key: nn.get(key), ["y_", "y"]))
+    train_nodes = list(map(lambda key: nn.get(key), [
+        "merged", "train_step"]))
+    train_writer = nn.get("train_writer")
+    test_writer = nn.get("test_writer")
     print("Starting to train")
     for i in range(FLAGS.max_steps):
 #        print("Current training step is %d" % i)
         if i % 10 == 0:  # Record summaries and test-set accuracy
             summary, acc, ce, y_eval, yeval = sess.run(
-                [merged, accuracy, cross_entropy, y_, y],
+                testset_accuracy_nodes,
                 feed_dict=feed_dict(True, input_data, input_labels))
             test_writer.add_summary(summary, i)
             print('Accuracy at step %s: %s' % (i, acc))
@@ -226,21 +106,24 @@ def main(_):
             if i % 100 == 99:  # Record execution stats
                 run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
                 run_metadata = tf.RunMetadata()
-                summary, _, xinputeval, y_eval, yeval = sess.run([merged, train_step, xinput, y_, y],
-                                        feed_dict=feed_dict(False, input_data, input_labels),
-                                        options=run_options,
-                                        run_metadata=run_metadata)
+                summary, _, xinputeval, y_eval, yeval = sess.run(
+                    trainset_accuracy_nodes,
+                    feed_dict=feed_dict(False, input_data, input_labels),
+                    options=run_options,
+                    run_metadata=run_metadata)
                 train_writer.add_run_metadata(run_metadata, 'step%03d' % i)
                 train_writer.add_summary(summary, i)
 
-                plot_buf = get_plot_buf(xinputeval, yeval)
+                plot_buf = nn.get_plot_buf(xinputeval, yeval, FLAGS.dimension)
                 plot_image_summary_ = sess.run(
-                    plot_image_summary_train,
-                    feed_dict={plot_buf_train: plot_buf.getvalue()})
+                    nn.get("plot_image_summary_train"),
+                    feed_dict={nn.get("plot_buf_train"): plot_buf.getvalue()})
                 train_writer.add_summary(plot_image_summary_, global_step=i)
                 print('Adding run metadata for', i)
             else:  # Record a summary
-                summary, _ = sess.run([merged, train_step], feed_dict=feed_dict(False, input_data, input_labels))
+                summary, _ = sess.run(
+                    train_nodes,
+                    feed_dict=feed_dict(False, input_data, input_labels))
                 train_writer.add_summary(summary, i)
     train_writer.close()
     test_writer.close()
