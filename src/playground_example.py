@@ -60,9 +60,8 @@ def main(_):
     nn=neuralnetwork()
     input_dimension = 2
     input_list = [1, 2]
-    hidden_dimension = 4
     xinput, x = create_input_layer(input_dimension, input_list)
-    nn.create(x, len(input_list), [hidden_dimension], 2,
+    nn.create(x, len(input_list), FLAGS.hidden_dimension, 2,
               FLAGS.learning_rate)
 
     print("Starting session")
@@ -139,6 +138,8 @@ if __name__ == '__main__':
         help='Number of samples to generate.')
     parser.add_argument('--dropout', type=float, default=0.9,
         help='Keep probability for training dropout.')
+    parser.add_argument('--hidden_dimension', type=int, nargs='+', default=[],
+        help='Dimension of each hidden layer.')
     parser.add_argument('--learning_rate', type=float, default=0.001,
         help='Initial learning rate')
     parser.add_argument('--max_steps', type=int, default=1000,
