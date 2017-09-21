@@ -94,19 +94,21 @@ def main(_):
     train_writer = nn.get("train_writer")
     test_writer = nn.get("test_writer")
     print("Starting to train")
+    test_intervals = max(10, FLAGS.max_steps/100)
+    summary_intervals = max(20,FLAGS.max_steps/10)
     for i in range(FLAGS.max_steps):
 #        print("Current training step is %d" % i)
-        if i % 10 == 0:  # Record summaries and test-set accuracy
+        if i % test_intervals == 0:  # Record summaries and test-set accuracy
             summary, acc, ce, y_eval, yeval = sess.run(
                 testset_accuracy_nodes,
                 feed_dict=feed_dict(True, input_data, input_labels))
             test_writer.add_summary(summary, i)
             print('Accuracy at step %s: %s' % (i, acc))
-            print('Cross-entropy at step %s: %s' % (i, ce))
+            #print('Cross-entropy at step %s: %s' % (i, ce))
             print('y_ at step %s: %s' % (i, str(y_eval[0:9].transpose())))
             print('y at step %s: %s' % (i, str(yeval[0:9].transpose())))
         else:  # Record train set summaries, and train
-            if i % 100 == 99:  # Record execution stats
+            if i % summary_intervals == summary_intervals-1:  # Record execution stats
                 run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
                 run_metadata = tf.RunMetadata()
                 summary, _, xinputeval, y_eval, yeval = sess.run(
