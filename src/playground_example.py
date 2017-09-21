@@ -55,18 +55,18 @@ def main(_):
         noise=FLAGS.noise,
         data_type=FLAGS.data_type)
 
-    sess = tf.InteractiveSession()
         
     print("Constructing neural network")
     nn=neuralnetwork()
     input_dimension = 2
     input_list = [1, 2]
     hidden_dimension = 4
-
     xinput, x = create_input_layer(input_dimension, input_list)
-
     nn.create(x, len(input_list), [hidden_dimension], 2,
               FLAGS.learning_rate)
+
+    print("Starting session")
+    sess = tf.Session()
     nn.add_writers(sess, FLAGS.log_dir)
     nn.init_graph(sess)
     nn.add_graphing_train()
