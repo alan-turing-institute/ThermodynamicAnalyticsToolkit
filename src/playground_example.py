@@ -22,27 +22,15 @@ def create_input_layer(input_dimension, input_list):
         #print("xinput is "+str(xinput.get_shape()))
 
         # pick from the various available input columns
-        x1 = xinput[:,0]
-        #print("x1 is "+str(x1.get_shape()))
-        x2 = xinput[:,1]
-        #print("x2 is "+str(x2.get_shape()))
-        x12 = x1*x1
-        x22 = x2*x2
-        sinx1 = tf.sin(x1)
-        sinx2 = tf.sin(x2)
-        picked_list = []
-        if 1 in input_list:
-            picked_list.append(x1)
-        if 2 in input_list:
-            picked_list.append(x2)
-        if 3 in input_list:
-            picked_list.append(x12)
-        if 4 in input_list:
-            picked_list.append(x22)
-        if 5 in input_list:
-            picked_list.append(sinx1)
-        if 6 in input_list:
-            picked_list.append(sinx2)
+        arg_list_names= ["x1", "x2", "x1^2", "x2^2", "sin(x1)", "sin(x2)"]
+        picked_list_names = list(map(lambda i:arg_list_names[i-1], input_list))
+        print("Picking as input columns: "+str(picked_list_names))
+        arg_list = [ xinput[:,0], xinput[:,1] ]
+        arg_list += [arg_list[0]*arg_list[0],
+                         arg_list[1]*arg_list[1],
+                         tf.sin(arg_list[0]),
+                         tf.sin(arg_list[1])]
+        picked_list = list(map(lambda i:arg_list[i-1], input_list))
         x = tf.transpose(tf.stack(picked_list))
         print("x is "+str(x.get_shape()))
     return xinput, x
@@ -59,9 +47,8 @@ def main(_):
     print("Constructing neural network")
     nn=neuralnetwork()
     input_dimension = 2
-    input_list = [1, 2]
-    xinput, x = create_input_layer(input_dimension, input_list)
-    nn.create(x, len(input_list), FLAGS.hidden_dimension, 2,
+    xinput, x = create_input_layer(input_dimension, FLAGS.input_columns)
+    nn.create(x, len(FLAGS.input_columns), FLAGS.hidden_dimension, 2,
               FLAGS.learning_rate)
 
     print("Starting session")
