@@ -53,7 +53,7 @@ def main(_):
             LogCSV = True
             csvfile = open(FLAGS.csv_file, 'w', newline='')
             csvwriter = csv.writer(csvfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-            csvwriter.writerow(['step', 'accuracy', 'cross_entropy'])
+            csvwriter.writerow(['step', 'accuracy', 'loss'])
 
     print("Constructing neural network")
     nn=neuralnetwork()
@@ -86,7 +86,7 @@ def main(_):
         return {xinput: xs, y_: ys, keep_prob: k}
 
     testset_accuracy_nodes = list(map(lambda key: nn.get(key), [
-        "merged", "accuracy", "cross_entropy", "y_", "y"]))
+        "merged", "accuracy", "loss", "y_", "y"]))
     trainset_accuracy_nodes = list(map(lambda key: nn.get(key), [
         "merged", "train_step"]))+[xinput]+list(map(lambda key: nn.get(key), ["y_", "y"]))
     train_nodes = list(map(lambda key: nn.get(key), [
@@ -100,16 +100,16 @@ def main(_):
     for i in range(FLAGS.max_steps):
 #        print("Current training step is %d" % i)
         if (i % test_intervals == 0):  # Record summaries and test-set accuracy
-            summary, acc, ce, y_eval, yeval = sess.run(
+            summary, acc, losseval, y_eval, yeval = sess.run(
                 testset_accuracy_nodes,
                 feed_dict=feed_dict(True, input_data, input_labels))
             if LogCSV:
-                csvwriter.writerow([i, acc, ce])
+                csvwriter.writerow([i, acc, losseval])
             if LogSummaries:
                 test_writer.add_summary(summary, i)
             if (i % test_intervals == 0):
                 print('Accuracy at step %s: %s' % (i, acc))
-                #print('Cross-entropy at step %s: %s' % (i, ce))
+                #print('Loss at step %s: %s' % (i, losseval))
                 #print('y_ at step %s: %s' % (i, str(y_eval[0:9].transpose())))
                 #print('y at step %s: %s' % (i, str(yeval[0:9].transpose())))
         else:  # Record train set summaries, and train

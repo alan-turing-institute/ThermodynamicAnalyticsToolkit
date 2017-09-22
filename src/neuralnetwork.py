@@ -55,26 +55,15 @@ class neuralnetwork:
         print("y is "+str(y.get_shape()))
 
         print ("Creating summaries")
-        with tf.name_scope('cross_entropy'):
-            # The raw formulation of cross-entropy,
-            #
-            # tf.reduce_mean(-tf.reduce_sum(y_ * tf.log(tf.softmax(y)),
-            #                               reduction_indices=[1]))
-            #
-            # can be numerically unstable.
-            #
-            # So here we use tf.nn.softmax_cross_entropy_with_logits on the
-            # raw outputs of the nn_layer above, and then average across
-            # the batch.
-            diff = tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y)
+        with tf.name_scope('loss'):
             with tf.name_scope('total'):
-                cross_entropy = tf.reduce_mean(diff)
-            self.summary_nodes['cross_entropy'] = cross_entropy
-        tf.summary.scalar('cross_entropy', cross_entropy)
+                loss = tf.losses.mean_squared_error(labels=y_, predictions=y)
+                self.summary_nodes['loss'] = loss
+        tf.summary.scalar('loss', loss)
 
         with tf.name_scope('train'):
             train_step = tf.train.GradientDescentOptimizer(learning_rate).minimize(
-                    cross_entropy)
+                    loss)
         self.summary_nodes['train_step'] = train_step
 
         with tf.name_scope('accuracy'):
