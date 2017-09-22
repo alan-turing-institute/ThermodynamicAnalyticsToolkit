@@ -120,7 +120,7 @@ class neuralnetwork:
     # We can't initialize these variables to 0 - the network will get stuck.
     def weight_variable(self, shape):
         """Create a weight variable with appropriate initialization."""
-        initial = tf.truncated_normal(shape, stddev=0.1)
+        initial = tf.random_uniform(shape, minval=-0.5, maxval=0.5)
         return tf.Variable(initial)
 
     def bias_variable(self, shape):
