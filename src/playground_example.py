@@ -58,7 +58,7 @@ def main(_):
     print("Constructing neural network")
     nn=neuralnetwork()
     input_dimension = 2
-    output_dimension = 2
+    output_dimension = 1
     xinput, x = create_input_layer(input_dimension, FLAGS.input_columns)
     y_, keep_prob = nn.create(
         x,

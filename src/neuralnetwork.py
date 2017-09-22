@@ -68,7 +68,7 @@ class neuralnetwork:
 
         with tf.name_scope('accuracy'):
             with tf.name_scope('correct_prediction'):
-                correct_prediction = tf.equal(tf.argmax(y,1), tf.argmax(y_,1))
+                correct_prediction = tf.equal(tf.sign(y), tf.sign(y_))
                 self.summary_nodes['correct_prediction'] = correct_prediction
             with tf.name_scope('accuracy'):
                 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
@@ -177,7 +177,7 @@ class neuralnetwork:
         plt.figure()
         plt.scatter([val[0] for val in input_data], [val[1] for val in input_data],
                     s=dimension,
-                    c=[('r' if (label[0] >= .9) else 'b') for label in input_labels])
+                    c=[('r' if (label[0] > 0.) else 'b') for label in input_labels])
                     #c=input_labels)
         buf = io.BytesIO()
         plt.savefig(buf, format='png')

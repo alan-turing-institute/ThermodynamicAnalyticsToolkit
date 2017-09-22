@@ -60,7 +60,7 @@ class classification_datasets:
                 noisecoords = np.random.uniform(-self.r,self.r,2)*noise
                 norm = (coords[0]+noisecoords[0])*(coords[0]+noisecoords[0])+(coords[1]+noisecoords[1])*(coords[1]+noisecoords[1])
                 self.xs.append(coords)
-                self.ys.append([1, 0] if (norm < self.r*self.r*.25) else [0, 1])
+                self.ys.append([1] if (norm < self.r*self.r*.25) else [-1])
                 #print(str(returndata[-1])+" with norm "+str(norm)+" and radius "+str(radius)+": "+str(labels[-1]))
                 
     def generate_squares(self, dimension, noise):
@@ -74,7 +74,7 @@ class classification_datasets:
             coords[1] += padding * (1 if (coords[1] > 0) else -1)
             noisecoords = np.random.uniform(-self.r,self.r,2)*noise
             self.xs.append(coords)
-            self.ys.append([1, 0] if ((coords[0]+noisecoords[0])*(coords[1]+noisecoords[1]) >= 0) else [0, 1])
+            self.ys.append([1] if ((coords[0]+noisecoords[0])*(coords[1]+noisecoords[1]) >= 0) else [-1])
 
     def generate_twoclusters(self, dimension, noise):
         ''' Generates two normal distribution point clouds centered at
@@ -82,7 +82,7 @@ class classification_datasets:
         '''
         variance = 0.5+noise*(3.5*2)
         signs=[1,-1]
-        labels=[[1,0],[0,1]]
+        labels=[[1],[-1]]
         for i in range(2):
             for j in range(int(dimension/2)):
                 coords = np.random.normal(signs[i]*2,variance,2)
@@ -102,5 +102,5 @@ class classification_datasets:
                 coords = [radius*math.sin(t)+np.random.uniform(-1,1)*noise,
                           radius*math.cos(t)+np.random.uniform(-1,1)*noise]
                 self.xs.append(coords)
-                self.ys.append([1, 0] if (deltaT == 0) else [0, 1])
+                self.ys.append([1] if (deltaT == 0) else [-1])
         
