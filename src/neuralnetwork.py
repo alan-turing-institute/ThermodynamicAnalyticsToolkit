@@ -50,7 +50,7 @@ class neuralnetwork:
             print("dropped"+number+" is "+str(current_dropped.get_shape()))
         
         # Do not apply softmax activation yet, see below.
-        y = self.nn_layer(current_dropped, out_dimension, output_dimension, 'output', act=tf.identity)
+        y = self.nn_layer(current_dropped, out_dimension, output_dimension, 'output', act=tf.nn.tanh)
         self.summary_nodes['y'] = y
         print("y is "+str(y.get_shape()))
 
