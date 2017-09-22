@@ -26,6 +26,8 @@ class dataset:
         self.xs[:] = xs
         self.ys[:] = ys
         self.sliceindex = math.floor(len(self.xs)*self.testtrain_ratio)
+        # shuffle once to prevent and undistributed testset
+        self.shuffle()
 
     def get_testset(self):
         ''' Returns the current teset set for this epoch as a whole.

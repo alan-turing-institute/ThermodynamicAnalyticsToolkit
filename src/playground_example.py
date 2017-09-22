@@ -97,9 +97,9 @@ def main(_):
                 test_writer.add_summary(summary, i)
                 plot_buf = nn.get_plot_buf(xinputeval, yeval, FLAGS.dimension)
                 plot_image_summary_ = sess.run(
-                    nn.get("plot_image_summary_train"),
-                    feed_dict={nn.get("plot_buf_train"): plot_buf.getvalue()})
-                train_writer.add_summary(plot_image_summary_, global_step=i)
+                    nn.get("plot_image_summary_test"),
+                    feed_dict={nn.get("plot_buf_test"): plot_buf.getvalue()})
+                test_writer.add_summary(plot_image_summary_, global_step=i)
 
             if (i % test_intervals == 0):
                 print('Accuracy at step %s: %s' % (i, acc))
@@ -128,7 +128,7 @@ def main(_):
                 if i % summary_intervals == summary_intervals-1:  # Record execution stats
                     train_writer.add_run_metadata(run_metadata, 'step%03d' % i)
                     print('Adding run metadata for', i)
-                train_writer.add_summary(summary, i)
+                train_writer.add_summary(summary, global_step=i)
     if LogCSV:
         csvfile.close()
     if LogSummaries:

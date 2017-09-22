@@ -96,12 +96,12 @@ class neuralnetwork:
 
     def add_graphing_train(self):
         print("Adding graphing nodes")       
-        plot_buf_train = tf.placeholder(tf.string)
-        self.summary_nodes["plot_buf_train"] = plot_buf_train
-        image_train = tf.image.decode_png(plot_buf_train, channels=4)
-        image_train = tf.expand_dims(image_train, 0) # make it batched
-        plot_image_summary_train = tf.summary.image('train', image_train, max_outputs=1)
-        self.summary_nodes["plot_image_summary_train"] = plot_image_summary_train
+        plot_buf_test = tf.placeholder(tf.string)
+        self.summary_nodes["plot_buf_test"] = plot_buf_test
+        image_test = tf.image.decode_png(plot_buf_test, channels=4)
+        image_test = tf.expand_dims(image_test, 0) # make it batched
+        plot_image_summary_test = tf.summary.image('test', image_test, max_outputs=1)
+        self.summary_nodes["plot_image_summary_test"] = plot_image_summary_test
 
     def graph_truth(self, sess, data, labels, sample_size):
         plot_buf_truth = tf.placeholder(tf.string)
@@ -113,8 +113,8 @@ class neuralnetwork:
         plot_image_summary_ = sess.run(
             plot_image_summary_truth,
             feed_dict={plot_buf_truth: plot_buf.getvalue()})
-        train_writer = self.get("train_writer")
-        train_writer.add_summary(plot_image_summary_, global_step=0)
+        test_writer = self.get("test_writer")
+        test_writer.add_summary(plot_image_summary_, global_step=0)
 
         
     # We can't initialize these variables to 0 - the network will get stuck.
@@ -178,6 +178,7 @@ class neuralnetwork:
         plt.scatter([val[0] for val in input_data], [val[1] for val in input_data],
                     s=dimension,
                     c=[('r' if (label[0] >= .9) else 'b') for label in input_labels])
+                    #c=input_labels)
         buf = io.BytesIO()
         plt.savefig(buf, format='png')
         plt.close()
