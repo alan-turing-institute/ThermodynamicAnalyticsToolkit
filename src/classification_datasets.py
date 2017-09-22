@@ -1,6 +1,8 @@
 import math
 import numpy as np
 
+from dataset import dataset
+
 class classification_datasets:
     ''' This class encapsulates all datasets from the TensorFlow playground
     for classification tasks.
@@ -17,8 +19,8 @@ class classification_datasets:
         SPIRAL: "generator_spiral" }
 
 
-    returndata = []
-    labels = []
+    xs = []
+    ys = []
     r = 5
     
     def generate(self, dimension, noise, data_type=SPIRAL):
@@ -27,8 +29,8 @@ class classification_datasets:
         type to generate. All data resides in the domain [-r,r]^2.
         '''
         # clear return instances
-        self.returndata[:] = []
-        self.labels[:] = []
+        self.xs[:] = []
+        self.ys[:] = []
         # call dataset generating function
         if data_type == self.TWOCIRCLES:
             self.generate_twocircles(dimension, noise)
@@ -40,11 +42,7 @@ class classification_datasets:
             self.generate_spiral(dimension, noise)
         else:
             print("Unknown input data type desired.")
-        # shuffle data set
-        randomize = np.arange(len(self.returndata))
-        np.random.shuffle(randomize)
-        return [np.array(self.returndata)[randomize],
-                np.array(self.labels)[randomize]]
+        return dataset(self.xs, self.ys)
 
     def generate_twocircles(self, dimension, noise):
         ''' Generates two circular distributions with the same
@@ -61,8 +59,8 @@ class classification_datasets:
                 coords = [radius * math.sin(angle), radius * math.cos(angle)]
                 noisecoords = np.random.uniform(-self.r,self.r,2)*noise
                 norm = (coords[0]+noisecoords[0])*(coords[0]+noisecoords[0])+(coords[1]+noisecoords[1])*(coords[1]+noisecoords[1])
-                self.returndata.append(coords)
-                self.labels.append([1, 0] if (norm < self.r*self.r*.25) else [0, 1])
+                self.xs.append(coords)
+                self.ys.append([1, 0] if (norm < self.r*self.r*.25) else [0, 1])
                 #print(str(returndata[-1])+" with norm "+str(norm)+" and radius "+str(radius)+": "+str(labels[-1]))
                 
     def generate_squares(self, dimension, noise):
@@ -75,8 +73,8 @@ class classification_datasets:
             coords[0] += padding * (1 if (coords[0] > 0) else -1)
             coords[1] += padding * (1 if (coords[1] > 0) else -1)
             noisecoords = np.random.uniform(-self.r,self.r,2)*noise
-            self.returndata.append(coords)
-            self.labels.append([1, 0] if ((coords[0]+noisecoords[0])*(coords[1]+noisecoords[1]) >= 0) else [0, 1])
+            self.xs.append(coords)
+            self.ys.append([1, 0] if ((coords[0]+noisecoords[0])*(coords[1]+noisecoords[1]) >= 0) else [0, 1])
 
     def generate_twoclusters(self, dimension, noise):
         ''' Generates two normal distribution point clouds centered at
@@ -88,8 +86,8 @@ class classification_datasets:
         for i in range(2):
             for j in range(int(dimension/2)):
                 coords = np.random.normal(signs[i]*2,variance,2)
-                self.returndata.append(coords)
-                self.labels.append(labels[i])
+                self.xs.append(coords)
+                self.ys.append(labels[i])
 
     def generate_spiral(self, dimension, noise):
         ''' Generates two spiral-shaped distributions each with a different
@@ -103,6 +101,6 @@ class classification_datasets:
                 t = 3.5 * i/dimension* 2*math.pi + deltaT
                 coords = [radius*math.sin(t)+np.random.uniform(-1,1)*noise,
                           radius*math.cos(t)+np.random.uniform(-1,1)*noise]
-                self.returndata.append(coords)
-                self.labels.append([1, 0] if (deltaT == 0) else [0, 1])
+                self.xs.append(coords)
+                self.ys.append([1, 0] if (deltaT == 0) else [0, 1])
         

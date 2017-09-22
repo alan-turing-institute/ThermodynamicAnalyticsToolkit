@@ -80,6 +80,10 @@ class neuralnetwork:
         merged = tf.summary.merge_all()
         self.summary_nodes['merged'] = merged
         
+        # return global truth and dropout probability nodes as
+        # they need to be filled in
+        return y_, keep_prob
+        
     def add_writers(self, sess, log_dir):
         train_writer = tf.summary.FileWriter(log_dir + '/train', sess.graph)
         self.summary_nodes["train_writer"] = train_writer
