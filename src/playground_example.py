@@ -59,7 +59,7 @@ def main(_):
     nn=neuralnetwork()
     input_dimension = 2
     xinput, x = create_input_layer(input_dimension, FLAGS.input_columns)
-    nn.create(x, len(FLAGS.input_columns), FLAGS.hidden_dimension, 2,
+    y_, keep_prob = nn.create(x, len(FLAGS.input_columns), FLAGS.hidden_dimension, 2,
               FLAGS.learning_rate)
 
     print("Starting session")
@@ -73,8 +73,6 @@ def main(_):
 
     def feed_dict(train, _data, _labels):
         """Make a TensorFlow feed_dict: maps data onto Tensor placeholders."""
-        y_ = nn.get("y_")
-        keep_prob = nn.get("keep_prob")
         if train:
             xs, ys = _data[int(len(_data)/2):], _labels[int(len(_labels)/2):]
             k = FLAGS.dropout
