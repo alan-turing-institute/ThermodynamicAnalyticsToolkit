@@ -135,23 +135,22 @@ def main(_):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--dimension', type=int, default=10,
-        help='Number of samples to generate.')
+        help='Number P of samples (Y^i,X^i)^P_{i=1} to generate for the desired dataset type.')
     parser.add_argument('--dropout', type=float, default=0.9,
-        help='Keep probability for training dropout.')
+        help='Keep probability for training dropout, e.g. 0.9')
     parser.add_argument('--hidden_dimension', type=int, nargs='+', default=[],
-        help='Dimension of each hidden layer.')
+        help='Dimension of each hidden layer, e.g. 8 8 for two hidden layers each with 8 nodes fully connected')
+    parser.add_argument('--input_columns', type=int, nargs='+', default=[1, 2],
+        help='Pick a list of the following: (1) x1, (2) x2, (3) x1^2, (4) x2^2, (5) sin(x1), (6) sin(x2).')
     parser.add_argument('--learning_rate', type=float, default=0.001,
-        help='Initial learning rate')
+        help='Initial learning rate, e.g. 0.01')
     parser.add_argument('--max_steps', type=int, default=1000,
         help='Number of steps to run trainer.')
     parser.add_argument('--noise', type=float, default=0,
         help='Amount of noise in [0,1] to use.')
     parser.add_argument('--data_type', type=int, default=dataset.SPIRAL,
-        help='Which data set to use: two circles, squares, two clusters, spiral.')
-    parser.add_argument(
-        '--log_dir',
-        type=str,
-        default=None,
+        help='Which data set to use: (0) two circles, (1) squares, (2) two clusters, (3) spiral.')
+    parser.add_argument('--log_dir', type=str, default=None,
         help='Summaries log directory')
     FLAGS, unparsed = parser.parse_known_args()
 tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
