@@ -9,6 +9,7 @@
 
 import argparse, os, sys
 import tensorflow as tf
+import csv
 
 from classification_datasets import classification_datasets as dataset
 from neuralnetwork import neuralnetwork
@@ -47,6 +48,13 @@ def main(_):
     if FLAGS.log_dir != None:
         LogSummaries = True
         
+    LogCSV = False
+    if FLAGS.csv_file != None:
+            LogCSV = True
+            csvfile = open(FLAGS.csv_file, 'w', newline='')
+            csvwriter = csv.writer(csvfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            csvwriter.writerow(['step', 'accuracy', 'cross_entropy'])
+
     print("Constructing neural network")
     nn=neuralnetwork()
     input_dimension = 2
@@ -95,6 +103,8 @@ def main(_):
             summary, acc, ce, y_eval, yeval = sess.run(
                 testset_accuracy_nodes,
                 feed_dict=feed_dict(True, input_data, input_labels))
+            if LogCSV:
+                csvwriter.writerow([i, acc, ce])
             if LogSummaries:
                 test_writer.add_summary(summary, i)
             if (i % test_intervals == 0):
@@ -127,6 +137,8 @@ def main(_):
                     feed_dict=feed_dict(False, input_data, input_labels))
             	if LogSummaries:
                 	train_writer.add_summary(summary, i)
+    if LogCSV:
+        csvfile.close()
     if LogSummaries:
         train_writer.close()
         test_writer.close()
@@ -134,6 +146,8 @@ def main(_):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('--csv_file', type=str, default=None,
+        help='CSV file name to output accuracy and loss values.')
     parser.add_argument('--dimension', type=int, default=10,
         help='Number P of samples (Y^i,X^i)^P_{i=1} to generate for the desired dataset type.')
     parser.add_argument('--dropout', type=float, default=0.9,
