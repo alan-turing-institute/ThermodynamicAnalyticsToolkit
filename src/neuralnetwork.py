@@ -4,6 +4,8 @@ mpl.use('Agg') # no display
 import matplotlib.pyplot as plt
 import io
 
+from sgldsampler import SGLDSampler as sgld
+
 class neuralnetwork:
     ''' This class encapsulates the construction of the neural network.
     '''
@@ -62,8 +64,7 @@ class neuralnetwork:
         tf.summary.scalar('loss', loss)
 
         with tf.name_scope('train'):
-            train_step = tf.train.GradientDescentOptimizer(learning_rate).minimize(
-                    loss)
+            train_step = sgld(learning_rate).minimize(loss)
         self.summary_nodes['train_step'] = train_step
 
         with tf.name_scope('accuracy'):
