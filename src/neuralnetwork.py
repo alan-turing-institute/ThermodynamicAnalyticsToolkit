@@ -11,7 +11,7 @@ class neuralnetwork:
     '''
     
     summary_nodes = {}
-    
+
     def get(self, keyname):
         ''' This is just a short hand to access the summary nodes dict.
         '''
@@ -19,6 +19,7 @@ class neuralnetwork:
     
     def create(self, input_layer,
                input_dimension, layer_dimensions, output_dimension,
+               optimizer,
                learning_rate):
         ''' Create function for the actual net in TensorFlow where
         full summary nodes are added.
@@ -58,14 +59,31 @@ class neuralnetwork:
 
         print ("Creating summaries")
         with tf.name_scope('loss'):
+            cross_entropy = tf.reduce_mean(-tf.reduce_sum(y_ * tf.log(y), reduction_indices=[1]))
             with tf.name_scope('total'):
                 loss = tf.losses.mean_squared_error(labels=y_, predictions=y)
                 self.summary_nodes['loss'] = loss
         tf.summary.scalar('loss', loss)
+        tf.summary.scalar('cross_entropy', cross_entropy)
 
         with tf.name_scope('train'):
-            train_step = sgld(learning_rate).minimize(loss)
-        self.summary_nodes['train_step'] = train_step
+            global_step = tf.Variable(0, trainable=False)
+            if optimizer == "StochasticGradientLangevinDynamics":
+                sgld_a = tf.constant(0.065)
+                sgld_b = tf.constant(30.)
+                sgld_gamma = tf.constant(-0.55)
+                train_rate = sgld_a*(tf.pow(
+                    sgld_b+tf.cast(global_step, tf.float32), sgld_gamma))
+                train_step = sgld(train_rate).minimize(loss, global_step=global_step)
+            elif optimizer == "GradientDescent":
+                train_rate = tf.constant(learning_rate)
+                train_step = tf.train.GradientDescentOptimizer(train_rate).minimize(loss, global_step=global_step)
+            else:
+                raise NotImplementedError("Unknown optimizer")
+            tf.summary.scalar('learning_rate', train_rate)
+            self.summary_nodes['learning_rate'] = train_rate
+            self.summary_nodes['train_step'] = train_step
+            self.summary_nodes['global_step'] = tf.cast(global_step, tf.float32)
 
         with tf.name_scope('accuracy'):
             with tf.name_scope('correct_prediction'):

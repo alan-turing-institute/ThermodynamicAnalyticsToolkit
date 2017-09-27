@@ -63,6 +63,7 @@ def main(_):
     y_, keep_prob = nn.create(
         x,
         len(FLAGS.input_columns), FLAGS.hidden_dimension, output_dimension,
+        FLAGS.optimizer,
         FLAGS.learning_rate)
 
     print("Starting session")
@@ -75,7 +76,7 @@ def main(_):
         nn.graph_truth(sess, ds.xs, ds.ys, FLAGS.dimension)
 
     test_nodes = list(map(lambda key: nn.get(key), [
-        "merged", "accuracy", "loss"]))+[xinput]+list(map(lambda key: nn.get(key), ["y_", "y"]))
+        "merged", "accuracy", "learning_rate", "global_step", "loss"]))+[xinput]+list(map(lambda key: nn.get(key), ["y_", "y"]))
     train_nodes = list(map(lambda key: nn.get(key), [
         "merged", "train_step"]))
     if LogSummaries:
@@ -88,7 +89,7 @@ def main(_):
 #        print("Current training step is %d" % i)
         if (i % test_intervals == 0):  # test
             test_xs, test_ys = ds.get_testset()
-            summary, acc, losseval, xinputeval, y_eval, yeval = sess.run(
+            summary, acc, rate, global_step, losseval, xinputeval, y_eval, yeval = sess.run(
                 test_nodes,
                 feed_dict={xinput: test_xs, y_: test_ys, keep_prob: 1.})
             if LogCSV:
@@ -102,7 +103,7 @@ def main(_):
                 test_writer.add_summary(plot_image_summary_, global_step=i)
 
             if (i % test_intervals == 0):
-                print('Accuracy at step %s: %s' % (i, acc))
+                print('Accuracy at step %s (%s): %s, using rate %s' % (i, global_step, acc, rate))
                 #print('Loss at step %s: %s' % (i, losseval))
                 #print('y_ at step %s: %s' % (i, str(y_eval[0:9].transpose())))
                 #print('y at step %s: %s' % (i, str(yeval[0:9].transpose())))
@@ -143,6 +144,8 @@ if __name__ == '__main__':
         help='The number of samples used to divide sample set into batches in one training step.')
     parser.add_argument('--csv_file', type=str, default=None,
         help='CSV file name to output accuracy and loss values.')
+    parser.add_argument('--data_type', type=int, default=dataset_generator.SPIRAL,
+        help='Which data set to use: (0) two circles, (1) squares, (2) two clusters, (3) spiral.')
     parser.add_argument('--dimension', type=int, default=10,
         help='Number P of samples (Y^i,X^i)^P_{i=1} to generate for the desired dataset type.')
     parser.add_argument('--dropout', type=float, default=0.9,
@@ -153,14 +156,14 @@ if __name__ == '__main__':
         help='Pick a list of the following: (1) x1, (2) x2, (3) x1^2, (4) x2^2, (5) sin(x1), (6) sin(x2).')
     parser.add_argument('--learning_rate', type=float, default=0.001,
         help='Initial learning rate, e.g. 0.01')
+    parser.add_argument('--log_dir', type=str, default=None,
+        help='Summaries log directory')
     parser.add_argument('--max_steps', type=int, default=1000,
         help='Number of steps to run trainer.')
     parser.add_argument('--noise', type=float, default=0,
         help='Amount of noise in [0,1] to use.')
-    parser.add_argument('--data_type', type=int, default=dataset_generator.SPIRAL,
-        help='Which data set to use: (0) two circles, (1) squares, (2) two clusters, (3) spiral.')
-    parser.add_argument('--log_dir', type=str, default=None,
-        help='Summaries log directory')
+    parser.add_argument('--optimizer', type=str, default="GradientDescent",
+        help='Choose the optimizer to use for training: GradientDescent, StochasticGradientLangevinDynamics')
     FLAGS, unparsed = parser.parse_known_args()
 tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
 
