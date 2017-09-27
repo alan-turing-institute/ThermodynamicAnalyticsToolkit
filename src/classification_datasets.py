@@ -12,17 +12,18 @@ class classification_datasets:
     SQUARES=1
     TWOCLUSTERS=2
     SPIRAL=3
-    datasettypes = {
-        TWOCIRCLES: "generator_twocircles",
-        SQUARES: "generator_squares",
-        TWOCLUSTERS: "generator_twoclusters",
-        SPIRAL: "generator_spiral" }
 
+    def __init__(self):
+        self.xs = []
+        self.ys = []
+        self.r = 5
+        self.func_dict = {
+            self.TWOCIRCLES: self.generate_twocircles,
+            self.SQUARES: self.generate_squares,
+            self.TWOCLUSTERS: self.generate_twoclusters,
+            self.SPIRAL: self.generate_spiral,
+        }
 
-    xs = []
-    ys = []
-    r = 5
-    
     def generate(self, dimension, noise, data_type=SPIRAL):
         '''
         Generates the input data where data_type decides which
@@ -31,17 +32,11 @@ class classification_datasets:
         # clear return instances
         self.xs[:] = []
         self.ys[:] = []
+
         # call dataset generating function
-        if data_type == self.TWOCIRCLES:
-            self.generate_twocircles(dimension, noise)
-        elif data_type == self.SQUARES:
-            self.generate_squares(dimension, noise)
-        elif data_type == self.TWOCLUSTERS:
-            self.generate_twoclusters(dimension, noise)
-        elif data_type == self.SPIRAL:
-            self.generate_spiral(dimension, noise)
-        else:
-            print("Unknown input data type desired.")
+        if data_type not in self.func_dict:
+            raise NotImplementedError("Unknown input data type desired.")
+        self.func_dict[data_type](dimension, noise)
         return dataset(self.xs, self.ys)
 
     def generate_twocircles(self, dimension, noise):
