@@ -10,13 +10,19 @@ class neuralnetwork:
     ''' This class encapsulates the construction of the neural network.
     '''
     
+    placeholder_nodes = {}
     summary_nodes = {}
 
     def get(self, keyname):
         ''' This is just a short hand to access the summary nodes dict.
         '''
-        return self.summary_nodes[keyname]
-    
+        if keyname in self.summary_nodes:
+            return self.summary_nodes[keyname]
+        elif keyname in self.placeholder_nodes:
+            return self.placeholder_nodes[keyname]
+        else:
+            return None
+
     def create(self, input_layer,
                input_dimension, layer_dimensions, output_dimension,
                optimizer, seed=None):
@@ -29,10 +35,10 @@ class neuralnetwork:
 
         y_ = tf.placeholder(tf.float32, [None, output_dimension], name='y-input')
         print("y_ is "+str(y_.get_shape()))
-        self.summary_nodes['y_'] = y_
+        self.placeholder_nodes['y_'] = y_
 
         keep_prob = tf.placeholder(tf.float32)
-        self.summary_nodes['keep_prob'] = keep_prob
+        self.placeholder_nodes['keep_prob'] = keep_prob
         with tf.name_scope('dropout'):
             tf.summary.scalar('dropout_keep_probability', keep_prob)
 
@@ -70,16 +76,17 @@ class neuralnetwork:
         with tf.name_scope('train'):
             learning_rate = tf.placeholder(tf.float32)
             tf.summary.scalar('learning_rate', learning_rate)
-            self.summary_nodes['learning_rate'] = learning_rate
+            self.placeholder_nodes['learning_rate'] = learning_rate
             global_step = tf.Variable(0, trainable=False)
-            self.summary_nodes['global_step'] = tf.cast(global_step, tf.float32)
+            self.summary_nodes['global_step'] = global_step
             learning_decay = tf.placeholder(tf.float32)
-            self.summary_nodes['learning_decay'] = learning_decay
+            self.placeholder_nodes['learning_decay'] = learning_decay
             learning_decay_power = tf.placeholder(tf.float32)
-            self.summary_nodes['learning_decay_power'] = learning_decay_power
+            self.placeholder_nodes['learning_decay_power'] = learning_decay_power
             if optimizer == "StochasticGradientLangevinDynamics":
                 train_rate = learning_rate*(tf.pow(
-                    1.+learning_rate*learning_decay*tf.cast(global_step, tf.float32), learning_decay_power))
+                    1.+learning_rate*learning_decay*tf.cast(global_step, tf.float32),
+                    learning_decay_power))
                 sgld_opt = sgld(train_rate, seed=seed)
                 train_step = sgld_opt.minimize(loss, global_step=global_step)
                 self.summary_nodes['random_noise'] = sgld_opt.random_noise
