@@ -58,9 +58,9 @@ def main(_):
             csvfile = open(FLAGS.csv_file, 'w', newline='')
             csvwriter = csv.writer(csvfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
             if FLAGS.optimizer == "StochasticGradientLangevinDynamics":
-                csvwriter.writerow(['step', 'accuracy', 'loss', 'rate', 'noise'])
+                csvwriter.writerow(['step', 'epoch', 'accuracy', 'loss', 'rate', 'noise'])
             else:
-                csvwriter.writerow(['step', 'accuracy', 'loss', 'rate'])
+                csvwriter.writerow(['step', 'epoch', 'accuracy', 'loss', 'rate'])
 
     print("Constructing neural network")
     nn=neuralnetwork()
@@ -116,9 +116,9 @@ def main(_):
                         learning_decay: FLAGS.learning_decay, learning_decay_power: FLAGS.learning_decay_power,
                         learning_rate: FLAGS.learning_rate
                     })
-                    csvwriter.writerow([i, acc, losseval, rate, noise])
+                    csvwriter.writerow([global_step, i, acc, losseval, rate, noise])
                 else:
-                    csvwriter.writerow([i, acc, losseval, rate])
+                    csvwriter.writerow([global_step, i, acc, losseval, rate])
             if LogSummaries:
                 test_writer.add_summary(summary, i)
                 plot_buf = nn.get_plot_buf(xinputeval, yeval, FLAGS.dimension)
