@@ -8,6 +8,7 @@ optimizer="StochasticGradientLangevinDynamics" #StochasticGradientLangevinDynami
 learning_decay="1."
 learning_decay_power="-0.55"
 learning_rate="0.03"
+seed="426"
 
 typeno="$1"
 case "$typeno" in
@@ -47,5 +48,6 @@ python3 playground_example.py \
     --max_steps $max_steps \
     --noise 0.1 \
     --optimizer $optimizer \
+    --seed $seed \
     --csv_file ../test.csv \
     --log_dir=$logdir

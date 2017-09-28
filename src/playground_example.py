@@ -10,6 +10,7 @@
 import argparse, os, sys
 import tensorflow as tf
 import csv
+import numpy as np
 
 from classification_datasets import classification_datasets as dataset_generator
 from neuralnetwork import neuralnetwork
@@ -37,6 +38,9 @@ def create_input_layer(input_dimension, input_list):
     return xinput, x
 
 def main(_):
+    # init random: None will use random seed
+    np.random.seed(FLAGS.seed)
+
     print("Generating input data")
     dsgen=dataset_generator()
     ds = dsgen.generate(
@@ -63,8 +67,7 @@ def main(_):
     y_, keep_prob = nn.create(
         x,
         len(FLAGS.input_columns), FLAGS.hidden_dimension, output_dimension,
-        FLAGS.optimizer,
-        FLAGS.learning_rate)
+        FLAGS.optimizer, FLAGS.seed)
 
     print("Starting session")
     sess = tf.Session()
@@ -184,6 +187,8 @@ if __name__ == '__main__':
         help='Amount of noise in [0,1] to use.')
     parser.add_argument('--optimizer', type=str, default="GradientDescent",
         help='Choose the optimizer to use for training: GradientDescent, StochasticGradientLangevinDynamics')
+    parser.add_argument('--seed', type=int, default=None,
+        help='Seed to use for random number generators.')
     FLAGS, unparsed = parser.parse_known_args()
 tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
 

@@ -12,9 +12,10 @@ class SGLDSampler(optimizer.Optimizer):
     ''' implements a Stochastic Gradient Langevin Dynamics Sampler
     in the form of a TensorFlow Optimizer
     '''
-    def __init__(self, learning_rate, use_locking=False, name='SGLDSampler'):
+    def __init__(self, learning_rate, seed=None, use_locking=False, name='SGLDSampler'):
         super(SGLDSampler, self).__init__(use_locking, name)
         self._lr = learning_rate
+        self._seed = seed
     
     def _prepare(self):
         self._lr_t = ops.convert_to_tensor(self._lr, name="learning_rate")
@@ -25,8 +26,11 @@ class SGLDSampler(optimizer.Optimizer):
     def _apply_dense(self, grad, var):
         lr_t = math_ops.cast(self._lr_t, var.dtype.base_dtype)
         #print("lr_t is "+str(self._lr))
-        random_noise = tf.random_normal(grad.get_shape(), mean=0.,stddev=lr_t)
-        #print("random_noise has shape "+str(random_noise.get_shape()))
+        if self.seed is None:
+            random_noise = tf.random_normal(grad.get_shape(), mean=0.,stddev=lr_t)
+        else:
+            random_noise = tf.random_normal(grad.get_shape(), mean=0., stddev=lr_t, seed=self._seed)
+        print("random_noise has shape "+str(random_noise.get_shape())+" with seed "+str(self._seed))
         tf.summary.scalar('noise', tf.norm(random_noise))
 
         var_update = state_ops.assign_sub(var, lr_t/2. * grad + random_noise)

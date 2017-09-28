@@ -19,13 +19,14 @@ class neuralnetwork:
     
     def create(self, input_layer,
                input_dimension, layer_dimensions, output_dimension,
-               optimizer,
-               learning_rate):
+               optimizer, seed=None):
         ''' Create function for the actual net in TensorFlow where
         full summary nodes are added.
         '''
         self.summary_nodes.clear()
-    
+        if seed is not None:
+            tf.set_random_seed(seed)
+
         y_ = tf.placeholder(tf.float32, [None, output_dimension], name='y-input')
         print("y_ is "+str(y_.get_shape()))
         self.summary_nodes['y_'] = y_
