@@ -57,7 +57,10 @@ def main(_):
             LogCSV = True
             csvfile = open(FLAGS.csv_file, 'w', newline='')
             csvwriter = csv.writer(csvfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-            csvwriter.writerow(['step', 'accuracy', 'loss'])
+            if FLAGS.optimizer == "StochasticGradientLangevinDynamics":
+                csvwriter.writerow(['step', 'accuracy', 'loss', 'rate', 'noise'])
+            else:
+                csvwriter.writerow(['step', 'accuracy', 'loss', 'rate'])
 
     print("Constructing neural network")
     nn=neuralnetwork()
@@ -104,7 +107,18 @@ def main(_):
                     learning_rate: FLAGS.learning_rate
             })
             if LogCSV:
-                csvwriter.writerow([i, acc, losseval])
+                if FLAGS.optimizer == "StochasticGradientLangevinDynamics":
+                    noise = sess.run(
+                    nn.get("random_noise"),
+                    feed_dict={
+                        xinput: test_xs, y_: test_ys,
+                        keep_prob: 1.,
+                        learning_decay: FLAGS.learning_decay, learning_decay_power: FLAGS.learning_decay_power,
+                        learning_rate: FLAGS.learning_rate
+                    })
+                    csvwriter.writerow([i, acc, losseval, rate, noise])
+                else:
+                    csvwriter.writerow([i, acc, losseval, rate])
             if LogSummaries:
                 test_writer.add_summary(summary, i)
                 plot_buf = nn.get_plot_buf(xinputeval, yeval, FLAGS.dimension)

@@ -80,7 +80,9 @@ class neuralnetwork:
             if optimizer == "StochasticGradientLangevinDynamics":
                 train_rate = learning_rate*(tf.pow(
                     1.+learning_rate*learning_decay*tf.cast(global_step, tf.float32), learning_decay_power))
-                train_step = sgld(train_rate, seed=seed).minimize(loss, global_step=global_step)
+                sgld_opt = sgld(train_rate, seed=seed)
+                train_step = sgld_opt.minimize(loss, global_step=global_step)
+                self.summary_nodes['random_noise'] = sgld_opt.random_noise
             elif optimizer == "GradientDescent":
                 train_rate = learning_rate
                 train_step = tf.train.GradientDescentOptimizer(train_rate).minimize(loss, global_step=global_step)

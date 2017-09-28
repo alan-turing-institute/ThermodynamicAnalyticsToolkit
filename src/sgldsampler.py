@@ -16,6 +16,7 @@ class SGLDSampler(optimizer.Optimizer):
         super(SGLDSampler, self).__init__(use_locking, name)
         self._lr = learning_rate
         self._seed = seed
+        self.random_noise = None
     
     def _prepare(self):
         self._lr_t = ops.convert_to_tensor(self._lr, name="learning_rate")
@@ -26,14 +27,15 @@ class SGLDSampler(optimizer.Optimizer):
     def _apply_dense(self, grad, var):
         lr_t = math_ops.cast(self._lr_t, var.dtype.base_dtype)
         #print("lr_t is "+str(self._lr))
-        if self.seed is None:
+        if self._seed is None:
             random_noise = tf.random_normal(grad.get_shape(), mean=0.,stddev=lr_t)
         else:
             random_noise = tf.random_normal(grad.get_shape(), mean=0., stddev=lr_t, seed=self._seed)
         print("random_noise has shape "+str(random_noise.get_shape())+" with seed "+str(self._seed))
-        tf.summary.scalar('noise', tf.norm(random_noise))
+        self.random_noise = tf.norm(random_noise)
+        tf.summary.scalar('noise', self.random_noise)
 
-        var_update = state_ops.assign_sub(var, lr_t/2. * grad + random_noise)
+        var_update = state_ops.assign_sub(var, lr_t/2. * grad + self.random_noise)
         return control_flow_ops.group(*[var_update])
 
     def _apply_sparse(self, grad, var):
