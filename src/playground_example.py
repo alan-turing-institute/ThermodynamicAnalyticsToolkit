@@ -76,9 +76,12 @@ def main(_):
         nn.graph_truth(sess, ds.xs, ds.ys, FLAGS.dimension)
 
     test_nodes = list(map(lambda key: nn.get(key), [
-        "merged", "accuracy", "learning_rate", "global_step", "loss"]))+[xinput]+list(map(lambda key: nn.get(key), ["y_", "y"]))
+        "merged", "accuracy", "train_rate", "global_step", "loss"]))+[xinput]+list(map(lambda key: nn.get(key), ["y_", "y"]))
     train_nodes = list(map(lambda key: nn.get(key), [
         "merged", "train_step"]))
+    learning_decay = nn.get("learning_decay")
+    learning_decay_power = nn.get("learning_decay_power")
+    learning_rate= nn.get("learning_rate")
     if LogSummaries:
         train_writer = nn.get("train_writer")
         test_writer = nn.get("test_writer")
@@ -91,7 +94,12 @@ def main(_):
             test_xs, test_ys = ds.get_testset()
             summary, acc, rate, global_step, losseval, xinputeval, y_eval, yeval = sess.run(
                 test_nodes,
-                feed_dict={xinput: test_xs, y_: test_ys, keep_prob: 1.})
+                feed_dict={
+                    xinput: test_xs, y_: test_ys,
+                    keep_prob: 1.,
+                    learning_decay: FLAGS.learning_decay, learning_decay_power: FLAGS.learning_decay_power,
+                    learning_rate: FLAGS.learning_rate
+            })
             if LogCSV:
                 csvwriter.writerow([i, acc, losseval])
             if LogSummaries:
@@ -116,13 +124,21 @@ def main(_):
                 if i % summary_intervals == summary_intervals-1:  # Record execution stats
                     summary, _ = sess.run(
                         train_nodes,
-                        feed_dict={xinput: batch_xs, y_: batch_ys, keep_prob: FLAGS.dropout},
+                        feed_dict={
+                            xinput: batch_xs, y_: batch_ys,
+                            keep_prob: FLAGS.dropout,
+                            learning_decay: FLAGS.learning_decay, learning_decay_power: FLAGS.learning_decay_power,
+                            learning_rate: FLAGS.learning_rate},
                         options=run_options,
                         run_metadata=run_metadata)
                 else:  # train
                     summary, _ = sess.run(
                         train_nodes,
-                        feed_dict={xinput: batch_xs, y_: batch_ys, keep_prob: FLAGS.dropout})
+                        feed_dict={
+                            xinput: batch_xs, y_: batch_ys,
+                            keep_prob: FLAGS.dropout,
+                            learning_decay: FLAGS.learning_decay, learning_decay_power: FLAGS.learning_decay_power,
+                            learning_rate: FLAGS.learning_rate})
             #print("Epoch done.")
             ds.resetEpoch()
             if LogSummaries:
@@ -154,7 +170,11 @@ if __name__ == '__main__':
         help='Dimension of each hidden layer, e.g. 8 8 for two hidden layers each with 8 nodes fully connected')
     parser.add_argument('--input_columns', type=int, nargs='+', default=[1, 2],
         help='Pick a list of the following: (1) x1, (2) x2, (3) x1^2, (4) x2^2, (5) sin(x1), (6) sin(x2).')
-    parser.add_argument('--learning_rate', type=float, default=0.001,
+    parser.add_argument('--learning_decay', type=float, default=0.001,
+        help='Parameter governing the decay of the rate as lambda*t^gamma')
+    parser.add_argument('--learning_decay_power', type=float, default=-.55,
+        help='Parameter governing power of the decay of the rate as lambda*t^gamma, should be in -[0.5,1]')
+    parser.add_argument('--learning_rate', type=float, default=0.03,
         help='Initial learning rate, e.g. 0.01')
     parser.add_argument('--log_dir', type=str, default=None,
         help='Summaries log directory')

@@ -67,23 +67,27 @@ class neuralnetwork:
         tf.summary.scalar('cross_entropy', cross_entropy)
 
         with tf.name_scope('train'):
+            learning_rate = tf.placeholder(tf.float32)
+            tf.summary.scalar('learning_rate', learning_rate)
+            self.summary_nodes['learning_rate'] = learning_rate
             global_step = tf.Variable(0, trainable=False)
+            self.summary_nodes['global_step'] = tf.cast(global_step, tf.float32)
+            learning_decay = tf.placeholder(tf.float32)
+            self.summary_nodes['learning_decay'] = learning_decay
+            learning_decay_power = tf.placeholder(tf.float32)
+            self.summary_nodes['learning_decay_power'] = learning_decay_power
             if optimizer == "StochasticGradientLangevinDynamics":
-                sgld_a = tf.constant(0.065)
-                sgld_b = tf.constant(30.)
-                sgld_gamma = tf.constant(-0.55)
-                train_rate = sgld_a*(tf.pow(
-                    sgld_b+tf.cast(global_step, tf.float32), sgld_gamma))
-                train_step = sgld(train_rate).minimize(loss, global_step=global_step)
+                train_rate = learning_rate*(tf.pow(
+                    1.+learning_rate*learning_decay*tf.cast(global_step, tf.float32), learning_decay_power))
+                train_step = sgld(train_rate, seed=seed).minimize(loss, global_step=global_step)
             elif optimizer == "GradientDescent":
-                train_rate = tf.constant(learning_rate)
+                train_rate = learning_rate
                 train_step = tf.train.GradientDescentOptimizer(train_rate).minimize(loss, global_step=global_step)
             else:
                 raise NotImplementedError("Unknown optimizer")
-            tf.summary.scalar('learning_rate', train_rate)
-            self.summary_nodes['learning_rate'] = train_rate
+            tf.summary.scalar('train_rate', train_rate)
+            self.summary_nodes['train_rate'] = train_rate
             self.summary_nodes['train_step'] = train_step
-            self.summary_nodes['global_step'] = tf.cast(global_step, tf.float32)
 
         with tf.name_scope('accuracy'):
             with tf.name_scope('correct_prediction'):

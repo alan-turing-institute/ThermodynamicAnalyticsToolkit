@@ -2,6 +2,13 @@
 
 test ! -z "$1" || { echo "Usage: $0 <type no.>"; exit 255; }
 
+dim="500"
+batch_size="10"
+optimizer="StochasticGradientLangevinDynamics" #StochasticGradientLangevinDynamics, GradientDescent
+learning_decay="1."
+learning_decay_power="-0.55"
+learning_rate="0.03"
+
 typeno="$1"
 case "$typeno" in
 	0)
@@ -29,4 +36,16 @@ esac
 logdir="/tmp/tensorflow/Playground/playground_type$typeno"
 rm -rf $logdir
 
-python3 playground_example.py --dimension 500 --data_type $typeno --noise 0.1 --hidden_dimension $hidden_dim --learning_rate 0.03 --max_steps $max_steps --csv_file test.csv --log_dir=$logdir
+python3 playground_example.py \
+    --batch_size $batch_size \
+    --dimension $dim \
+    --data_type $typeno \
+    --hidden_dimension $hidden_dim \
+    --learning_decay $learning_decay \
+    --learning_decay_power $learning_decay_power \
+    --learning_rate $learning_rate \
+    --max_steps $max_steps \
+    --noise 0.1 \
+    --optimizer $optimizer \
+    --csv_file ../test.csv \
+    --log_dir=$logdir
