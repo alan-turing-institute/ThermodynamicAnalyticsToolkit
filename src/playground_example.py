@@ -51,16 +51,6 @@ def main(_):
     LogSummaries = False
     if FLAGS.log_dir != None:
         LogSummaries = True
-        
-    LogCSV = False
-    if FLAGS.csv_file != None:
-            LogCSV = True
-            csvfile = open(FLAGS.csv_file, 'w', newline='')
-            csvwriter = csv.writer(csvfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-            if FLAGS.optimizer == "StochasticGradientLangevinDynamics":
-                csvwriter.writerow(['step', 'epoch', 'accuracy', 'loss', 'rate', 'noise'])
-            else:
-                csvwriter.writerow(['step', 'epoch', 'accuracy', 'loss', 'rate'])
 
     print("Constructing neural network")
     nn=neuralnetwork()
@@ -83,6 +73,24 @@ def main(_):
         nn.add_graphing_train()
         nn.graph_truth(sess, ds.xs, ds.ys, FLAGS.dimension)
 
+    LogCSV = False
+    if FLAGS.csv_file != None:
+            LogCSV = True
+            csvfile = open(FLAGS.csv_file, 'w', newline='')
+            csvwriter = csv.writer(csvfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            if FLAGS.optimizer == "StochasticGradientLangevinDynamics":
+                csvwriter.writerow(['step', 'epoch', 'accuracy', 'loss', 'rate', 'noise'])
+            else:
+                csvwriter.writerow(['step', 'epoch', 'accuracy', 'loss', 'rate'])
+    do_write_trajectory_file = False
+    if FLAGS.trajectory_file is not None:
+        do_write_trajectory_file = True
+        no_weights = nn.get("weights").get_shape()[0]
+        trajectory_file = open(FLAGS.trajectory_file, 'w', newline='')
+        trajectory_writer = csv.writer(trajectory_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        trajectory_writer.writerow(['step', 'loss']+[str("weight")+str(i) for i in range(0,no_weights)])
+
+
     test_nodes = list(map(lambda key: nn.get(key), [
         "merged", "accuracy", "train_rate", "global_step", "loss"]))+[xinput]+list(map(lambda key: nn.get(key), ["y_", "y"]))
     train_nodes = list(map(lambda key: nn.get(key), [
@@ -100,7 +108,7 @@ def main(_):
 #        print("Current training step is %d" % i)
         if (i % test_intervals == 0):  # test
             test_xs, test_ys = ds.get_testset()
-            summary, acc, rate, global_step, losseval, xinputeval, y_eval, yeval = sess.run(
+            summary, acc, rate, global_step, loss_eval, xinputeval, y_true_eval, y_eval = sess.run(
                 test_nodes,
                 feed_dict={
                     xinput: test_xs, y_: test_ys,
@@ -108,6 +116,17 @@ def main(_):
                     learning_decay: FLAGS.learning_decay, learning_decay_power: FLAGS.learning_decay_power,
                     learning_rate: FLAGS.learning_rate
             })
+            if do_write_trajectory_file:
+                weights_eval = sess.run(
+                    nn.get("weights"),
+                    feed_dict={
+                        xinput: test_xs, y_: test_ys,
+                        keep_prob: 1.,
+                        learning_decay: FLAGS.learning_decay, learning_decay_power: FLAGS.learning_decay_power,
+                        learning_rate: FLAGS.learning_rate
+                })
+                trajectory_writer.writerow(
+                    [i, loss_eval] + [item for sublist in weights_eval for item in sublist])
             if LogCSV:
                 if FLAGS.optimizer == "StochasticGradientLangevinDynamics":
                     noise = sess.run(
@@ -118,12 +137,12 @@ def main(_):
                         learning_decay: FLAGS.learning_decay, learning_decay_power: FLAGS.learning_decay_power,
                         learning_rate: FLAGS.learning_rate
                     })
-                    csvwriter.writerow([global_step, i, acc, losseval, rate, noise])
+                    csvwriter.writerow([global_step, i, acc, loss_eval, rate, noise])
                 else:
-                    csvwriter.writerow([global_step, i, acc, losseval, rate])
+                    csvwriter.writerow([global_step, i, acc, loss_eval, rate])
             if LogSummaries:
                 test_writer.add_summary(summary, i)
-                plot_buf = nn.get_plot_buf(xinputeval, yeval, FLAGS.dimension)
+                plot_buf = nn.get_plot_buf(xinputeval, y_eval, FLAGS.dimension)
                 plot_image_summary_ = sess.run(
                     nn.get("plot_image_summary_test"),
                     feed_dict={nn.get("plot_buf_test"): plot_buf.getvalue()})
@@ -167,6 +186,8 @@ def main(_):
                 train_writer.add_summary(summary, global_step=i)
     if LogCSV:
         csvfile.close()
+    if do_write_trajectory_file:
+        trajectory_file.close()
     if LogSummaries:
         train_writer.close()
         test_writer.close()
@@ -207,6 +228,8 @@ if __name__ == '__main__':
         help='Choose the optimizer to use for training: GradientDescent, StochasticGradientLangevinDynamics')
     parser.add_argument('--seed', type=int, default=None,
         help='Seed to use for random number generators.')
+    parser.add_argument('--trajectory_file', type=str, default=None,
+        help='CSV file name to output trajectories of sampling, i.e. weights and evaluated loss function.')
     FLAGS, unparsed = parser.parse_known_args()
 tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
 

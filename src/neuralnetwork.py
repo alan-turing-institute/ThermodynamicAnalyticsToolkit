@@ -188,6 +188,8 @@ class neuralnetwork:
             with tf.name_scope('weights'):
                 weights = self.weight_variable([input_dim, output_dim])
                 self.variable_summaries(weights)
+                weights_flat = tf.contrib.layers.flatten(weights)
+                self.summary_nodes["weights"] = weights_flat
             with tf.name_scope('biases'):
                 biases = self.bias_variable([output_dim])
                 self.variable_summaries(biases)
