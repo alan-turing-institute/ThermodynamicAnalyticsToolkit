@@ -70,7 +70,9 @@ def main(_):
     y_, keep_prob = nn.create(
         x,
         len(FLAGS.input_columns), FLAGS.hidden_dimension, output_dimension,
-        FLAGS.optimizer, FLAGS.seed)
+        optimizer=FLAGS.optimizer,
+        seed=FLAGS.seed,
+        noise_scale=FLAGS.noise_scale)
 
     print("Starting session")
     sess = tf.Session()
@@ -197,8 +199,10 @@ if __name__ == '__main__':
         help='Summaries log directory')
     parser.add_argument('--max_steps', type=int, default=1000,
         help='Number of steps to run trainer.')
-    parser.add_argument('--noise', type=float, default=0,
+    parser.add_argument('--noise', type=float, default=0.,
         help='Amount of noise in [0,1] to use.')
+    parser.add_argument('--noise_scale', type=float, default=1.,
+        help='Relative scale of injected noise in Stochastic Gradient Langevin Dynamics compared to gradient')
     parser.add_argument('--optimizer', type=str, default="GradientDescent",
         help='Choose the optimizer to use for training: GradientDescent, StochasticGradientLangevinDynamics')
     parser.add_argument('--seed', type=int, default=None,

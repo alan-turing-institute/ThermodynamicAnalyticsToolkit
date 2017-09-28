@@ -25,7 +25,7 @@ class neuralnetwork:
 
     def create(self, input_layer,
                input_dimension, layer_dimensions, output_dimension,
-               optimizer, seed=None):
+               optimizer, seed=None, noise_scale=1.):
         ''' Create function for the actual net in TensorFlow where
         full summary nodes are added.
         '''
@@ -87,7 +87,7 @@ class neuralnetwork:
                 train_rate = learning_rate*(tf.pow(
                     1.+learning_rate*learning_decay*tf.cast(global_step, tf.float32),
                     learning_decay_power))
-                sgld_opt = sgld(train_rate, seed=seed)
+                sgld_opt = sgld(train_rate, seed=seed, noise_scale=noise_scale)
                 train_step = sgld_opt.minimize(loss, global_step=global_step)
                 self.summary_nodes['random_noise'] = sgld_opt.random_noise
             elif optimizer == "GradientDescent":
