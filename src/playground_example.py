@@ -14,8 +14,10 @@ import numpy as np
 
 from classificationdatasets import ClassificationDatasets as DatasetGenerator
 from neuralnetwork import NeuralNetwork
+from helpers import get_list_from_string
 
 FLAGS = None
+
 
 def main(_):
     # init random: None will use random seed
@@ -33,13 +35,16 @@ def main(_):
         do_write_summaries = True
 
     print("Constructing neural network")
+    # extract hidden layer dimensions, as "8 8" or 8 8 or whatever
+    hidden_dimension=get_list_from_string(FLAGS.hidden_dimension)
+    input_columns=get_list_from_string(FLAGS.input_columns)
     nn=NeuralNetwork()
     input_dimension = 2
     output_dimension = 1
-    xinput, x = dsgen.create_input_layer(input_dimension, FLAGS.input_columns)
+    xinput, x = dsgen.create_input_layer(input_dimension, input_columns)
     nn.create(
         x,
-        len(FLAGS.input_columns), FLAGS.hidden_dimension, output_dimension,
+        len(input_columns), hidden_dimension, output_dimension,
         optimizer=FLAGS.optimizer,
         seed=FLAGS.seed,
         noise_scale=FLAGS.noise_scale)
@@ -187,9 +192,9 @@ if __name__ == '__main__':
         help='Number P of samples (Y^i,X^i)^P_{i=1} to generate for the desired dataset type.')
     parser.add_argument('--dropout', type=float, default=0.9,
         help='Keep probability for training dropout, e.g. 0.9')
-    parser.add_argument('--hidden_dimension', type=int, nargs='+', default=[],
+    parser.add_argument('--hidden_dimension', type=str, nargs='+', default="4",
         help='Dimension of each hidden layer, e.g. 8 8 for two hidden layers each with 8 nodes fully connected')
-    parser.add_argument('--input_columns', type=int, nargs='+', default=[1, 2],
+    parser.add_argument('--input_columns', type=str, nargs='+', default="1 2",
         help='Pick a list of the following: (1) x1, (2) x2, (3) x1^2, (4) x2^2, (5) sin(x1), (6) sin(x2).')
     parser.add_argument('--learning_decay', type=float, default=0.001,
         help='Parameter governing the decay of the rate as lambda*t^gamma')
