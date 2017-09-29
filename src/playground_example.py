@@ -17,6 +17,7 @@ from neuralnetwork import neuralnetwork
 
 FLAGS = None
 
+
 def create_input_layer(input_dimension, input_list):
     # Input placeholders
     with tf.name_scope('input'):
@@ -29,13 +30,14 @@ def create_input_layer(input_dimension, input_list):
         print("Picking as input columns: "+str(picked_list_names))
         arg_list = [ xinput[:,0], xinput[:,1] ]
         arg_list += [arg_list[0]*arg_list[0],
-                         arg_list[1]*arg_list[1],
-                         tf.sin(arg_list[0]),
-                         tf.sin(arg_list[1])]
+                     arg_list[1]*arg_list[1],
+                     tf.sin(arg_list[0]),
+                     tf.sin(arg_list[1])]
         picked_list = list(map(lambda i:arg_list[i-1], input_list))
         x = tf.transpose(tf.stack(picked_list))
         print("x is "+str(x.get_shape()))
     return xinput, x
+
 
 def main(_):
     # init random: None will use random seed
@@ -48,9 +50,9 @@ def main(_):
         noise=FLAGS.noise,
         data_type=FLAGS.data_type)
 
-    LogSummaries = False
-    if FLAGS.log_dir != None:
-        LogSummaries = True
+    do_write_summaries = False
+    if FLAGS.log_dir is not None:
+        do_write_summaries = True
 
     print("Constructing neural network")
     nn=neuralnetwork()
@@ -66,22 +68,23 @@ def main(_):
 
     print("Starting session")
     sess = tf.Session()
-    if LogSummaries:
+    if do_write_summaries:
         nn.add_writers(sess, FLAGS.log_dir)
     nn.init_graph(sess)
-    if LogSummaries:
+    if do_write_summaries:
         nn.add_graphing_train()
         nn.graph_truth(sess, ds.xs, ds.ys, FLAGS.dimension)
 
-    LogCSV = False
-    if FLAGS.csv_file != None:
-            LogCSV = True
-            csvfile = open(FLAGS.csv_file, 'w', newline='')
-            csvwriter = csv.writer(csvfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-            if FLAGS.optimizer == "StochasticGradientLangevinDynamics":
-                csvwriter.writerow(['step', 'epoch', 'accuracy', 'loss', 'rate', 'noise'])
-            else:
-                csvwriter.writerow(['step', 'epoch', 'accuracy', 'loss', 'rate'])
+    do_write_csv_file = False
+    if FLAGS.csv_file is not None:
+        do_write_csv_file = True
+        csv_file = open(FLAGS.csv_file, 'w', newline='')
+        csv_writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        if FLAGS.optimizer == "StochasticGradientLangevinDynamics":
+            csv_writer.writerow(['step', 'epoch', 'accuracy', 'loss', 'rate', 'noise'])
+        else:
+            csv_writer.writerow(['step', 'epoch', 'accuracy', 'loss', 'rate'])
+
     do_write_trajectory_file = False
     if FLAGS.trajectory_file is not None:
         do_write_trajectory_file = True
@@ -98,14 +101,14 @@ def main(_):
     learning_decay = nn.get("learning_decay")
     learning_decay_power = nn.get("learning_decay_power")
     learning_rate= nn.get("learning_rate")
-    if LogSummaries:
+    if do_write_summaries:
         train_writer = nn.get("train_writer")
         test_writer = nn.get("test_writer")
     print("Starting to train")
     test_intervals = max(10, FLAGS.max_steps/100)
     summary_intervals = max(20,FLAGS.max_steps/10)
     for i in range(FLAGS.max_steps):
-#        print("Current training step is %d" % i)
+        #print("Current training step is %d" % i)
         if (i % test_intervals == 0):  # test
             test_xs, test_ys = ds.get_testset()
             summary, acc, rate, global_step, loss_eval, xinputeval, y_true_eval, y_eval = sess.run(
@@ -127,7 +130,7 @@ def main(_):
                 })
                 trajectory_writer.writerow(
                     [i, loss_eval] + [item for sublist in weights_eval for item in sublist])
-            if LogCSV:
+            if do_write_csv_file:
                 if FLAGS.optimizer == "StochasticGradientLangevinDynamics":
                     noise = sess.run(
                     nn.get("random_noise"),
@@ -137,10 +140,10 @@ def main(_):
                         learning_decay: FLAGS.learning_decay, learning_decay_power: FLAGS.learning_decay_power,
                         learning_rate: FLAGS.learning_rate
                     })
-                    csvwriter.writerow([global_step, i, acc, loss_eval, rate, noise])
+                    csv_writer.writerow([global_step, i, acc, loss_eval, rate, noise])
                 else:
-                    csvwriter.writerow([global_step, i, acc, loss_eval, rate])
-            if LogSummaries:
+                    csv_writer.writerow([global_step, i, acc, loss_eval, rate])
+            if do_write_summaries:
                 test_writer.add_summary(summary, i)
                 plot_buf = nn.get_plot_buf(xinputeval, y_eval, FLAGS.dimension)
                 plot_image_summary_ = sess.run(
@@ -148,11 +151,10 @@ def main(_):
                     feed_dict={nn.get("plot_buf_test"): plot_buf.getvalue()})
                 test_writer.add_summary(plot_image_summary_, global_step=i)
 
-            if (i % test_intervals == 0):
-                print('Accuracy at step %s (%s): %s, using rate %s' % (i, global_step, acc, rate))
-                #print('Loss at step %s: %s' % (i, losseval))
-                #print('y_ at step %s: %s' % (i, str(y_eval[0:9].transpose())))
-                #print('y at step %s: %s' % (i, str(yeval[0:9].transpose())))
+            print('Accuracy at step %s (%s): %s, using rate %s' % (i, global_step, acc, rate))
+            #print('Loss at step %s: %s' % (i, loss_eval))
+            #print('y_ at step %s: %s' % (i, str(y_true_eval[0:9].transpose())))
+            #print('y at step %s: %s' % (i, str(y_eval[0:9].transpose())))
         else:  # Record train set summaries, and train
             while not ds.epochFinished():
                 batch_xs, batch_ys = ds.next_batch(FLAGS.batch_size)
@@ -179,16 +181,16 @@ def main(_):
                             learning_rate: FLAGS.learning_rate})
             #print("Epoch done.")
             ds.resetEpoch()
-            if LogSummaries:
+            if do_write_summaries:
                 if i % summary_intervals == summary_intervals-1:  # Record execution stats
                     train_writer.add_run_metadata(run_metadata, 'step%03d' % i)
                     print('Adding run metadata for', i)
                 train_writer.add_summary(summary, global_step=i)
-    if LogCSV:
-        csvfile.close()
+    if do_write_csv_file:
+        csv_file.close()
     if do_write_trajectory_file:
         trajectory_file.close()
-    if LogSummaries:
+    if do_write_summaries:
         train_writer.close()
         test_writer.close()
     print("TRAINED.")

@@ -1,6 +1,6 @@
 import tensorflow as tf
 import matplotlib as mpl
-mpl.use('Agg') # no display
+mpl.use('Agg')  # no display
 import matplotlib.pyplot as plt
 import io
 
@@ -123,7 +123,8 @@ class neuralnetwork:
         test_writer = tf.summary.FileWriter(log_dir + '/test')
         self.summary_nodes["test_writer"] = test_writer
         
-    def init_graph(self, sess):
+    @staticmethod
+    def init_graph(sess):
         print ("Initializing global variables")
         sess.run(tf.global_variables_initializer())
 
@@ -149,19 +150,20 @@ class neuralnetwork:
         test_writer = self.get("test_writer")
         test_writer.add_summary(plot_image_summary_, global_step=0)
 
-        
-    # We can't initialize these variables to 0 - the network will get stuck.
-    def weight_variable(self, shape):
+    @staticmethod
+    def weight_variable(shape):
         """Create a weight variable with appropriate initialization."""
         initial = tf.random_uniform(shape, minval=-0.5, maxval=0.5)
         return tf.Variable(initial)
 
-    def bias_variable(self, shape):
+    @staticmethod
+    def bias_variable(shape):
         """Create a bias variable with appropriate initialization."""
         initial = tf.constant(0.1, shape=shape)
         return tf.Variable(initial)
 
-    def variable_summaries(self, var):
+    @staticmethod
+    def variable_summaries(var):
         """Attach a lot of summaries to a Tensor (for TensorBoard visualization)."""
         with tf.name_scope('summaries'):
             mean = tf.reduce_mean(var)
@@ -203,7 +205,8 @@ class neuralnetwork:
                 tf.summary.histogram('activations', activations)
                 return activations
 
-    def get_plot_buf(self, input_data, input_labels, dimension):
+    @staticmethod
+    def get_plot_buf(input_data, input_labels, dimension):
         ''' Plots labelled scatter data using matplotlib and returns the created
         PNG as a text buffer
         
