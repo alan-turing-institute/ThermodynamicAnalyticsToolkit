@@ -12,39 +12,17 @@ import tensorflow as tf
 import csv
 import numpy as np
 
-from classification_datasets import classification_datasets as dataset_generator
-from neuralnetwork import neuralnetwork
+from classificationdatasets import ClassificationDatasets as DatasetGenerator
+from neuralnetwork import NeuralNetwork
 
 FLAGS = None
-
-
-def create_input_layer(input_dimension, input_list):
-    # Input placeholders
-    with tf.name_scope('input'):
-        xinput = tf.placeholder(tf.float32, [None, input_dimension], name='x-input')
-        #print("xinput is "+str(xinput.get_shape()))
-
-        # pick from the various available input columns
-        arg_list_names= ["x1", "x2", "x1^2", "x2^2", "sin(x1)", "sin(x2)"]
-        picked_list_names = list(map(lambda i:arg_list_names[i-1], input_list))
-        print("Picking as input columns: "+str(picked_list_names))
-        arg_list = [ xinput[:,0], xinput[:,1] ]
-        arg_list += [arg_list[0]*arg_list[0],
-                     arg_list[1]*arg_list[1],
-                     tf.sin(arg_list[0]),
-                     tf.sin(arg_list[1])]
-        picked_list = list(map(lambda i:arg_list[i-1], input_list))
-        x = tf.transpose(tf.stack(picked_list))
-        print("x is "+str(x.get_shape()))
-    return xinput, x
-
 
 def main(_):
     # init random: None will use random seed
     np.random.seed(FLAGS.seed)
 
     print("Generating input data")
-    dsgen=dataset_generator()
+    dsgen=DatasetGenerator()
     ds = dsgen.generate(
         dimension=FLAGS.dimension,
         noise=FLAGS.noise,
@@ -55,10 +33,10 @@ def main(_):
         do_write_summaries = True
 
     print("Constructing neural network")
-    nn=neuralnetwork()
+    nn=NeuralNetwork()
     input_dimension = 2
     output_dimension = 1
-    xinput, x = create_input_layer(input_dimension, FLAGS.input_columns)
+    xinput, x = dsgen.create_input_layer(input_dimension, FLAGS.input_columns)
     nn.create(
         x,
         len(FLAGS.input_columns), FLAGS.hidden_dimension, output_dimension,
@@ -68,14 +46,13 @@ def main(_):
     y_ = nn.get("y_")
     keep_prob = nn.get("keep_prob")
 
-    print("Starting session")
     sess = tf.Session()
     if do_write_summaries:
         nn.add_writers(sess, FLAGS.log_dir)
     nn.init_graph(sess)
     if do_write_summaries:
-        nn.add_graphing_train()
-        nn.graph_truth(sess, ds.xs, ds.ys, FLAGS.dimension)
+        plot_buf_test, plot_image_summary_test = dsgen.add_graphing_train()
+        dsgen.graph_truth(sess, ds.xs, ds.ys, FLAGS.dimension, nn.get("test_writer"))
 
     do_write_csv_file = False
     if FLAGS.csv_file is not None:
@@ -147,10 +124,10 @@ def main(_):
                     csv_writer.writerow([global_step, i, acc, loss_eval, rate])
             if do_write_summaries:
                 test_writer.add_summary(summary, i)
-                plot_buf = nn.get_plot_buf(xinputeval, y_eval, FLAGS.dimension)
+                plot_buf = dsgen.get_plot_buf(xinputeval, y_eval, FLAGS.dimension)
                 plot_image_summary_ = sess.run(
-                    nn.get("plot_image_summary_test"),
-                    feed_dict={nn.get("plot_buf_test"): plot_buf.getvalue()})
+                    plot_image_summary_test,
+                    feed_dict={plot_buf_test: plot_buf.getvalue()})
                 test_writer.add_summary(plot_image_summary_, global_step=i)
 
             print('Accuracy at step %s (%s): %s, using rate %s' % (i, global_step, acc, rate))
@@ -204,7 +181,7 @@ if __name__ == '__main__':
         help='The number of samples used to divide sample set into batches in one training step.')
     parser.add_argument('--csv_file', type=str, default=None,
         help='CSV file name to output accuracy and loss values.')
-    parser.add_argument('--data_type', type=int, default=dataset_generator.SPIRAL,
+    parser.add_argument('--data_type', type=int, default=DatasetGenerator.SPIRAL,
         help='Which data set to use: (0) two circles, (1) squares, (2) two clusters, (3) spiral.')
     parser.add_argument('--dimension', type=int, default=10,
         help='Number P of samples (Y^i,X^i)^P_{i=1} to generate for the desired dataset type.')

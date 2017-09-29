@@ -1,21 +1,51 @@
 import tensorflow as tf
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-import io
 from sgldsampler import SGLDSampler as sgld
 
-mpl.use('Agg')  # no display
 
-class neuralnetwork(object):
-    ''' This class encapsulates the construction of the neural network.
-    '''
+class NeuralNetwork(object):
+    """ This class encapsulates the construction of the neural network.
+
+    Note that functions both for creating the input and the output layer are
+     not contained. These depend on the specifics of the dataset for which
+     the neural network is to be trained and hence belong there.
+
+    TensorFlow obtains its name by the flow of tensors through the graph
+     of a neural network from input to output. A tensor can be a number, a
+     vector, a matrix or higher modes.
+     The size of training set, i.e. the batch size, is always another dimension.
+     In essence, if you train with a single input node, having ten labeled
+     items, then you have a [10, 1] tensor, i.e. two-dimensional with 10
+      components in the first dimension and 1 component in the second.
+
+    Internally, to actually perform computations with this neural network
+     TensorFlow then uses as so-called `computational graph`. A node in
+     this graph represents a specific operation that depends on certain input
+     variables and generates output. The input variables have to be represented
+     by nodes as well.
+     This *dependence* graph allows the TensorFlow engine to exactly determine
+     which nodes it needs to evaluate for a certain operation. Moreover,
+     evaluations can even be done in parallel to a certain extent.
+
+    Nodes can be constants, variables or placeholders, i.e. values fed in by
+     the user. Moreover, nodes can be the results of operations such as
+     multiplication, summation, and so on.
+     Naturally, each input and output node is a node in the `computational
+     graph`. However, even the training method itself is also a set of nodes
+     that depend on other nodes, such as the weight of each layer, the input
+     and output layer and the true labels.
+    """
     
     placeholder_nodes = {}
+    """Lookup dictionary for input nodes, in TensorFlow parlance called placeholders."""
     summary_nodes = {}
+    """Lookup dictionary for summary nodes, specific to TensorFlow. """
 
 
     def get(self, keyname):
-        ''' This is just a short hand to access the summary nodes dict.
+        ''' Retrieve a node by name from the TensorFlow computational graph.
+
+        :param keyname: name of node to retrieve
+        :return: node if found or None
         '''
         if keyname in self.summary_nodes:
             return self.summary_nodes[keyname]
@@ -27,8 +57,18 @@ class neuralnetwork(object):
     def create(self, input_layer,
                input_dimension, layer_dimensions, output_dimension,
                optimizer, seed=None, noise_scale=1.):
-        ''' Create function for the actual net in TensorFlow where
-        full summary nodes are added.
+        ''' Creates the neural network model according to the specifications.
+
+        The `input_layer` needs to be given along with its input_dimension.
+        The output_layer needs to be specified here as the summaries and
+        loss functions depend on them.
+
+        :param input_layer: the input_layer
+        :param input_dimension: number of nodes in `input_layer`
+        :param layer_dimensions: a list of ints giving the number of nodes for
+            each hidden layer.
+        :param output_dimension: the number of nodes in the output layer
+
         '''
         self.summary_nodes.clear()
         if seed is not None:
@@ -36,10 +76,10 @@ class neuralnetwork(object):
 
         y_ = self.add_true_labels(output_dimension)
         keep_prob = self.add_keep_probability()
-        current_dropped, hidden_out_dimension = \
-            self.add_hidden_layers(input_dimension, input_layer,
+        last_hidden_layer = \
+            self.add_hidden_layers(input_layer, input_dimension,
                                    keep_prob, layer_dimensions)
-        y = self.add_output_layer(current_dropped, hidden_out_dimension, output_dimension)
+        y = self.add_output_layer(last_hidden_layer, layer_dimensions[-1], output_dimension)
 
         # print ("Creating summaries")
         loss = self.add_loss_summary(y, y_)
@@ -50,12 +90,30 @@ class neuralnetwork(object):
         self.add_train_method(loss, noise_scale, optimizer, seed)
 
     def add_true_labels(self, output_dimension):
+        """ Adds the known labels as placeholder nodes to the graph.
+
+        :param output_dimension: number of output nodes
+        :return: reference to created output layer
+        """
         y_ = tf.placeholder(tf.float32, [None, output_dimension], name='y-input')
         # print("y_ is "+str(y_.get_shape()))
         self.placeholder_nodes['y_'] = y_
         return y_
 
     def add_accuracy_summary(self, y, y_):
+        """ Add nodes to the graph to calculate the accuracy for the dataset.
+
+        The accuracy is the difference between the predicted label and the true
+        label as mean average, i.e. 0.5 is random, 1 is the best, and 0 means
+        you have the labels wrong way round :)
+
+        Note that the accuracy node can be obtained via :method:`neuralnetwork.get`.
+        For evaluation it needs to be given to a tensorflow.Session.run() which
+        will return the evaluated node given a dataset.
+
+        :param y: predicted labels
+        :param y_: true labels
+        """
         with tf.name_scope('accuracy'):
             with tf.name_scope('correct_prediction'):
                 correct_prediction = tf.equal(tf.sign(y), tf.sign(y_))
@@ -66,6 +124,13 @@ class neuralnetwork(object):
         tf.summary.scalar('accuracy', accuracy)
 
     def add_train_method(self, loss, noise_scale, optimizer, seed):
+        """ Adds nodes for training the neural network.
+
+        :param loss: node for the desired loss function to minimize during training
+        :param noise_scale: scaling factor for the injected noise, 0. disables it
+        :param optimizer: name of the optimizer method, e.g. GradientDescent
+        :param seed: seed value for the random number generator to obtain reproducible runs
+        """
         with tf.name_scope('train'):
             learning_rate = tf.placeholder(tf.float32)
             tf.summary.scalar('learning_rate', learning_rate)
@@ -93,6 +158,19 @@ class neuralnetwork(object):
             self.summary_nodes['train_step'] = train_step
 
     def add_loss_summary(self, y, y_):
+        """ Add nodes to the graph to calculate a loss for the dataset.
+
+        The loss is the root mean squared error of the difference between
+        the predicted label and the true label. Also, the cross entropy is
+        added as a possible loss node.
+
+        Note that the loss node can be obtained via :method:`neuralnetwork.get`.
+        For evaluation it needs to be given to a tensorflow.Session.run() which
+        will return the evaluated node given a dataset.
+
+        :param y: predicted labels
+        :param y_: true labels
+        """
         with tf.name_scope('loss'):
             cross_entropy = tf.reduce_mean(-tf.reduce_sum(y_ * tf.log(y), reduction_indices=[1]))
             with tf.name_scope('total'):
@@ -102,33 +180,56 @@ class neuralnetwork(object):
         tf.summary.scalar('cross_entropy', cross_entropy)
         return loss
 
-    def add_output_layer(self, current_dropped, hidden_out_dimension, output_dimension):
-        y = self.nn_layer(current_dropped, hidden_out_dimension, output_dimension, 'output', act=tf.nn.tanh)
+    def add_output_layer(self, current_hidden_layer, hidden_out_dimension, output_dimension):
+        """ Add the output layer giving the predicted values.
+
+        :param current_hidden_layer: last hidden layer which is to be connected to the output layer
+        :param hidden_out_dimension: number of nodes in `current_hidden_layer`
+        :param output_dimension: number of output nodes
+        :return: reference to the output layer
+        """
+        y = self.nn_layer(current_hidden_layer, hidden_out_dimension, output_dimension, 'output', act=tf.nn.tanh)
         self.summary_nodes['y'] = y
         # print("y is " + str(y.get_shape()))
         return y
 
-    def add_hidden_layers(self, input_dimension, input_layer, keep_prob, layer_dimensions):
-        layer_no = 1
-        current_hidden = None
-        current_dropped = input_layer
-        in_dimension = None
+    def add_hidden_layers(self,input_layer, input_dimension, keep_prob, layer_dimensions):
+        """ Add fully connected hidden layers each with an additional dropout layer
+         (makes the network robust against overfitting).
+
+        The additional dropped layer will randomly drop samples according to the
+         keep probability, i.e. 1 means all samples are keppt, 0 means all samples
+         are dropped.
+
+        :param input_layer: reference to the input layer
+        :param input_dimension: number of nodes in `input_layer`
+        :param keep_prob: reference to the placeholder with the *keep probability* for the dropped layer
+        :param layer_dimensions: list of ints giving the number of nodes of each hidden layer
+        :return: reference to the last layer created
+        """
+        last_layer = input_layer
         out_dimension = input_dimension
         for i in range(len(layer_dimensions)):
             number = str(i + 1)
             in_dimension = out_dimension
             out_dimension = layer_dimensions[i]
             layer_name = "layer" + number
-            current_hidden = self.nn_layer(current_dropped, in_dimension, out_dimension, layer_name)
+            current_hidden = self.nn_layer(last_layer, in_dimension, out_dimension, layer_name)
             # print(layer_name + " is " + str(current_hidden.get_shape()))
 
             with tf.name_scope('dropout'):
-                current_dropped = tf.nn.dropout(current_hidden, keep_prob)
-            print("dropped" + number + " is " + str(current_dropped.get_shape()))
+                last_layer = tf.nn.dropout(current_hidden, keep_prob)
+            # print("dropped" + number + " is " + str(last_layer.get_shape()))
 
-        return current_dropped, out_dimension
+        return last_layer
 
     def add_keep_probability(self):
+        """ Adds a placeholder node for the keep probability of dropped layers.
+
+        See :method:`neuralnetwork.add_hidden_layers`
+
+        :return: reference to created node
+        """
         keep_prob = tf.placeholder(tf.float32)
         self.placeholder_nodes['keep_prob'] = keep_prob
         with tf.name_scope('dropout'):
@@ -136,6 +237,15 @@ class neuralnetwork(object):
         return keep_prob
 
     def add_writers(self, sess, log_dir):
+        """ Adds log writers.
+
+        Logs allow to visualize and debug the computational graph using
+        TensorBoard (part of the Tensorflow package). Logs are files written
+        to disk that contain all summary information.
+
+        :param sess: Tensorflow Session
+        :param log_dir: string giving directory to write files to
+        """
         train_writer = tf.summary.FileWriter(log_dir + '/train', sess.graph)
         self.summary_nodes["train_writer"] = train_writer
         test_writer = tf.summary.FileWriter(log_dir + '/test')
@@ -143,46 +253,38 @@ class neuralnetwork(object):
         
     @staticmethod
     def init_graph(sess):
+        """ Initializes global variables in the computational graph.
+
+        :param sess: Tensorflow Session
+        """
         # print ("Initializing global variables")
         sess.run(tf.global_variables_initializer())
 
-    def add_graphing_train(self):
-        # print("Adding graphing nodes")
-        plot_buf_test = tf.placeholder(tf.string)
-        self.summary_nodes["plot_buf_test"] = plot_buf_test
-        image_test = tf.image.decode_png(plot_buf_test, channels=4)
-        image_test = tf.expand_dims(image_test, 0) # make it batched
-        plot_image_summary_test = tf.summary.image('test', image_test, max_outputs=1)
-        self.summary_nodes["plot_image_summary_test"] = plot_image_summary_test
-
-    def graph_truth(self, sess, data, labels, sample_size):
-        plot_buf_truth = tf.placeholder(tf.string)
-        image_truth = tf.image.decode_png(plot_buf_truth, channels=4)
-        image_truth = tf.expand_dims(image_truth, 0) # make it batched
-        plot_image_summary_truth = tf.summary.image('truth', image_truth, max_outputs=1)
-        self.summary_nodes["plot_image_summary_truth"] = plot_image_summary_truth
-        plot_buf = self.get_plot_buf(data, labels, sample_size)
-        plot_image_summary_ = sess.run(
-            plot_image_summary_truth,
-            feed_dict={plot_buf_truth: plot_buf.getvalue()})
-        test_writer = self.get("test_writer")
-        test_writer.add_summary(plot_image_summary_, global_step=0)
-
     @staticmethod
     def weight_variable(shape):
-        """Create a weight variable with appropriate initialization."""
+        """Create a weight variable, uniform randomly initialized in [-0.5, 0.5].
+
+        :param shape: shape of the weight tensor to create
+        """
         initial = tf.random_uniform(shape, minval=-0.5, maxval=0.5)
         return tf.Variable(initial)
 
     @staticmethod
     def bias_variable(shape):
-        """Create a bias variable with appropriate initialization."""
+        """Create a bias variable with appropriate initialization.
+
+        :param shape: shape of the weight tensor to create
+        """
         initial = tf.constant(0.1, shape=shape)
         return tf.Variable(initial)
 
     @staticmethod
     def variable_summaries(var):
-        """Attach a lot of summaries to a Tensor (for TensorBoard visualization)."""
+        """ Attach a lot of summaries (mean, stddev, min, max) to a given tensor
+        for TensorBoard visualization.
+
+        :param var: ref to the tensor variable to summarize
+        """
         with tf.name_scope('summaries'):
             mean = tf.reduce_mean(var)
             tf.summary.scalar('mean', mean)
@@ -200,6 +302,13 @@ class neuralnetwork(object):
         It does a matrix multiply, bias add, and then uses ReLU to nonlinearize.
         It also sets up name scoping so that the resultant graph is easy to read,
         and adds a number of summary ops.
+
+        :param input_tensor: reference to input layer for this layer
+        :param input_dim: number of nodes in `input_layer`
+        :param output_dim: number of nodes in the created layer
+        :param layer_name: created layer's name
+        :param act: activation function to use for the nodes in the created layer
+        :return: reference to the created layer
         """
         print("Creating nn layer %s with %d, %d" % (layer_name, input_dim, output_dim))
         # Adding a name scope ensures logical grouping of the layers in the graph.
@@ -222,21 +331,3 @@ class neuralnetwork(object):
                 activations = act(preactivate, name='activation')
                 tf.summary.histogram('activations', activations)
                 return activations
-
-    @staticmethod
-    def get_plot_buf(input_data, input_labels, dimension):
-        ''' Plots labelled scatter data using matplotlib and returns the created
-        PNG as a text buffer
-        
-        This is taken from https://stackoverflow.com/questions/41356093
-        '''
-        plt.figure()
-        plt.scatter([val[0] for val in input_data], [val[1] for val in input_data],
-                    s=dimension,
-                    c=[('r' if (label[0] > 0.) else 'b') for label in input_labels])
-                    # c=input_labels)
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png')
-        plt.close()
-        buf.seek(0)
-        return buf
