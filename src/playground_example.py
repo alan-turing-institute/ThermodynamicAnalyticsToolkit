@@ -1,4 +1,4 @@
-#!/usr/bion/pyton3
+#!/usr/bin/env python3
 #
 # This a command-line version of some of the features found under
 # http://playground.tensorflow.org/
@@ -230,6 +230,13 @@ if __name__ == '__main__':
         help='Seed to use for random number generators.')
     parser.add_argument('--trajectory_file', type=str, default=None,
         help='CSV file name to output trajectories of sampling, i.e. weights and evaluated loss function.')
+    parser.add_argument('--version', action="store_true",
+        help='Gives version information')
     FLAGS, unparsed = parser.parse_known_args()
+
+    if FLAGS.version:
+        # give version and exit
+        print(sys.argv[0]+" version 0.1")
+        sys.exit(0)
 tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
 
