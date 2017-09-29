@@ -1,17 +1,18 @@
 import tensorflow as tf
 import matplotlib as mpl
-mpl.use('Agg')  # no display
 import matplotlib.pyplot as plt
 import io
-
 from sgldsampler import SGLDSampler as sgld
 
-class neuralnetwork:
+mpl.use('Agg')  # no display
+
+class neuralnetwork(object):
     ''' This class encapsulates the construction of the neural network.
     '''
     
     placeholder_nodes = {}
     summary_nodes = {}
+
 
     def get(self, keyname):
         ''' This is just a short hand to access the summary nodes dict.
@@ -33,46 +34,38 @@ class neuralnetwork:
         if seed is not None:
             tf.set_random_seed(seed)
 
+        y_ = self.add_true_labels(output_dimension)
+        keep_prob = self.add_keep_probability()
+        current_dropped, hidden_out_dimension = \
+            self.add_hidden_layers(input_dimension, input_layer,
+                                   keep_prob, layer_dimensions)
+        y = self.add_output_layer(current_dropped, hidden_out_dimension, output_dimension)
+
+        # print ("Creating summaries")
+        loss = self.add_loss_summary(y, y_)
+        self.add_accuracy_summary(y, y_)
+        merged = tf.summary.merge_all()  # Merge all the summaries
+        self.summary_nodes['merged'] = merged
+
+        self.add_train_method(loss, noise_scale, optimizer, seed)
+
+    def add_true_labels(self, output_dimension):
         y_ = tf.placeholder(tf.float32, [None, output_dimension], name='y-input')
-        print("y_ is "+str(y_.get_shape()))
+        # print("y_ is "+str(y_.get_shape()))
         self.placeholder_nodes['y_'] = y_
+        return y_
 
-        keep_prob = tf.placeholder(tf.float32)
-        self.placeholder_nodes['keep_prob'] = keep_prob
-        with tf.name_scope('dropout'):
-            tf.summary.scalar('dropout_keep_probability', keep_prob)
+    def add_accuracy_summary(self, y, y_):
+        with tf.name_scope('accuracy'):
+            with tf.name_scope('correct_prediction'):
+                correct_prediction = tf.equal(tf.sign(y), tf.sign(y_))
+                self.summary_nodes['correct_prediction'] = correct_prediction
+            with tf.name_scope('accuracy'):
+                accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+                self.summary_nodes['accuracy'] = accuracy
+        tf.summary.scalar('accuracy', accuracy)
 
-        layer_no=1
-        current_hidden = None
-        current_dropped = input_layer
-        in_dimension = None
-        out_dimension = input_dimension
-        for i in range(len(layer_dimensions)):
-            number=str(i+1)
-            in_dimension = out_dimension
-            out_dimension = layer_dimensions[i]
-            layer_name = "layer"+number
-            current_hidden = self.nn_layer(current_dropped, in_dimension, out_dimension, layer_name)
-            print(layer_name+" is "+str(current_hidden.get_shape()))
-
-            with tf.name_scope('dropout'):
-                current_dropped = tf.nn.dropout(current_hidden, keep_prob)
-            print("dropped"+number+" is "+str(current_dropped.get_shape()))
-        
-        # Do not apply softmax activation yet, see below.
-        y = self.nn_layer(current_dropped, out_dimension, output_dimension, 'output', act=tf.nn.tanh)
-        self.summary_nodes['y'] = y
-        print("y is "+str(y.get_shape()))
-
-        print ("Creating summaries")
-        with tf.name_scope('loss'):
-            cross_entropy = tf.reduce_mean(-tf.reduce_sum(y_ * tf.log(y), reduction_indices=[1]))
-            with tf.name_scope('total'):
-                loss = tf.losses.mean_squared_error(labels=y_, predictions=y)
-                self.summary_nodes['loss'] = loss
-        tf.summary.scalar('loss', loss)
-        tf.summary.scalar('cross_entropy', cross_entropy)
-
+    def add_train_method(self, loss, noise_scale, optimizer, seed):
         with tf.name_scope('train'):
             learning_rate = tf.placeholder(tf.float32)
             tf.summary.scalar('learning_rate', learning_rate)
@@ -84,8 +77,8 @@ class neuralnetwork:
             learning_decay_power = tf.placeholder(tf.float32)
             self.placeholder_nodes['learning_decay_power'] = learning_decay_power
             if optimizer == "StochasticGradientLangevinDynamics":
-                train_rate = learning_rate*(tf.pow(
-                    1.+learning_rate*learning_decay*tf.cast(global_step, tf.float32),
+                train_rate = learning_rate * (tf.pow(
+                    1. + learning_rate * learning_decay * tf.cast(global_step, tf.float32),
                     learning_decay_power))
                 sgld_opt = sgld(train_rate, seed=seed, noise_scale=noise_scale)
                 train_step = sgld_opt.minimize(loss, global_step=global_step)
@@ -99,24 +92,49 @@ class neuralnetwork:
             self.summary_nodes['train_rate'] = train_rate
             self.summary_nodes['train_step'] = train_step
 
-        with tf.name_scope('accuracy'):
-            with tf.name_scope('correct_prediction'):
-                correct_prediction = tf.equal(tf.sign(y), tf.sign(y_))
-                self.summary_nodes['correct_prediction'] = correct_prediction
-            with tf.name_scope('accuracy'):
-                accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-                self.summary_nodes['accuracy'] = accuracy
-        tf.summary.scalar('accuracy', accuracy)
+    def add_loss_summary(self, y, y_):
+        with tf.name_scope('loss'):
+            cross_entropy = tf.reduce_mean(-tf.reduce_sum(y_ * tf.log(y), reduction_indices=[1]))
+            with tf.name_scope('total'):
+                loss = tf.losses.mean_squared_error(labels=y_, predictions=y)
+                self.summary_nodes['loss'] = loss
+        tf.summary.scalar('loss', loss)
+        tf.summary.scalar('cross_entropy', cross_entropy)
+        return loss
 
-        # Merge all the summaries and write them out to
-        # /tmp/tensorflow/mnist/logs/mnist_with_summaries (by default)
-        merged = tf.summary.merge_all()
-        self.summary_nodes['merged'] = merged
-        
-        # return global truth and dropout probability nodes as
-        # they need to be filled in
-        return y_, keep_prob
-        
+    def add_output_layer(self, current_dropped, hidden_out_dimension, output_dimension):
+        y = self.nn_layer(current_dropped, hidden_out_dimension, output_dimension, 'output', act=tf.nn.tanh)
+        self.summary_nodes['y'] = y
+        # print("y is " + str(y.get_shape()))
+        return y
+
+    def add_hidden_layers(self, input_dimension, input_layer, keep_prob, layer_dimensions):
+        layer_no = 1
+        current_hidden = None
+        current_dropped = input_layer
+        in_dimension = None
+        out_dimension = input_dimension
+        for i in range(len(layer_dimensions)):
+            number = str(i + 1)
+            in_dimension = out_dimension
+            out_dimension = layer_dimensions[i]
+            layer_name = "layer" + number
+            current_hidden = self.nn_layer(current_dropped, in_dimension, out_dimension, layer_name)
+            # print(layer_name + " is " + str(current_hidden.get_shape()))
+
+            with tf.name_scope('dropout'):
+                current_dropped = tf.nn.dropout(current_hidden, keep_prob)
+            print("dropped" + number + " is " + str(current_dropped.get_shape()))
+
+        return current_dropped, out_dimension
+
+    def add_keep_probability(self):
+        keep_prob = tf.placeholder(tf.float32)
+        self.placeholder_nodes['keep_prob'] = keep_prob
+        with tf.name_scope('dropout'):
+            tf.summary.scalar('dropout_keep_probability', keep_prob)
+        return keep_prob
+
     def add_writers(self, sess, log_dir):
         train_writer = tf.summary.FileWriter(log_dir + '/train', sess.graph)
         self.summary_nodes["train_writer"] = train_writer
@@ -125,11 +143,11 @@ class neuralnetwork:
         
     @staticmethod
     def init_graph(sess):
-        print ("Initializing global variables")
+        # print ("Initializing global variables")
         sess.run(tf.global_variables_initializer())
 
     def add_graphing_train(self):
-        print("Adding graphing nodes")       
+        # print("Adding graphing nodes")
         plot_buf_test = tf.placeholder(tf.string)
         self.summary_nodes["plot_buf_test"] = plot_buf_test
         image_test = tf.image.decode_png(plot_buf_test, channels=4)
@@ -216,7 +234,7 @@ class neuralnetwork:
         plt.scatter([val[0] for val in input_data], [val[1] for val in input_data],
                     s=dimension,
                     c=[('r' if (label[0] > 0.) else 'b') for label in input_labels])
-                    #c=input_labels)
+                    # c=input_labels)
         buf = io.BytesIO()
         plt.savefig(buf, format='png')
         plt.close()

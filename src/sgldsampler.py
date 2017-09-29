@@ -32,7 +32,7 @@ class SGLDSampler(optimizer.Optimizer):
             random_noise = tf.random_normal(grad.get_shape(), mean=0.,stddev=lr_t)
         else:
             random_noise = tf.random_normal(grad.get_shape(), mean=0., stddev=lr_t, seed=self._seed)
-        print("random_noise has shape "+str(random_noise.get_shape())+" with seed "+str(self._seed))
+        #print("random_noise has shape "+str(random_noise.get_shape())+" with seed "+str(self._seed))
         self.random_noise = tf.norm(random_noise)
         tf.summary.scalar('noise', self.random_noise)
 

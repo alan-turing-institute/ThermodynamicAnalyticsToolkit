@@ -59,12 +59,14 @@ def main(_):
     input_dimension = 2
     output_dimension = 1
     xinput, x = create_input_layer(input_dimension, FLAGS.input_columns)
-    y_, keep_prob = nn.create(
+    nn.create(
         x,
         len(FLAGS.input_columns), FLAGS.hidden_dimension, output_dimension,
         optimizer=FLAGS.optimizer,
         seed=FLAGS.seed,
         noise_scale=FLAGS.noise_scale)
+    y_ = nn.get("y_")
+    keep_prob = nn.get("keep_prob")
 
     print("Starting session")
     sess = tf.Session()
