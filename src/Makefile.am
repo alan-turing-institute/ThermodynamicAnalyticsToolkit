@@ -11,6 +11,7 @@ $(srcdir)/.git-version: FORCE
 	fi
 
 bin_SCRIPTS = \
+    DatasetWriter \
 	DDSampler \
 	DDSOptimizer \
 	DDSAnalyser \
@@ -19,6 +20,7 @@ bin_SCRIPTS = \
 CLEANFILES = $(bin_SCRIPTS)
 EXTRA_DIST = \
 	$(srcdir)/.git-version \
+    DatasetWriter.in \
 	DDSampler.in \
 	DDSOptimizer.in \
 	DDSAnalyser.in \
@@ -28,6 +30,10 @@ do_substitution = sed -e 's,[@]pythondir[@],$(pythondir),g' \
 	-e 's,[@]PACKAGE[@],$(PACKAGE),g' \
 	-e 's,[@]PYTHON[@],$(PYTHON),g' \
 	-e 's,[@]VERSION[@],$(VERSION),g' 
+
+DatasetWriter: DatasetWriter.in Makefile
+	$(do_substitution) < $(srcdir)/DatasetWriter.in > DatasetWriter
+	chmod +x DatasetWriter
 
 DDSampler: DDSampler.in Makefile
 	$(do_substitution) < $(srcdir)/DDSampler.in > DDSampler
