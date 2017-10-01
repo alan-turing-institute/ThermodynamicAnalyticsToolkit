@@ -47,8 +47,9 @@ def main(_):
         seed=FLAGS.seed,
         add_dropped_layer=False)
     y_ = nn.get("y_")
-    step_width = nn.get("step_width")
     inverse_temperature = nn.get("inverse_temperature")
+    friction_constant = nn.get("friction_constant")
+    step_width = nn.get("step_width")
 
     sess = tf.Session()
     nn.init_graph(sess)
@@ -60,6 +61,8 @@ def main(_):
         csv_writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         if FLAGS.sampler == "StochasticGradientLangevinDynamics":
             csv_writer.writerow(['step', 'epoch', 'accuracy', 'loss', 'noise', 'scaled_gradient', 'scaled_noise'])
+        elif FLAGS.sampler == "StochasticMomentumLangevin":
+            csv_writer.writerow(['step', 'epoch', 'accuracy', 'loss', 'noise', 'momentum', 'scaled_momentum', 'scaled_gradient', 'scaled_noise'])
         else:
             csv_writer.writerow(['step', 'epoch', 'accuracy', 'loss'])
 
@@ -74,6 +77,7 @@ def main(_):
     test_nodes = list(map(lambda key: nn.get(key), [
         "merged", "train_step", "accuracy", "global_step", "loss", "y_", "y"]))
     noise_nodes = list(map(lambda key: nn.get(key), ["random_noise", "scaled_gradient", "scaled_noise"]))
+    mom_noise_nodes = list(map(lambda key: nn.get(key), ["random_noise", "momentum", "scaled_momentum", "scaled_gradient", "scaled_noise"]))
     print("Starting to train")
     for i in range(FLAGS.max_steps):
         print("Current step is "+str(i))
@@ -83,14 +87,16 @@ def main(_):
             test_nodes,
             feed_dict={
                 xinput: test_xs, y_: test_ys,
-                step_width: FLAGS.step_width, inverse_temperature: FLAGS.inverse_temperature
+                step_width: FLAGS.step_width, inverse_temperature: FLAGS.inverse_temperature,
+                        friction_constant: FLAGS.friction_constant
         })
         if do_write_trajectory_file:
             weights_eval = sess.run(
                 nn.get("weights"),
                 feed_dict={
                     xinput: test_xs, y_: test_ys,
-                    step_width: FLAGS.step_width, inverse_temperature: FLAGS.inverse_temperature
+                    step_width: FLAGS.step_width, inverse_temperature: FLAGS.inverse_temperature,
+                        friction_constant: FLAGS.friction_constant
                 })
             trajectory_writer.writerow(
                 [i, loss_eval] + [item for sublist in weights_eval for item in sublist])
@@ -101,9 +107,20 @@ def main(_):
                     noise_nodes,
                     feed_dict={
                         xinput: test_xs, y_: test_ys,
-                        step_width: FLAGS.step_width, inverse_temperature: FLAGS.inverse_temperature
+                        step_width: FLAGS.step_width, inverse_temperature: FLAGS.inverse_temperature,
+                        friction_constant: FLAGS.friction_constant
                     })
                 csv_writer.writerow([global_step, i, acc, loss_eval, noise, scaled_grad, scaled_noise])
+            elif FLAGS.sampler == "StochasticMomentumLangevin":
+                noise, momentum, scaled_mom, scaled_grad, scaled_noise = sess.run(
+                    mom_noise_nodes,
+                    feed_dict={
+                        xinput: test_xs, y_: test_ys,
+                        step_width: FLAGS.step_width, inverse_temperature: FLAGS.inverse_temperature,
+                        friction_constant: FLAGS.friction_constant
+                    })
+                csv_writer.writerow([global_step, i, acc, loss_eval,
+                                     noise, momentum, scaled_mom, scaled_grad, scaled_noise])
             else:
                 csv_writer.writerow([global_step, i, acc, loss_eval])
 
@@ -128,6 +145,8 @@ if __name__ == '__main__':
         help='Number P of samples (Y^i,X^i)^P_{i=1} to generate for the desired dataset type.')
     parser.add_argument('--dropout', type=float, default=0.9,
         help='Keep probability for training dropout, e.g. 0.9')
+    parser.add_argument('--friction_constant', type=float, default=0.,
+        help='friction to scale the influence of momenta')
     parser.add_argument('--hidden_dimension', type=str, nargs='+', default=[],
         help='Dimension of each hidden layer, e.g. 8 8 for two hidden layers each with 8 nodes fully connected')
     parser.add_argument('--input_columns', type=str, nargs='+', default="1 2",

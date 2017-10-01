@@ -1,5 +1,6 @@
 import tensorflow as tf
 from sgldsampler import SGLDSampler as sgld
+from SGLDMomentumSampler import SGLDMomentumSampler as sgld_momentum
 
 
 class NeuralNetwork(object):
@@ -140,24 +141,37 @@ class NeuralNetwork(object):
         :param seed: seed value for the random number generator to obtain reproducible runs
         """
         with tf.name_scope('train'):
+            # DON'T add placeholders only sometimes, e.g. when only a specific sampler
+            # requires it. Always add them and only sometimes use them!
             step_width = tf.placeholder(tf.float32)
             tf.summary.scalar('step_width', step_width)
             self.placeholder_nodes['step_width'] = step_width
             inverse_temperature = tf.placeholder(tf.float32)
             tf.summary.scalar('inverse_temperature', inverse_temperature)
             self.placeholder_nodes['inverse_temperature'] = inverse_temperature
+            friction_constant = tf.placeholder(tf.float32)
+            tf.summary.scalar('friction_constant', friction_constant)
+            self.placeholder_nodes['friction_constant'] = friction_constant
 
             global_step = tf.Variable(0, trainable=False)
             self.summary_nodes['global_step'] = global_step
             if optimizer == "StochasticGradientLangevinDynamics":
-                sgld_opt = sgld(step_width, inverse_temperature, seed=seed)
-                train_step = sgld_opt.minimize(loss, global_step=global_step)
-                self.summary_nodes['random_noise'] = sgld_opt.random_noise
-                self.summary_nodes['scaled_gradient'] = sgld_opt.scaled_gradient
-                self.summary_nodes['scaled_noise'] = sgld_opt.scaled_noise
+                sampler = sgld(step_width, inverse_temperature, seed=seed)
+            elif optimizer == "StochasticMomentumLangevin":
+                sampler = sgld_momentum(step_width, inverse_temperature, friction_constant, seed=seed)
             else:
                 raise NotImplementedError("Unknown optimizer")
-            self.summary_nodes['train_step'] = train_step
+            train_step = sampler.minimize(loss, global_step=global_step)
+            # DON'T put the nodes in there before the minimize call!
+            # only after minimize was .._apply_dense() called and the nodes are ready
+            if optimizer in ["StochasticGradientLangevinDynamics", "StochasticMomentumLangevin"]:
+                self.summary_nodes['random_noise'] = sampler.random_noise
+                self.summary_nodes['scaled_gradient'] = sampler.scaled_gradient
+                self.summary_nodes['scaled_noise'] = sampler.scaled_noise
+                self.summary_nodes['train_step'] = train_step
+            if optimizer == "StochasticMomentumLangevin":
+                self.summary_nodes['scaled_momentum'] = sampler.scaled_momentum
+                self.summary_nodes['momentum'] = sampler.momentum
 
     def add_loss_summary(self, y, y_):
         """ Add nodes to the graph to calculate a loss for the dataset.
@@ -263,7 +277,9 @@ class NeuralNetwork(object):
         :param sess: Tensorflow Session
         """
         # print ("Initializing global variables")
-        sess.run(tf.global_variables_initializer())
+        sess.run([tf.global_variables_initializer(),
+                  tf.local_variables_initializer()]
+        )
 
     @staticmethod
     def weight_variable(shape):
