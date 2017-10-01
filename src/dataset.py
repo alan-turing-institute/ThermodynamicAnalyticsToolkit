@@ -32,9 +32,20 @@ class Dataset:
         """
         self.xs = xs
         self.ys = ys
+        self.set_test_train_ratio(0.5)
         self.slice_index = math.floor(len(self.xs) * self.test_train_ratio)
         # shuffle once to prevent and undistributed testset
         self.shuffle()
+
+    def set_test_train_ratio(self, ratio):
+        """ Sets the test/train ratio of the dataset, i.e. where to split.
+
+        This basically set the slice_index.
+
+        :param ratio: ratio in [0,1]
+        """
+        self.test_train_ratio = ratio
+        self.slice_index = math.floor(len(self.xs) * self.test_train_ratio)
 
     def get_testset(self):
         """ Returns the current testset set for this epoch as a whole.
