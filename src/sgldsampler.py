@@ -49,6 +49,25 @@ class SGLDSampler(optimizer.Optimizer):
         """
         pass
 
+    def _prepare_dense(self, grad, var):
+        """ Stuff common to all Langevin samplers.
+
+        :param grad: gradient nodes, i.e. they contain the gradient per parameter in `var`
+        :param var: parameters of the neural network
+        :return: step_width, inverse_temperature, and noise tensors
+        """
+        step_width_t = math_ops.cast(self._step_width_t, var.dtype.base_dtype)
+        inverse_temperature_t = math_ops.cast(self._inverse_temperature_t, var.dtype.base_dtype)
+        #print("lr_t is "+str(self._lr))
+        if self._seed is None:
+            random_noise_t = tf.random_normal(grad.get_shape(), mean=0.,stddev=1.)
+        else:
+            random_noise_t = tf.random_normal(grad.get_shape(), mean=0., stddev=1., seed=self._seed)
+        #print("random_noise_t has shape "+str(random_noise_t.get_shape())+" with seed "+str(self._seed))
+        self.random_noise = tf.norm(random_noise_t)
+        tf.summary.scalar('noise', self.random_noise)
+        return step_width_t, inverse_temperature_t, random_noise_t
+
     def _apply_dense(self, grad, var):
         """ Adds nodes to TensorFlow's computational graph in the case of densely
         occupied tensors to perform the actual sampling.
@@ -61,22 +80,12 @@ class SGLDSampler(optimizer.Optimizer):
         :param var: parameters of the neural network
         :return: a group of operations to be added to the graph
         """
-        step_width_t = math_ops.cast(self._step_width_t, var.dtype.base_dtype)
-        inverse_temperature_t = math_ops.cast(self._inverse_temperature_t, var.dtype.base_dtype)
-        #print("lr_t is "+str(self._lr))
-        if self._seed is None:
-            random_noise = tf.random_normal(grad.get_shape(), mean=0.,stddev=1.)
-        else:
-            random_noise = tf.random_normal(grad.get_shape(), mean=0., stddev=1., seed=self._seed)
-        #print("random_noise has shape "+str(random_noise.get_shape())+" with seed "+str(self._seed))
-        self.random_noise = tf.norm(random_noise)
-        tf.summary.scalar('noise', self.random_noise)
-
+        step_width_t, inverse_temperature_t, random_noise_t = self._prepare_dense(grad, var)
         scaled_gradient = step_width_t * grad
         self.scaled_gradient = tf.norm(scaled_gradient)
         tf.summary.scalar('scaled_gradient', self.scaled_gradient)
 
-        scaled_noise = tf.sqrt(2.*step_width_t/inverse_temperature_t) * random_noise
+        scaled_noise = tf.sqrt(2.*step_width_t/inverse_temperature_t) * random_noise_t
         self.scaled_noise = tf.norm(scaled_noise)
         tf.summary.scalar('scaled_noise', self.scaled_noise)
 
