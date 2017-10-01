@@ -76,10 +76,13 @@ class NeuralNetwork(object):
 
         y_ = self.add_true_labels(output_dimension)
         keep_prob = self.add_keep_probability()
-        last_hidden_layer = \
-            self.add_hidden_layers(input_layer, input_dimension,
-                                   keep_prob, layer_dimensions)
-        y = self.add_output_layer(last_hidden_layer, layer_dimensions[-1], output_dimension)
+        if layer_dimensions is not None and len(layer_dimensions) != 0:
+            last_hidden_layer = \
+                self.add_hidden_layers(input_layer, input_dimension,
+                                       keep_prob, layer_dimensions)
+            y = self.add_output_layer(last_hidden_layer, layer_dimensions[-1], output_dimension)
+        else:
+            y = self.add_output_layer(input_layer, input_dimension, output_dimension)
 
         # print ("Creating summaries")
         loss = self.add_loss_summary(y, y_)
