@@ -76,7 +76,7 @@ class SGLDSampler(optimizer.Optimizer):
         self.scaled_gradient = tf.norm(scaled_gradient)
         tf.summary.scalar('scaled_gradient', self.scaled_gradient)
 
-        scaled_noise = tf.sqrt(2.*step_width_t/inverse_temperature_t) * self.random_noise
+        scaled_noise = tf.sqrt(2.*step_width_t/inverse_temperature_t) * random_noise
         self.scaled_noise = tf.norm(scaled_noise)
         tf.summary.scalar('scaled_noise', self.scaled_noise)
 
