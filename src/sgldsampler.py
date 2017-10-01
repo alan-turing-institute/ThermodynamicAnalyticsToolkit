@@ -10,28 +10,35 @@ import tensorflow as tf
 class SGLDSampler(optimizer.Optimizer):
     """ Implements a Stochastic Gradient Langevin Dynamics Sampler
     in the form of a TensorFlow Optimizer, overriding tensorflow.python.training.Optimizer.
+
+    We have the upgrade as: %\Delta\Theta = - \nabla \beta U(\Theta) \Delta t + \sqrt{\Delta t} N$,
+    where $\beta$ is the inverse temperature coefficient, $\Delta t$ is the (discretization)
+    step width and $\Theta$ is the parameter vector and $U(\Theta)$ the energy or loss function.
     """
-    def __init__(self, learning_rate, noise_scale=1., seed=None, use_locking=False, name='SGLDSampler'):
+    def __init__(self, step_width, inverse_temperature, seed=None, use_locking=False, name='SGLDSampler'):
         """ Init function for this class.
 
-        :param learning_rate: learning_rate, i.e. step width for optimizer to use
-        :param noise_scale: scale of injected noise to gradients, 0. deactivates it
+        :param step_width: step width for gradient, also affects inject noise
+        :param inverse_temperature: scale for gradients
         :param seed: seed value of the random number generator for generating reproducible runs
         :param use_locking: whether to lock in the context of multi-threaded operations
         :param name: internal name of optimizer
         """
         super(SGLDSampler, self).__init__(use_locking, name)
-        self._lr = learning_rate
+        self._step_width = step_width
         self._seed = seed
         self.random_noise = None
-        self._noise_scale = noise_scale
+        self.scaled_gradient = None
+        self.scaled_noise = None
+        self._inverse_temperature = inverse_temperature
     
     def _prepare(self):
-        """ Converts learning rate into a tensor, if given as a floating-point
+        """ Converts step width into a tensor, if given as a floating-point
         number.
         """
-        self._lr_t = ops.convert_to_tensor(self._lr, name="learning_rate")
-    
+        self._step_width_t = ops.convert_to_tensor(self._step_width, name="step_width")
+        self._inverse_temperature_t = ops.convert_to_tensor(self._inverse_temperature, name="inverse_temperature")
+
     def _create_slots(self, var_list):
         """ Slots are internal resources for the Optimizer to store values
         that are required and modified during each iteration.
@@ -54,7 +61,8 @@ class SGLDSampler(optimizer.Optimizer):
         :param var: parameters of the neural network
         :return: a group of operations to be added to the graph
         """
-        lr_t = math_ops.cast(self._lr_t, var.dtype.base_dtype)
+        step_width_t = math_ops.cast(self._step_width_t, var.dtype.base_dtype)
+        inverse_temperature_t = math_ops.cast(self._inverse_temperature_t, var.dtype.base_dtype)
         #print("lr_t is "+str(self._lr))
         if self._seed is None:
             random_noise = tf.random_normal(grad.get_shape(), mean=0.,stddev=1.)
@@ -64,9 +72,15 @@ class SGLDSampler(optimizer.Optimizer):
         self.random_noise = tf.norm(random_noise)
         tf.summary.scalar('noise', self.random_noise)
 
-        var_update = state_ops.assign_sub(var,
-                                          lr_t/2. * grad
-                                          + tf.constant(self._noise_scale, tf.float32) * self.random_noise)
+        scaled_gradient = step_width_t * grad
+        self.scaled_gradient = tf.norm(scaled_gradient)
+        tf.summary.scalar('scaled_gradient', self.scaled_gradient)
+
+        scaled_noise = tf.sqrt(2.*step_width_t/inverse_temperature_t) * self.random_noise
+        self.scaled_noise = tf.norm(scaled_noise)
+        tf.summary.scalar('scaled_noise', self.scaled_noise)
+
+        var_update = state_ops.assign_sub(var, scaled_gradient + scaled_noise)
         return control_flow_ops.group(*[var_update])
 
     def _apply_sparse(self, grad, var):

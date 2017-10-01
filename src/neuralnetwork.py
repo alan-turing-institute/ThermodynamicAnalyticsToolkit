@@ -56,7 +56,7 @@ class NeuralNetwork(object):
 
     def create(self, input_layer,
                input_dimension, layer_dimensions, output_dimension,
-               optimizer, seed=None, noise_scale=1.,
+               optimizer, seed=None,
                add_dropped_layer=False):
         """ Creates the neural network model according to the specifications.
 
@@ -71,7 +71,6 @@ class NeuralNetwork(object):
         :param output_dimension: the number of nodes in the output layer
         :param optimizer: name of optimizer to use
         :param seed: seed for reproducible random values
-        :param noise_scale: scale of injected noise
         :param add_dropped_layer: whether to add dropped layer or not to protect against overfitting
         """
         self.summary_nodes.clear()
@@ -97,7 +96,7 @@ class NeuralNetwork(object):
         merged = tf.summary.merge_all()  # Merge all the summaries
         self.summary_nodes['merged'] = merged
 
-        self.add_train_method(loss, noise_scale, optimizer, seed)
+        self.add_train_method(loss, optimizer, seed)
 
     def add_true_labels(self, output_dimension):
         """ Adds the known labels as placeholder nodes to the graph.
@@ -133,38 +132,31 @@ class NeuralNetwork(object):
                 self.summary_nodes['accuracy'] = accuracy
         tf.summary.scalar('accuracy', accuracy)
 
-    def add_train_method(self, loss, noise_scale, optimizer, seed):
+    def add_train_method(self, loss, optimizer, seed):
         """ Adds nodes for training the neural network.
 
         :param loss: node for the desired loss function to minimize during training
-        :param noise_scale: scaling factor for the injected noise, 0. disables it
         :param optimizer: name of the optimizer method, e.g. GradientDescent
         :param seed: seed value for the random number generator to obtain reproducible runs
         """
         with tf.name_scope('train'):
-            learning_rate = tf.placeholder(tf.float32)
-            tf.summary.scalar('learning_rate', learning_rate)
-            self.placeholder_nodes['learning_rate'] = learning_rate
+            step_width = tf.placeholder(tf.float32)
+            tf.summary.scalar('step_width', step_width)
+            self.placeholder_nodes['step_width'] = step_width
+            inverse_temperature = tf.placeholder(tf.float32)
+            tf.summary.scalar('inverse_temperature', inverse_temperature)
+            self.placeholder_nodes['inverse_temperature'] = inverse_temperature
+
             global_step = tf.Variable(0, trainable=False)
             self.summary_nodes['global_step'] = global_step
-            learning_decay = tf.placeholder(tf.float32)
-            self.placeholder_nodes['learning_decay'] = learning_decay
-            learning_decay_power = tf.placeholder(tf.float32)
-            self.placeholder_nodes['learning_decay_power'] = learning_decay_power
             if optimizer == "StochasticGradientLangevinDynamics":
-                train_rate = learning_rate * (tf.pow(
-                    1. + learning_rate * learning_decay * tf.cast(global_step, tf.float32),
-                    learning_decay_power))
-                sgld_opt = sgld(train_rate, seed=seed, noise_scale=noise_scale)
+                sgld_opt = sgld(step_width, inverse_temperature, seed=seed)
                 train_step = sgld_opt.minimize(loss, global_step=global_step)
                 self.summary_nodes['random_noise'] = sgld_opt.random_noise
-            elif optimizer == "GradientDescent":
-                train_rate = learning_rate
-                train_step = tf.train.GradientDescentOptimizer(train_rate).minimize(loss, global_step=global_step)
+                self.summary_nodes['scaled_gradient'] = sgld_opt.scaled_gradient
+                self.summary_nodes['scaled_noise'] = sgld_opt.scaled_noise
             else:
                 raise NotImplementedError("Unknown optimizer")
-            tf.summary.scalar('train_rate', train_rate)
-            self.summary_nodes['train_rate'] = train_rate
             self.summary_nodes['train_step'] = train_step
 
     def add_loss_summary(self, y, y_):
