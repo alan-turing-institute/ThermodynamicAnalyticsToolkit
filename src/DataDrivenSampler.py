@@ -45,9 +45,9 @@ def main(_):
         len(input_columns), hidden_dimension, output_dimension,
         optimizer=FLAGS.optimizer,
         seed=FLAGS.seed,
-        noise_scale=FLAGS.noise_scale)
+        noise_scale=FLAGS.noise_scale,
+        add_dropped_layer=False)
     y_ = nn.get("y_")
-    keep_prob = nn.get("keep_prob")
 
     sess = tf.Session()
     nn.init_graph(sess)
@@ -75,7 +75,6 @@ def main(_):
             test_nodes,
             feed_dict={
                 xinput: test_xs, y_: test_ys,
-                keep_prob: 1.,
                 learning_decay: FLAGS.learning_decay, learning_decay_power: FLAGS.learning_decay_power,
                 learning_rate: FLAGS.learning_rate
         })
@@ -84,7 +83,6 @@ def main(_):
                 nn.get("weights"),
                 feed_dict={
                     xinput: test_xs, y_: test_ys,
-                    keep_prob: 1.,
                     learning_decay: FLAGS.learning_decay, learning_decay_power: FLAGS.learning_decay_power,
                     learning_rate: FLAGS.learning_rate
             })
