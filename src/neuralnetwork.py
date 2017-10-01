@@ -42,11 +42,11 @@ class NeuralNetwork(object):
 
 
     def get(self, keyname):
-        ''' Retrieve a node by name from the TensorFlow computational graph.
+        """ Retrieve a node by name from the TensorFlow computational graph.
 
         :param keyname: name of node to retrieve
         :return: node if found or None
-        '''
+        """
         if keyname in self.summary_nodes:
             return self.summary_nodes[keyname]
         elif keyname in self.placeholder_nodes:
@@ -56,8 +56,9 @@ class NeuralNetwork(object):
 
     def create(self, input_layer,
                input_dimension, layer_dimensions, output_dimension,
-               optimizer, seed=None, noise_scale=1.):
-        ''' Creates the neural network model according to the specifications.
+               optimizer, seed=None, noise_scale=1.,
+               add_dropped_layer=False):
+        """ Creates the neural network model according to the specifications.
 
         The `input_layer` needs to be given along with its input_dimension.
         The output_layer needs to be specified here as the summaries and
@@ -68,18 +69,24 @@ class NeuralNetwork(object):
         :param layer_dimensions: a list of ints giving the number of nodes for
             each hidden layer.
         :param output_dimension: the number of nodes in the output layer
-
-        '''
+        :param optimizer: name of optimizer to use
+        :param seed: seed for reproducible random values
+        :param noise_scale: scale of injected noise
+        :param add_dropped_layer: whether to add dropped layer or not to protect against overfitting
+        """
         self.summary_nodes.clear()
         if seed is not None:
             tf.set_random_seed(seed)
 
         y_ = self.add_true_labels(output_dimension)
-        keep_prob = self.add_keep_probability()
+        if add_dropped_layer:
+            keep_prob = self.add_keep_probability()
+        else:
+            keep_prob = None
         if layer_dimensions is not None and len(layer_dimensions) != 0:
             last_hidden_layer = \
                 self.add_hidden_layers(input_layer, input_dimension,
-                                       keep_prob, layer_dimensions)
+                                       layer_dimensions, keep_prob)
             y = self.add_output_layer(last_hidden_layer, layer_dimensions[-1], output_dimension)
         else:
             y = self.add_output_layer(input_layer, input_dimension, output_dimension)
@@ -196,7 +203,7 @@ class NeuralNetwork(object):
         # print("y is " + str(y.get_shape()))
         return y
 
-    def add_hidden_layers(self,input_layer, input_dimension, keep_prob, layer_dimensions):
+    def add_hidden_layers(self,input_layer, input_dimension, layer_dimensions, keep_prob = None):
         """ Add fully connected hidden layers each with an additional dropout layer
          (makes the network robust against overfitting).
 
@@ -220,8 +227,11 @@ class NeuralNetwork(object):
             current_hidden = self.nn_layer(last_layer, in_dimension, out_dimension, layer_name)
             # print(layer_name + " is " + str(current_hidden.get_shape()))
 
-            with tf.name_scope('dropout'):
-                last_layer = tf.nn.dropout(current_hidden, keep_prob)
+            if keep_prob is not None:
+                with tf.name_scope('dropout'):
+                    last_layer = tf.nn.dropout(current_hidden, keep_prob)
+            else:
+                last_layer = current_hidden
             # print("dropped" + number + " is " + str(last_layer.get_shape()))
 
         return last_layer
