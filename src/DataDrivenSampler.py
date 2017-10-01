@@ -53,6 +53,16 @@ def main(_):
     sess = tf.Session()
     nn.init_graph(sess)
 
+    do_write_csv_file = False
+    if FLAGS.csv_file is not None:
+        do_write_csv_file = True
+        csv_file = open(FLAGS.csv_file, 'w', newline='')
+        csv_writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        if FLAGS.sampler == "StochasticGradientLangevinDynamics":
+            csv_writer.writerow(['step', 'epoch', 'accuracy', 'loss', 'noise', 'scaled_gradient', 'scaled_noise'])
+        else:
+            csv_writer.writerow(['step', 'epoch', 'accuracy', 'loss'])
+
     do_write_trajectory_file = False
     if FLAGS.trajectory_file is not None:
         do_write_trajectory_file = True
@@ -85,10 +95,24 @@ def main(_):
             trajectory_writer.writerow(
                 [i, loss_eval] + [item for sublist in weights_eval for item in sublist])
 
-        print('Accuracy at step %s (%s): %s, using rate %s' % (i, global_step, acc, rate))
+        if do_write_csv_file:
+            if FLAGS.sampler == "StochasticGradientLangevinDynamics":
+                noise, scaled_grad, scaled_noise = sess.run(
+                    noise_nodes,
+                    feed_dict={
+                        xinput: test_xs, y_: test_ys,
+                        step_width: FLAGS.step_width, inverse_temperature: FLAGS.inverse_temperature
+                    })
+                csv_writer.writerow([global_step, i, acc, loss_eval, noise, scaled_grad, scaled_noise])
+            else:
+                csv_writer.writerow([global_step, i, acc, loss_eval])
+
+        print('Accuracy at step %s (%s): %s' % (i, global_step, acc))
         #print('Loss at step %s: %s' % (i, loss_eval))
         #print('y_ at step %s: %s' % (i, str(y_true_eval[0:9].transpose())))
         #print('y at step %s: %s' % (i, str(y_eval[0:9].transpose())))
+    if do_write_csv_file:
+        csv_file.close()
     if do_write_trajectory_file:
         trajectory_file.close()
     print("TRAINED.")
@@ -96,6 +120,8 @@ def main(_):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     # please adhere to alphabetical ordering
+    parser.add_argument('--csv_file', type=str, default=None,
+        help='CSV file name to output accuracy and loss values.')
     parser.add_argument('--data_type', type=int, default=DatasetGenerator.SPIRAL,
         help='Which data set to use: (0) two circles, (1) squares, (2) two clusters, (3) spiral.')
     parser.add_argument('--dimension', type=int, default=10,
