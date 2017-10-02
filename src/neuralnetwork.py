@@ -1,7 +1,7 @@
 import tensorflow as tf
-from sgldsampler import SGLDSampler as sgld
-from SGLDMomentumSampler import SGLDMomentumSampler as sgld_momentum
-from GradientDescent import GradientDescent
+from samplers.GradientDescent import GradientDescent
+from samplers.sgldsampler import SGLDSampler
+from samplers.SGLDMomentumSampler import SGLDMomentumSampler
 
 class NeuralNetwork(object):
     """ This class encapsulates the construction of the neural network.
@@ -159,9 +159,9 @@ class NeuralNetwork(object):
             global_step = tf.Variable(0, trainable=False)
             self.summary_nodes['global_step'] = global_step
             if sampling_method == "StochasticGradientLangevinDynamics":
-                sampler = sgld(step_width, inverse_temperature, seed=seed)
+                sampler = SGLDSampler(step_width, inverse_temperature, seed=seed)
             elif sampling_method == "StochasticMomentumLangevin":
-                sampler = sgld_momentum(step_width, inverse_temperature, friction_constant, seed=seed)
+                sampler = SGLDMomentumSampler(step_width, inverse_temperature, friction_constant, seed=seed)
             else:
                 raise NotImplementedError("Unknown optimizer")
             train_step = sampler.minimize(loss, global_step=global_step)
