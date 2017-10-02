@@ -70,9 +70,12 @@ def main(_):
     if FLAGS.trajectory_file is not None:
         do_write_trajectory_file = True
         no_weights = nn.get("weights").get_shape()[0]
+        no_biases = nn.get("biases").get_shape()[0]
         trajectory_file = open(FLAGS.trajectory_file, 'w', newline='')
         trajectory_writer = csv.writer(trajectory_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        trajectory_writer.writerow(['step', 'loss']+[str("weight")+str(i) for i in range(0,no_weights)])
+        trajectory_writer.writerow(['step', 'loss']
+                                   +[str("weight")+str(i) for i in range(0,no_weights)]
+                                   +[str("bias") + str(i) for i in range(0, no_biases)])
 
     test_nodes = list(map(lambda key: nn.get(key), [
         "merged", "train_step", "accuracy", "global_step", "loss", "y_", "y"]))
@@ -91,15 +94,17 @@ def main(_):
                         friction_constant: FLAGS.friction_constant
         })
         if do_write_trajectory_file:
-            weights_eval = sess.run(
-                nn.get("weights"),
+            weights_eval, biases_eval = sess.run(
+                [nn.get("weights"), nn.get("biases")],
                 feed_dict={
                     xinput: test_xs, y_: test_ys,
                     step_width: FLAGS.step_width, inverse_temperature: FLAGS.inverse_temperature,
                         friction_constant: FLAGS.friction_constant
                 })
             trajectory_writer.writerow(
-                [i, loss_eval] + [item for sublist in weights_eval for item in sublist])
+                [i, loss_eval]
+                + [item for sublist in weights_eval for item in sublist]
+                + [item for item in biases_eval])
 
         if do_write_csv_file:
             if FLAGS.sampler == "StochasticGradientLangevinDynamics":

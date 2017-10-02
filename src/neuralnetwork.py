@@ -343,6 +343,7 @@ class NeuralNetwork(object):
             with tf.name_scope('biases'):
                 biases = self.bias_variable([output_dim])
                 self.variable_summaries(biases)
+                self.summary_nodes["biases"] = biases
             with tf.name_scope('Wx_plus_b'):
                 preactivate = tf.matmul(input_tensor, weights) + biases
                 tf.summary.histogram('pre_activations', preactivate)
