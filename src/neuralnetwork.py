@@ -1,7 +1,7 @@
 import tensorflow as tf
 from sgldsampler import SGLDSampler as sgld
 from SGLDMomentumSampler import SGLDMomentumSampler as sgld_momentum
-
+from GradientDescent import GradientDescent
 
 class NeuralNetwork(object):
     """ This class encapsulates the construction of the neural network.
@@ -165,6 +165,7 @@ class NeuralNetwork(object):
             else:
                 raise NotImplementedError("Unknown optimizer")
             train_step = sampler.minimize(loss, global_step=global_step)
+
             # DON'T put the nodes in there before the minimize call!
             # only after minimize was .._apply_dense() called and the nodes are ready
             self.summary_nodes['train_step'] = train_step
@@ -191,11 +192,15 @@ class NeuralNetwork(object):
             global_step = tf.Variable(0, trainable=False)
             self.summary_nodes['global_step'] = global_step
             if optimizer_method == "GradientDescent":
-                optimizer = tf.train.GradientDescentOptimizer(step_width)
+                optimizer = GradientDescent(step_width)
             else:
                 raise NotImplementedError("Unknown optimizer_method")
             train_step = optimizer.minimize(loss, global_step=global_step)
+
+            # DON'T put the nodes in there before the minimize call!
+            # only after minimize was .._apply_dense() called and the nodes are ready
             self.summary_nodes['train_step'] = train_step
+            self.summary_nodes['scaled_gradient'] = optimizer.scaled_gradient
 
     def add_loss_summary(self, y, y_):
         """ Add nodes to the graph to calculate a loss for the dataset.

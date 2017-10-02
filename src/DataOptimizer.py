@@ -48,6 +48,7 @@ def main(_):
         add_dropped_layer=False)
     y_ = nn.get("y_")
     step_width = nn.get("step_width")
+    assert step_width is not None
 
     sess = tf.Session()
     nn.init_graph(sess)
@@ -57,7 +58,7 @@ def main(_):
         do_write_csv_file = True
         csv_file = open(FLAGS.csv_file, 'w', newline='')
         csv_writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        csv_writer.writerow(['step', 'epoch', 'accuracy', 'loss'])
+        csv_writer.writerow(['step', 'epoch', 'accuracy', 'loss', 'scaled_gradient'])
 
     do_write_trajectory_file = False
     if FLAGS.trajectory_file is not None:
@@ -71,13 +72,15 @@ def main(_):
                                    +[str("bias") + str(i) for i in range(0, no_biases)])
 
     test_nodes = list(map(lambda key: nn.get(key), [
-        "merged", "train_step", "accuracy", "global_step", "loss", "y_", "y"]))
+        "merged", "train_step", "accuracy", "global_step", "loss", "y_", "y", "scaled_gradient"]))
+    assert None not in test_nodes
     print("Starting to train")
     for i in range(FLAGS.max_steps):
         print("Current step is "+str(i))
         test_xs, test_ys = ds.get_testset()
+        assert not any(item is None for item in [test_xs, test_ys])
         # print("Testset is x: "+str(test_xs[0:5])+", y: "+str(test_ys[0:5]))
-        summary, _, acc, global_step, loss_eval, y_true_eval, y_eval = sess.run(
+        summary, _, acc, global_step, loss_eval, y_true_eval, y_eval, scaled_grad = sess.run(
             test_nodes,
             feed_dict={
                 xinput: test_xs, y_: test_ys,
@@ -86,14 +89,13 @@ def main(_):
 
         if i % FLAGS.every_nth == 0:
             if do_write_csv_file:
-                csv_writer.writerow([global_step, i, acc, loss_eval])
+                csv_writer.writerow([global_step, i, acc, loss_eval, scaled_grad])
             if do_write_trajectory_file:
                 weights_eval, biases_eval = sess.run(
                     [nn.get("weights"), nn.get("biases")],
                     feed_dict={
                         xinput: test_xs, y_: test_ys,
-                        step_width: FLAGS.step_width, inverse_temperature: FLAGS.inverse_temperature,
-                        friction_constant: FLAGS.friction_constant
+                        step_width: FLAGS.step_width
                     })
                 trajectory_writer.writerow(
                     [i, loss_eval]
