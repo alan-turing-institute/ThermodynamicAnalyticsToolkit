@@ -97,7 +97,10 @@ class NeuralNetwork(object):
         merged = tf.summary.merge_all()  # Merge all the summaries
         self.summary_nodes['merged'] = merged
 
-        self.add_train_method(loss, optimizer, seed)
+        if optimizer == "GradientDescent":
+            self.add_train_method_optimizer(loss, optimizer, seed)
+        else:
+            self.add_train_method_sampler(loss, optimizer, seed)
 
     def add_true_labels(self, output_dimension):
         """ Adds the known labels as placeholder nodes to the graph.
@@ -133,11 +136,11 @@ class NeuralNetwork(object):
                 self.summary_nodes['accuracy'] = accuracy
         tf.summary.scalar('accuracy', accuracy)
 
-    def add_train_method(self, loss, optimizer, seed):
+    def add_train_method_sampler(self, loss, sampling_method, seed):
         """ Adds nodes for training the neural network.
 
         :param loss: node for the desired loss function to minimize during training
-        :param optimizer: name of the optimizer method, e.g. GradientDescent
+        :param sampling_method: name of the sampler method, e.g. GradientDescent
         :param seed: seed value for the random number generator to obtain reproducible runs
         """
         with tf.name_scope('train'):
@@ -155,23 +158,44 @@ class NeuralNetwork(object):
 
             global_step = tf.Variable(0, trainable=False)
             self.summary_nodes['global_step'] = global_step
-            if optimizer == "StochasticGradientLangevinDynamics":
+            if sampling_method == "StochasticGradientLangevinDynamics":
                 sampler = sgld(step_width, inverse_temperature, seed=seed)
-            elif optimizer == "StochasticMomentumLangevin":
+            elif sampling_method == "StochasticMomentumLangevin":
                 sampler = sgld_momentum(step_width, inverse_temperature, friction_constant, seed=seed)
             else:
                 raise NotImplementedError("Unknown optimizer")
             train_step = sampler.minimize(loss, global_step=global_step)
             # DON'T put the nodes in there before the minimize call!
             # only after minimize was .._apply_dense() called and the nodes are ready
-            if optimizer in ["StochasticGradientLangevinDynamics", "StochasticMomentumLangevin"]:
-                self.summary_nodes['random_noise'] = sampler.random_noise
+            self.summary_nodes['train_step'] = train_step
+            if sampling_method in ["StochasticGradientLangevinDynamics", "StochasticMomentumLangevin"]:
                 self.summary_nodes['scaled_gradient'] = sampler.scaled_gradient
                 self.summary_nodes['scaled_noise'] = sampler.scaled_noise
-                self.summary_nodes['train_step'] = train_step
-            if optimizer == "StochasticMomentumLangevin":
+            if sampling_method == "StochasticMomentumLangevin":
                 self.summary_nodes['scaled_momentum'] = sampler.scaled_momentum
-                self.summary_nodes['momentum'] = sampler.momentum
+
+    def add_train_method_optimizer(self, loss, optimizer_method, seed):
+        """ Adds nodes for training the neural network using an optimizer.
+
+        :param loss: node for the desired loss function to minimize during training
+        :param optimizer_method: name of the optimizer method, e.g. GradientDescent
+        :param seed: seed value for the random number generator to obtain reproducible runs
+        """
+        with tf.name_scope('train'):
+            # DON'T add placeholders only sometimes, e.g. when only a specific optimizer
+            # requires it. Always add them and only sometimes use them!
+            step_width = tf.placeholder(tf.float32)
+            tf.summary.scalar('step_width', step_width)
+            self.placeholder_nodes['step_width'] = step_width
+
+            global_step = tf.Variable(0, trainable=False)
+            self.summary_nodes['global_step'] = global_step
+            if optimizer_method == "GradientDescent":
+                optimizer = tf.train.GradientDescentOptimizer(step_width)
+            else:
+                raise NotImplementedError("Unknown optimizer_method")
+            train_step = optimizer.minimize(loss, global_step=global_step)
+            self.summary_nodes['train_step'] = train_step
 
     def add_loss_summary(self, y, y_):
         """ Add nodes to the graph to calculate a loss for the dataset.
