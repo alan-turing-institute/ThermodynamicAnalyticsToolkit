@@ -60,7 +60,7 @@ class SGLDMomentumSampler(SGLDSampler):
         for each weight.
         The norm of the injected noise is placed into the TensorFlow summary.
 
-        The formulas here are as in [Stoltz, Trstanova, 2016].
+        The discretization scheme is (2.12) in [Leimkuhler, Matthews, Stoltz, 2013].
 
         :param grad: gradient nodes, i.e. they contain the gradient per parameter in `var`
         :param var: parameters of the neural network
@@ -69,25 +69,27 @@ class SGLDMomentumSampler(SGLDSampler):
         friction_constant_t = math_ops.cast(self._friction_constant_t, var.dtype.base_dtype)
         step_width_t, inverse_temperature_t, random_noise_t = self._prepare_dense(grad, var)
 
-        scaled_noise = tf.sqrt(2.*friction_constant_t/inverse_temperature_t) * random_noise_t
-        self.scaled_noise = tf.norm(scaled_noise)
-        tf.summary.scalar('scaled_noise', self.scaled_noise)
-
-        momentum = self.get_slot(var, "momentum")
-        scaled_momentum = 2. * friction_constant_t * momentum * step_width_t
-        self.scaled_momentum = tf.norm(scaled_momentum)
-        tf.summary.scalar('scaled_momentum', self.scaled_momentum)
-
         scaled_gradient = step_width_t * grad
         self.scaled_gradient = tf.norm(scaled_gradient)
         tf.summary.scalar('scaled_gradient', self.scaled_gradient)
 
-        momentum_update = momentum + scaled_gradient + scaled_noise
-        momentum_t = momentum.assign(momentum_update)
-        self.momentum = tf.norm(momentum_t)
-        tf.summary.scalar('momentum', self.momentum)
+        momentum = self.get_slot(var, "momentum")
 
-        var_update = state_ops.assign_sub(var, momentum_update + scaled_gradient)
+        momentum_t = momentum + scaled_gradient
+
+        var_update = state_ops.assign_sub(var, step_width_t * momentum_t)
+
+        alpha_t = tf.exp(-friction_constant_t * step_width_t)
+
+        scaled_noise = tf.sqrt((1.-tf.pow(alpha_t, 2))/inverse_temperature_t) * random_noise_t
+        self.scaled_noise = tf.norm(scaled_noise)
+        tf.summary.scalar('scaled_noise', self.scaled_noise)
+
+        momentum_update = alpha_t * momentum_t + scaled_noise
+        momentum_t = momentum.assign(momentum_update)
+        self.scaled_momentum = tf.norm(momentum_t)
+        tf.summary.scalar('scaled_momentum', self.scaled_momentum)
+
         return control_flow_ops.group(*[var_update, momentum_t])
 
     def _apply_sparse(self, grad, var):
