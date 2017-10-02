@@ -7,14 +7,16 @@
 #
 # (C) Frederik Heber 2017-09-18
 
-import argparse, os, sys
-import tensorflow as tf
+import argparse
 import csv
 import numpy as np
+import sys
 
-from classificationdatasets import ClassificationDatasets as DatasetGenerator
-from neuralnetwork import NeuralNetwork
+import tensorflow as tf
+
 from helpers import get_list_from_string
+from neuralnetwork import NeuralNetwork
+from datasets.classificationdatasets import ClassificationDatasets as DatasetGenerator
 
 FLAGS = None
 
