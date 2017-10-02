@@ -85,49 +85,50 @@ def main(_):
     for i in range(FLAGS.max_steps):
         print("Current step is "+str(i))
         test_xs, test_ys = ds.get_testset()
-        print("Testset is x: "+str(test_xs[0:5])+", y: "+str(test_ys[0:5]))
+        # print("Testset is x: "+str(test_xs[0:5])+", y: "+str(test_ys[0:5]))
         summary, _, acc, global_step, loss_eval, y_true_eval, y_eval = sess.run(
             test_nodes,
             feed_dict={
                 xinput: test_xs, y_: test_ys,
                 step_width: FLAGS.step_width, inverse_temperature: FLAGS.inverse_temperature,
-                        friction_constant: FLAGS.friction_constant
+                friction_constant: FLAGS.friction_constant
         })
-        if do_write_trajectory_file:
-            weights_eval, biases_eval = sess.run(
-                [nn.get("weights"), nn.get("biases")],
-                feed_dict={
-                    xinput: test_xs, y_: test_ys,
-                    step_width: FLAGS.step_width, inverse_temperature: FLAGS.inverse_temperature,
+        if i % FLAGS.every_nth == 0:
+            if do_write_trajectory_file:
+                weights_eval, biases_eval = sess.run(
+                    [nn.get("weights"), nn.get("biases")],
+                    feed_dict={
+                        xinput: test_xs, y_: test_ys,
+                        step_width: FLAGS.step_width, inverse_temperature: FLAGS.inverse_temperature,
                         friction_constant: FLAGS.friction_constant
-                })
-            trajectory_writer.writerow(
-                [i, loss_eval]
-                + [item for sublist in weights_eval for item in sublist]
-                + [item for item in biases_eval])
+                    })
+                trajectory_writer.writerow(
+                    [i, loss_eval]
+                    + [item for sublist in weights_eval for item in sublist]
+                    + [item for item in biases_eval])
 
-        if do_write_csv_file:
-            if FLAGS.sampler == "StochasticGradientLangevinDynamics":
-                scaled_grad, scaled_noise = sess.run(
-                    noise_nodes,
-                    feed_dict={
-                        xinput: test_xs, y_: test_ys,
-                        step_width: FLAGS.step_width, inverse_temperature: FLAGS.inverse_temperature,
-                        friction_constant: FLAGS.friction_constant
-                    })
-                csv_writer.writerow([global_step, i, acc, loss_eval, scaled_grad, scaled_noise])
-            elif FLAGS.sampler == "StochasticMomentumLangevin":
-              scaled_mom, scaled_grad, scaled_noise = sess.run(
-                    mom_noise_nodes,
-                    feed_dict={
-                        xinput: test_xs, y_: test_ys,
-                        step_width: FLAGS.step_width, inverse_temperature: FLAGS.inverse_temperature,
-                        friction_constant: FLAGS.friction_constant
-                    })
-              csv_writer.writerow([global_step, i, acc, loss_eval,
-                                     scaled_mom, scaled_grad, scaled_noise])
-            else:
-              csv_writer.writerow([global_step, i, acc, loss_eval])
+            if do_write_csv_file:
+                if FLAGS.sampler == "StochasticGradientLangevinDynamics":
+                    scaled_grad, scaled_noise = sess.run(
+                        noise_nodes,
+                        feed_dict={
+                            xinput: test_xs, y_: test_ys,
+                            step_width: FLAGS.step_width, inverse_temperature: FLAGS.inverse_temperature,
+                            friction_constant: FLAGS.friction_constant
+                        })
+                    csv_writer.writerow([global_step, i, acc, loss_eval, scaled_grad, scaled_noise])
+                elif FLAGS.sampler == "StochasticMomentumLangevin":
+                    scaled_mom, scaled_grad, scaled_noise = sess.run(
+                        mom_noise_nodes,
+                        feed_dict={
+                            xinput: test_xs, y_: test_ys,
+                            step_width: FLAGS.step_width, inverse_temperature: FLAGS.inverse_temperature,
+                            friction_constant: FLAGS.friction_constant
+                        })
+                    csv_writer.writerow([global_step, i, acc, loss_eval,
+                                         scaled_mom, scaled_grad, scaled_noise])
+                else:
+                  csv_writer.writerow([global_step, i, acc, loss_eval])
 
         print('Accuracy at step %s (%s): %s' % (i, global_step, acc))
         #print('Loss at step %s: %s' % (i, loss_eval))
@@ -137,7 +138,7 @@ def main(_):
         csv_file.close()
     if do_write_trajectory_file:
         trajectory_file.close()
-    print("TRAINED.")
+    print("SAMPLED.")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -150,6 +151,8 @@ if __name__ == '__main__':
         help='Number P of samples (Y^i,X^i)^P_{i=1} to generate for the desired dataset type.')
     parser.add_argument('--dropout', type=float, default=0.9,
         help='Keep probability for training dropout, e.g. 0.9')
+    parser.add_argument('--every_nth', type=int, default=1,
+        help='Store only every nth trajectory (and run) point to files, e.g. 10')
     parser.add_argument('--friction_constant', type=float, default=0.,
         help='friction to scale the influence of momenta')
     parser.add_argument('--hidden_dimension', type=str, nargs='+', default=[],
