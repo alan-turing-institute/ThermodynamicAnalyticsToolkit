@@ -60,9 +60,9 @@ def main(_):
         csv_file = open(FLAGS.csv_file, 'w', newline='')
         csv_writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         if FLAGS.sampler == "StochasticGradientLangevinDynamics":
-            csv_writer.writerow(['step', 'epoch', 'accuracy', 'loss', 'noise', 'scaled_gradient', 'scaled_noise'])
+            csv_writer.writerow(['step', 'epoch', 'accuracy', 'loss', 'scaled_gradient', 'scaled_noise'])
         elif FLAGS.sampler == "StochasticMomentumLangevin":
-            csv_writer.writerow(['step', 'epoch', 'accuracy', 'loss', 'noise', 'momentum', 'scaled_momentum', 'scaled_gradient', 'scaled_noise'])
+            csv_writer.writerow(['step', 'epoch', 'accuracy', 'loss', 'scaled_momentum', 'scaled_gradient', 'scaled_noise'])
         else:
             csv_writer.writerow(['step', 'epoch', 'accuracy', 'loss'])
 
@@ -79,8 +79,8 @@ def main(_):
 
     test_nodes = list(map(lambda key: nn.get(key), [
         "merged", "train_step", "accuracy", "global_step", "loss", "y_", "y"]))
-    noise_nodes = list(map(lambda key: nn.get(key), ["random_noise", "scaled_gradient", "scaled_noise"]))
-    mom_noise_nodes = list(map(lambda key: nn.get(key), ["random_noise", "momentum", "scaled_momentum", "scaled_gradient", "scaled_noise"]))
+    noise_nodes = list(map(lambda key: nn.get(key), ["scaled_gradient", "scaled_noise"]))
+    mom_noise_nodes = list(map(lambda key: nn.get(key), ["scaled_momentum", "scaled_gradient", "scaled_noise"]))
     print("Starting to train")
     for i in range(FLAGS.max_steps):
         print("Current step is "+str(i))
@@ -108,26 +108,26 @@ def main(_):
 
         if do_write_csv_file:
             if FLAGS.sampler == "StochasticGradientLangevinDynamics":
-                noise, scaled_grad, scaled_noise = sess.run(
+                scaled_grad, scaled_noise = sess.run(
                     noise_nodes,
                     feed_dict={
                         xinput: test_xs, y_: test_ys,
                         step_width: FLAGS.step_width, inverse_temperature: FLAGS.inverse_temperature,
                         friction_constant: FLAGS.friction_constant
                     })
-                csv_writer.writerow([global_step, i, acc, loss_eval, noise, scaled_grad, scaled_noise])
+                csv_writer.writerow([global_step, i, acc, loss_eval, scaled_grad, scaled_noise])
             elif FLAGS.sampler == "StochasticMomentumLangevin":
-                noise, momentum, scaled_mom, scaled_grad, scaled_noise = sess.run(
+              scaled_mom, scaled_grad, scaled_noise = sess.run(
                     mom_noise_nodes,
                     feed_dict={
                         xinput: test_xs, y_: test_ys,
                         step_width: FLAGS.step_width, inverse_temperature: FLAGS.inverse_temperature,
                         friction_constant: FLAGS.friction_constant
                     })
-                csv_writer.writerow([global_step, i, acc, loss_eval,
-                                     noise, momentum, scaled_mom, scaled_grad, scaled_noise])
+              csv_writer.writerow([global_step, i, acc, loss_eval,
+                                     scaled_mom, scaled_grad, scaled_noise])
             else:
-                csv_writer.writerow([global_step, i, acc, loss_eval])
+              csv_writer.writerow([global_step, i, acc, loss_eval])
 
         print('Accuracy at step %s (%s): %s' % (i, global_step, acc))
         #print('Loss at step %s: %s' % (i, loss_eval))

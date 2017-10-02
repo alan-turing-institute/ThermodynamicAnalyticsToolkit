@@ -64,8 +64,6 @@ class SGLDSampler(optimizer.Optimizer):
         else:
             random_noise_t = tf.random_normal(grad.get_shape(), mean=0., stddev=1., seed=self._seed)
         #print("random_noise_t has shape "+str(random_noise_t.get_shape())+" with seed "+str(self._seed))
-        self.random_noise = tf.norm(random_noise_t)
-        tf.summary.scalar('noise', self.random_noise)
         return step_width_t, inverse_temperature_t, random_noise_t
 
     def _apply_dense(self, grad, var):
