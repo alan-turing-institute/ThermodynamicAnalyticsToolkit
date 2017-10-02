@@ -50,6 +50,7 @@ def main(_):
     inverse_temperature = nn.get("inverse_temperature")
     friction_constant = nn.get("friction_constant")
     step_width = nn.get("step_width")
+    assert None not in [inverse_temperature, friction_constant, step_width]
 
     sess = tf.Session()
     nn.init_graph(sess)
@@ -79,12 +80,16 @@ def main(_):
 
     test_nodes = list(map(lambda key: nn.get(key), [
         "merged", "train_step", "accuracy", "global_step", "loss", "y_", "y"]))
+    assert None not in test_nodes
     noise_nodes = list(map(lambda key: nn.get(key), ["scaled_gradient", "scaled_noise"]))
+    assert None not in noise_nodes
     mom_noise_nodes = list(map(lambda key: nn.get(key), ["scaled_momentum", "scaled_gradient", "scaled_noise"]))
+    assert None not in mom_noise_nodes
     print("Starting to train")
     for i in range(FLAGS.max_steps):
         print("Current step is "+str(i))
         test_xs, test_ys = ds.get_testset()
+        assert not any(item is None for item in [test_xs, test_ys])
         # print("Testset is x: "+str(test_xs[0:5])+", y: "+str(test_ys[0:5]))
         summary, _, acc, global_step, loss_eval, y_true_eval, y_eval = sess.run(
             test_nodes,
