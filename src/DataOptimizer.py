@@ -13,10 +13,10 @@ import numpy as np
 import sys
 
 import tensorflow as tf
+from models.helpers import get_list_from_string
 
-from helpers import get_list_from_string
-from neuralnetwork import NeuralNetwork
 from datasets.classificationdatasets import ClassificationDatasets as DatasetGenerator
+from models.neuralnetwork import NeuralNetwork
 
 FLAGS = None
 
