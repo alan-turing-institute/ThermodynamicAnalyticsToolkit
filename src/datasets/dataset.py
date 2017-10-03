@@ -52,7 +52,10 @@ class Dataset:
 
         :return: tuple of testset input and testset labels.
         """
-        return self.xs[:self.slice_index], self.ys[:self.slice_index]
+        test_xs, test_ys = self.xs[:self.slice_index], self.ys[:self.slice_index]
+        assert not any(item is None for item in [test_xs, test_ys])
+        # print("Testset is x: "+str(test_xs[0:5])+", y: "+str(test_ys[0:5]))
+        return test_xs, test_ys
 
     def next_batch(self, batch_size):
         """ Returns next batch from internally stored samples.

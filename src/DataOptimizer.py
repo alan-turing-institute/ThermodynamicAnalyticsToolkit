@@ -13,108 +13,19 @@ import numpy as np
 import sys
 
 import tensorflow as tf
-from models.helpers import get_list_from_string
+from common import get_list_from_string, initialize_config_map, setup_run_file, \
+    setup_trajectory_file, closeFiles
 
 from datasets.classificationdatasets import ClassificationDatasets as DatasetGenerator
 from models.neuralnetwork import NeuralNetwork
 
 FLAGS = None
 
+def parseParameters():
+    """ Sets up the argument parser for parsing command line parameters into dictionary
 
-def main(_):
-    # init random: None will use random seed
-    np.random.seed(FLAGS.seed)
-
-    print("Generating input data")
-    dsgen=DatasetGenerator()
-    ds = dsgen.generate(
-        dimension=FLAGS.dimension,
-        noise=FLAGS.noise,
-        data_type=FLAGS.data_type)
-    # use all as test set
-    ds.set_test_train_ratio(1)
-
-    print("Constructing neural network")
-    # extract hidden layer dimensions, as "8 8" or 8 8 or whatever
-    hidden_dimension=get_list_from_string(FLAGS.hidden_dimension)
-    input_columns=get_list_from_string(FLAGS.input_columns)
-    nn=NeuralNetwork()
-    input_dimension = 2
-    output_dimension = 1
-    xinput, x = dsgen.create_input_layer(input_dimension, input_columns)
-    nn.create(
-        x,
-        len(input_columns), hidden_dimension, output_dimension,
-        optimizer=FLAGS.optimizer,
-        seed=FLAGS.seed,
-        add_dropped_layer=False)
-    y_ = nn.get("y_")
-    step_width = nn.get("step_width")
-    assert step_width is not None
-
-    sess = tf.Session()
-    nn.init_graph(sess)
-
-    do_write_csv_file = False
-    if FLAGS.csv_file is not None:
-        do_write_csv_file = True
-        csv_file = open(FLAGS.csv_file, 'w', newline='')
-        csv_writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        csv_writer.writerow(['step', 'epoch', 'accuracy', 'loss', 'scaled_gradient'])
-
-    do_write_trajectory_file = False
-    if FLAGS.trajectory_file is not None:
-        do_write_trajectory_file = True
-        no_weights = nn.get("weights").get_shape()[0]
-        no_biases = nn.get("biases").get_shape()[0]
-        trajectory_file = open(FLAGS.trajectory_file, 'w', newline='')
-        trajectory_writer = csv.writer(trajectory_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        trajectory_writer.writerow(['step', 'loss']
-                                   +[str("weight")+str(i) for i in range(0,no_weights)]
-                                   +[str("bias") + str(i) for i in range(0, no_biases)])
-
-    test_nodes = list(map(lambda key: nn.get(key), [
-        "merged", "train_step", "accuracy", "global_step", "loss", "y_", "y", "scaled_gradient"]))
-    assert None not in test_nodes
-    print("Starting to train")
-    for i in range(FLAGS.max_steps):
-        print("Current step is "+str(i))
-        test_xs, test_ys = ds.get_testset()
-        assert not any(item is None for item in [test_xs, test_ys])
-        # print("Testset is x: "+str(test_xs[0:5])+", y: "+str(test_ys[0:5]))
-        summary, _, acc, global_step, loss_eval, y_true_eval, y_eval, scaled_grad = sess.run(
-            test_nodes,
-            feed_dict={
-                xinput: test_xs, y_: test_ys,
-                step_width: FLAGS.step_width
-        })
-
-        if i % FLAGS.every_nth == 0:
-            if do_write_csv_file:
-                csv_writer.writerow([global_step, i, acc, loss_eval, scaled_grad])
-            if do_write_trajectory_file:
-                weights_eval, biases_eval = sess.run(
-                    [nn.get("weights"), nn.get("biases")],
-                    feed_dict={
-                        xinput: test_xs, y_: test_ys,
-                        step_width: FLAGS.step_width
-                    })
-                trajectory_writer.writerow(
-                    [i, loss_eval]
-                    + [item for sublist in weights_eval for item in sublist]
-                    + [item for item in biases_eval])
-
-        print('Accuracy at step %s (%s): %s' % (i, global_step, acc))
-        #print('Loss at step %s: %s' % (i, loss_eval))
-        #print('y_ at step %s: %s' % (i, str(y_true_eval[0:9].transpose())))
-        #print('y at step %s: %s' % (i, str(y_eval[0:9].transpose())))
-    if do_write_csv_file:
-        csv_file.close()
-    if do_write_trajectory_file:
-        trajectory_file.close()
-    print("TRAINED.")
-
-if __name__ == '__main__':
+    :return: dictionary with parameter names as keys, unrecognized parameters
+    """
     parser = argparse.ArgumentParser()
     # please adhere to alphabetical ordering
     parser.add_argument('--csv_file', type=str, default=None,
@@ -145,7 +56,92 @@ if __name__ == '__main__':
         help='CSV file name to output trajectories of sampling, i.e. weights and evaluated loss function.')
     parser.add_argument('--version', action="store_true",
         help='Gives version information')
-    FLAGS, unparsed = parser.parse_known_args()
+    return parser.parse_known_args()
+
+
+def main(_):
+    config_map = initialize_config_map()
+
+    # init random: None will use random seed
+    np.random.seed(FLAGS.seed)
+
+    print("Generating input data")
+    dsgen=DatasetGenerator()
+    ds = dsgen.generate(
+        dimension=FLAGS.dimension,
+        noise=FLAGS.noise,
+        data_type=FLAGS.data_type)
+    # use all as test set
+    ds.set_test_train_ratio(1)
+    dsgen.setup_config_map(config_map)
+
+    print("Constructing neural network")
+    # extract hidden layer dimensions, as "8 8" or 8 8 or whatever
+    hidden_dimension=get_list_from_string(FLAGS.hidden_dimension)
+    input_columns=get_list_from_string(FLAGS.input_columns)
+    nn=NeuralNetwork()
+    input_dimension = 2
+    output_dimension = 1
+    xinput, x = dsgen.create_input_layer(config_map["input_dimension"], input_columns)
+    nn.create(
+        x,
+        len(input_columns), hidden_dimension, config_map["output_dimension"],
+        optimizer=FLAGS.optimizer,
+        seed=FLAGS.seed,
+        add_dropped_layer=False)
+    y_ = nn.get("y_")
+    step_width = nn.get("step_width")
+    assert step_width is not None
+
+    sess = tf.Session()
+    nn.init_graph(sess)
+
+    print("Setting up output files")
+    csv_writer = setup_run_file(FLAGS.csv_file,
+                                ['step', 'epoch', 'accuracy', 'loss', 'scaled_gradient'],
+                                config_map)
+    trajectory_writer = setup_trajectory_file(FLAGS.trajectory_file,
+                                              nn.get("weights").get_shape()[0], nn.get("biases").get_shape()[0],
+                                              config_map)
+
+    test_nodes = nn.get_list_of_nodes(["merged", "train_step", "accuracy", "global_step",
+                                       "loss", "y_", "y", "scaled_gradient"])
+
+    print("Starting to train")
+    for i in range(FLAGS.max_steps):
+        print("Current step is "+str(i))
+        test_xs, test_ys = ds.get_testset()
+        summary, _, acc, global_step, loss_eval, y_true_eval, y_eval, scaled_grad = sess.run(
+            test_nodes,
+            feed_dict={
+                xinput: test_xs, y_: test_ys,
+                step_width: FLAGS.step_width
+        })
+
+        if i % FLAGS.every_nth == 0:
+            if config_map["do_write_csv_file"]:
+                csv_writer.writerow([global_step, i, acc, loss_eval, scaled_grad])
+            if config_map["do_write_trajectory_file"]:
+                weights_eval, biases_eval = sess.run(
+                    [nn.get("weights"), nn.get("biases")],
+                    feed_dict={
+                        xinput: test_xs, y_: test_ys,
+                        step_width: FLAGS.step_width
+                    })
+                trajectory_writer.writerow(
+                    [i, loss_eval]
+                    + [item for sublist in weights_eval for item in sublist]
+                    + [item for item in biases_eval])
+
+        print('Accuracy at step %s (%s): %s' % (i, global_step, acc))
+        #print('Loss at step %s: %s' % (i, loss_eval))
+        #print('y_ at step %s: %s' % (i, str(y_true_eval[0:9].transpose())))
+        #print('y at step %s: %s' % (i, str(y_eval[0:9].transpose())))
+    closeFiles(config_map)
+    print("TRAINED.")
+
+if __name__ == '__main__':
+    FLAGS, unparsed = parseParameters()
 
     if FLAGS.version:
         # give version and exit

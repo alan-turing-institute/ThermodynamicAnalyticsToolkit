@@ -44,6 +44,15 @@ class ClassificationDatasets:
         }
 
     @staticmethod
+    def setup_config_map(config_map):
+        """ Place information about input and output dimension into configuration dictionary.
+
+        :param config_map: configuration dictionary
+        """
+        config_map["input_dimension"] = 2
+        config_map["output_dimension"] = 1
+
+    @staticmethod
     def create_input_layer(input_dimension, input_list):
         """ Creates the input layer of TensorFlow's neural network.
 

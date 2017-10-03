@@ -53,7 +53,23 @@ class NeuralNetwork(object):
         elif keyname in self.placeholder_nodes:
             return self.placeholder_nodes[keyname]
         else:
+            print("WARNING: Could not find node "+keyname+" in dictionary.")
             return None
+
+    def get_list_of_nodes(self, keys):
+        """ This returns for a list of node names the list of nodes.
+
+        We assert that none of the Nodes is None.
+
+        :param keys: list with node keys, i.e. names
+        :return: list of nodes
+        """
+        test_nodes = list(map(lambda key: self.get(key), keys))
+        for key, node in zip(keys, test_nodes):
+            if node is None:
+                print ("Node " + key + " could not be retrieved from dict or is None.")
+                raise AssertionError
+        return test_nodes
 
     def create(self, input_layer,
                input_dimension, layer_dimensions, output_dimension,
