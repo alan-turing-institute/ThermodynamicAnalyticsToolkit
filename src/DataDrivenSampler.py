@@ -81,8 +81,8 @@ def sample(FLAGS, ds, sess, nn, xinput, csv_writer, trajectory_writer, config_ma
     if FLAGS.sampler == "StochasticGradientLangevinDynamics":
         noise_nodes = nn.get_list_of_nodes(["scaled_gradient", "scaled_noise"])
     if FLAGS.sampler == "StochasticMomentumLangevin":
-        mom_noise_nodes = nn.get_list_of_nodes(["scaled_momentum", "scaled_gradient", "scaled_noise"])
-    print("Starting to train")
+        mom_noise_nodes = nn.get_list_of_nodes(["kinetic_energy", "scaled_momentum", "scaled_gradient", "scaled_noise"])
+    print("Starting to sample")
     for i in range(FLAGS.max_steps):
         print("Current step is "+str(i))
         test_xs, test_ys = ds.get_testset()
@@ -109,8 +109,11 @@ def sample(FLAGS, ds, sess, nn, xinput, csv_writer, trajectory_writer, config_ma
                     csv_writer.writerow([global_step, i, acc, loss_eval]
                                         + sess.run(noise_nodes,feed_dict=feed_dict))
                 elif FLAGS.sampler == "StochasticMomentumLangevin":
-                    csv_writer.writerow([global_step, i, acc, loss_eval]
-                                        + sess.run(mom_noise_nodes,feed_dict=feed_dict))
+                  kinetic_energy, scaled_mom, scaled_grad, scaled_noise = \
+                      sess.run(mom_noise_nodes, feed_dict=feed_dict)
+                  csv_writer.writerow([global_step, i, acc, loss_eval]
+                                      + [loss_eval+kinetic_energy]
+                                      + [kinetic_energy, scaled_mom, scaled_grad, scaled_noise])
                 else:
                   csv_writer.writerow([global_step, i, acc, loss_eval])
 
@@ -133,7 +136,7 @@ def setup_output_files(FLAGS, nn, config_map):
     if FLAGS.sampler == "StochasticGradientLangevinDynamics":
         header = ['step', 'epoch', 'accuracy', 'loss', 'scaled_gradient', 'scaled_noise']
     elif FLAGS.sampler == "StochasticMomentumLangevin":
-        header = ['step', 'epoch', 'accuracy', 'loss', 'scaled_momentum', 'scaled_gradient', 'scaled_noise']
+        header = ['step', 'epoch', 'accuracy', 'loss', 'total_energy', 'kinetic_energy', 'scaled_momentum', 'scaled_gradient', 'scaled_noise']
     else:
         header = ['step', 'epoch', 'accuracy', 'loss']
     csv_writer = setup_run_file(FLAGS.csv_file, header, config_map)

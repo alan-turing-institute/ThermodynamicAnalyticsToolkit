@@ -33,6 +33,7 @@ class SGLDMomentumSampler(SGLDSampler):
         self._friction_constant = friction_constant
         self.scaled_momentum = None
         self.momentum = None
+        self.kinetic_energy = None
 
     def _prepare(self):
         """ Converts step width into a tensor, if given as a floating-point
@@ -89,6 +90,10 @@ class SGLDMomentumSampler(SGLDSampler):
         momentum_t = momentum.assign(momentum_update)
         self.scaled_momentum = tf.norm(momentum_t)
         tf.summary.scalar('scaled_momentum', self.scaled_momentum)
+
+        kinetic_energy = 0.5*momentum_t*momentum_t
+        self.kinetic_energy = tf.norm(kinetic_energy)
+        tf.summary.scalar('kinetic_energy', self.kinetic_energy)
 
         return control_flow_ops.group(*[var_update, momentum_t])
 

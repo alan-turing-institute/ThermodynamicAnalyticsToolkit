@@ -198,6 +198,7 @@ class NeuralNetwork(object):
                 self.summary_nodes['scaled_noise'] = sampler.scaled_noise
             if sampling_method == "StochasticMomentumLangevin":
                 self.summary_nodes['scaled_momentum'] = sampler.scaled_momentum
+                self.summary_nodes['kinetic_energy'] = sampler.kinetic_energy
 
     def add_train_method_optimizer(self, loss, optimizer_method, seed):
         """ Adds nodes for training the neural network using an optimizer.
