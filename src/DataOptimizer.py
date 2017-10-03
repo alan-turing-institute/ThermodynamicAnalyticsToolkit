@@ -13,15 +13,15 @@ import numpy as np
 import sys
 
 import tensorflow as tf
-from common import get_list_from_string, initialize_config_map, setup_run_file, \
-    setup_trajectory_file, closeFiles
-
+from common import get_list_from_string, initialize_config_map, \
+    setup_run_file, setup_trajectory_file, closeFiles, \
+    create_classification_dataset, construct_network_model
 from datasets.classificationdatasets import ClassificationDatasets as DatasetGenerator
-from models.neuralnetwork import NeuralNetwork
 
 FLAGS = None
 
-def parseParameters():
+
+def parse_parameters():
     """ Sets up the argument parser for parsing command line parameters into dictionary
 
     :return: dictionary with parameter names as keys, unrecognized parameters
@@ -59,43 +59,14 @@ def parseParameters():
     return parser.parse_known_args()
 
 
-def main(_):
-    config_map = initialize_config_map()
+def setup_output_files(FLAGS, nn, config_map):
+    """ Prepares the distinct headers for each output file
 
-    # init random: None will use random seed
-    np.random.seed(FLAGS.seed)
-
-    print("Generating input data")
-    dsgen=DatasetGenerator()
-    ds = dsgen.generate(
-        dimension=FLAGS.dimension,
-        noise=FLAGS.noise,
-        data_type=FLAGS.data_type)
-    # use all as test set
-    ds.set_test_train_ratio(1)
-    dsgen.setup_config_map(config_map)
-
-    print("Constructing neural network")
-    # extract hidden layer dimensions, as "8 8" or 8 8 or whatever
-    hidden_dimension=get_list_from_string(FLAGS.hidden_dimension)
-    input_columns=get_list_from_string(FLAGS.input_columns)
-    nn=NeuralNetwork()
-    input_dimension = 2
-    output_dimension = 1
-    xinput, x = dsgen.create_input_layer(config_map["input_dimension"], input_columns)
-    nn.create(
-        x,
-        len(input_columns), hidden_dimension, config_map["output_dimension"],
-        optimizer=FLAGS.optimizer,
-        seed=FLAGS.seed,
-        add_dropped_layer=False)
-    y_ = nn.get("y_")
-    step_width = nn.get("step_width")
-    assert step_width is not None
-
-    sess = tf.Session()
-    nn.init_graph(sess)
-
+    :param FLAGS: FLAGS dictionary with command-line parameters
+    :param nn: neural network object for obtaining nodes
+    :param config_map: configuration dictionary
+    :return: CSV writer objects for run and trajectory
+    """
     print("Setting up output files")
     csv_writer = setup_run_file(FLAGS.csv_file,
                                 ['step', 'epoch', 'accuracy', 'loss', 'scaled_gradient'],
@@ -103,31 +74,42 @@ def main(_):
     trajectory_writer = setup_trajectory_file(FLAGS.trajectory_file,
                                               nn.get("weights").get_shape()[0], nn.get("biases").get_shape()[0],
                                               config_map)
+    return csv_writer, trajectory_writer
 
+
+def train(FLAGS, ds, sess, nn, xinput, csv_writer, trajectory_writer, config_map):
+    """ Performs the actual training of the neural network `nn` given a dataset `ds` and a
+    Session `session`.
+
+    :param FLAGS: FLAGS dictionary with command-line parameters
+    :param ds: dataset
+    :param sess: Session object
+    :param nn: neural network
+    :param xinput: input nodes of neural network
+    :param csv_writer: run csv writer
+    :param trajectory_writer: trajectory csv writer
+    :param config_map: configuration dictionary
+    """
+    placeholder_nodes = nn.get_dict_of_nodes(["step_width", "y_"])
     test_nodes = nn.get_list_of_nodes(["merged", "train_step", "accuracy", "global_step",
                                        "loss", "y_", "y", "scaled_gradient"])
-
     print("Starting to train")
     for i in range(FLAGS.max_steps):
         print("Current step is "+str(i))
         test_xs, test_ys = ds.get_testset()
-        summary, _, acc, global_step, loss_eval, y_true_eval, y_eval, scaled_grad = sess.run(
-            test_nodes,
-            feed_dict={
-                xinput: test_xs, y_: test_ys,
-                step_width: FLAGS.step_width
-        })
+        feed_dict={
+            xinput: test_xs, placeholder_nodes["y_"]: test_ys,
+            placeholder_nodes["step_width"]: FLAGS.step_width
+        }
+        summary, _, acc, global_step, loss_eval, y_true_eval, y_eval, scaled_grad = \
+            sess.run(test_nodes,feed_dict=feed_dict)
 
         if i % FLAGS.every_nth == 0:
             if config_map["do_write_csv_file"]:
                 csv_writer.writerow([global_step, i, acc, loss_eval, scaled_grad])
             if config_map["do_write_trajectory_file"]:
-                weights_eval, biases_eval = sess.run(
-                    [nn.get("weights"), nn.get("biases")],
-                    feed_dict={
-                        xinput: test_xs, y_: test_ys,
-                        step_width: FLAGS.step_width
-                    })
+                weights_eval, biases_eval = \
+                    sess.run([nn.get("weights"), nn.get("biases")],feed_dict=feed_dict)
                 trajectory_writer.writerow(
                     [i, loss_eval]
                     + [item for sublist in weights_eval for item in sublist]
@@ -137,11 +119,30 @@ def main(_):
         #print('Loss at step %s: %s' % (i, loss_eval))
         #print('y_ at step %s: %s' % (i, str(y_true_eval[0:9].transpose())))
         #print('y at step %s: %s' % (i, str(y_eval[0:9].transpose())))
-    closeFiles(config_map)
     print("TRAINED.")
 
+def main(_):
+    config_map = initialize_config_map()
+
+    # init random: None will use random seed
+    np.random.seed(FLAGS.seed)
+
+    xinput, x, ds = create_classification_dataset(FLAGS, config_map)
+
+    nn = construct_network_model(FLAGS, config_map, x)
+
+    csv_writer, trajectory_writer = \
+        setup_output_files(FLAGS, nn, config_map)
+
+    sess = tf.Session()
+    nn.init_graph(sess)
+
+    train(FLAGS, ds, sess, nn, xinput, csv_writer, trajectory_writer, config_map)
+
+    closeFiles(config_map)
+
 if __name__ == '__main__':
-    FLAGS, unparsed = parseParameters()
+    FLAGS, unparsed = parse_parameters()
 
     if FLAGS.version:
         # give version and exit

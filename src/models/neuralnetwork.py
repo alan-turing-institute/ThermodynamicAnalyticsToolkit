@@ -71,8 +71,16 @@ class NeuralNetwork(object):
                 raise AssertionError
         return test_nodes
 
+    def get_dict_of_nodes(self, keys):
+        """ Returns a dict with access to nodes by name.
+
+        :param keys: names of the nodes
+        :return: dictionary
+        """
+        return dict(zip(keys, self.get_list_of_nodes(keys)))
+
     def create(self, input_layer,
-               input_dimension, layer_dimensions, output_dimension,
+               layer_dimensions, output_dimension,
                optimizer, seed=None,
                add_dropped_layer=False):
         """ Creates the neural network model according to the specifications.
@@ -82,7 +90,6 @@ class NeuralNetwork(object):
         loss functions depend on them.
 
         :param input_layer: the input_layer
-        :param input_dimension: number of nodes in `input_layer`
         :param layer_dimensions: a list of ints giving the number of nodes for
             each hidden layer.
         :param output_dimension: the number of nodes in the output layer
@@ -94,6 +101,7 @@ class NeuralNetwork(object):
         if seed is not None:
             tf.set_random_seed(seed)
 
+        input_dimension = int(input_layer.get_shape()[-1])
         y_ = self.add_true_labels(output_dimension)
         if add_dropped_layer:
             keep_prob = self.add_keep_probability()

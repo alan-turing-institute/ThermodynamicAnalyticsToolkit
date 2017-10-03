@@ -1,5 +1,8 @@
 import csv
 
+from datasets.classificationdatasets import ClassificationDatasets as DatasetGenerator
+from models.neuralnetwork import NeuralNetwork
+
 
 def get_list_from_string(str_or_list_of_str):
     """ Extracts list of ints from any string (or list of strings).
@@ -92,3 +95,49 @@ def closeFiles(config_map):
         assert config_map["trajectory_file"] is not None
         config_map["trajectory_file"].close()
         config_map["trajectory_file"] = None
+
+
+def create_classification_dataset(FLAGS, config_map):
+    """ Creates the dataset object using a classification generator.
+
+    :param FLAGS: FLAGS dictionary with command-line parameters
+    :param config_map: configuration dictionary
+    :return: placeholder node for input, input layer for network, dataset object
+    """
+    print("Generating input data")
+    dsgen=DatasetGenerator()
+    ds = dsgen.generate(
+        dimension=FLAGS.dimension,
+        noise=FLAGS.noise,
+        data_type=FLAGS.data_type)
+    # use all as test set
+    ds.set_test_train_ratio(1)
+    dsgen.setup_config_map(config_map)
+
+    # generate input layer
+    input_columns = get_list_from_string(FLAGS.input_columns)
+    xinput, x = dsgen.create_input_layer(config_map["input_dimension"], input_columns)
+    return xinput, x, ds
+
+
+def construct_network_model(FLAGS, config_map, x):
+    """ Constructs the neural network
+
+    :param FLAGS: FLAGS dictionary with command-line parameters
+    :param config_map: configuration dictionary
+    :param x: input layer
+    :return: neural network
+    """
+    print("Constructing neural network")
+    hidden_dimension=get_list_from_string(FLAGS.hidden_dimension)
+    nn=NeuralNetwork()
+    try:
+        train_method = FLAGS.sampler
+    except AttributeError:
+        train_method = FLAGS.optimizer
+    nn.create(
+        x, hidden_dimension, config_map["output_dimension"],
+        optimizer=train_method,
+        seed=FLAGS.seed,
+        add_dropped_layer=False)
+    return nn
