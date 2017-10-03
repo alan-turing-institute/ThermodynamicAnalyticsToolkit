@@ -61,7 +61,8 @@ class SGLDMomentumSampler(SGLDSampler):
         for each weight.
         The norm of the injected noise is placed into the TensorFlow summary.
 
-        The discretization scheme is (2.12) in [Leimkuhler, Matthews, Stoltz, 2013].
+        The discretization scheme is according to (1.59) in [dissertation Zofia Trstanova],
+        i.e. 2nd order Geometric Langevin Algorithm.
 
         :param grad: gradient nodes, i.e. they contain the gradient per parameter in `var`
         :param var: parameters of the neural network
@@ -70,15 +71,20 @@ class SGLDMomentumSampler(SGLDSampler):
         friction_constant_t = math_ops.cast(self._friction_constant_t, var.dtype.base_dtype)
         step_width_t, inverse_temperature_t, random_noise_t = self._prepare_dense(grad, var)
 
-        scaled_gradient = step_width_t * grad
+        scaled_gradient = 0.5 * step_width_t * grad
         self.scaled_gradient = tf.norm(scaled_gradient)
         tf.summary.scalar('scaled_gradient', self.scaled_gradient)
 
         momentum = self.get_slot(var, "momentum")
 
-        momentum_t = momentum + scaled_gradient
+        # p^{n+1/2} = p^{n} − \nabla V (q^n ) \Delta t/2
+        momentum_half_step_t = momentum + scaled_gradient
 
-        var_update = state_ops.assign_sub(var, step_width_t * momentum_t)
+        # q=^{n+1} = q^n + M^{-1} p_{n+1/2} ∆t
+        var_update = state_ops.assign_sub(var, step_width_t * momentum_half_step_t)
+
+        # p^{n+1} = p^{n+1/2} − \nabla V (q^{n+1} ) \Delta t/2 (we use q^n here instead)
+        momentum_t = momentum_half_step_t + scaled_gradient
 
         alpha_t = tf.exp(-friction_constant_t * step_width_t)
 
@@ -86,6 +92,7 @@ class SGLDMomentumSampler(SGLDSampler):
         self.scaled_noise = tf.norm(scaled_noise)
         tf.summary.scalar('scaled_noise', self.scaled_noise)
 
+        # p^{n+1} = \alpha_{\Delta t} p^{n+1} + \sqrt{ \frac{1-\alpha^2_{\Delta t}}{\beta} M } G^n
         momentum_update = alpha_t * momentum_t + scaled_noise
         momentum_t = momentum.assign(momentum_update)
         self.scaled_momentum = tf.norm(momentum_t)
