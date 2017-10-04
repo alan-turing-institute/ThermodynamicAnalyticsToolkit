@@ -147,3 +147,21 @@ def construct_network_model(FLAGS, config_map, x, hidden_activation=tf.nn.relu, 
         output_activation=output_activation
     )
     return nn
+
+
+def get_activations():
+    """ Returns a dictionary with all known activation functions
+
+    :return: dictionary with activations
+    """
+    activations = {
+        "tanh": tf.nn.tanh,
+        "sigmoid": tf.nn.sigmoid,
+        "softplus": tf.nn.softplus,
+        "softsign": tf.nn.softsign,
+        "elu": tf.nn.elu,
+        "relu6": tf.nn.relu6,
+        "relu": tf.nn.relu,
+        "linear": tf.identity
+    }
+    return activations

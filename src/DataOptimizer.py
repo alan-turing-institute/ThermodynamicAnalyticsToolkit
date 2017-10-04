@@ -15,7 +15,8 @@ import sys
 import tensorflow as tf
 from common import get_list_from_string, initialize_config_map, \
     setup_run_file, setup_trajectory_file, closeFiles, \
-    create_classification_dataset, construct_network_model
+    create_classification_dataset, construct_network_model, \
+    get_activations
 from datasets.classificationdatasets import ClassificationDatasets as DatasetGenerator
 
 FLAGS = None
@@ -133,7 +134,7 @@ def main(_):
 
     xinput, x, ds = create_classification_dataset(FLAGS, config_map)
 
-    activations = { "tanh": tf.nn.tanh, "relu": tf.nn.relu, "linear": tf.identity}
+    activations = get_activations()
     nn = construct_network_model(FLAGS, config_map, x,
                                  hidden_activation=activations[FLAGS.hidden_activation],
                                  output_activation=activations[FLAGS.output_activation])
