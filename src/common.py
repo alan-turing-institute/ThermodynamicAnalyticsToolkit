@@ -1,4 +1,5 @@
 import csv
+import tensorflow as tf
 
 from datasets.classificationdatasets import ClassificationDatasets as DatasetGenerator
 from models.neuralnetwork import NeuralNetwork
@@ -24,13 +25,13 @@ def initialize_config_map():
 
     :return:
     """
-    config_map = {}
-
     # output files
-    config_map["do_write_csv_file"] = False
-    config_map["csv_file"] = None
-    config_map["do_write_trajectory_file"] = False
-    config_map["trajectory_file"] = None
+    config_map = {
+        "do_write_csv_file": False,
+        "csv_file": None,
+        "do_write_trajectory_file": False,
+        "trajectory_file": None
+    }
 
     return config_map
 
@@ -120,12 +121,14 @@ def create_classification_dataset(FLAGS, config_map):
     return xinput, x, ds
 
 
-def construct_network_model(FLAGS, config_map, x):
+def construct_network_model(FLAGS, config_map, x, hidden_activation=tf.nn.relu, output_activation=tf.nn.tanh):
     """ Constructs the neural network
 
     :param FLAGS: FLAGS dictionary with command-line parameters
     :param config_map: configuration dictionary
     :param x: input layer
+        :param hidden_activation: activation function for the hidden layer
+        :param output_activation: activation function for the output layer
     :return: neural network
     """
     print("Constructing neural network")
@@ -139,5 +142,8 @@ def construct_network_model(FLAGS, config_map, x):
         x, hidden_dimension, config_map["output_dimension"],
         optimizer=train_method,
         seed=FLAGS.seed,
-        add_dropped_layer=False)
+        add_dropped_layer=False,
+        hidden_activation=hidden_activation,
+        output_activation=output_activation
+    )
     return nn

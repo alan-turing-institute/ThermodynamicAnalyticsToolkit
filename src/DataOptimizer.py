@@ -38,6 +38,8 @@ def parse_parameters():
         help='Keep probability for training dropout, e.g. 0.9')
     parser.add_argument('--every_nth', type=int, default=1,
         help='Store only every nth trajectory (and run) point to files, e.g. 10')
+    parser.add_argument('--hidden_activation', type=str, default="relu",
+        help='Activation function to use for hidden layer: tanh, relu, linear')
     parser.add_argument('--hidden_dimension', type=str, nargs='+', default=[],
         help='Dimension of each hidden layer, e.g. 8 8 for two hidden layers each with 8 nodes fully connected')
     parser.add_argument('--input_columns', type=str, nargs='+', default="1 2",
@@ -48,6 +50,8 @@ def parse_parameters():
         help='Amount of noise in [0,1] to use.')
     parser.add_argument('--optimizer', type=str, default="GradientDescent",
         help='Choose the optimizer to use for sampling: GradientDescent')
+    parser.add_argument('--output_activation', type=str, default="tanh",
+        help='Activation function to use for output layer: tanh, relu, linear')
     parser.add_argument('--seed', type=int, default=None,
         help='Seed to use for random number generators.')
     parser.add_argument('--step_width', type=float, default=0.03,
@@ -129,7 +133,10 @@ def main(_):
 
     xinput, x, ds = create_classification_dataset(FLAGS, config_map)
 
-    nn = construct_network_model(FLAGS, config_map, x)
+    activations = { "tanh": tf.nn.tanh, "relu": tf.nn.relu, "linear": tf.identity}
+    nn = construct_network_model(FLAGS, config_map, x,
+                                 hidden_activation=activations[FLAGS.hidden_activation],
+                                 output_activation=activations[FLAGS.output_activation])
 
     csv_writer, trajectory_writer = \
         setup_output_files(FLAGS, nn, config_map)

@@ -82,7 +82,9 @@ class NeuralNetwork(object):
     def create(self, input_layer,
                layer_dimensions, output_dimension,
                optimizer, seed=None,
-               add_dropped_layer=False):
+               add_dropped_layer=False,
+               hidden_activation=tf.nn.relu,
+               output_activation=tf.nn.tanh):
         """ Creates the neural network model according to the specifications.
 
         The `input_layer` needs to be given along with its input_dimension.
@@ -96,6 +98,8 @@ class NeuralNetwork(object):
         :param optimizer: name of optimizer to use
         :param seed: seed for reproducible random values
         :param add_dropped_layer: whether to add dropped layer or not to protect against overfitting
+        :param hidden_activation: activation function for the hidden layer
+        :param output_activation: activation function for the output layer
         """
         self.summary_nodes.clear()
         if seed is not None:
@@ -110,10 +114,10 @@ class NeuralNetwork(object):
         if layer_dimensions is not None and len(layer_dimensions) != 0:
             last_hidden_layer = \
                 self.add_hidden_layers(input_layer, input_dimension,
-                                       layer_dimensions, keep_prob)
-            y = self.add_output_layer(last_hidden_layer, layer_dimensions[-1], output_dimension)
+                                       layer_dimensions, keep_prob, hidden_activation)
+            y = self.add_output_layer(last_hidden_layer, layer_dimensions[-1], output_dimension, output_activation)
         else:
-            y = self.add_output_layer(input_layer, input_dimension, output_dimension)
+            y = self.add_output_layer(input_layer, input_dimension, output_dimension, output_activation)
 
         # print ("Creating summaries")
         loss = self.add_loss_summary(y, y_)
@@ -250,20 +254,21 @@ class NeuralNetwork(object):
         tf.summary.scalar('cross_entropy', cross_entropy)
         return loss
 
-    def add_output_layer(self, current_hidden_layer, hidden_out_dimension, output_dimension):
+    def add_output_layer(self, current_hidden_layer, hidden_out_dimension, output_dimension, activation):
         """ Add the output layer giving the predicted values.
 
         :param current_hidden_layer: last hidden layer which is to be connected to the output layer
         :param hidden_out_dimension: number of nodes in `current_hidden_layer`
         :param output_dimension: number of output nodes
+        :param activation: activation function
         :return: reference to the output layer
         """
-        y = self.nn_layer(current_hidden_layer, hidden_out_dimension, output_dimension, 'output', act=tf.nn.tanh)
+        y = self.nn_layer(current_hidden_layer, hidden_out_dimension, output_dimension, 'output', act=activation)
         self.summary_nodes['y'] = y
         # print("y is " + str(y.get_shape()))
         return y
 
-    def add_hidden_layers(self,input_layer, input_dimension, layer_dimensions, keep_prob = None):
+    def add_hidden_layers(self,input_layer, input_dimension, layer_dimensions, keep_prob = None, activation=tf.nn.relu):
         """ Add fully connected hidden layers each with an additional dropout layer
          (makes the network robust against overfitting).
 
@@ -275,6 +280,7 @@ class NeuralNetwork(object):
         :param input_dimension: number of nodes in `input_layer`
         :param keep_prob: reference to the placeholder with the *keep probability* for the dropped layer
         :param layer_dimensions: list of ints giving the number of nodes of each hidden layer
+        :param activation: activaton function of the hidden layers
         :return: reference to the last layer created
         """
         last_layer = input_layer
