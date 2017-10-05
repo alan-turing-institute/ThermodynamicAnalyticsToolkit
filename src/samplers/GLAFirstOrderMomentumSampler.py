@@ -100,8 +100,8 @@ class GLAFirstOrderMomentumSampler(SGLDSampler):
         self.scaled_momentum = tf.norm(momentum_t)
         tf.summary.scalar('scaled_momentum', self.scaled_momentum)
 
-        kinetic_energy_t = 0.5*tf.reduce_sum(tf.multiply(momentum, momentum))
-        self.kinetic_energy = kinetic_energy_t
+        kinetic_energy_t = 0.5*momentum*momentum
+        self.kinetic_energy = tf.norm(kinetic_energy_t)
         tf.summary.scalar('kinetic_energy', self.kinetic_energy)
 
         return control_flow_ops.group(*[kinetic_energy_t, var_update, momentum_t])
