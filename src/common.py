@@ -121,14 +121,17 @@ def create_classification_dataset(FLAGS, config_map):
     return xinput, x, ds
 
 
-def construct_network_model(FLAGS, config_map, x, hidden_activation=tf.nn.relu, output_activation=tf.nn.tanh):
+def construct_network_model(FLAGS, config_map, x,
+                            hidden_activation=tf.nn.relu, output_activation=tf.nn.tanh,
+                            loss_name="mean_squared"):
     """ Constructs the neural network
 
     :param FLAGS: FLAGS dictionary with command-line parameters
     :param config_map: configuration dictionary
     :param x: input layer
-        :param hidden_activation: activation function for the hidden layer
-        :param output_activation: activation function for the output layer
+    :param hidden_activation: activation function for the hidden layer
+    :param output_activation: activation function for the output layer
+    :param loss_name: name of global loss to use
     :return: neural network
     """
     print("Constructing neural network")
@@ -144,7 +147,8 @@ def construct_network_model(FLAGS, config_map, x, hidden_activation=tf.nn.relu, 
         seed=FLAGS.seed,
         add_dropped_layer=False,
         hidden_activation=hidden_activation,
-        output_activation=output_activation
+        output_activation=output_activation,
+        loss_name=loss_name
     )
     return nn
 

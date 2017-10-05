@@ -40,7 +40,8 @@ class NeuralNetwork(object):
     """Lookup dictionary for input nodes, in TensorFlow parlance called placeholders."""
     summary_nodes = {}
     """Lookup dictionary for summary nodes, specific to TensorFlow. """
-
+    loss_nodes = {}
+    """ Lookup dictionary for the loss nodes, to tell TensorFlow which to train on"""
 
     def get(self, keyname):
         """ Retrieve a node by name from the TensorFlow computational graph.
@@ -84,7 +85,8 @@ class NeuralNetwork(object):
                optimizer, seed=None,
                add_dropped_layer=False,
                hidden_activation=tf.nn.relu,
-               output_activation=tf.nn.tanh):
+               output_activation=tf.nn.tanh,
+               loss_name="mean_squared"):
         """ Creates the neural network model according to the specifications.
 
         The `input_layer` needs to be given along with its input_dimension.
@@ -100,6 +102,7 @@ class NeuralNetwork(object):
         :param add_dropped_layer: whether to add dropped layer or not to protect against overfitting
         :param hidden_activation: activation function for the hidden layer
         :param output_activation: activation function for the output layer
+        :param loss_name: name of loss to use in training, see :method:`NeuralNetwork.add_losses`
         """
         self.summary_nodes.clear()
         if seed is not None:
@@ -120,7 +123,8 @@ class NeuralNetwork(object):
             y = self.add_output_layer(input_layer, input_dimension, output_dimension, output_activation)
 
         # print ("Creating summaries")
-        loss = self.add_loss_summary(y, y_)
+        self.add_losses(y, y_)
+        loss = self.set_loss_function(loss_name)
         self.add_accuracy_summary(y, y_)
         merged = tf.summary.merge_all()  # Merge all the summaries
         self.summary_nodes['merged'] = merged
@@ -231,28 +235,49 @@ class NeuralNetwork(object):
             self.summary_nodes['train_step'] = train_step
             self.summary_nodes['scaled_gradient'] = optimizer.scaled_gradient
 
-    def add_loss_summary(self, y, y_):
-        """ Add nodes to the graph to calculate a loss for the dataset.
-
-        The loss is the root mean squared error of the difference between
-        the predicted label and the true label. Also, the cross entropy is
-        added as a possible loss node.
+    def set_loss_function(self, loss_name):
+        """ Set the loss function to minimize when optimizing.
 
         Note that the loss node can be obtained via :method:`neuralnetwork.get`.
         For evaluation it needs to be given to a tensorflow.Session.run() which
         will return the evaluated node given a dataset.
 
+        :param loss_name: name of the loss function
+        :return: loss node for :method:`tensorflow.train`
+        """
+        if loss_name not in self.loss_nodes:
+            raise NotImplementedError
+        with tf.name_scope('total'):
+            loss = self.loss_nodes[loss_name]
+            tf.summary.scalar('loss', loss)
+            self.summary_nodes["loss"] = loss
+        return loss
+
+    def add_losses(self, y, y_):
+        """ Add nodes to the graph to calculate losses for the dataset.
+
         :param y: predicted labels
         :param y_: true labels
         """
         with tf.name_scope('loss'):
-            cross_entropy = tf.reduce_mean(-tf.reduce_sum(y_ * tf.log(y), reduction_indices=[1]))
-            with tf.name_scope('total'):
-                loss = tf.losses.mean_squared_error(labels=y_, predictions=y)
-                self.summary_nodes['loss'] = loss
-        tf.summary.scalar('loss', loss)
-        tf.summary.scalar('cross_entropy', cross_entropy)
-        return loss
+            softmax_cross_entropy = tf.reduce_mean(
+                tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y))
+            sigmoid_cross_entropy = tf.reduce_mean(
+                tf.nn.sigmoid_cross_entropy_with_logits(labels=y_, logits=y))
+            absolute_difference = tf.losses.absolute_difference(labels=y_, predictions=y)
+            cosine_distance = tf.losses.cosine_distance(labels=y_, predictions=y, dim=1)
+            hinge_loss = tf.losses.hinge_loss(labels=y_, logits=y)
+            log_loss = tf.losses.log_loss(labels=y_, predictions=y)
+            mean_squared = tf.losses.mean_squared_error(labels=y_, predictions=y)
+        tf.summary.scalar('softmax_cross_entropy', softmax_cross_entropy)
+
+        self.loss_nodes["mean_squared"] = mean_squared
+        self.loss_nodes["log_loss"] = log_loss
+        self.loss_nodes["hinge_loss"] = hinge_loss
+        self.loss_nodes["cosine_distance"] = cosine_distance
+        self.loss_nodes["absolute_difference"] = absolute_difference
+        self.loss_nodes["sigmoid_cross_entropy"] = sigmoid_cross_entropy
+        self.loss_nodes["softmax_cross_entropy"] = softmax_cross_entropy
 
     def add_output_layer(self, current_hidden_layer, hidden_out_dimension, output_dimension, activation):
         """ Add the output layer giving the predicted values.

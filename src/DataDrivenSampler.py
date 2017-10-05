@@ -48,6 +48,8 @@ def parse_parameters():
         help='Pick a list of the following: (1) x1, (2) x2, (3) x1^2, (4) x2^2, (5) sin(x1), (6) sin(x2).')
     parser.add_argument('--inverse_temperature', type=float, default=1.,
         help='Inverse temperature that scales the gradients')
+    parser.add_argument('--loss', type=str, default="mean_squared",
+        help='Set the loss to be measured during sampling, e.g. mean_squared, log_loss, ...')
     parser.add_argument('--max_steps', type=int, default=1000,
         help='Number of steps to run trainer.')
     parser.add_argument('--noise', type=float, default=0.,
@@ -162,7 +164,8 @@ def main(_):
     activations = get_activations()
     nn = construct_network_model(FLAGS, config_map, x,
                                  hidden_activation=activations[FLAGS.hidden_activation],
-                                 output_activation=activations[FLAGS.output_activation])
+                                 output_activation=activations[FLAGS.output_activation],
+                                 loss_name=FLAGS.loss)
 
     csv_writer, trajectory_writer = \
         setup_output_files(FLAGS, nn, config_map)
