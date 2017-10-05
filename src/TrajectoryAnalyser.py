@@ -49,17 +49,18 @@ if __name__ == '__main__':
     print("Using parameters: "+str(FLAGS))
 
     # load trajectory
-    trajLoaded=np.asarray(pd.read_csv(FLAGS.csv_file, sep=','))
+    df = pd.read_csv(FLAGS.csv_file, sep=',', header=0)
+    trajLoaded=np.asarray(df.loc[:,['step','loss','kinetic_energy']])
 
     traj=trajLoaded[::FLAGS.every_nth,:]
 
-    loss=traj[:,2]
-    kinetic_energy=traj[:,4]
     steps=traj[:,0]
+    loss=traj[:,1]
+    kinetic_energy=traj[:,2]
     no_steps = len(steps)
 
     print("%d steps." % (no_steps))
-    print("%lg variance." % (traj[:,1:].var()))
+    print("%lg average and %lg variance in loss." % (np.average(loss), loss.var()))
 
     end_list = np.arange(1,FLAGS.steps+1)*int(no_steps/FLAGS.steps)-1
     print(str(end_list))
