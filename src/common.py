@@ -1,9 +1,18 @@
 import csv
+import os
 import tensorflow as tf
 
 from DataDrivenSampler.datasets.classificationdatasets import ClassificationDatasets as DatasetGenerator
 from DataDrivenSampler.models.neuralnetwork import NeuralNetwork
 
+
+def get_filename_from_fullpath(fullpath):
+    """ Returns the filename for any given full path
+
+    :param fullpath: string containing filename and folders
+    :return: just the filename
+    """
+    return os.path.basename(fullpath)
 
 def get_list_from_string(str_or_list_of_str):
     """ Extracts list of ints from any string (or list of strings).

@@ -6,10 +6,10 @@ sys.path.insert(1, '@pythondir@')
 import tensorflow as tf
 import numpy as np
 
-from DataDrivenSampler.version import get_package_version
+from DataDrivenSampler.version import get_package_version, get_build_hash
 from DataDrivenSampler.DataDrivenSampler import parse_parameters, sample, setup_output_files
 from DataDrivenSampler.common import create_classification_dataset, closeFiles, \
-    construct_network_model, get_activations, initialize_config_map
+    construct_network_model, get_activations, get_filename_from_fullpath, initialize_config_map
 
 FLAGS = None
 
@@ -43,7 +43,7 @@ if __name__ == '__main__':
 
     if FLAGS.version:
         # give version and exit
-        print(sys.argv[0]+" -- "+get_package_version())
+        print(get_filename_from_fullpath(sys.argv[0])+" "+get_package_version()+" -- version "+get_build_hash())
         sys.exit(0)
 
     print("Using parameters: "+str(FLAGS))

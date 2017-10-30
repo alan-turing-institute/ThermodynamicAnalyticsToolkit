@@ -49,4 +49,6 @@ DDSAnalyser: DDSAnalyser.in Makefile
 	chmod +x DDSAnalyser
 
 $(srcdir)/version.py: $(srcdir)/.git-version
-	echo -e "def get_package_version():\n\t return \"$(PACKAGE_NAME) version "`cat $(srcdir)/.git-version`"\";" >$@
+	echo -e "def get_package_name():\n\t return \"$(PACKAGE_NAME)\"" >$@
+	echo -e "def get_package_version():\n\t return \"$(PACKAGE_VERSION)\"" >>$@
+	echo -e "def get_build_hash():\n\t return \""`cat $(srcdir)/.git-version`"\"" >>$@
