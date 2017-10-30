@@ -19,12 +19,12 @@ def parse_parameters():
         help='Evaluate only every nth trajectory point to files, e.g. 10')
     parser.add_argument('--csv_file', type=str, default=None,
         help='CSV run file name to read run time values from.')
-    parser.add_argument('--steps', type=int, default=20,
-        help='How many evaluation steps to take')
-    parser.add_argument('--version', action="store_true",
-        help='Gives version information')
     parser.add_argument('--output_file', type=str, default=None,
         help='CSV file name to output averages and variances.')
+    parser.add_argument('--steps', type=int, default=20,
+        help='How many evaluation steps to take')
+    parser.add_argument('--version', '-V', action="store_true",
+        help='Gives version information')
     return parser.parse_known_args()
 
 

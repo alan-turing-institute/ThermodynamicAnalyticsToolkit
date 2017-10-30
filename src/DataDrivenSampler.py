@@ -58,7 +58,7 @@ def parse_parameters():
         help='step width \Delta t to use, e.g. 0.01')
     parser.add_argument('--trajectory_file', type=str, default=None,
         help='CSV file name to output trajectories of sampling, i.e. weights and evaluated loss function.')
-    parser.add_argument('--version', action="store_true",
+    parser.add_argument('--version', '-V', action="store_true",
         help='Gives version information')
     return parser.parse_known_args()
 
