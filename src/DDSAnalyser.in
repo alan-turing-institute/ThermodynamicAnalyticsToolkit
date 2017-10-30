@@ -7,6 +7,7 @@ import tensorflow as tf
 import pandas as pd
 import numpy as np
 
+from DataDrivenSampler.version import get_package_version
 from DataDrivenSampler.common import setup_csv_file
 from DataDrivenSampler.TrajectoryAnalyser import parse_parameters, moving_average
 
@@ -45,7 +46,7 @@ if __name__ == '__main__':
 
     if FLAGS.version:
         # give version and exit
-        print(sys.argv[0]+" version 0.1")
+        print(sys.argv[0]+" -- "+get_package_version())
         sys.exit(0)
 
     print("Using parameters: "+str(FLAGS))

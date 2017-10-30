@@ -5,9 +5,20 @@ DataDrivenSampler_PYTHON = \
 	DataDrivenSampler.py \
 	DataOptimizer.py \
 	TrajectoryAnalyser.py \
+	$(srcdir)/version.py \
 	__init__.py
 
 DataDrivenSamplerdir = $(pythondir)/DataDrivenSampler
+
+FORCE:
+$(srcdir)/.git-version: FORCE
+	@if (test -d $(top_srcdir)/.git && cd $(srcdir) \
+		&& { git describe --dirty --always || git describe; } ) > .git-version-t 2>/dev/null \
+		&& ! diff .git-version-t $(srcdir)/.git-version >/dev/null 2>&1; then \
+		mv -f .git-version-t $(srcdir)/.git-version; \
+	else \
+		rm -f .git-version-t; \
+	fi
 
 bin_SCRIPTS = \
 	DDSampler \
@@ -16,6 +27,7 @@ bin_SCRIPTS = \
 
 CLEANFILES = $(bin_SCRIPTS)
 EXTRA_DIST = \
+	$(srcdir)/.git-version \
 	DDSampler.in \
 	DDSOptimizer.in \
 	DDSAnalyser.in
@@ -35,3 +47,6 @@ DDSOptimizer: DDSOptimizer.in Makefile
 DDSAnalyser: DDSAnalyser.in Makefile
 	$(do_substitution) < $(srcdir)/DDSAnalyser.in > DDSAnalyser
 	chmod +x DDSAnalyser
+
+$(srcdir)/version.py: $(srcdir)/.git-version
+	echo -e "def get_package_version():\n\t return \"$(PACKAGE_NAME) version "`cat $(srcdir)/.git-version`"\";" >$@

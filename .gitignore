@@ -1,3 +1,9 @@
+# specific source code versioning stuff
+version.py
+.git-version
+
+
+# python and pycharm stuff
 __pycache__
 .idea
 
