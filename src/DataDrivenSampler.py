@@ -84,6 +84,9 @@ def sample(FLAGS, ds, sess, nn, xinput, csv_writer, trajectory_writer, config_ma
     if FLAGS.sampler == "StochasticMomentumLangevin":
         mom_noise_nodes = nn.get_list_of_nodes(["kinetic_energy", "scaled_momentum", "scaled_gradient", "scaled_noise"])
 
+    output_width=8
+    output_precision=8
+
     # check that sampler's parameters are actually used
     if FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder", "GeometricLangevinAlgorithm_2ndOrder"]:
         gamma, beta, deltat = sess.run(nn.get_list_of_nodes(
@@ -113,8 +116,10 @@ def sample(FLAGS, ds, sess, nn, xinput, csv_writer, trajectory_writer, config_ma
                     feed_dict=feed_dict)
                 trajectory_writer.writerow(
                     [global_step, loss_eval]
-                    + [item for sublist in weights_eval for item in sublist]
-                    + [item for item in biases_eval])
+                    + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
+                       for sublist in weights_eval for item in sublist]
+                    + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
+                       for item in biases_eval])
 
             if config_map["do_write_csv_file"]:
                 if FLAGS.sampler == "StochasticGradientLangevinDynamics":
@@ -124,8 +129,11 @@ def sample(FLAGS, ds, sess, nn, xinput, csv_writer, trajectory_writer, config_ma
                   kinetic_energy, scaled_mom, scaled_grad, scaled_noise = \
                       sess.run(mom_noise_nodes, feed_dict=feed_dict)
                   csv_writer.writerow([global_step, i, acc, loss_eval]
-                                      + [loss_eval+kinetic_energy]
-                                      + [kinetic_energy, scaled_mom, scaled_grad, scaled_noise])
+                                    + ['{:{width}.{precision}e}'.format(loss_eval+kinetic_energy,
+                                                                        width=output_width,
+                                                                        precision=output_precision)]
+                                    + ['{:{width}.{precision}e}'.format(x,width=output_width,precision=output_precision)
+                                       for x in [kinetic_energy, scaled_mom, scaled_grad, scaled_noise]])
                 else:
                   csv_writer.writerow([global_step, i, acc, loss_eval])
 

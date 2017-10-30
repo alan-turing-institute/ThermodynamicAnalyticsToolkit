@@ -13,6 +13,9 @@ from DataDrivenSampler.TrajectoryAnalyser import parse_parameters, moving_averag
 
 FLAGS = None
 
+output_width=8
+output_precision=8
+
 
 def main(_):
     # load trajectory
@@ -38,7 +41,7 @@ def main(_):
 
     csv_writer, csv_file = setup_csv_file(FLAGS.output_file, ['step', 'average_kinetic_energy'])
     for step, avg in zip(actual_steps, avg):
-        csv_writer.writerow([step, avg])
+        csv_writer.writerow([step, '{:{width}.{precision}e}'.format(avg, width=output_width, precision=output_precision)])
     csv_file.close()
 
 if __name__ == '__main__':

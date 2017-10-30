@@ -91,6 +91,9 @@ def train(FLAGS, ds, sess, nn, xinput, csv_writer, trajectory_writer, config_map
     placeholder_nodes = nn.get_dict_of_nodes(["step_width", "y_"])
     test_nodes = nn.get_list_of_nodes(["merged", "train_step", "accuracy", "global_step",
                                        "loss", "y_", "y", "scaled_gradient"])
+    output_width=8
+    output_precision=8
+
     print("Starting to train")
     for i in range(FLAGS.max_steps):
         print("Current step is "+str(i))
@@ -110,8 +113,10 @@ def train(FLAGS, ds, sess, nn, xinput, csv_writer, trajectory_writer, config_map
                     sess.run([nn.get("weights"), nn.get("biases")],feed_dict=feed_dict)
                 trajectory_writer.writerow(
                     [global_step, loss_eval]
-                    + [item for sublist in weights_eval for item in sublist]
-                    + [item for item in biases_eval])
+                    + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
+                       for sublist in weights_eval for item in sublist]
+                    + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
+                       for item in biases_eval])
 
         print('Accuracy at step %s (%s): %s' % (i, global_step, acc))
         #print('Loss at step %s: %s' % (i, loss_eval))
