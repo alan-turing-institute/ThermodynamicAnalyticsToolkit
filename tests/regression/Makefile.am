@@ -9,7 +9,12 @@ TESTSCRIPTS =
 # PLEASE adhere to alphabetical ordering of TESTSCRIPTS
 
 TESTSCRIPTS += \
-	$(srcdir)/DataDrivenSampler/testsuite-simple.at
+	$(srcdir)/DataDrivenSampler/testsuite-datadrivensampler.at \
+	$(srcdir)/DataDrivenSampler/testsuite-datadrivensampler-simple.at \
+	$(srcdir)/DataOptimizer/testsuite-dataoptimizer.at \
+	$(srcdir)/DataOptimizer/testsuite-dataoptimizer-simple.at \
+	$(srcdir)/TrajectoryAnalyser/testsuite-trajectoryanalyser.at \
+	$(srcdir)/TrajectoryAnalyser/testsuite-trajectoryanalyser-simple.at
 
 EXTRA_DIST = \
 	testsuite.at \

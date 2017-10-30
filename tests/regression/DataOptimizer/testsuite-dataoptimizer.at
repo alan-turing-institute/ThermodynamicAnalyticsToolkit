@@ -15,23 +15,9 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Process with autom4te to create an -*- Autotest -*- test suite.
-#
-# see regression/... subdirs wherein for each of the cases and each check (enumerated) is a pre and post dir. 
-# In pre initial files are placed, in post results can be found to be checked by diff in this testsuite.
+### all tests on DataOptimizer
 
-AT_INIT([DataDrivenSampler])
-#AT_TESTED(awk)
+AT_BANNER([DataDrivenSampler - DataOptimizer])
 
-# Use colored output with new-enough Autotest.
-m4_ifdef([AT_COLOR_TESTS], [AT_COLOR_TESTS])
-
-# tests for DataDrivenSampler or DDSampler
-m4_include(DataDrivenSampler/testsuite-datadrivensampler.at)
-
-# tests for DataOptimizer or DDSOptimizer
-m4_include(DataOptimizer/testsuite-dataoptimizer.at)
-
-# tests for TrajectoryAnalyser or DDSAnalyser
-m4_include(TrajectoryAnalyser/testsuite-trajectoryanalyser.at)
-
+# tests on simple behavior
+m4_include([DataOptimizer/testsuite-dataoptimizer-simple.at])

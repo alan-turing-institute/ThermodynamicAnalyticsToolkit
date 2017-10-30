@@ -15,13 +15,9 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-### 
+### all tests on DataDrivenSampler
 
-AT_SETUP([Basics - help output])
-AT_KEYWORDS([help ddsampler])
+AT_BANNER([DataDrivenSampler - DataDrivenSampler])
 
-AT_CHECK([../../DDSampler --help], 0, [stdout], [stderr])
-AT_CHECK([fgrep "usage:" stdout], 0, [ignore], [ignore])
-
-AT_CLEANUP
-
+# tests on simple behavior
+m4_include([DataDrivenSampler/testsuite-datadrivensampler-simple.at])

@@ -32,6 +32,8 @@ AC_CONFIG_FILES(
 	tests/regression/atlocal
 	tests/regression/Makefile)
 AC_CONFIG_FILES([tests/regression/DDSampler], [chmod +x tests/regression/DDSampler])
+AC_CONFIG_FILES([tests/regression/DDSOptimizer], [chmod +x tests/regression/DDSOptimizer])
+AC_CONFIG_FILES([tests/regression/DDSAnalyser], [chmod +x tests/regression/DDSAnalyser])
 AC_CONFIG_FILES([
         doc/Makefile
         doc/userguide/Makefile
