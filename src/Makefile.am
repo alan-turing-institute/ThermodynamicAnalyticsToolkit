@@ -34,6 +34,7 @@ EXTRA_DIST = \
 
 do_substitution = sed -e 's,[@]pythondir[@],$(pythondir),g' \
 	-e 's,[@]PACKAGE[@],$(PACKAGE),g' \
+	-e 's,[@]PYTHON[@],$(PYTHON),g' \
 	-e 's,[@]VERSION[@],$(VERSION),g' 
 
 DDSampler: DDSampler.in Makefile
