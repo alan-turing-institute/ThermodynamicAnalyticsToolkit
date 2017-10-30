@@ -134,13 +134,14 @@ class NeuralNetwork(object):
         self.add_losses(y, y_)
         loss = self.set_loss_function(loss_name)
         self.add_accuracy_summary(y, y_)
-        merged = tf.summary.merge_all()  # Merge all the summaries
-        self.summary_nodes['merged'] = merged
 
         if optimizer == "GradientDescent":
             self.add_train_method_optimizer(loss, optimizer, seed)
         else:
             self.add_train_method_sampler(loss, optimizer, seed)
+
+        merged = tf.summary.merge_all()  # Merge all the summaries
+        self.summary_nodes['merged'] = merged
 
     def add_true_labels(self, output_dimension):
         """ Adds the known labels as placeholder nodes to the graph.

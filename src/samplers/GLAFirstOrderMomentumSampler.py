@@ -71,7 +71,8 @@ class GLAFirstOrderMomentumSampler(SGLDSampler):
         scaled_gradient = step_width_t * grad
         print("Shape of scaled_gradient "+str(scaled_gradient.get_shape()))
         self.scaled_gradient = tf.norm(grad)
-        tf.summary.scalar('scaled_gradient', self.scaled_gradient)
+        with tf.name_scope('sample'):
+            tf.summary.scalar('scaled_gradient', self.scaled_gradient)
 
         momentum = self.get_slot(var, "momentum")
 
@@ -98,13 +99,10 @@ class GLAFirstOrderMomentumSampler(SGLDSampler):
         momentum_update = alpha_t * momentum_full_step_t + scaled_noise
         momentum_t = momentum.assign(momentum_update)
         self.scaled_momentum = tf.norm(momentum_t)
-        tf.summary.scalar('scaled_momentum', self.scaled_momentum)
+        with tf.name_scope('sample'):
+            tf.summary.scalar('scaled_momentum', self.scaled_momentum)
 
-        kinetic_energy_t = 0.5*momentum*momentum
-        self.kinetic_energy = tf.norm(kinetic_energy_t)
-        tf.summary.scalar('kinetic_energy', self.kinetic_energy)
-
-        return control_flow_ops.group(*[kinetic_energy_t, var_update, momentum_t])
+        return control_flow_ops.group(*[var_update, momentum_t])
 
     def _apply_sparse(self, grad, var):
         """ Adds nodes to TensorFlow's computational graph in the case of sparsely

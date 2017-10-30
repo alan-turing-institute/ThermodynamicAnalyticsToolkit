@@ -107,7 +107,17 @@ def sample(FLAGS, ds, sess, nn, xinput, csv_writer, trajectory_writer, config_ma
             placeholder_nodes["inverse_temperature"]: FLAGS.inverse_temperature,
             placeholder_nodes["friction_constant"]: FLAGS.friction_constant
         }
-        # print("Testset is x: "+str(test_xs[0:5])+", y: "+str(test_ys[0:5]))
+        # print("Testset is x: "+str(test_xs[:])+", y: "+str(test_ys[:]))
+        # print("Testset is x: "+str(test_xs[:])+", y: "+str(test_ys[:]))
+
+        # NOTE: All values from nodes contained in the same call to tf.run() with train_step
+        # will be evaluated as if before train_step. Nodes that are changed in the update due to
+        # train_step (e.g. momentum_t) however are updated.
+        # In other words, whether we use
+        #   tf.run([train_step, loss_eval], ...)
+        # or
+        #   tf.run([loss_eval, train_step], ...)
+        # is not important. Only a subsequent, distinct tf.run() call would produce a different loss_eval.
         summary, _, acc, global_step, loss_eval, y_true_eval, y_eval = sess.run(test_nodes, feed_dict=feed_dict)
         if i % FLAGS.every_nth == 0:
             if config_map["do_write_trajectory_file"]:
@@ -126,16 +136,29 @@ def sample(FLAGS, ds, sess, nn, xinput, csv_writer, trajectory_writer, config_ma
                     csv_writer.writerow([global_step, i, acc, loss_eval]
                                         + sess.run(noise_nodes,feed_dict=feed_dict))
                 elif FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder", "GeometricLangevinAlgorithm_2ndOrder"]:
-                  kinetic_energy, scaled_mom, scaled_grad, scaled_noise = \
-                      sess.run(mom_noise_nodes, feed_dict=feed_dict)
-                  csv_writer.writerow([global_step, i, acc, loss_eval]
-                                    + ['{:{width}.{precision}e}'.format(loss_eval+kinetic_energy,
-                                                                        width=output_width,
-                                                                        precision=output_precision)]
-                                    + ['{:{width}.{precision}e}'.format(x,width=output_width,precision=output_precision)
-                                       for x in [kinetic_energy, scaled_mom, scaled_grad, scaled_noise]])
+                    summary_proto = tf.Summary()
+                    summary_proto.ParseFromString(summary)
+                    kinetic_energy = 0.
+                    scaled_mom = 0.
+                    scaled_grad = 0.
+                    scaled_noise = 0.
+                    for val in summary_proto.value:
+                        if "kinetic_energy" in val.tag:
+                            kinetic_energy += val.simple_value
+                        elif "scaled_gradient" in val.tag:
+                            scaled_grad += val.simple_value
+                        elif "scaled_momentum" in val.tag:
+                            scaled_mom += val.simple_value
+                        elif "scaled_noise" in val.tag:
+                            scaled_noise += val.simple_value
+                    csv_writer.writerow([global_step, i, acc, loss_eval]
+                                      + ['{:{width}.{precision}e}'.format(loss_eval+kinetic_energy,
+                                                                          width=output_width,
+                                                                          precision=output_precision)]
+                                      + ['{:{width}.{precision}e}'.format(x,width=output_width,precision=output_precision)
+                                         for x in [kinetic_energy, scaled_mom, scaled_grad, scaled_noise]])
                 else:
-                  csv_writer.writerow([global_step, i, acc, loss_eval])
+                    csv_writer.writerow([global_step, i, acc, loss_eval])
 
         print('Accuracy at step %s (%s): %s' % (i, global_step, acc))
         #print('Loss at step %s: %s' % (i, loss_eval))
