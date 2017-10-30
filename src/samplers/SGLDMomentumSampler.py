@@ -6,7 +6,7 @@ from tensorflow.python.framework import ops
 from tensorflow.python.training import optimizer
 import tensorflow as tf
 
-from samplers.sgldsampler import SGLDSampler
+from DataDrivenSampler.samplers.sgldsampler import SGLDSampler
 
 
 class SGLDMomentumSampler(SGLDSampler):

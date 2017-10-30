@@ -1,7 +1,7 @@
 import tensorflow as tf
-from samplers.GradientDescent import GradientDescent
-from samplers.sgldsampler import SGLDSampler
-from samplers.SGLDMomentumSampler import SGLDMomentumSampler
+from DataDrivenSampler.samplers.GradientDescent import GradientDescent
+from DataDrivenSampler.samplers.sgldsampler import SGLDSampler
+from DataDrivenSampler.samplers.SGLDMomentumSampler import SGLDMomentumSampler
 
 class NeuralNetwork(object):
     """ This class encapsulates the construction of the neural network.

@@ -8,17 +8,11 @@
 # (C) Frederik Heber 2017-09-18
 
 import argparse
-import numpy as np
-import sys
 
 import tensorflow as tf
-from common import get_list_from_string, initialize_config_map, \
-    setup_run_file, setup_trajectory_file, closeFiles, \
-    create_classification_dataset, construct_network_model, \
-    get_activations
-from datasets.classificationdatasets import ClassificationDatasets as DatasetGenerator
 
-FLAGS = None
+from DataDrivenSampler.datasets.classificationdatasets import ClassificationDatasets as DatasetGenerator
+from DataDrivenSampler.common import setup_run_file, setup_trajectory_file
 
 
 def parse_parameters():
@@ -162,40 +156,4 @@ def setup_output_files(FLAGS, nn, config_map):
                                               nn.get("weights").get_shape()[0], nn.get("biases").get_shape()[0],
                                               config_map)
     return csv_writer, trajectory_writer
-
-
-def main(_):
-    config_map = initialize_config_map()
-
-    # init random: None will use random seed
-    np.random.seed(FLAGS.seed)
-
-    xinput, x, ds = create_classification_dataset(FLAGS, config_map)
-
-    activations = get_activations()
-    nn = construct_network_model(FLAGS, config_map, x,
-                                 hidden_activation=activations[FLAGS.hidden_activation],
-                                 output_activation=activations[FLAGS.output_activation],
-                                 loss_name=FLAGS.loss)
-
-    csv_writer, trajectory_writer = \
-        setup_output_files(FLAGS, nn, config_map)
-
-    sess = tf.Session()
-    nn.init_graph(sess)
-
-    sample(FLAGS, ds, sess, nn, xinput, csv_writer, trajectory_writer, config_map)
-
-    closeFiles(config_map)
-
-if __name__ == '__main__':
-    FLAGS, unparsed = parse_parameters()
-
-    if FLAGS.version:
-        # give version and exit
-        print(sys.argv[0]+" version 0.1")
-        sys.exit(0)
-
-    print("Using parameters: "+str(FLAGS))
-tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
 

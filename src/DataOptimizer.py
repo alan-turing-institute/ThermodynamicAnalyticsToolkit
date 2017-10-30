@@ -8,18 +8,9 @@
 # (C) Frederik Heber 2017-09-18
 
 import argparse
-import csv
-import numpy as np
-import sys
 
-import tensorflow as tf
-from common import get_list_from_string, initialize_config_map, \
-    setup_run_file, setup_trajectory_file, closeFiles, \
-    create_classification_dataset, construct_network_model, \
-    get_activations
-from datasets.classificationdatasets import ClassificationDatasets as DatasetGenerator
-
-FLAGS = None
+from DataDrivenSampler.common import setup_run_file, setup_trajectory_file
+from DataDrivenSampler.datasets.classificationdatasets import ClassificationDatasets as DatasetGenerator
 
 
 def parse_parameters():
@@ -127,39 +118,3 @@ def train(FLAGS, ds, sess, nn, xinput, csv_writer, trajectory_writer, config_map
         #print('y_ at step %s: %s' % (i, str(y_true_eval[0:9].transpose())))
         #print('y at step %s: %s' % (i, str(y_eval[0:9].transpose())))
     print("TRAINED.")
-
-def main(_):
-    config_map = initialize_config_map()
-
-    # init random: None will use random seed
-    np.random.seed(FLAGS.seed)
-
-    xinput, x, ds = create_classification_dataset(FLAGS, config_map)
-
-    activations = get_activations()
-    nn = construct_network_model(FLAGS, config_map, x,
-                                 hidden_activation=activations[FLAGS.hidden_activation],
-                                 output_activation=activations[FLAGS.output_activation],
-                                 loss_name=FLAGS.loss)
-
-    csv_writer, trajectory_writer = \
-        setup_output_files(FLAGS, nn, config_map)
-
-    sess = tf.Session()
-    nn.init_graph(sess)
-
-    train(FLAGS, ds, sess, nn, xinput, csv_writer, trajectory_writer, config_map)
-
-    closeFiles(config_map)
-
-if __name__ == '__main__':
-    FLAGS, unparsed = parse_parameters()
-
-    if FLAGS.version:
-        # give version and exit
-        print(sys.argv[0]+" version 0.1")
-        sys.exit(0)
-
-    print("Using parameters: "+str(FLAGS))
-tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
-

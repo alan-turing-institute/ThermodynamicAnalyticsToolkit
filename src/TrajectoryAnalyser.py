@@ -6,10 +6,6 @@
 
 import argparse
 import numpy as np
-import pandas as pd
-import sys
-
-from common import setup_csv_file
 
 
 def parse_parameters():
@@ -36,40 +32,3 @@ def moving_average(a, n=3) :
     ret = np.cumsum(a, dtype=float)
     ret[n:] = ret[n:] - ret[:-n]
     return ret[n - 1:] / n
-
-
-if __name__ == '__main__':
-    FLAGS, unparsed = parse_parameters()
-
-    if FLAGS.version:
-        # give version and exit
-        print(sys.argv[0]+" version 0.1")
-        sys.exit(0)
-
-    print("Using parameters: "+str(FLAGS))
-
-    # load trajectory
-    df = pd.read_csv(FLAGS.csv_file, sep=',', header=0)
-    trajLoaded=np.asarray(df.loc[:,['step','loss','kinetic_energy']])
-
-    traj=trajLoaded[::FLAGS.every_nth,:]
-
-    steps=traj[:,0]
-    loss=traj[:,1]
-    kinetic_energy=traj[:,2]
-    no_steps = len(steps)
-
-    print("%d steps." % (no_steps))
-    print("%lg average and %lg variance in loss." % (np.average(loss), loss.var()))
-
-    end_list = np.arange(1,FLAGS.steps+1)*int(no_steps/FLAGS.steps)-1
-    print(str(end_list))
-    avg = [np.average(kinetic_energy[0:end]) for end in end_list]
-    actual_steps = [steps[end] for end in end_list]
-    print("Average final kinetic energy "+str(avg))
-    #    print("Moving average kinetic energy: "+str(avg_kinetic[::10]))
-
-    csv_writer, csv_file = setup_csv_file(FLAGS.output_file, ['step', 'average_kinetic_energy'])
-    for step, avg in zip(actual_steps, avg):
-        csv_writer.writerow([step, avg])
-    csv_file.close()

@@ -1,8 +1,8 @@
 import csv
 import tensorflow as tf
 
-from datasets.classificationdatasets import ClassificationDatasets as DatasetGenerator
-from models.neuralnetwork import NeuralNetwork
+from DataDrivenSampler.datasets.classificationdatasets import ClassificationDatasets as DatasetGenerator
+from DataDrivenSampler.models.neuralnetwork import NeuralNetwork
 
 
 def get_list_from_string(str_or_list_of_str):

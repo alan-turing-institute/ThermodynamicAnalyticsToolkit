@@ -6,7 +6,7 @@ mpl.use('Agg')  # no display
 import matplotlib.pyplot as plt
 import io
 
-from datasets.dataset import Dataset
+from DataDrivenSampler.datasets.dataset import Dataset
 
 
 class ClassificationDatasets:

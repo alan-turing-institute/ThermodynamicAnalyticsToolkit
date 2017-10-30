@@ -1,9 +1,11 @@
 SUBDIRS = datasets diffusion_maps models samplers
 
 DataDrivenSampler_PYTHON = \
+	common.py \
 	DataDrivenSampler.py \
 	DataOptimizer.py \
-	TrajectoryAnalyser.py
+	TrajectoryAnalyser.py \
+	__init__.py
 
 DataDrivenSamplerdir = $(pythondir)/DataDrivenSampler
 
@@ -16,7 +18,7 @@ CLEANFILES = $(bin_SCRIPTS)
 EXTRA_DIST = \
 	DDSampler.in \
 	DDSOptimizer.in \
-	DDSTrajectoryAnalyser.in
+	DDSAnalyser.in
 
 do_substitution = sed -e 's,[@]pythondir[@],$(pythondir),g' \
 	-e 's,[@]PACKAGE[@],$(PACKAGE),g' \

@@ -3,4 +3,46 @@
 import sys, getopt
 sys.path.insert(1, '@pythondir@')
 
-import DataOptimizer
+import tensorflow as tf
+import numpy as np
+
+from DataDrivenSampler.DataOptimizer import parse_parameters, train, setup_output_files
+from DataDrivenSampler.common import create_classification_dataset, closeFiles, \
+    construct_network_model, get_activations, initialize_config_map
+
+
+def main(_):
+    config_map = initialize_config_map()
+
+    # init random: None will use random seed
+    np.random.seed(FLAGS.seed)
+
+    xinput, x, ds = create_classification_dataset(FLAGS, config_map)
+
+    activations = get_activations()
+    nn = construct_network_model(FLAGS, config_map, x,
+                                 hidden_activation=activations[FLAGS.hidden_activation],
+                                 output_activation=activations[FLAGS.output_activation],
+                                 loss_name=FLAGS.loss)
+
+    csv_writer, trajectory_writer = \
+        setup_output_files(FLAGS, nn, config_map)
+
+    sess = tf.Session()
+    nn.init_graph(sess)
+
+    train(FLAGS, ds, sess, nn, xinput, csv_writer, trajectory_writer, config_map)
+
+    closeFiles(config_map)
+
+if __name__ == '__main__':
+    FLAGS, unparsed = parse_parameters()
+
+    if FLAGS.version:
+        # give version and exit
+        print(sys.argv[0]+" version 0.1")
+        sys.exit(0)
+
+    print("Using parameters: "+str(FLAGS))
+    tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
+
