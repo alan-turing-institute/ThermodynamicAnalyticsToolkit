@@ -1,2 +1,15 @@
 __pycache__
 .idea
+
+# autotools stuff
+Makefile.in
+
+ChangeLog
+configure
+INSTALL
+NEWS
+aclocal.m4
+autom4te.cache/
+build-aux/
+tests/regression/testsuite
+

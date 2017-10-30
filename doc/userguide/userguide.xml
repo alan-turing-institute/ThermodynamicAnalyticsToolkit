@@ -1,0 +1,19 @@
+﻿<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN" "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd">
+<book>
+  <title>DataDrivenSampler - Manual</title>
+  <author>
+      <firstname>Frederik</firstname>
+      <surname>Heber</surname>
+      <email>frederik.heber@gmail.com</email>
+      <address>The University of Edinburgh</address>
+  </author>
+  <chapter>
+    <title>Introduction</title>
+    <section></section>
+  </chapter>
+  <chapter>
+    <title>Acknowledgements</title>
+    <para>Thanks to all users of the code!</para>
+  </chapter>
+</book>
