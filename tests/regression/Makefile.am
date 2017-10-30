@@ -10,6 +10,8 @@ TESTSCRIPTS =
 TESTSCRIPTS += \
 	$(srcdir)/DataDrivenSampler/testsuite-datadrivensampler.at \
 	$(srcdir)/DataDrivenSampler/testsuite-datadrivensampler-simple.at \
+	$(srcdir)/DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-given_seeds.at \
+	$(srcdir)/DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-no_seeds.at \
 	$(srcdir)/DataOptimizer/testsuite-dataoptimizer.at \
 	$(srcdir)/DataOptimizer/testsuite-dataoptimizer-simple.at \
 	$(srcdir)/DataOptimizer/Datasets/testsuite-dataoptimizer-datasets.at \
@@ -17,6 +19,8 @@ TESTSCRIPTS += \
 	$(srcdir)/DataOptimizer/Datasets/testsuite-dataoptimizer-datasets-twocircles.at \
 	$(srcdir)/DataOptimizer/Datasets/testsuite-dataoptimizer-datasets-twoclusters.at \
 	$(srcdir)/DataOptimizer/Datasets/testsuite-dataoptimizer-datasets-twospirals.at \
+	$(srcdir)/DataOptimizer/Reproducibility/testsuite-dataoptimizer-reproducibility-given_seeds.at \
+	$(srcdir)/DataOptimizer/Reproducibility/testsuite-dataoptimizer-reproducibility-no_seeds.at \
 	$(srcdir)/TrajectoryAnalyser/testsuite-trajectoryanalyser.at \
 	$(srcdir)/TrajectoryAnalyser/testsuite-trajectoryanalyser-simple.at
 

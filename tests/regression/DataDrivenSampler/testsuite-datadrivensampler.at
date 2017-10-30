@@ -21,3 +21,7 @@ AT_BANNER([DataDrivenSampler - DataDrivenSampler])
 
 # tests on simple behavior
 m4_include([DataDrivenSampler/testsuite-datadrivensampler-simple.at])
+
+# tests on reproducible runs
+m4_include([DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-given_seeds.at])
+m4_include([DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-no_seeds.at])

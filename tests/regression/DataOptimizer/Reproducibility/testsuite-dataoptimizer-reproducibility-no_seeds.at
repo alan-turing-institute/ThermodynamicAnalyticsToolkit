@@ -15,16 +15,35 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-### all tests on DataOptimizer
+### test on reproducible runs using two clusters dataset
 
-AT_BANNER([DataDrivenSampler - DataOptimizer])
+AT_SETUP([Optimizer Reproducibility - no seed])
+AT_KEYWORDS([reproducibility seed twoclusters ddsoptimizer])
 
-# tests on simple behavior
-m4_include([DataOptimizer/testsuite-dataoptimizer-simple.at])
+# run 1
+AT_CHECK([../../DDSOptimizer \
+	--data_type 2 \
+	--batch_size 10 \
+	--hidden_dimension 2 \
+	--learning_rate 0.03 \
+	--max_steps 20 \
+	--optimizer GradientDescent \
+	--csv_file run-first.csv
+], 0, [stdout], [stderr])
 
-# tests on Tensorflow's playground examples
-m4_include([DataOptimizer/Datasets/testsuite-dataoptimizer-datasets.at])
+# run 2
+AT_CHECK([../../DDSOptimizer \
+	--data_type 2 \
+	--batch_size 10 \
+	--hidden_dimension 2 \
+	--learning_rate 0.03 \
+	--max_steps 20 \
+	--optimizer GradientDescent \
+	--csv_file run-second.csv
+], 0, [stdout], [stderr])
 
-# tests on reproducible runs
-m4_include([DataOptimizer/Reproducibility/testsuite-dataoptimizer-reproducibility-given_seeds.at])
-m4_include([DataOptimizer/Reproducibility/testsuite-dataoptimizer-reproducibility-no_seeds.at])
+# now compare
+AT_CHECK([diff run-first.csv run-second.csv], 1, [ignore], [ignore])
+
+AT_CLEANUP
+
