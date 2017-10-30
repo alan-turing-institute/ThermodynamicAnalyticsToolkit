@@ -15,12 +15,22 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-### all tests on DataOptimizer
+### test on classification problem: two clusters
 
-AT_BANNER([DataDrivenSampler - DataOptimizer])
+AT_SETUP([Optimizer Datasets - two clusters])
+AT_KEYWORDS([twoclusters ddsoptimizer])
 
-# tests on simple behavior
-m4_include([DataOptimizer/testsuite-dataoptimizer-simple.at])
+AT_CHECK([../../DDSOptimizer \
+	--data_type 2 \
+	--batch_size 10 \
+	--hidden_dimension 2 \
+	--learning_rate 0.03 \
+	--max_steps 20 \
+	--optimizer GradientDescent \
+	--seed 426 \
+	--csv_file run.csv
+], 0, [stdout], [stderr])
+AT_CHECK([diff run.csv ${abs_top_srcdir}/tests/regression/DataOptimizer/Datasets/post/run-twoclusters.csv], 0, [ignore], [ignore])
 
-# tests on Tensorflow's playground examples
-m4_include([DataOptimizer/Datasets/testsuite-dataoptimizer-datasets.at])
+AT_CLEANUP
+

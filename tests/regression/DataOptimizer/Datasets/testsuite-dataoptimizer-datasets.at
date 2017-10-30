@@ -15,12 +15,18 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-### all tests on DataOptimizer
+### all tests on Tensorflow's playground examples
 
-AT_BANNER([DataDrivenSampler - DataOptimizer])
+AT_BANNER([DataDrivenSampler - DataOptimizer - Datasets])
 
-# tests on simple behavior
-m4_include([DataOptimizer/testsuite-dataoptimizer-simple.at])
+# four squares
+m4_include([DataOptimizer/Datasets/testsuite-dataoptimizer-datasets-foursquares.at])
 
-# tests on Tensorflow's playground examples
-m4_include([DataOptimizer/Datasets/testsuite-dataoptimizer-datasets.at])
+# two clusters
+m4_include([DataOptimizer/Datasets/testsuite-dataoptimizer-datasets-twoclusters.at])
+
+# two circles
+m4_include([DataOptimizer/Datasets/testsuite-dataoptimizer-datasets-twocircles.at])
+
+# two spirals
+m4_include([DataOptimizer/Datasets/testsuite-dataoptimizer-datasets-twospirals.at])

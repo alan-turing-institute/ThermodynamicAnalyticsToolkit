@@ -7,12 +7,16 @@ DISTCLEANFILES = atconfig
 TESTSCRIPTS =
 
 # PLEASE adhere to alphabetical ordering of TESTSCRIPTS
-
 TESTSCRIPTS += \
 	$(srcdir)/DataDrivenSampler/testsuite-datadrivensampler.at \
 	$(srcdir)/DataDrivenSampler/testsuite-datadrivensampler-simple.at \
 	$(srcdir)/DataOptimizer/testsuite-dataoptimizer.at \
 	$(srcdir)/DataOptimizer/testsuite-dataoptimizer-simple.at \
+	$(srcdir)/DataOptimizer/Datasets/testsuite-dataoptimizer-datasets.at \
+	$(srcdir)/DataOptimizer/Datasets/testsuite-dataoptimizer-datasets-foursquares.at \
+	$(srcdir)/DataOptimizer/Datasets/testsuite-dataoptimizer-datasets-twocircles.at \
+	$(srcdir)/DataOptimizer/Datasets/testsuite-dataoptimizer-datasets-twoclusters.at \
+	$(srcdir)/DataOptimizer/Datasets/testsuite-dataoptimizer-datasets-twospirals.at \
 	$(srcdir)/TrajectoryAnalyser/testsuite-trajectoryanalyser.at \
 	$(srcdir)/TrajectoryAnalyser/testsuite-trajectoryanalyser-simple.at
 
