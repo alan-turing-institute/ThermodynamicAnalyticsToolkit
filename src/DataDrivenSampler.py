@@ -50,8 +50,8 @@ def parse_parameters():
         help='Amount of noise in [0,1] to use.')
     parser.add_argument('--output_activation', type=str, default="tanh",
         help='Activation function to use for output layer: tanh, relu, linear')
-    parser.add_argument('--sampler', type=str, default="StochasticGradientLangevinDynamics",
-        help='Choose the sampler to use for sampling: StochasticGradientLangevinDynamics')
+    parser.add_argument('--sampler', type=str, default="GeometricLangevinAlgorithm_1stOrder",
+        help='Choose the sampler to use for sampling: GeometricLangevinAlgorithm_1stOrder, GeometricLangevinAlgorithm_2ndOrder, StochasticGradientLangevinDynamics')
     parser.add_argument('--seed', type=int, default=None,
         help='Seed to use for random number generators.')
     parser.add_argument('--step_width', type=float, default=0.03,
@@ -81,7 +81,7 @@ def sample(FLAGS, ds, sess, nn, xinput, csv_writer, trajectory_writer, config_ma
     test_nodes = nn.get_list_of_nodes(["merged", "train_step", "accuracy", "global_step", "loss", "y_", "y"])
     if FLAGS.sampler == "StochasticGradientLangevinDynamics":
         noise_nodes = nn.get_list_of_nodes(["scaled_gradient", "scaled_noise"])
-    if FLAGS.sampler == "StochasticMomentumLangevin":
+    if FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder", "GeometricLangevinAlgorithm_2ndOrder"]:
         mom_noise_nodes = nn.get_list_of_nodes(["kinetic_energy", "scaled_momentum", "scaled_gradient", "scaled_noise"])
 
     output_width=8
@@ -125,7 +125,7 @@ def sample(FLAGS, ds, sess, nn, xinput, csv_writer, trajectory_writer, config_ma
                 if FLAGS.sampler == "StochasticGradientLangevinDynamics":
                     csv_writer.writerow([global_step, i, acc, loss_eval]
                                         + sess.run(noise_nodes,feed_dict=feed_dict))
-                elif FLAGS.sampler == "StochasticMomentumLangevin":
+                elif FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder", "GeometricLangevinAlgorithm_2ndOrder"]:
                   kinetic_energy, scaled_mom, scaled_grad, scaled_noise = \
                       sess.run(mom_noise_nodes, feed_dict=feed_dict)
                   csv_writer.writerow([global_step, i, acc, loss_eval]
@@ -155,7 +155,7 @@ def setup_output_files(FLAGS, nn, config_map):
     print("Setting up output files")
     if FLAGS.sampler == "StochasticGradientLangevinDynamics":
         header = ['step', 'epoch', 'accuracy', 'loss', 'scaled_gradient', 'scaled_noise']
-    elif FLAGS.sampler == "StochasticMomentumLangevin":
+    elif FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder", "GeometricLangevinAlgorithm_2ndOrder"]:
         header = ['step', 'epoch', 'accuracy', 'loss', 'total_energy', 'kinetic_energy', 'scaled_momentum', 'scaled_gradient', 'scaled_noise']
     else:
         header = ['step', 'epoch', 'accuracy', 'loss']

@@ -15,7 +15,7 @@ class SGLDSampler(optimizer.Optimizer):
     where $\beta$ is the inverse temperature coefficient, $\Delta t$ is the (discretization)
     step width and $\Theta$ is the parameter vector and $U(\Theta)$ the energy or loss function.
     """
-    def __init__(self, step_width, inverse_temperature, seed=None, use_locking=False, name='SGLDSampler'):
+    def __init__(self, step_width, inverse_temperature, seed=None, use_locking=False, name='SGLD'):
         """ Init function for this class.
 
         :param step_width: step width for gradient, also affects inject noise

@@ -1,7 +1,8 @@
 import tensorflow as tf
 from DataDrivenSampler.samplers.GradientDescent import GradientDescent
 from DataDrivenSampler.samplers.sgldsampler import SGLDSampler
-from DataDrivenSampler.samplers.SGLDMomentumSampler import SGLDMomentumSampler
+from DataDrivenSampler.samplers.GLAFirstOrderMomentumSampler import GLAFirstOrderMomentumSampler
+from DataDrivenSampler.samplers.GLASecondOrderMomentumSampler import GLASecondOrderMomentumSampler
 
 class NeuralNetwork(object):
     """ This class encapsulates the construction of the neural network.
@@ -199,19 +200,22 @@ class NeuralNetwork(object):
             self.summary_nodes['global_step'] = global_step
             if sampling_method == "StochasticGradientLangevinDynamics":
                 sampler = SGLDSampler(step_width, inverse_temperature, seed=seed)
-            elif sampling_method == "StochasticMomentumLangevin":
-                sampler = SGLDMomentumSampler(step_width, inverse_temperature, friction_constant, seed=seed)
+            elif sampling_method == "GeometricLangevinAlgorithm_1stOrder":
+                sampler = GLAFirstOrderMomentumSampler(step_width, inverse_temperature, friction_constant, seed=seed)
+            elif sampling_method == "GeometricLangevinAlgorithm_2ndOrder":
+                sampler = GLASecondOrderMomentumSampler(step_width, inverse_temperature, friction_constant, seed=seed)
             else:
-                raise NotImplementedError("Unknown optimizer")
+                raise NotImplementedError("Unknown sampler")
             train_step = sampler.minimize(loss, global_step=global_step)
 
             # DON'T put the nodes in there before the minimize call!
             # only after minimize was .._apply_dense() called and the nodes are ready
             self.summary_nodes['train_step'] = train_step
-            if sampling_method in ["StochasticGradientLangevinDynamics", "StochasticMomentumLangevin"]:
+            if sampling_method in ["StochasticGradientLangevinDynamics",
+                                   "GeometricLangevinAlgorithm_1stOrder", "GeometricLangevinAlgorithm_2ndOrder"]:
                 self.summary_nodes['scaled_gradient'] = sampler.scaled_gradient
                 self.summary_nodes['scaled_noise'] = sampler.scaled_noise
-            if sampling_method == "StochasticMomentumLangevin":
+            if sampling_method in ["GeometricLangevinAlgorithm_1stOrder", "GeometricLangevinAlgorithm_2ndOrder"]:
                 self.summary_nodes['scaled_momentum'] = sampler.scaled_momentum
                 self.summary_nodes['kinetic_energy'] = sampler.kinetic_energy
 
