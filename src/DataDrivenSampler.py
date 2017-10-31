@@ -107,7 +107,7 @@ def sample(FLAGS, ds, sess, nn, xinput, csv_writer, trajectory_writer, config_ma
                     [nn.get("weights"), nn.get("biases")],
                     feed_dict=feed_dict)
                 trajectory_writer.writerow(
-                    [i, loss_eval]
+                    [global_step, loss_eval]
                     + [item for sublist in weights_eval for item in sublist]
                     + [item for item in biases_eval])
 
