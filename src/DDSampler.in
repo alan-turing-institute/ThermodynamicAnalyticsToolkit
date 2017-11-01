@@ -31,7 +31,10 @@ def main(_):
     csv_writer, trajectory_writer = \
         setup_output_files(FLAGS, nn, config_map)
 
-    sess = tf.Session()
+    sess = tf.Session(
+        config=tf.ConfigProto(
+            intra_op_parallelism_threads = None,
+            inter_op_parallelism_threads = 1))
     nn.init_graph(sess)
 
     sample(FLAGS, ds, sess, nn, xinput, csv_writer, trajectory_writer, config_map)
