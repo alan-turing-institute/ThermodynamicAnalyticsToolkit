@@ -22,6 +22,20 @@ def main(_):
 
     xinput, x, ds = create_classification_dataset(FLAGS, config_map)
 
+    with tf.variable_scope("accumulate"):
+        kinetic_energy_t = tf.get_variable("kinetic", shape=[], trainable=False,
+                                           initializer=tf.zeros_initializer,
+                                           use_resource=True)
+        momenta_t = tf.get_variable("momenta", shape=[], trainable=False,
+                                           initializer=tf.zeros_initializer,
+                                           use_resource=True)
+        gradients_t = tf.get_variable("gradients", shape=[], trainable=False,
+                                           initializer=tf.zeros_initializer,
+                                           use_resource=True)
+        noise_t = tf.get_variable("noise", shape=[], trainable=False,
+                                           initializer=tf.zeros_initializer,
+                                           use_resource=True)
+
     activations = get_activations()
     nn = construct_network_model(FLAGS, config_map, x,
                                  hidden_activation=activations[FLAGS.hidden_activation],

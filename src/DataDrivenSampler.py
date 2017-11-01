@@ -14,6 +14,7 @@ import tensorflow as tf
 from DataDrivenSampler.datasets.classificationdatasets import ClassificationDatasets as DatasetGenerator
 from DataDrivenSampler.common import setup_run_file, setup_trajectory_file
 
+from math import sqrt
 
 def parse_parameters():
     """ Sets up the argument parser for parsing command line parameters into dictionary
@@ -76,13 +77,20 @@ def sample(FLAGS, ds, sess, nn, xinput, csv_writer, trajectory_writer, config_ma
     :param trajectory_writer: trajectory csv writer
     :param config_map: configuration dictionary
     """
+    # create global variable to hold kinetic energy
+    with tf.variable_scope("accumulate", reuse=True):
+        kinetic_energy_t = tf.get_variable("kinetic")
+        zero_kinetic_energy = kinetic_energy_t.assign(0.)
+        momenta_t = tf.get_variable("momenta")
+        zero_momenta = momenta_t.assign(0.)
+        gradients_t = tf.get_variable("gradients")
+        zero_gradients = gradients_t.assign(0.)
+        noise_t = tf.get_variable("noise")
+        zero_noise = noise_t.assign(0.)
+
     placeholder_nodes = nn.get_dict_of_nodes(
         ["friction_constant", "inverse_temperature", "step_width", "y_"])
     test_nodes = nn.get_list_of_nodes(["merged", "train_step", "accuracy", "global_step", "loss", "y_", "y"])
-    if FLAGS.sampler == "StochasticGradientLangevinDynamics":
-        noise_nodes = nn.get_list_of_nodes(["scaled_gradient", "scaled_noise"])
-    if FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder", "GeometricLangevinAlgorithm_2ndOrder"]:
-        mom_noise_nodes = nn.get_list_of_nodes(["kinetic_energy", "scaled_momentum", "scaled_gradient", "scaled_noise"])
 
     output_width=8
     output_precision=8
@@ -110,6 +118,14 @@ def sample(FLAGS, ds, sess, nn, xinput, csv_writer, trajectory_writer, config_ma
         # print("Testset is x: "+str(test_xs[:])+", y: "+str(test_ys[:]))
         # print("Testset is x: "+str(test_xs[:])+", y: "+str(test_ys[:]))
 
+        # zero kinetic energy
+        if FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder", "GeometricLangevinAlgorithm_2ndOrder"]:
+            check_kinetic, check_momenta, check_gradients, check_noise = \
+                sess.run([zero_kinetic_energy, zero_momenta, zero_gradients, zero_noise])
+            assert( abs(check_kinetic) < 1e-10)
+            assert( abs(check_momenta) < 1e-10)
+            assert( abs(check_gradients) < 1e-10)
+            assert( abs(check_noise) < 1e-10)
         # NOTE: All values from nodes contained in the same call to tf.run() with train_step
         # will be evaluated as if before train_step. Nodes that are changed in the update due to
         # train_step (e.g. momentum_t) however are updated.
@@ -118,7 +134,16 @@ def sample(FLAGS, ds, sess, nn, xinput, csv_writer, trajectory_writer, config_ma
         # or
         #   tf.run([loss_eval, train_step], ...)
         # is not important. Only a subsequent, distinct tf.run() call would produce a different loss_eval.
-        summary, _, acc, global_step, loss_eval, y_true_eval, y_eval = sess.run(test_nodes, feed_dict=feed_dict)
+        summary, _, acc, global_step, loss_eval, y_true_eval, y_eval = \
+            sess.run(test_nodes, feed_dict=feed_dict)
+        if FLAGS.sampler in ["StochasticGradientLangevinDynamics", "GeometricLangevinAlgorithm_1stOrder",
+                             "GeometricLangevinAlgorithm_2ndOrder"]:
+            if FLAGS.sampler == "StochasticGradientLangevinDynamics":
+                gradients, noise = \
+                    sess.run([gradients_t, noise_t])
+            else:
+                kinetic_energy, momenta, gradients, noise = \
+                    sess.run([kinetic_energy_t, momenta_t, gradients_t, noise_t])
         if i % FLAGS.every_nth == 0:
             if config_map["do_write_trajectory_file"]:
                 weights_eval, biases_eval = sess.run(
@@ -132,31 +157,20 @@ def sample(FLAGS, ds, sess, nn, xinput, csv_writer, trajectory_writer, config_ma
                        for item in biases_eval])
 
             if config_map["do_write_csv_file"]:
-                if FLAGS.sampler == "StochasticGradientLangevinDynamics":
-                    csv_writer.writerow([global_step, i, acc, loss_eval]
-                                        + sess.run(noise_nodes,feed_dict=feed_dict))
-                elif FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder", "GeometricLangevinAlgorithm_2ndOrder"]:
-                    summary_proto = tf.Summary()
-                    summary_proto.ParseFromString(summary)
-                    kinetic_energy = 0.
-                    scaled_mom = 0.
-                    scaled_grad = 0.
-                    scaled_noise = 0.
-                    for val in summary_proto.value:
-                        if "kinetic_energy" in val.tag:
-                            kinetic_energy += val.simple_value
-                        elif "scaled_gradient" in val.tag:
-                            scaled_grad += val.simple_value
-                        elif "scaled_momentum" in val.tag:
-                            scaled_mom += val.simple_value
-                        elif "scaled_noise" in val.tag:
-                            scaled_noise += val.simple_value
-                    csv_writer.writerow([global_step, i, acc, loss_eval]
+                if FLAGS.sampler in ["StochasticGradientLangevinDynamics", "GeometricLangevinAlgorithm_1stOrder",
+                                     "GeometricLangevinAlgorithm_2ndOrder"]:
+                    if FLAGS.sampler == "StochasticGradientLangevinDynamics":
+                        csv_writer.writerow([global_step, i, acc, loss_eval]
+                                            + ['{:{width}.{precision}e}'.format(x, width=output_width,
+                                                                                precision=output_precision)
+                                               for x in [sqrt(gradients), sqrt(noise)]])
+                    else:
+                        csv_writer.writerow([global_step, i, acc, loss_eval]
                                       + ['{:{width}.{precision}e}'.format(loss_eval+kinetic_energy,
                                                                           width=output_width,
                                                                           precision=output_precision)]
                                       + ['{:{width}.{precision}e}'.format(x,width=output_width,precision=output_precision)
-                                         for x in [kinetic_energy, scaled_mom, scaled_grad, scaled_noise]])
+                                         for x in [kinetic_energy, sqrt(momenta), sqrt(gradients), sqrt(noise)]])
                 else:
                     csv_writer.writerow([global_step, i, acc, loss_eval])
 

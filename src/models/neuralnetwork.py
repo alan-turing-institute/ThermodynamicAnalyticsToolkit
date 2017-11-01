@@ -212,13 +212,6 @@ class NeuralNetwork(object):
             # DON'T put the nodes in there before the minimize call!
             # only after minimize was .._apply_dense() called and the nodes are ready
             self.summary_nodes['train_step'] = train_step
-            if sampling_method in ["StochasticGradientLangevinDynamics",
-                                   "GeometricLangevinAlgorithm_1stOrder", "GeometricLangevinAlgorithm_2ndOrder"]:
-                self.summary_nodes['scaled_gradient'] = sampler.scaled_gradient
-                self.summary_nodes['scaled_noise'] = sampler.scaled_noise
-            if sampling_method in ["GeometricLangevinAlgorithm_1stOrder", "GeometricLangevinAlgorithm_2ndOrder"]:
-                self.summary_nodes['scaled_momentum'] = sampler.scaled_momentum
-                self.summary_nodes['kinetic_energy'] = sampler.kinetic_energy
 
     def add_train_method_optimizer(self, loss, optimizer_method, seed):
         """ Adds nodes for training the neural network using an optimizer.

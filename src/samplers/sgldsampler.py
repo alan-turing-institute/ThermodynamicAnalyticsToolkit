@@ -79,16 +79,21 @@ class SGLDSampler(optimizer.Optimizer):
         :return: a group of operations to be added to the graph
         """
         step_width_t, inverse_temperature_t, random_noise_t = self._prepare_dense(grad, var)
+
+        # \nabla V (q^n ) \Delta t
         scaled_gradient = step_width_t * grad
-        self.scaled_gradient = tf.norm(scaled_gradient)
-        tf.summary.scalar('scaled_gradient', self.scaled_gradient)
+
+        with tf.variable_scope("accumulate", reuse=True):
+            gradient_global = tf.get_variable("gradients")
+            gradient_global_t = tf.assign_add(gradient_global, tf.reduce_sum(tf.multiply(scaled_gradient, scaled_gradient)))
 
         scaled_noise = tf.sqrt(2.*step_width_t/inverse_temperature_t) * random_noise_t
-        self.scaled_noise = tf.norm(scaled_noise)
-        tf.summary.scalar('scaled_noise', self.scaled_noise)
+        with tf.variable_scope("accumulate", reuse=True):
+            noise_global = tf.get_variable("noise")
+            noise_global_t = tf.assign_add(noise_global, tf.reduce_sum(tf.multiply(scaled_noise, scaled_noise)))
 
         var_update = state_ops.assign_sub(var, scaled_gradient + scaled_noise)
-        return control_flow_ops.group(*[var_update])
+        return control_flow_ops.group(*[var_update, gradient_global_t, noise_global_t])
 
     def _apply_sparse(self, grad, var):
         """ Adds nodes to TensorFlow's computational graph in the case of sparsely
