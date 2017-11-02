@@ -98,6 +98,26 @@ def main(_):
                 )
             csv_file.close()
 
+
+        if FLAGS.diffusion_map_file is not None or FLAGS.landmarks is not None:
+            # compute diffusion map and write to file
+            vectors, values, q = compute_diffusion_maps(loss)
+            if FLAGS.diffusion_map_file is not None:
+                write_matrix_with_values(vectors, values, FLAGS.diffusion_map_file)
+            else:
+                print("Eigenvalues are "+str(values))
+
+            if FLAGS.landmarks is not None:
+                # compute landmarks
+
+                landmarks=get_landmarks(traj, FLAGS.landmarks, q, vectors,  loss)
+                write_landmarks(traj, landmarks, FLAGS.landmark_file, df.columns)
+
+            if FLAGS.free_energy_file is not None:
+                freeEnergies, NumLevelsets = compute_free_energy(traj, FLAGS.landmarks, q, vectors)
+                write_matrix_with_values(freeEnergies, NumLevelsets, FLAGS.free_energy_file)
+
+
 if __name__ == '__main__':
     FLAGS, unparsed = parse_parameters()
 

@@ -5,7 +5,6 @@
 
 
 import numpy as np
-import DataDrivenSampler.diffusion_maps.model
 
 import math
 from scipy.sparse import csr_matrix
