@@ -450,7 +450,7 @@ class NeuralNetwork(object):
             with tf.name_scope('Wx_plus_b'):
                 preactivate = tf.matmul(input_tensor, weights) + biases
                 tf.summary.histogram('pre_activations', preactivate)
-            if act == None:
+            if act is None:
                 return preactivate
             else:
                 activations = act(preactivate, name='activation')
