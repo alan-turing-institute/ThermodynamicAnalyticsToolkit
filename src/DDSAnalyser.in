@@ -10,7 +10,9 @@ import scipy
 
 from DataDrivenSampler.version import get_package_version, get_build_hash
 from DataDrivenSampler.common import get_filename_from_fullpath, setup_csv_file
-from DataDrivenSampler.TrajectoryAnalyser import parse_parameters, moving_average
+from DataDrivenSampler.TrajectoryAnalyser import compute_diffusion_maps, \
+            compute_free_energy, get_landmarks, moving_average, parse_parameters, \
+            write_landmarks, write_values_as_csv
 
 FLAGS = None
 
@@ -101,22 +103,43 @@ def main(_):
 
         if FLAGS.diffusion_map_file is not None or FLAGS.landmarks is not None:
             # compute diffusion map and write to file
-            vectors, values, q = compute_diffusion_maps(loss)
             if FLAGS.diffusion_map_file is not None:
-                write_matrix_with_values(vectors, values, FLAGS.diffusion_map_file)
-            else:
+                vectors, values, q = compute_diffusion_maps(trajectory)
+                write_values_as_csv(values, FLAGS.diffusion_map_file)
                 print("Eigenvalues are "+str(values))
+            if FLAGS.diffusion_matrix_file is not None:
+                header = ["i", "loss", "kernel_diff"]
+                for i in range(np.shape(trajectory)[1]):
+                    header.append("dof_"+str(i))
+                for i in range(np.shape(vectors)[1]):
+                    header.append("ev_"+str(i))
+                csv_writer, csv_file = setup_csv_file(FLAGS.diffusion_matrix_file, header)
+                kernel_diff = np.asarray(q)
+                for i in range(np.shape(vectors)[0]):
+                    csv_writer.writerow([i, loss[i], kernel_diff[i,0]] \
+                        +list(np.asarray(trajectory[i,:]))+list(np.asarray(vectors[i,:])))
+                csv_file.close()
 
             if FLAGS.landmarks is not None:
                 # compute landmarks
+                landmarks=get_landmarks(trajectory, FLAGS.landmarks, q, vectors,  loss)
 
-                landmarks=get_landmarks(traj, FLAGS.landmarks, q, vectors,  loss)
-                write_landmarks(traj, landmarks, FLAGS.landmark_file, df.columns)
+                # compute free energy at landmark points
+                freeEnergies, NumLevelsets = compute_free_energy(trajectory, FLAGS.landmarks, q, vectors)
 
-            if FLAGS.free_energy_file is not None:
-                freeEnergies, NumLevelsets = compute_free_energy(traj, FLAGS.landmarks, q, vectors)
-                write_matrix_with_values(freeEnergies, NumLevelsets, FLAGS.free_energy_file)
-
+                for ev_index in range(np.shape(vectors)[1]):
+                    header = ["landmark", "loss", "kernel_diff"]
+                    for i in range(np.shape(trajectory)[1]):
+                        header.append("dof_"+str(i))
+                    header.append("free_energy")
+                    header.append("ev_"+str(ev_index))
+                    csv_writer, csv_file = setup_csv_file(FLAGS.landmark_prefix+"-ev_"+str(ev_index)+".csv", header)
+                    for k in range(np.shape(landmarks[ev_index])[0]):
+                        i = landmarks[ev_index][k]
+                        csv_writer.writerow([i, loss[i], kernel_diff[i,0]] \
+                            +list(np.asarray(trajectory[i,:])) \
+                            +freeEnergies[ev_index]+[vectors[i,ev_index]])
+                    csv_file.close()
 
 if __name__ == '__main__':
     FLAGS, unparsed = parse_parameters()

@@ -25,17 +25,21 @@ def parse_parameters():
     parser.add_argument('--average_trajectory_file', type=str, default=None,
         help='CSV file name to output averages and variances of all degrees of freedom.')
     parser.add_argument('--diffusion_map_file', type=str, default=None,
-        help='Give file name to write eigenvectors and eigenvalues of diffusion map to')
+        help='Give file name to write eigenvalues of diffusion map to')
+    parser.add_argument('--diffusion_matrix_file', type=str, default=None,
+        help='Give file name to write eigenvectors and loss of diffusion map to')
     parser.add_argument('--drop_burnin', type=int, default=0,
         help='How many values to drop at the beginning of the trajectory.')
     parser.add_argument('--every_nth', type=int, default=1,
         help='Evaluate only every nth trajectory point to files, e.g. 10')
-    parser.add_argument('--run_file', type=str, default=None,
-        help='CSV run file name to read run time values from.')
     parser.add_argument('--landmarks', type=int, default=None,
         help='How many landmark points to computer for the trajectory (if any)')
-    parser.add_argument('--landmark_file', type=str, default=None,
-        help='Give file name to write trajectory at obtained landmark points to')
+    parser.add_argument('--landmark_prefix', type=str, default=None,
+        help='Give prefix to file name to write trajectory at obtained landmark points per eigenvector to')
+    parser.add_argument('--output_file', type=str, default=None,
+        help='CSV file name to output averages and variances.')
+    parser.add_argument('--run_file', type=str, default=None,
+        help='CSV run file name to read run time values from.')
     parser.add_argument('--steps', type=int, default=20,
         help='How many evaluation steps to take')
     parser.add_argument('--trajectory_file', type=str, default=None,
@@ -65,21 +69,23 @@ def compute_diffusion_maps(traj):
     lambdas = lambdas[ix]
     X_se = V[:,ix]
 
-    return lambdas, X_se, q
+    return X_se, lambdas, q
 
 
-def write_matrix_with_values(matrix, values, csv_filename=None):
-    if len(matrix[1,:] == 0):
+def write_values_as_csv(values, csv_filename=None):
+    if np.shape(values)[0] == 0:
         return
-    assert( len(values) == len(matrix[:,1]))
     if csv_filename is not None:
-        header = "i, eigenvalue"
-        for i in range(0, len(matrix[:,1])):
-            header += "ev_"+str(i)
+        header = ["i", "eigenvalue"]
         csv_writer, csv_file = setup_csv_file(csv_filename, header)
-        for i in range(0, len(matrix[:,1])):
-            csv_writer.writerow([i, values[i], matrix[i, :]])
+        for i in range(0, np.shape(values)[0]):
+            csv_writer.writerow([i, values[i]])
         csv_file.close()
+
+
+def write_matrix(matrix, csv_filename=None):
+    with open(csv_filename, "w") as csv_file:
+        matrix.tofile(csv_file)
 
 
 def pdist2(x,y):
@@ -90,7 +96,8 @@ def pdist2(x,y):
 def get_landmarks(data, K, q, vectors, energies):
 
     landmark_per_vector = []
-    for V1 in vectors:
+    for vindex in range(np.shape(vectors)[1]):
+        V1 = vectors[:,vindex]
         m = float(q.size)
         #q=np.array(q)
 
@@ -167,7 +174,8 @@ def compute_free_energy(traj, landmarks, q, vectors):
 
     freeEnergies = []
     NumLevelsets = []
-    for V1 in vectors:
+    for vindex in range(np.shape(vectors)[1]):
+        V1 = vectors[:,vindex]
         levelsets, dummy = dm.get_levelsets(traj, landmarks, q, V1)
 
         K=len(levelsets)
