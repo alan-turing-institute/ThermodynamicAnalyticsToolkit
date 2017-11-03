@@ -55,7 +55,7 @@ class GLAFirstOrderMomentumSampler(SGLDSampler):
         The norm of the injected noise is placed into the TensorFlow summary.
 
         The discretization scheme is according to (1.59) in [dissertation Zofia Trstanova],
-        i.e. 2nd order Geometric Langevin Algorithm.
+        i.e. 1st order Geometric Langevin Algorithm.
 
         :param grad: gradient nodes, i.e. they contain the gradient per parameter in `var`
         :param var: parameters of the neural network
