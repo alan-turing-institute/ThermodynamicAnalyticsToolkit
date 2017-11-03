@@ -89,6 +89,17 @@ def sample(FLAGS, ds, sess, nn, xinput, csv_writer, trajectory_writer, config_ma
         noise_nodes = nn.get_list_of_nodes(["scaled_gradient", "scaled_noise"])
     if FLAGS.sampler == "StochasticMomentumLangevin":
         mom_noise_nodes = nn.get_list_of_nodes(["kinetic_energy", "scaled_momentum", "scaled_gradient", "scaled_noise"])
+
+    # check that sampler's parameters are actually used
+    if FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder", "GeometricLangevinAlgorithm_2ndOrder"]:
+        gamma, beta, deltat = sess.run(nn.get_list_of_nodes(
+            ["friction_constant", "inverse_temperature", "step_width"]), feed_dict={
+                placeholder_nodes["step_width"]: FLAGS.step_width,
+                placeholder_nodes["inverse_temperature"]: FLAGS.inverse_temperature,
+                placeholder_nodes["friction_constant"]: FLAGS.friction_constant
+            })
+        print("Sampler parameters: gamma = %lg, beta = %lg, delta t = %lg" % (gamma, beta, deltat))
+
     print("Starting to sample")
     for i in range(FLAGS.max_steps):
         print("Current step is "+str(i))
