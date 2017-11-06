@@ -58,7 +58,7 @@ class GLASecondOrderMomentumSampler(GLAFirstOrderMomentumSampler):
         scaled_noise = tf.sqrt((1.-tf.pow(alpha_t, 2))/inverse_temperature_t) * random_noise_t
         with tf.variable_scope("accumulate", reuse=True):
             noise_global = tf.get_variable("noise")
-            noise_global_t = tf.assign_add(noise_global, tf.reduce_sum(tf.multiply(scaled_noise, scaled_noise)))
+            noise_global_t = tf.assign_add(noise_global, tf.pow(alpha_t, -2)*tf.reduce_sum(tf.multiply(scaled_noise, scaled_noise)))
         momentum_noise_step_t = alpha_t * momentum_half_step_t + scaled_noise
 
         # 1/2 * p^{n}^t * p^{n}
@@ -66,7 +66,7 @@ class GLASecondOrderMomentumSampler(GLAFirstOrderMomentumSampler):
 
         with tf.variable_scope("accumulate", reuse=True):
             gradient_global = tf.get_variable("gradients")
-            gradient_global_t = tf.assign_add(gradient_global, tf.reduce_sum(tf.multiply(grad, grad)))
+            gradient_global_t = tf.assign_add(gradient_global, tf.reduce_sum(tf.multiply(scaled_gradient, scaled_gradient)))
 
         # p^{n+1} = p^{n+1/2} − \nabla V (q^{n+1} ) \Delta t/2
         momentum_t = momentum.assign(momentum_noise_step_t - 0.5 * scaled_gradient)

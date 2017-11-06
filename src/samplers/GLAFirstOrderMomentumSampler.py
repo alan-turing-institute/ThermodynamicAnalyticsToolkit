@@ -65,12 +65,12 @@ class GLAFirstOrderMomentumSampler(SGLDSampler):
         step_width_t, inverse_temperature_t, random_noise_t = self._prepare_dense(grad, var)
         momentum = self.get_slot(var, "momentum")
 
-        with tf.variable_scope("accumulate", reuse=True):
-            gradient_global = tf.get_variable("gradients")
-            gradient_global_t = tf.assign_add(gradient_global, tf.reduce_sum(tf.multiply(grad, grad)))
-
         # \nabla V (q^n ) \Delta t
         scaled_gradient = step_width_t * grad
+
+        with tf.variable_scope("accumulate", reuse=True):
+            gradient_global = tf.get_variable("gradients")
+            gradient_global_t = tf.assign_add(gradient_global, tf.reduce_sum(tf.multiply(scaled_gradient, scaled_gradient)))
 
         # 1/2 * p^{n}^t * p^{n}
         momentum_sq = 0.5 * tf.reduce_sum(tf.multiply(momentum, momentum))
@@ -86,7 +86,7 @@ class GLAFirstOrderMomentumSampler(SGLDSampler):
         scaled_noise = tf.sqrt((1.-tf.pow(alpha_t, 2))/inverse_temperature_t) * random_noise_t
         with tf.variable_scope("accumulate", reuse=True):
             noise_global = tf.get_variable("noise")
-            noise_global_t = tf.assign_add(noise_global, tf.reduce_sum(tf.multiply(scaled_noise, scaled_noise)))
+            noise_global_t = tf.assign_add(noise_global, tf.pow(alpha_t, -2) * tf.reduce_sum(tf.multiply(scaled_noise, scaled_noise)))
 
         # p^{n+1} = \alpha_{\Delta t} p^{n+1} + \sqrt{ \frac{1-\alpha^2_{\Delta t}}{\beta} M } G^n
         momentum_t = momentum.assign(alpha_t * momentum_full_step_t + scaled_noise)
