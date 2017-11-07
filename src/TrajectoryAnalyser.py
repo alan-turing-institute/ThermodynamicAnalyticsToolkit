@@ -15,10 +15,12 @@ def parse_parameters():
     """
     parser = argparse.ArgumentParser()
     # please adhere to alphabetical ordering
-    parser.add_argument('--every_nth', type=int, default=1,
-        help='Evaluate only every nth trajectory point to files, e.g. 10')
+    parser.add_argument('--drop_burnin', type=int, default=0,
+        help='How many values to drop at the beginning of the trajectory.')
     parser.add_argument('--csv_file', type=str, default=None,
         help='CSV run file name to read run time values from.')
+    parser.add_argument('--every_nth', type=int, default=1,
+        help='Evaluate only every nth trajectory point to files, e.g. 10')
     parser.add_argument('--output_file', type=str, default=None,
         help='CSV file name to output averages and variances.')
     parser.add_argument('--steps', type=int, default=20,

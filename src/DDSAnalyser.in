@@ -22,7 +22,7 @@ def main(_):
     df = pd.read_csv(FLAGS.csv_file, sep=',', header=0)
     trajLoaded=np.asarray(df.loc[:,['step','loss','kinetic_energy']])
 
-    traj=trajLoaded[::FLAGS.every_nth,:]
+    traj=trajLoaded[FLAGS.drop_burnin::FLAGS.every_nth,:]
 
     steps=traj[:,0]
     loss=traj[:,1]
