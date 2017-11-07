@@ -34,14 +34,17 @@ def main(_):
 
     end_list = np.arange(1,FLAGS.steps+1)*int(no_steps/FLAGS.steps)-1
     print(str(end_list))
-    avg = [np.average(kinetic_energy[0:end]) for end in end_list]
+    avg_kin = [np.average(kinetic_energy[0:end]) for end in end_list]
+    var_kin = [np.var(kinetic_energy[0:end]) for end in end_list]
     actual_steps = [steps[end] for end in end_list]
-    print("Average final kinetic energy "+str(avg))
+    print("Average final kinetic energy "+str(avg_kin))
     #    print("Moving average kinetic energy: "+str(avg_kinetic[::10]))
 
-    csv_writer, csv_file = setup_csv_file(FLAGS.output_file, ['step', 'average_kinetic_energy'])
-    for step, avg in zip(actual_steps, avg):
-        csv_writer.writerow([step, '{:{width}.{precision}e}'.format(avg, width=output_width, precision=output_precision)])
+    csv_writer, csv_file = setup_csv_file(FLAGS.output_file, ['step', 'average_kinetic_energy', 'var_kinetic_energy'])
+    for step, avg_val, var_val in zip(actual_steps, avg_kin, var_kin):
+        csv_writer.writerow([step]+ \
+            ['{:{width}.{precision}e}'.format(x, width=output_width, precision=output_precision) \
+                for x in [avg_val, var_val]])
     csv_file.close()
 
 if __name__ == '__main__':
