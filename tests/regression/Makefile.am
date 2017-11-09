@@ -10,6 +10,10 @@ TESTSCRIPTS =
 TESTSCRIPTS += \
 	$(srcdir)/DataDrivenSampler/testsuite-datadrivensampler.at \
 	$(srcdir)/DataDrivenSampler/testsuite-datadrivensampler-simple.at \
+	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-every_nth.at \
+	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-friction_constant.at \
+	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-inverse_temperature.at \
+	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-step_width.at \
 	$(srcdir)/DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-given_seeds.at \
 	$(srcdir)/DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-no_seeds.at \
 	$(srcdir)/DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-gla_1st.at \
