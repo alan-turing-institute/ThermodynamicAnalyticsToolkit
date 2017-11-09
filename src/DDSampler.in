@@ -65,6 +65,11 @@ if __name__ == '__main__':
 
     print("Using parameters: "+str(FLAGS))
 
+    if FLAGS.sampler not in ["GeometricLangevinAlgorithm_1stOrder", "GeometricLangevinAlgorithm_2ndOrder"] \
+        and FLAGS.friction_constant != 0.:
+        print("You set friction_constant but only GLA 1st and 2nd order use it.")
+        sys.exit(1)
+
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
 
 
