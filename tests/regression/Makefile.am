@@ -12,6 +12,9 @@ TESTSCRIPTS += \
 	$(srcdir)/DataDrivenSampler/testsuite-datadrivensampler-simple.at \
 	$(srcdir)/DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-given_seeds.at \
 	$(srcdir)/DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-no_seeds.at \
+	$(srcdir)/DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-gla_1st.at \
+	$(srcdir)/DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-gla_2nd.at \
+	$(srcdir)/DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-sgld.at \
 	$(srcdir)/DataOptimizer/testsuite-dataoptimizer.at \
 	$(srcdir)/DataOptimizer/testsuite-dataoptimizer-simple.at \
 	$(srcdir)/DataOptimizer/Datasets/testsuite-dataoptimizer-datasets.at \

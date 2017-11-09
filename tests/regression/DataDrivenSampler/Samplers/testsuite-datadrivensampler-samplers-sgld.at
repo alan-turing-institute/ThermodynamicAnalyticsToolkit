@@ -15,18 +15,28 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-### all tests on DataDrivenSampler
+### test on reproducible runs using two clusters dataset
 
-AT_BANNER([DataDrivenSampler - DataDrivenSampler])
+AT_SETUP([Samplers - SGLD])
+AT_KEYWORDS([samplers ddsampler SGLD])
 
-# tests on simple behavior
-m4_include([DataDrivenSampler/testsuite-datadrivensampler-simple.at])
+# run 1
+AT_CHECK([../../DDSampler \
+	--batch_size 10 \
+	--csv_file run-SGLD.csv \
+	--data_type 2 \
+	--dimension 20 \
+	--inverse_temperature 1 \
+	--step_width 1e-2 \
+	--max_steps 20 \
+	--sampler StochasticGradientLangevinDynamics\
+	--seed 426 \
+	--trajectory_file trajectory-SGLD.csv
+], 0, [stdout], [stderr])
 
-# tests on reproducible runs
-m4_include([DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-given_seeds.at])
-m4_include([DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-no_seeds.at])
+# now compare
+AT_CHECK([diff run-SGLD.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-SGLD.csv], 0, [ignore], [ignore])
+AT_CHECK([diff trajectory-SGLD.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-SGLD.csv], 0, [ignore], [ignore])
 
-# tests on various samplers
-m4_include([DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-sgld.at])
-m4_include([DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-gla_1st.at])
-m4_include([DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-gla_2nd.at])
+AT_CLEANUP
+
