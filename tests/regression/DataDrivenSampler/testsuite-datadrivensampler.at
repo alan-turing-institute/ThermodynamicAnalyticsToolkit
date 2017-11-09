@@ -36,3 +36,6 @@ m4_include([DataDrivenSampler/Options/testsuite-datadrivensampler-options-every_
 m4_include([DataDrivenSampler/Options/testsuite-datadrivensampler-options-friction_constant.at])
 m4_include([DataDrivenSampler/Options/testsuite-datadrivensampler-options-inverse_temperature.at])
 m4_include([DataDrivenSampler/Options/testsuite-datadrivensampler-options-step_width.at])
+
+# tests on saving and restoring
+m4_include([DataDrivenSampler/SavingRestoring/testsuite-datadrivensampler-saving_restoring.at])

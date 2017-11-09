@@ -198,6 +198,7 @@ class NeuralNetwork(object):
             self.placeholder_nodes['friction_constant'] = friction_constant
 
             global_step = tf.Variable(0, trainable=False)
+            tf.add_to_collection("Variables_to_Save", global_step)
             self.summary_nodes['global_step'] = global_step
             if sampling_method == "StochasticGradientLangevinDynamics":
                 sampler = SGLDSampler(step_width, inverse_temperature, seed=seed)
@@ -228,6 +229,7 @@ class NeuralNetwork(object):
             self.placeholder_nodes['step_width'] = step_width
 
             global_step = tf.Variable(0, trainable=False)
+            tf.add_to_collection("Variables_to_Save", global_step)
             self.summary_nodes['global_step'] = global_step
             if optimizer_method == "GradientDescent":
                 optimizer = GradientDescent(step_width)
@@ -438,11 +440,13 @@ class NeuralNetwork(object):
             # This Variable will hold the state of the weights for the layer
             with tf.name_scope('weights'):
                 weights = self.weight_variable([input_dim, output_dim], seed)
+                tf.add_to_collection(tf.GraphKeys.WEIGHTS, weights)
                 self.variable_summaries(weights)
                 weights_flat = tf.contrib.layers.flatten(weights)
                 self.summary_nodes["weights"] = weights_flat
             with tf.name_scope('biases'):
                 biases = self.bias_variable([output_dim])
+                tf.add_to_collection(tf.GraphKeys.BIASES, biases)
                 self.variable_summaries(biases)
                 self.summary_nodes["biases"] = biases
             with tf.name_scope('Wx_plus_b'):

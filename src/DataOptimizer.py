@@ -46,6 +46,10 @@ def parse_parameters():
         help='Choose the optimizer to use for sampling: GradientDescent')
     parser.add_argument('--output_activation', type=str, default="tanh",
         help='Activation function to use for output layer: tanh, relu, linear')
+    parser.add_argument('--restore_model', type=str, default=None,
+        help='Restore model (weights and biases) from a file.')
+    parser.add_argument('--save_model', type=str, default=None,
+        help='Save model (weights and biases) to a file for later restoring.')
     parser.add_argument('--seed', type=int, default=None,
         help='Seed to use for random number generators.')
     parser.add_argument('--step_width', type=float, default=0.03,

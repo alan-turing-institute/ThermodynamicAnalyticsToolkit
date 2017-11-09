@@ -19,6 +19,7 @@ TESTSCRIPTS += \
 	$(srcdir)/DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-gla_1st.at \
 	$(srcdir)/DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-gla_2nd.at \
 	$(srcdir)/DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-sgld.at \
+	$(srcdir)/DataDrivenSampler/SavingRestoring/testsuite-datadrivensampler-saving_restoring.at \
 	$(srcdir)/DataOptimizer/testsuite-dataoptimizer.at \
 	$(srcdir)/DataOptimizer/testsuite-dataoptimizer-simple.at \
 	$(srcdir)/DataOptimizer/Datasets/testsuite-dataoptimizer-datasets.at \
@@ -29,6 +30,7 @@ TESTSCRIPTS += \
 	$(srcdir)/DataOptimizer/Options/testsuite-dataoptimizer-options-step_width.at \
 	$(srcdir)/DataOptimizer/Reproducibility/testsuite-dataoptimizer-reproducibility-given_seeds.at \
 	$(srcdir)/DataOptimizer/Reproducibility/testsuite-dataoptimizer-reproducibility-no_seeds.at \
+	$(srcdir)/DataOptimizer/SavingRestoring/testsuite-dataoptimizer-saving_restoring.at \
 	$(srcdir)/TrajectoryAnalyser/testsuite-trajectoryanalyser.at \
 	$(srcdir)/TrajectoryAnalyser/testsuite-trajectoryanalyser-simple.at \
 	$(srcdir)/TrajectoryAnalyser/Averages/testsuite-trajectoryanalyser-averages.at

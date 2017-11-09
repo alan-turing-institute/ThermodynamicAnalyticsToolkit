@@ -1,0 +1,53 @@
+#
+#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    Copyright (C) 2017 The University of Edinburgh
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### 
+
+AT_SETUP([Optimizer - Saving and Restoring])
+AT_KEYWORDS([help ddsoptimizer save_model restore_model])
+
+# run 1
+AT_CHECK([../../DDSOptimizer \
+	--batch_size 10 \
+	--csv_file run-save_model.csv \
+	--data_type 2 \
+	--dimension 20 \
+	--step_width 1e-1 \
+	--max_steps 10 \
+	--optimizer GradientDescent \
+	--save_model model.cpkt \
+	--seed 426
+], 0, [stdout], [stderr])
+
+# run 2
+AT_CHECK([../../DDSOptimizer \
+	--batch_size 10 \
+	--csv_file run-restore_model.csv \
+	--data_type 2 \
+	--dimension 20 \
+	--step_width 1e-1 \
+	--max_steps 10 \
+	--optimizer GradientDescent\
+	--restore_model model.cpkt \
+	--seed 426
+], 0, [stdout], [stderr])
+
+AT_CHECK([grep "11," run-restore_model.csv], 0, [ignore], [ignore])
+AT_CHECK([diff run-restore_model.csv ${abs_top_srcdir}/tests/regression/DataOptimizer/SavingRestoring/post/run-restore_model.csv], 0, [ignore], [ignore])
+
+AT_CLEANUP
+
