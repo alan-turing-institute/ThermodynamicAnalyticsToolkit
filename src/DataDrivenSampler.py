@@ -106,8 +106,9 @@ def sample(FLAGS, ds, sess, nn, xinput, csv_writer, trajectory_writer, config_ma
         print("Sampler parameters: gamma = %lg, beta = %lg, delta t = %lg" % (gamma, beta, deltat))
 
     print("Starting to sample")
+    print_intervals = max(1,int(FLAGS.max_steps/100))
     for i in range(FLAGS.max_steps):
-        print("Current step is "+str(i))
+        #print("Current step is "+str(i))
         test_xs, test_ys = ds.get_testset()
         feed_dict={
             xinput: test_xs, placeholder_nodes["y_"]: test_ys,
@@ -174,10 +175,11 @@ def sample(FLAGS, ds, sess, nn, xinput, csv_writer, trajectory_writer, config_ma
                 else:
                     csv_writer.writerow([global_step, i, acc, loss_eval])
 
-        print('Accuracy at step %s (%s): %s' % (i, global_step, acc))
-        #print('Loss at step %s: %s' % (i, loss_eval))
-        #print('y_ at step %s: %s' % (i, str(y_true_eval[0:9].transpose())))
-        #print('y at step %s: %s' % (i, str(y_eval[0:9].transpose())))
+        if (i % print_intervals) == 0:
+            print('Accuracy at step %s (%s): %s' % (i, global_step, acc))
+            #print('Loss at step %s: %s' % (i, loss_eval))
+            #print('y_ at step %s: %s' % (i, str(y_true_eval[0:9].transpose())))
+            #print('y at step %s: %s' % (i, str(y_eval[0:9].transpose())))
     print("SAMPLED.")
 
 
