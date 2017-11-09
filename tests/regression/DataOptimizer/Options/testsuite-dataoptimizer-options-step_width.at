@@ -15,19 +15,37 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-### all tests on DataOptimizer
+### 
 
-AT_BANNER([DataDrivenSampler - DataOptimizer])
+AT_SETUP([Optimizer Options - step width])
+AT_KEYWORDS([help ddsoptimizer step_width])
 
-# tests on simple behavior
-m4_include([DataOptimizer/testsuite-dataoptimizer-simple.at])
+# run 1
+AT_CHECK([../../DDSOptimizer \
+	--batch_size 10 \
+	--csv_file run-step_width_1e-1.csv \
+	--data_type 2 \
+	--dimension 20 \
+	--step_width 1e-1 \
+	--max_steps 20 \
+	--optimizer GradientDescent \
+	--seed 426
+], 0, [stdout], [stderr])
 
-# tests on Tensorflow's playground examples
-m4_include([DataOptimizer/Datasets/testsuite-dataoptimizer-datasets.at])
+# run 2
+AT_CHECK([../../DDSOptimizer \
+	--batch_size 10 \
+	--csv_file run-step_width_1e-2.csv \
+	--data_type 2 \
+	--dimension 20 \
+	--step_width 1e-2 \
+	--max_steps 20 \
+	--optimizer GradientDescent\
+	--seed 426
+], 0, [stdout], [stderr])
 
-# tests on reproducible runs
-m4_include([DataOptimizer/Reproducibility/testsuite-dataoptimizer-reproducibility-given_seeds.at])
-m4_include([DataOptimizer/Reproducibility/testsuite-dataoptimizer-reproducibility-no_seeds.at])
+# check that both differ, i.e. step_width is used
+AT_CHECK([diff run-step_width_1e-1.csv run-step_width_1e-2.csv], 1, [ignore], [ignore])
 
-# tests on options
-m4_include([DataOptimizer/Options/testsuite-dataoptimizer-options-step_width.at])
+AT_CLEANUP
+

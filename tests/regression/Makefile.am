@@ -26,6 +26,7 @@ TESTSCRIPTS += \
 	$(srcdir)/DataOptimizer/Datasets/testsuite-dataoptimizer-datasets-twocircles.at \
 	$(srcdir)/DataOptimizer/Datasets/testsuite-dataoptimizer-datasets-twoclusters.at \
 	$(srcdir)/DataOptimizer/Datasets/testsuite-dataoptimizer-datasets-twospirals.at \
+	$(srcdir)/DataOptimizer/Options/testsuite-dataoptimizer-options-step_width.at \
 	$(srcdir)/DataOptimizer/Reproducibility/testsuite-dataoptimizer-reproducibility-given_seeds.at \
 	$(srcdir)/DataOptimizer/Reproducibility/testsuite-dataoptimizer-reproducibility-no_seeds.at \
 	$(srcdir)/TrajectoryAnalyser/testsuite-trajectoryanalyser.at \
