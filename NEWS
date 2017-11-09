@@ -1,0 +1,6 @@
+v0.1
+====
+
+- gradient descent, SGD, and SGLD optimization
+- datasets confined to ones from TensorFlow "playground"
+- trajectory analyser

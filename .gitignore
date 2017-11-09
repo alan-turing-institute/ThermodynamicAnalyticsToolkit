@@ -13,7 +13,6 @@ Makefile.in
 ChangeLog
 configure
 INSTALL
-NEWS
 aclocal.m4
 autom4te.cache/
 build-aux/
