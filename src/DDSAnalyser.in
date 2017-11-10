@@ -6,6 +6,7 @@ sys.path.insert(1, '@pythondir@')
 import tensorflow as tf
 import pandas as pd
 import numpy as np
+import scipy
 
 from DataDrivenSampler.version import get_package_version, get_build_hash
 from DataDrivenSampler.common import get_filename_from_fullpath, setup_csv_file
@@ -18,34 +19,84 @@ output_precision=8
 
 
 def main(_):
-    # load trajectory
-    df = pd.read_csv(FLAGS.csv_file, sep=',', header=0)
-    trajLoaded=np.asarray(df.loc[:,['step','loss','kinetic_energy']])
+    print("Run file is "+str(FLAGS.run_file))
+    if FLAGS.run_file is not None:
+        # load run file
+        df_run = pd.read_csv(FLAGS.run_file, sep=',', header=0)
+        run=np.asarray(df_run.loc[:,['step','loss','kinetic_energy', 'total_energy']])
 
-    traj=trajLoaded[FLAGS.drop_burnin::FLAGS.every_nth,:]
+        start = next(x[0] for x in enumerate(run[:,0]) if x[1] > FLAGS.drop_burnin)
 
-    steps=traj[:,0]
-    loss=traj[:,1]
-    kinetic_energy=traj[:,2]
-    no_steps = len(steps)
+        steps=run[start::FLAGS.every_nth,0]
+        loss=run[start::FLAGS.every_nth,1]
+        kinetic_energy=run[start::FLAGS.every_nth,2]
+        total_energy=run[start::FLAGS.every_nth,3]
+        no_steps = len(steps[start:])
 
-    print("%d steps." % (no_steps))
-    print("%lg average and %lg variance in loss." % (np.average(loss), loss.var()))
+        print("%d steps after dropping burn in." % (no_steps))
+        print("%lg average and %lg variance in loss." % (np.average(loss), loss.var()))
 
-    end_list = np.arange(1,FLAGS.steps+1)*int(no_steps/FLAGS.steps)-1
-    print(str(end_list))
-    avg_kin = [np.average(kinetic_energy[0:end]) for end in end_list]
-    var_kin = [np.var(kinetic_energy[0:end]) for end in end_list]
-    actual_steps = [steps[end] for end in end_list]
-    print("Average final kinetic energy "+str(avg_kin))
-    #    print("Moving average kinetic energy: "+str(avg_kinetic[::10]))
+        end_list = np.arange(1,FLAGS.steps+1)*int(no_steps/FLAGS.steps)
+        print("Evaluating at steps: "+str(end_list))
 
-    csv_writer, csv_file = setup_csv_file(FLAGS.output_file, ['step', 'average_kinetic_energy', 'var_kinetic_energy'])
-    for step, avg_val, var_val in zip(actual_steps, avg_kin, var_kin):
-        csv_writer.writerow([step]+ \
-            ['{:{width}.{precision}e}'.format(x, width=output_width, precision=output_precision) \
-                for x in [avg_val, var_val]])
-    csv_file.close()
+        average_kinetic = [np.average(kinetic_energy[0:end]) for end in end_list]
+        variance_kinetic = [np.var(kinetic_energy[0:end]) for end in end_list]
+        average_loss = [np.average(loss[0:end]) for end in end_list]
+        variance_loss = [np.var(loss[0:end]) for end in end_list]
+        average_total = [np.average(total_energy[0:end]) for end in end_list]
+        variance_total = [np.var(total_energy[0:end]) for end in end_list]
+        print("Average first ten running kinetic energies "+str(average_kinetic[0:10]))
+
+        if FLAGS.average_run_file is not None:
+            csv_writer, csv_file = setup_csv_file(FLAGS.average_run_file,
+                ['step', 'average_kinetic_energy', 'variance_kinetic_energy', \
+                    'average_loss', 'average_total', \
+                    'average_total', 'variance_total'])
+            for step, avg_kin, var_kin, avg_loss, var_loss, avg_total, var_total in zip(end_list,
+                average_kinetic, variance_kinetic,
+                average_loss, variance_loss,
+                average_total, variance_total):
+                csv_writer.writerow(
+                    [step]
+                    +['{:{width}.{precision}e}'.format(avg_kin, width=output_width, precision=output_precision)]+
+                        ['{:{width}.{precision}e}'.format(var_kin, width=output_width, precision=output_precision)]
+                    +['{:{width}.{precision}e}'.format(avg_loss, width=output_width, precision=output_precision)]+
+                        ['{:{width}.{precision}e}'.format(var_loss, width=output_width, precision=output_precision)]
+                    +['{:{width}.{precision}e}'.format(avg_total, width=output_width, precision=output_precision)]+
+                        ['{:{width}.{precision}e}'.format(var_total, width=output_width, precision=output_precision)]
+                )
+            csv_file.close()
+
+    print("Trajectory file is "+str(FLAGS.trajectory_file))
+    if FLAGS.trajectory_file is not None:
+        # load trajectory file
+        print("Loading trajectory file")
+        df_trajectory = pd.read_csv(FLAGS.trajectory_file, sep=',', header=0)
+        trajectoryLoaded=np.asarray(df_trajectory)
+
+        start = next(x[0] for x in enumerate(trajectoryLoaded[:,0]) if x[1] > FLAGS.drop_burnin)
+
+        steps=trajectoryLoaded[start::FLAGS.every_nth,0]
+        # burnin is specified in "real" steps disregarding every_nth
+        loss=trajectoryLoaded[start::FLAGS.every_nth,1]
+        trajectory=trajectoryLoaded[start::FLAGS.every_nth,2:]
+
+        # check whether dofs are sufficiently converged
+        number_dof = len(trajectory[0,:])
+        average_params = [np.average(trajectory[0:, i]) for i in range(number_dof)]
+        variance_params = [np.var(trajectory[0:, i]) for i in range(number_dof)]
+        print("First ten parameters are converged to the following values:")
+        print(str(average_params[0:10]))
+        print(str(variance_params[0:10]))
+
+        if FLAGS.average_trajectory_file is not None:
+            csv_writer, csv_file = setup_csv_file(FLAGS.average_trajectory_file, ['step', 'average_parameter', 'variance_parameter'])
+            for step, avg,var in zip(range(number_dof), average_params, variance_params):
+                csv_writer.writerow(
+                    [step, '{:{width}.{precision}e}'.format(avg, width=output_width, precision=output_precision)]+
+                    ['{:{width}.{precision}e}'.format(var, width=output_width, precision=output_precision)]
+                )
+            csv_file.close()
 
 if __name__ == '__main__':
     FLAGS, unparsed = parse_parameters()
