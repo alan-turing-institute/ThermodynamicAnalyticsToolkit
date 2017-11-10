@@ -36,8 +36,6 @@ def parse_parameters():
         help='How many landmark points to computer for the trajectory (if any)')
     parser.add_argument('--landmark_prefix', type=str, default=None,
         help='Give prefix to file name to write trajectory at obtained landmark points per eigenvector to')
-    parser.add_argument('--output_file', type=str, default=None,
-        help='CSV file name to output averages and variances.')
     parser.add_argument('--run_file', type=str, default=None,
         help='CSV run file name to read run time values from.')
     parser.add_argument('--steps', type=int, default=20,

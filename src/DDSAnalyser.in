@@ -100,11 +100,19 @@ def main(_):
                 )
             csv_file.close()
 
-
         if FLAGS.diffusion_map_file is not None or FLAGS.landmarks is not None:
             # compute diffusion map and write to file
             if FLAGS.diffusion_map_file is not None:
-                vectors, values, q = compute_diffusion_maps(trajectory)
+                print("Computing diffusion map")
+                try:
+                    vectors, values, q = compute_diffusion_maps(trajectory)
+                except scipy.sparse.linalg.eigen.arpack.ArpackNoConvergence:
+                    print("ERROR: Vectors were non-convergent.")
+                    vectors = np.zeros( (np.shape(trajectory)[1], number_dof+1) )
+                    values = np.zeros( (1, number_dof+1) )
+                    q = np.zeros( (np.shape(trajectory)[1], np.shape(trajectory)[1]) )
+                    # override landmarks to skip comutation
+                    FLAGS.landmarks = 1
                 write_values_as_csv(values, FLAGS.diffusion_map_file)
                 print("Eigenvalues are "+str(values))
             if FLAGS.diffusion_matrix_file is not None:
@@ -122,10 +130,14 @@ def main(_):
 
             if FLAGS.landmarks is not None:
                 # compute landmarks
+                print("Getting landmarks")
                 landmarks=get_landmarks(trajectory, FLAGS.landmarks, q, vectors,  loss)
 
                 # compute free energy at landmark points
+                print("Computing free energy")
                 freeEnergies, NumLevelsets = compute_free_energy(trajectory, FLAGS.landmarks, q, vectors)
+                print("freeEnergies: "+str(freeEnergies))
+                print("NumLevelsets: "+str(NumLevelsets))
 
                 for ev_index in range(np.shape(vectors)[1]):
                     header = ["landmark", "loss", "kernel_diff"]
@@ -136,10 +148,10 @@ def main(_):
                     csv_writer, csv_file = setup_csv_file(FLAGS.landmark_prefix+"-ev_"+str(ev_index)+".csv", header)
                     for k in range(np.shape(landmarks[ev_index])[0]):
                         i = landmarks[ev_index][k]
-                        csv_writer.writerow([i, loss[i], kernel_diff[i,0]] \
+                        csv_writer.writerow([steps[i], loss[i], kernel_diff[i,0]] \
                             +list(np.asarray(trajectory[i,:])) \
-                            +freeEnergies[ev_index]+[vectors[i,ev_index]])
-                    csv_file.close()
+                            +[freeEnergies[ev_index][k], vectors[i,ev_index]])
+                        csv_file.close()
 
 if __name__ == '__main__':
     FLAGS, unparsed = parse_parameters()
