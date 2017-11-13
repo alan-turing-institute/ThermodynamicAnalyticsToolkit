@@ -11,7 +11,7 @@ import scipy
 from DataDrivenSampler.version import get_package_version, get_build_hash
 from DataDrivenSampler.common import get_filename_from_fullpath, setup_csv_file
 from DataDrivenSampler.TrajectoryAnalyser import compute_diffusion_maps, \
-            compute_free_energy, get_landmarks, moving_average, parse_parameters, \
+            compute_free_energy, get_landmarks_over_vectors, moving_average, parse_parameters, \
             write_landmarks, write_values_as_csv
 
 FLAGS = None

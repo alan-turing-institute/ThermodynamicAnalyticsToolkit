@@ -53,21 +53,19 @@ def moving_average(a, n=3) :
     return ret[n - 1:] / n
 
 
-def compute_diffusion_maps(traj):
-    epsilon=0.1
+def compute_diffusion_maps(traj, beta, loss, nrOfFirstEigenVectors):
+    epsilon=0.1 # try 1 (i.e. make it bigger, then reduce to average distance)
 
-    #landmarks, V1 = sampler.dimension_reduction(traj, epsilon, numberOfLandmarks, smpl.model, smpl.T, method=Method)
-    kernelDiff = dm.compute_kernel(traj, epsilon)
-    P = dm.compute_P(kernelDiff, traj)
-    q = kernelDiff.sum(axis=1)
+    qTargetDistribution = dm.compute_target_distribution(len(traj), beta, loss)
+    P, qEstimated = dm.compute_unweighted_P(traj, epsilon, qTargetDistribution)
+    lambdas, eigenvectors = sps.linalg.eigs(P, k=(nrOfFirstEigenVectors))  # , which='LM' )
+    lambdas = np.real(lambdas)
 
-    #P, target_distribution, qEmp = compute_unweighted_P( X, epsilon, sampler)
-    lambdas, V = sps.linalg.eigsh(P, k=4)#, which='LM' )
     ix = lambdas.argsort()[::-1]
+    X_se = eigenvectors[:, ix]
     lambdas = lambdas[ix]
-    X_se = V[:,ix]
 
-    return X_se, lambdas, q
+    return X_se, lambdas, qEstimated, qTarget
 
 
 def write_values_as_csv(values, csv_filename, output_width, output_precision):
@@ -94,69 +92,14 @@ def pdist2(x,y):
     return v
 
 
-def get_landmarks(data, K, q, vectors, energies):
-
+def get_landmarks_over_vectors(data, K, q, vectors, energies):
     landmark_per_vector = []
     for vindex in range(np.shape(vectors)[1]):
-        V1 = vectors[:,vindex]
-        m = float(q.size)
-        #q=np.array(q)
+        V = vectors[:, vindex]
 
-        delta = 100/m*(max(V1)-min(V1))
-        deltaMax=2*delta
-        levels = np.linspace(min(V1),max(V1),num=K)
+        landmarks = dm.get_landmarks(data, K, q, V, energies)
 
-        lb = 1
-
-        landmarks=np.zeros(K)
-        emptyLevelSet=0
-
-        for k in range(K-1, -1, -1):
-
-
-                levelsetLength=0
-
-                # we want to identify idices in V1 which are delta close to the levels
-                #---o----o----o----o----o---
-                #  *o** *o*  *o*  *o*   o
-                # if there are no indeces in the delta distance, increase the delta distance
-
-                while levelsetLength==0:
-
-                    levelset = np.where(np.abs(V1 - levels[k]) < delta)
-                    levelset=levelset[0]
-                    levelsetLength=len(levelset)
-
-                    delta=delta*1.001
-
-                    if delta>deltaMax:
-                        levelset=range(0,len(V1))
-
-                data_level = data[levelset,:]
-
-                if k==K-1:
-
-                    idx = np.argmin(energies[levelset] / m)
-                    landmarks[k]= levelset[idx]
-
-                else:
-
-                    idx = np.argmin(energies[levelset] / m)
-                    qtmp= energies[levelset] / m
-
-                    # compute the distance to the last landmark
-                    dist_to_last=np.zeros(data_level.shape[0])
-                    for i in range(0,data_level.shape[0]):
-                        dist_to_last[int(i)] = pdist2(data[int(landmarks[k+1]),:], data_level[int(i)])
-                    dtmp=np.array(dist_to_last.reshape(qtmp.shape))
-
-                    v=qtmp  - lb*dtmp
-
-                    idx = np.argmax(v);
-
-                    landmarks[k]= levelset[idx]
-
-        landmark_per_vector.append(landmarks.astype(int))
+        landmark_per_vector.append(landmarks)
     return landmark_per_vector
 
 

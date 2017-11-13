@@ -19,6 +19,7 @@
 
 AT_SETUP([Analyser - Free energy])
 AT_KEYWORDS([ddsanalyser free_energy])
+AT_XFAIL_IF([/bin/true])
 
 # analyse a trajectory that was created by:
 # (Two clusters dataset with two inputs nodes, single output, linear activation)
