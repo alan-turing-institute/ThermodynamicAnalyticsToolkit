@@ -17,8 +17,8 @@
 #
 ### 
 
-AT_SETUP([Analyser - Diffusion map])
-AT_KEYWORDS([ddsanalyser diffusion_map])
+AT_SETUP([Analyser - Diffusion map, method vanilla])
+AT_KEYWORDS([ddsanalyser diffusion_map vanilla])
 
 # analyse a trajectory that was created by:
 # (Two clusters dataset with two inputs nodes, single output, linear activation)
@@ -35,6 +35,7 @@ AT_KEYWORDS([ddsanalyser diffusion_map])
 #
 AT_CHECK([../../../DDSAnalyser \
     --diffusion_map_file eigenvalues.csv \
+    --diffusion_map_method "vanilla" \
     --diffusion_matrix_file eigenvectors.csv \
     --drop_burnin 10 \
     --every_nth 1 \
@@ -43,8 +44,40 @@ AT_CHECK([../../../DDSAnalyser \
     --steps 10 \
     --trajectory_file ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/pre/trajectory-two_clusters-dim_500-gamma_10-beta_1e4-max_steps_1000-noise_0.1-linear-seed_426.csv
 ], 0, [stdout], [stderr])
-AT_CHECK([diff eigenvalues.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/post/eigenvalues.csv], 0, [ignore], [ignore])
-AT_CHECK([diff eigenvectors.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/post/eigenvectors.csv], 0, [ignore], [ignore])
+AT_CHECK([diff eigenvalues.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/post/eigenvalues-method_vanilla.csv], 0, [ignore], [ignore])
+AT_CHECK([diff eigenvectors.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/post/eigenvectors-method_vanilla.csv], 0, [ignore], [ignore])
+
+AT_CLEANUP
+
+AT_SETUP([Analyser - Diffusion map, method TMDMap])
+AT_KEYWORDS([ddsanalyser diffusion_map TMDMap])
+
+# analyse a trajectory that was created by:
+# (Two clusters dataset with two inputs nodes, single output, linear activation)
+# DDSampler \
+# --data_type 2 \
+# --dimension 500 \
+# --friction_constant 10 \
+# --inverse_temperatur 1e1 \
+# --max_steps 1000 \
+# --noise 0.1 \
+# --output_activation linear \
+# --seed 426 \
+# --trajectory_file trajectory-two_clusters-dim_500-gamma_10-beta_1e1-max_steps_1000-noise_0.1-linear-seed_426.csv
+#
+AT_CHECK([../../../DDSAnalyser \
+    --diffusion_map_file eigenvalues.csv \
+    --diffusion_map_method "TMDMap" \
+    --diffusion_matrix_file eigenvectors.csv \
+    --drop_burnin 10 \
+    --every_nth 1 \
+    --inverse_temperature 1e1 \
+    --number_of_eigenvalues 4 \
+    --steps 10 \
+    --trajectory_file ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/pre/trajectory-two_clusters-dim_500-gamma_10-beta_1e1-max_steps_1000-noise_0.1-linear-seed_426.csv
+], 0, [stdout], [stderr])
+AT_CHECK([diff eigenvalues.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/post/eigenvalues-method_TMDMap.csv], 0, [ignore], [ignore])
+AT_CHECK([diff eigenvectors.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/post/eigenvectors-method_TMDMap.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
 
