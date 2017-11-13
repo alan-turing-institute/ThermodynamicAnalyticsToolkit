@@ -20,7 +20,7 @@
 AT_SETUP([Analyser Basics - help output])
 AT_KEYWORDS([help ddsanalyser])
 
-AT_CHECK([../../DDSAnalyser --help], 0, [stdout], [stderr])
+AT_CHECK([../../../DDSAnalyser --help], 0, [stdout], [stderr])
 AT_CHECK([fgrep "usage: DDSAnalyser" stdout], 0, [ignore], [ignore])
 
 AT_CLEANUP

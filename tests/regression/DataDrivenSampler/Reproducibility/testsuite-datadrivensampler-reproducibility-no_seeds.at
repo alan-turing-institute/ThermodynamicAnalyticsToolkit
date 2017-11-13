@@ -21,7 +21,7 @@ AT_SETUP([Sampler Reproducibility - no seed])
 AT_KEYWORDS([reproducibility seed twoclusters ddsampler])
 
 # run 1
-AT_CHECK([../../DDSampler \
+AT_CHECK([../../../DDSampler \
 	--data_type 2 \
 	--batch_size 10 \
 	--hidden_dimension 2 \
@@ -32,7 +32,7 @@ AT_CHECK([../../DDSampler \
 ], 0, [stdout], [stderr])
 
 # run 2
-AT_CHECK([../../DDSampler \
+AT_CHECK([../../../DDSampler \
 	--data_type 2 \
 	--batch_size 10 \
 	--hidden_dimension 2 \

@@ -31,9 +31,9 @@ AC_CONFIG_TESTDIR([tests/regression])
 AC_CONFIG_FILES(
 	tests/regression/atlocal
 	tests/regression/Makefile)
-AC_CONFIG_FILES([tests/regression/DDSampler], [chmod +x tests/regression/DDSampler])
-AC_CONFIG_FILES([tests/regression/DDSOptimizer], [chmod +x tests/regression/DDSOptimizer])
-AC_CONFIG_FILES([tests/regression/DDSAnalyser], [chmod +x tests/regression/DDSAnalyser])
+AC_CONFIG_FILES([tests/DDSampler], [chmod +x tests/DDSampler])
+AC_CONFIG_FILES([tests/DDSOptimizer], [chmod +x tests/DDSOptimizer])
+AC_CONFIG_FILES([tests/DDSAnalyser], [chmod +x tests/DDSAnalyser])
 AC_CONFIG_FILES([
         doc/Makefile
         doc/userguide/Makefile

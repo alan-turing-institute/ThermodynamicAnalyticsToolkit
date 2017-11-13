@@ -40,8 +40,6 @@ EXTRA_DIST = \
 	$(TESTSUITE) \
 	atlocal.in \
 	package.m4 \
-	ExperimentControl \
-	XMLVersionUpdater \
 	$(TESTSCRIPTS)
 
 max_jobs = 4

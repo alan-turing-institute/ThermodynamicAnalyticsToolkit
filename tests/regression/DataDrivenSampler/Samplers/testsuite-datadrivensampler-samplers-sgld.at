@@ -21,7 +21,7 @@ AT_SETUP([Samplers - SGLD])
 AT_KEYWORDS([samplers ddsampler SGLD])
 
 # run 1
-AT_CHECK([../../DDSampler \
+AT_CHECK([../../../DDSampler \
 	--batch_size 10 \
 	--csv_file run-SGLD.csv \
 	--data_type 2 \

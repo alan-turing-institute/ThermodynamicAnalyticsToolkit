@@ -21,7 +21,7 @@ AT_SETUP([Samplers - GLA 2nd])
 AT_KEYWORDS([samplers ddsampler GLA 2nd])
 
 # run 1
-AT_CHECK([../../DDSampler \
+AT_CHECK([../../../DDSampler \
 	--batch_size 10 \
 	--csv_file run-GLA_2nd.csv \
 	--data_type 2 \

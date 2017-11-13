@@ -21,7 +21,7 @@ AT_SETUP([Sampler Options - inverse temperature])
 AT_KEYWORDS([options ddsampler inverse_temperature])
 
 # run 1
-AT_CHECK([../../DDSampler \
+AT_CHECK([../../../DDSampler \
 	--batch_size 10 \
 	--csv_file run-inverse_temperature_1.csv \
 	--data_type 2 \
@@ -35,7 +35,7 @@ AT_CHECK([../../DDSampler \
 ], 0, [stdout], [stderr])
 
 # run 2
-AT_CHECK([../../DDSampler \
+AT_CHECK([../../../DDSampler \
 	--batch_size 10 \
 	--csv_file run-inverse_temperature_1e5.csv \
 	--data_type 2 \
@@ -54,9 +54,9 @@ AT_CHECK([diff run-inverse_temperature_1.csv run-inverse_temperature_1e5.csv], 1
 AT_CLEANUP
 
 
-AT_SETUP([Options - inverse temperature fails with SGLD])
-AT_KEYWORDS([options ddsampler friction_constant sgld])
-AT_CHECK([../../DDSampler \
+AT_SETUP([Sampler Options - inverse temperature fails with SGLD])
+AT_KEYWORDS([options ddsampler inverse_temperature sgld])
+AT_CHECK([../../../DDSampler \
 	--batch_size 10 \
 	--data_type 2 \
 	--dimension 20 \
@@ -64,7 +64,7 @@ AT_CHECK([../../DDSampler \
 	--inverse_temperature 1 \
 	--step_width 1e-2 \
 	--max_steps 20 \
-	--sampler StochasticGradientLangevinDynamics\
+	--sampler StochasticGradientLangevinDynamics \
 ], 1, [stdout], [stderr])
 
 AT_CLEANUP

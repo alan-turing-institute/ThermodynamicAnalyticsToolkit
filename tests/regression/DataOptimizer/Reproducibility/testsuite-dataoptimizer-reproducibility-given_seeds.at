@@ -21,7 +21,7 @@ AT_SETUP([Optimizer Reproducibility - same and different seed])
 AT_KEYWORDS([reproducibility seed twoclusters ddsoptimizer])
 
 # run 1
-AT_CHECK([../../DDSOptimizer \
+AT_CHECK([../../../DDSOptimizer \
 	--data_type 2 \
 	--batch_size 10 \
 	--hidden_dimension 2 \
@@ -33,7 +33,7 @@ AT_CHECK([../../DDSOptimizer \
 ], 0, [stdout], [stderr])
 
 # run 2: same seed
-AT_CHECK([../../DDSOptimizer \
+AT_CHECK([../../../DDSOptimizer \
 	--data_type 2 \
 	--batch_size 10 \
 	--hidden_dimension 2 \
@@ -46,7 +46,7 @@ AT_CHECK([../../DDSOptimizer \
 
 
 # run 3: other seed
-AT_CHECK([../../DDSOptimizer \
+AT_CHECK([../../../DDSOptimizer \
 	--data_type 2 \
 	--batch_size 10 \
 	--hidden_dimension 2 \

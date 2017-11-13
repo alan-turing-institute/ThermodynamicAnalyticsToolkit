@@ -20,7 +20,7 @@
 AT_SETUP([Optimizer Datasets - two spirals])
 AT_KEYWORDS([twospirals ddsoptimizer])
 
-AT_CHECK([../../DDSOptimizer \
+AT_CHECK([../../../DDSOptimizer \
 	--data_type 3 \
 	--batch_size 10 \
 	--hidden_dimension 8 8 \

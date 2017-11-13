@@ -20,7 +20,7 @@
 AT_SETUP([Sampler Basics - help output])
 AT_KEYWORDS([help ddsampler])
 
-AT_CHECK([../../DDSampler --help], 0, [stdout], [stderr])
+AT_CHECK([../../../DDSampler --help], 0, [stdout], [stderr])
 AT_CHECK([fgrep "usage: DDSampler" stdout], 0, [ignore], [ignore])
 
 AT_CLEANUP

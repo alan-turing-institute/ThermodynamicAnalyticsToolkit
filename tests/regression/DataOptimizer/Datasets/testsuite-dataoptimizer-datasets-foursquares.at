@@ -20,7 +20,7 @@
 AT_SETUP([Optimizer Datasets - four squares])
 AT_KEYWORDS([foursquares ddsoptimizer])
 
-AT_CHECK([../../DDSOptimizer \
+AT_CHECK([../../../DDSOptimizer \
 	--data_type 1 \
 	--batch_size 10 \
 	--hidden_dimension 4 \

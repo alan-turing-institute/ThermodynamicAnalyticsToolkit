@@ -34,7 +34,7 @@ AT_KEYWORDS([ddsanalyser averages])
 # --seed 426 \
 # --trajectory_file trajectory-two_clusters-dim_500-gamma_10-beta_1e4-max_steps_1000-noise_0.1-linear-seed_426.csv
 #
-AT_CHECK([../../DDSAnalyser \
+AT_CHECK([../../../DDSAnalyser \
     --average_run_file average_run.csv \
     --average_trajectory_file average_trajectory.csv \
     --drop_burnin 10 \

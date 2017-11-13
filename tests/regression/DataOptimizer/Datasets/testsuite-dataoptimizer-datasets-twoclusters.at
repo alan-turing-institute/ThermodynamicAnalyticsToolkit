@@ -20,7 +20,7 @@
 AT_SETUP([Optimizer Datasets - two clusters])
 AT_KEYWORDS([twoclusters ddsoptimizer])
 
-AT_CHECK([../../DDSOptimizer \
+AT_CHECK([../../../DDSOptimizer \
 	--data_type 2 \
 	--batch_size 10 \
 	--hidden_dimension 2 \

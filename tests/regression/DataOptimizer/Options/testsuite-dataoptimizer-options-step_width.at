@@ -21,7 +21,7 @@ AT_SETUP([Optimizer Options - step width])
 AT_KEYWORDS([help ddsoptimizer step_width])
 
 # run 1
-AT_CHECK([../../DDSOptimizer \
+AT_CHECK([../../../DDSOptimizer \
 	--batch_size 10 \
 	--csv_file run-step_width_1e-1.csv \
 	--data_type 2 \
@@ -33,7 +33,7 @@ AT_CHECK([../../DDSOptimizer \
 ], 0, [stdout], [stderr])
 
 # run 2
-AT_CHECK([../../DDSOptimizer \
+AT_CHECK([../../../DDSOptimizer \
 	--batch_size 10 \
 	--csv_file run-step_width_1e-2.csv \
 	--data_type 2 \

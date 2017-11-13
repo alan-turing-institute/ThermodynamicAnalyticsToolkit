@@ -20,7 +20,7 @@
 AT_SETUP([Optimizer Datasets - two circles])
 AT_KEYWORDS([twocircles ddsoptimizer])
 
-AT_CHECK([../../DDSOptimizer \
+AT_CHECK([../../../DDSOptimizer \
 	--data_type 0 \
 	--batch_size 10 \
 	--hidden_dimension 4 \
