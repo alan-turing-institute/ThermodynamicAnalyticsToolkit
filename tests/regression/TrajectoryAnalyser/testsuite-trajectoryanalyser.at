@@ -26,4 +26,5 @@ m4_include([TrajectoryAnalyser/testsuite-trajectoryanalyser-simple.at])
 m4_include([TrajectoryAnalyser/Averages/testsuite-trajectoryanalyser-averages.at])
 
 # tests on diffusion map analysis (eigenvectors and eigenvalues)
-m4_include([TrajectoryAnalyser/DiffusionMap/testsuite-trajectoryanalyser-diffusionmap.at])
+m4_include([TrajectoryAnalyser/DiffusionMap/testsuite-trajectoryanalyser-diffusionmap-eigendecomposition.at])
+m4_include([TrajectoryAnalyser/DiffusionMap/testsuite-trajectoryanalyser-diffusionmap-free_energy.at])
