@@ -24,6 +24,8 @@ def parse_parameters():
         help='CSV file name to output averages and variances of energies.')
     parser.add_argument('--average_trajectory_file', type=str, default=None,
         help='CSV file name to output averages and variances of all degrees of freedom.')
+    parser.add_argument('--diffusion_map_method', type=str, default='vanilla',
+        help='Method to use for computing the diffusion map: vanilla or TMDMap')
     parser.add_argument('--diffusion_map_file', type=str, default=None,
         help='Give file name to write eigenvalues of diffusion map to')
     parser.add_argument('--diffusion_matrix_file', type=str, default=None,
@@ -32,10 +34,14 @@ def parse_parameters():
         help='How many values to drop at the beginning of the trajectory.')
     parser.add_argument('--every_nth', type=int, default=1,
         help='Evaluate only every nth trajectory point to files, e.g. 10')
+    parser.add_argument('--inverse_temperature', type=float, default=None,
+        help='Inverse temperature at which the sampling was executed for target Boltzmann distribution')
     parser.add_argument('--landmarks', type=int, default=None,
         help='How many landmark points to computer for the trajectory (if any)')
-    parser.add_argument('--landmark_prefix', type=str, default=None,
-        help='Give prefix to file name to write trajectory at obtained landmark points per eigenvector to')
+    parser.add_argument('--landmark_file', type=str, default=None,
+        help='Give file name ending in "-ev_0.csv" to write trajectory at obtained landmark points per eigenvector to')
+    parser.add_argument('--number_of_eigenvalues', type=int, default=4,
+        help='How many largest eigenvalues to compute')
     parser.add_argument('--run_file', type=str, default=None,
         help='CSV run file name to read run time values from.')
     parser.add_argument('--steps', type=int, default=20,
@@ -53,19 +59,27 @@ def moving_average(a, n=3) :
     return ret[n - 1:] / n
 
 
-def compute_diffusion_maps(traj, beta, loss, nrOfFirstEigenVectors):
+def compute_diffusion_maps(traj, beta, loss, nrOfFirstEigenVectors, method='vanilla'):
     epsilon=0.1 # try 1 (i.e. make it bigger, then reduce to average distance)
 
     qTargetDistribution = dm.compute_target_distribution(len(traj), beta, loss)
-    P, qEstimated = dm.compute_unweighted_P(traj, epsilon, qTargetDistribution)
-    lambdas, eigenvectors = sps.linalg.eigs(P, k=(nrOfFirstEigenVectors))  # , which='LM' )
+    if method == 'vanilla':
+        kernel = dm.compute_kernel(traj, epsilon=epsilon)
+        qEstimated = kernel.sum(axis=1)
+        P = dm.compute_VanillaDiffusionMap(kernel, traj)
+    elif method == 'TMDMap':
+        P, qEstimated = dm.compute_TMDMap(traj, epsilon, qTargetDistribution)
+    else:
+        print("Unknown diffusion map method "+method)
+        sys.exit(255)
+    lambdas, eigenvectors = sps.linalg.eigs(P, k=nrOfFirstEigenVectors)  # , which='LM' )
     lambdas = np.real(lambdas)
 
     ix = lambdas.argsort()[::-1]
     X_se = eigenvectors[:, ix]
     lambdas = lambdas[ix]
 
-    return X_se, lambdas, qEstimated, qTarget
+    return X_se, lambdas, qEstimated, qTargetDistribution
 
 
 def write_values_as_csv(values, csv_filename, output_width, output_precision):

@@ -103,9 +103,18 @@ def main(_):
         # compute diffusion map and write to file
         if FLAGS.diffusion_map_file is not None or FLAGS.diffusion_matrix_file is not None \
                 or FLAGS.landmarks is not None:
+            if FLAGS.inverse_temperature is None or FLAGS.number_of_eigenvalues is None:
+                print("Require both inverse_temperature and number_of_eigenvalues.")
+                sys.exit(255)
+
             print("Computing diffusion map")
             try:
-                vectors, values, q = compute_diffusion_maps(trajectory)
+                vectors, values, q, q_target = compute_diffusion_maps( \
+                    traj=trajectory, \
+                    beta=FLAGS.inverse_temperature, \
+                    loss=loss, \
+                    nrOfFirstEigenVectors=FLAGS.number_of_eigenvalues, \
+                    method=FLAGS.diffusion_map_method)
             except scipy.sparse.linalg.eigen.arpack.ArpackNoConvergence:
                 print("ERROR: Vectors were non-convergent.")
                 vectors = np.zeros( (np.shape(trajectory)[1], number_dof+1) )
@@ -139,7 +148,12 @@ def main(_):
             if FLAGS.landmark_prefix is not None:
                 # compute landmarks
                 print("Getting landmarks")
-                landmarks=get_landmarks(trajectory, FLAGS.landmarks, q, vectors,  loss)
+                landmarks=get_landmarks_over_vectors( \
+                    data=trajectory, \
+                    K=FLAGS.landmarks, \
+                    q=q, \
+                    vectors=vectors, \
+                    energies=loss)
 
                 # compute free energy at landmark points
                 print("Computing free energy")
@@ -175,6 +189,16 @@ if __name__ == '__main__':
         # give version and exit
         print(get_filename_from_fullpath(sys.argv[0])+" "+get_package_version()+" -- version "+get_build_hash())
         sys.exit(0)
+
+    # obtain prefix from given filename
+    if FLAGS.landmark_file is not None:
+        landmark_suffix = "-ev_1.csv"
+        if landmark_suffix in FLAGS.landmark_file:
+            FLAGS.landmark_prefix = FLAGS.landmark_file[0:FLAGS.landmark_file.find(landmark_suffix)]
+        else:
+            FLAGS.landmark_prefix = FLAGS.landmark_file
+    else:
+        FLAGS.landmark_prefix = None
 
     print("Using parameters: "+str(FLAGS))
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
