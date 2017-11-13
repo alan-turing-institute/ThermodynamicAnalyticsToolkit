@@ -27,6 +27,10 @@ AC_CONFIG_FILES(
 	src/models/Makefile
 	src/samplers/Makefile
 	tests/Makefile)
+AC_CONFIG_TESTDIR([tests/integration])
+AC_CONFIG_FILES(
+	tests/integration/atlocal
+	tests/integration/Makefile)
 AC_CONFIG_TESTDIR([tests/regression])
 AC_CONFIG_FILES(
 	tests/regression/atlocal

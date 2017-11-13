@@ -1,5 +1,6 @@
 SUBDIRS =
 
 SUBDIRS += \
-	regression
+	regression \
+	integration
 

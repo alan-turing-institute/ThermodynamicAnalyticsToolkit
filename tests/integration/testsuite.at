@@ -20,18 +20,11 @@
 # see regression/... subdirs wherein for each of the cases and each check (enumerated) is a pre and post dir. 
 # In pre initial files are placed, in post results can be found to be checked by diff in this testsuite.
 
-AT_INIT([Regression tests])
+AT_INIT([Integration tests])
 #AT_TESTED(awk)
 
 # Use colored output with new-enough Autotest.
 m4_ifdef([AT_COLOR_TESTS], [AT_COLOR_TESTS])
 
-# tests for DataDrivenSampler or DDSampler
-m4_include(DataDrivenSampler/testsuite-datadrivensampler.at)
-
-# tests for DataOptimizer or DDSOptimizer
-m4_include(DataOptimizer/testsuite-dataoptimizer.at)
-
-# tests for TrajectoryAnalyser or DDSAnalyser
-m4_include(TrajectoryAnalyser/testsuite-trajectoryanalyser.at)
-
+# tests for equilibration using first Optimizer, then Sampler
+m4_include(Equilibration/testsuite-equilibration.at)
