@@ -21,3 +21,6 @@ AT_BANNER([DataDrivenSampler - TrajectoryAnalyser])
 
 # tests on simple behavior
 m4_include([TrajectoryAnalyser/testsuite-trajectoryanalyser-simple.at])
+
+# test on computing averages over runtime and trajectories
+m4_include([TrajectoryAnalyser/Averages/testsuite-trajectoryanalyser-averages.at])

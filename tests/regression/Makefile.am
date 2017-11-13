@@ -30,7 +30,8 @@ TESTSCRIPTS += \
 	$(srcdir)/DataOptimizer/Reproducibility/testsuite-dataoptimizer-reproducibility-given_seeds.at \
 	$(srcdir)/DataOptimizer/Reproducibility/testsuite-dataoptimizer-reproducibility-no_seeds.at \
 	$(srcdir)/TrajectoryAnalyser/testsuite-trajectoryanalyser.at \
-	$(srcdir)/TrajectoryAnalyser/testsuite-trajectoryanalyser-simple.at
+	$(srcdir)/TrajectoryAnalyser/testsuite-trajectoryanalyser-simple.at \
+	$(srcdir)/TrajectoryAnalyser/Averages/testsuite-trajectoryanalyser-averages.at
 
 EXTRA_DIST = \
 	testsuite.at \

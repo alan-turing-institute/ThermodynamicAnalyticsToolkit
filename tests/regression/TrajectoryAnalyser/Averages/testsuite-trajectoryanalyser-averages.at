@@ -1,0 +1,56 @@
+#
+#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    Copyright (C) 2017 The University of Edinburgh
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### 
+
+AT_SETUP([Analyser - Trajectory averages])
+AT_KEYWORDS([ddsanalyser averages])
+
+# analyse a trajectory that was created by:
+# (Two clusters dataset with two inputs nodes, single output, linear activation)
+# DDSampler \
+# --csv_file run-two_clusters-dim_500-gamma_10-beta_1e4-max_steps_1000-noise_0.1-linear-seed_426.csv
+# --data_type 2 \
+# --dimension 500 \
+# --friction_constant 10 \
+# --inverse_temperatur 1e4 \
+# --max_steps 1000 \
+# --noise 0.1 \
+# --output_activation linear \
+# --seed 426 \
+# --trajectory_file trajectory-two_clusters-dim_500-gamma_10-beta_1e4-max_steps_1000-noise_0.1-linear-seed_426.csv
+#
+AT_CHECK([../../DDSAnalyser \
+    --average_run_file average_run.csv \
+    --average_trajectory_file average_trajectory.csv \
+    --drop_burnin 10 \
+    --every_nth 1 \
+    --steps 10 \
+    --run_file ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/Averages/pre/run-two_clusters-dim_500-gamma_10-beta_1e4-max_steps_1000-noise_0.1-linear-seed_426.csv \
+    --trajectory_file ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/Averages/pre/trajectory-two_clusters-dim_500-gamma_10-beta_1e4-max_steps_1000-noise_0.1-linear-seed_426.csv
+], 0, [stdout], [stderr])
+
+# 10 steps plus header
+AT_CHECK([wc -l average_run.csv | grep "11"], 0, [ignore], [ignore])
+AT_CHECK([diff average_run.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/Averages/post/average_run.csv], 0, [ignore], [ignore])
+
+# only three parameters in total plus header
+AT_CHECK([wc -l average_trajectory.csv | grep "4"], 0, [ignore], [ignore])
+AT_CHECK([diff average_trajectory.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/Averages/post/average_trajectory.csv], 0, [ignore], [ignore])
+
+AT_CLEANUP
+
