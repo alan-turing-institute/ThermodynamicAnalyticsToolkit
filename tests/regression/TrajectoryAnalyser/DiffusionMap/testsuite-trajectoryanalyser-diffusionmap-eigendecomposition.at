@@ -19,7 +19,6 @@
 
 AT_SETUP([Analyser - Diffusion map])
 AT_KEYWORDS([ddsanalyser diffusion_map])
-AT_XFAIL_IF([/bin/true])
 
 # analyse a trajectory that was created by:
 # (Two clusters dataset with two inputs nodes, single output, linear activation)
@@ -39,6 +38,8 @@ AT_CHECK([../../../DDSAnalyser \
     --diffusion_matrix_file eigenvectors.csv \
     --drop_burnin 10 \
     --every_nth 1 \
+    --inverse_temperature 1e4 \
+    --number_of_eigenvalues 4 \
     --steps 10 \
     --trajectory_file ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/pre/trajectory-two_clusters-dim_500-gamma_10-beta_1e4-max_steps_1000-noise_0.1-linear-seed_426.csv
 ], 0, [stdout], [stderr])

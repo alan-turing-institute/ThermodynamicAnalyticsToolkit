@@ -19,7 +19,6 @@
 
 AT_SETUP([Analyser - Free energy])
 AT_KEYWORDS([ddsanalyser free_energy])
-AT_XFAIL_IF([/bin/true])
 
 # analyse a trajectory that was created by:
 # (Two clusters dataset with two inputs nodes, single output, linear activation)
@@ -37,8 +36,10 @@ AT_XFAIL_IF([/bin/true])
 AT_CHECK([../../../DDSAnalyser \
     --drop_burnin 10 \
     --every_nth 1 \
+    --inverse_temperature 1e4 \
     --landmarks 10 \
-    --landmark_prefix landmarks \
+    --landmark_file landmarks-ev_1.csv \
+    --number_of_eigenvalues 4 \
     --trajectory_file ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/pre/trajectory-two_clusters-dim_500-gamma_10-beta_1e4-max_steps_1000-noise_0.1-linear-seed_426.csv
 ], 0, [stdout], [stderr])
 AT_CHECK([diff landmarks-ev_1.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/post/landmarks-ev_1.csv], 0, [ignore], [ignore])
