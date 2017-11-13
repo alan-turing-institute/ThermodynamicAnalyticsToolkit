@@ -70,14 +70,17 @@ def compute_diffusion_maps(traj):
     return X_se, lambdas, q
 
 
-def write_values_as_csv(values, csv_filename=None):
+def write_values_as_csv(values, csv_filename, output_width, output_precision):
     if np.shape(values)[0] == 0:
         return
     if csv_filename is not None:
         header = ["i", "eigenvalue"]
         csv_writer, csv_file = setup_csv_file(csv_filename, header)
         for i in range(0, np.shape(values)[0]):
-            csv_writer.writerow([i, values[i]])
+            csv_writer.writerow([i]
+                + ['{:{width}.{precision}e}'.format(values[i],
+                            width=output_width,
+                            precision=output_precision)])
         csv_file.close()
 
 

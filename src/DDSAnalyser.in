@@ -116,7 +116,7 @@ def main(_):
             kernel_diff = np.asarray(q)
 
             if FLAGS.diffusion_map_file is not None:
-                write_values_as_csv(values, FLAGS.diffusion_map_file)
+                write_values_as_csv(values, FLAGS.diffusion_map_file, output_width, output_precision)
                 print("Eigenvalues are "+str(values))
 
             if FLAGS.diffusion_matrix_file is not None:
@@ -127,11 +127,16 @@ def main(_):
                     header.append("ev_"+str(i))
                 csv_writer, csv_file = setup_csv_file(FLAGS.diffusion_matrix_file, header)
                 for i in range(np.shape(vectors)[0]):
-                    csv_writer.writerow([i, loss[i], kernel_diff[i,0]] \
-                        +list(np.asarray(trajectory[i,:]))+list(np.asarray(vectors[i,:])))
+                    csv_writer.writerow([i, loss[i]] \
+                        +['{:{width}.{precision}e}'.format(kernel_diff[i,0], \
+                            width=output_width, precision=output_precision)] \
+                        +['{:{width}.{precision}e}'.format(x, \
+                            width=output_width, precision=output_precision) for x in np.asarray(trajectory[i,:])] \
+                        +['{:{width}.{precision}e}'.format(x, \
+                            width=output_width, precision=output_precision) for x in np.real(np.asarray(vectors[i,:]))])
                 csv_file.close()
 
-            if FLAGS.landmarks is not None:
+            if FLAGS.landmark_prefix is not None:
                 # compute landmarks
                 print("Getting landmarks")
                 landmarks=get_landmarks(trajectory, FLAGS.landmarks, q, vectors,  loss)
@@ -151,9 +156,15 @@ def main(_):
                     csv_writer, csv_file = setup_csv_file(FLAGS.landmark_prefix+"-ev_"+str(ev_index)+".csv", header)
                     for k in range(np.shape(landmarks[ev_index])[0]):
                         i = landmarks[ev_index][k]
-                        csv_writer.writerow([steps[i], loss[i], kernel_diff[i,0]] \
-                            +list(np.asarray(trajectory[i,:])) \
-                            +[freeEnergies[ev_index][k], vectors[i,ev_index]])
+                        csv_writer.writerow([steps[i], loss[i]]
+                            +['{:{width}.{precision}e}'.format(q[i,0], \
+                                width=output_width, precision=output_precision)] \
+                            +['{:{width}.{precision}e}'.format(x, \
+                                width=output_width, precision=output_precision) for x in np.asarray(trajectory[i,:])] \
+                            +['{:{width}.{precision}e}'.format(freeEnergies[ev_index][k], \
+                                width=output_width, precision=output_precision)] \
+                            +['{:{width}.{precision}e}'.format(np.real(vectors[i,ev_index]), \
+                                width=output_width, precision=output_precision)])
                     csv_file.close()
 
 
