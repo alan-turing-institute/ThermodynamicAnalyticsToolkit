@@ -33,7 +33,8 @@ TESTSCRIPTS += \
 	$(srcdir)/DataOptimizer/SavingRestoring/testsuite-dataoptimizer-saving_restoring.at \
 	$(srcdir)/TrajectoryAnalyser/testsuite-trajectoryanalyser.at \
 	$(srcdir)/TrajectoryAnalyser/testsuite-trajectoryanalyser-simple.at \
-	$(srcdir)/TrajectoryAnalyser/Averages/testsuite-trajectoryanalyser-averages.at
+	$(srcdir)/TrajectoryAnalyser/Averages/testsuite-trajectoryanalyser-averages.at \
+	$(srcdir)/TrajectoryAnalyser/DiffusionMap/testsuite-trajectoryanalyser-diffusionmap.at
 
 EXTRA_DIST = \
 	testsuite.at \

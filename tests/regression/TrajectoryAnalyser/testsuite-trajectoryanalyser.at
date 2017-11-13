@@ -24,3 +24,6 @@ m4_include([TrajectoryAnalyser/testsuite-trajectoryanalyser-simple.at])
 
 # test on computing averages over runtime and trajectories
 m4_include([TrajectoryAnalyser/Averages/testsuite-trajectoryanalyser-averages.at])
+
+# tests on diffusion map analysis (eigenvectors and eigenvalues)
+m4_include([TrajectoryAnalyser/DiffusionMap/testsuite-trajectoryanalyser-diffusionmap.at])
