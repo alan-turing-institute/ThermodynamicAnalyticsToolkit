@@ -23,7 +23,7 @@ AT_KEYWORDS([options ddsampler step_width])
 # run 1
 AT_CHECK([../../../DDSampler \
 	--batch_size 10 \
-	--csv_file run-step_width_1e-2.csv \
+	--run_file run-step_width_1e-2.csv \
 	--data_type 2 \
 	--dimension 20 \
 	--friction_constant 1 \
@@ -37,7 +37,7 @@ AT_CHECK([../../../DDSampler \
 # run 2
 AT_CHECK([../../../DDSampler \
 	--batch_size 10 \
-	--csv_file run-step_width_1e-3.csv \
+	--run_file run-step_width_1e-3.csv \
 	--data_type 2 \
 	--dimension 20 \
 	--friction_constant 1 \

@@ -23,8 +23,6 @@ def parse_parameters():
     """
     parser = argparse.ArgumentParser()
     # please adhere to alphabetical ordering
-    parser.add_argument('--csv_file', type=str, default=None,
-        help='CSV file name to output accuracy and loss values.')
     parser.add_argument('--data_type', type=int, default=DatasetGenerator.SPIRAL,
         help='Which data set to use: (0) two circles, (1) squares, (2) two clusters, (3) spiral.')
     parser.add_argument('--dimension', type=int, default=10,
@@ -53,6 +51,8 @@ def parse_parameters():
         help='Activation function to use for output layer: tanh, relu, linear')
     parser.add_argument('--restore_model', type=str, default=None,
         help='Restore model (weights and biases) from a file.')
+    parser.add_argument('--run_file', type=str, default=None,
+        help='CSV file name to output run time information such as accuracy and loss values.')
     parser.add_argument('--sampler', type=str, default="GeometricLangevinAlgorithm_1stOrder",
         help='Choose the sampler to use for sampling: GeometricLangevinAlgorithm_1stOrder, GeometricLangevinAlgorithm_2ndOrder, StochasticGradientLangevinDynamics')
     parser.add_argument('--save_model', type=str, default=None,
@@ -68,7 +68,7 @@ def parse_parameters():
     return parser.parse_known_args()
 
 
-def sample(FLAGS, ds, sess, nn, xinput, csv_writer, trajectory_writer, config_map):
+def sample(FLAGS, ds, sess, nn, xinput, run_writer, trajectory_writer, config_map):
     """ Performs the actual sampling of the neural network `nn` given a dataset `ds` and a
     Session `session`.
 
@@ -77,7 +77,7 @@ def sample(FLAGS, ds, sess, nn, xinput, csv_writer, trajectory_writer, config_ma
     :param sess: Session object
     :param nn: neural network
     :param xinput: input nodes of neural network
-    :param csv_writer: run csv writer
+    :param run_writer: run csv writer
     :param trajectory_writer: trajectory csv writer
     :param config_map: configuration dictionary
     """
@@ -161,23 +161,23 @@ def sample(FLAGS, ds, sess, nn, xinput, csv_writer, trajectory_writer, config_ma
                     + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
                        for item in biases_eval])
 
-            if config_map["do_write_csv_file"]:
+            if config_map["do_write_run_file"]:
                 if FLAGS.sampler in ["StochasticGradientLangevinDynamics", "GeometricLangevinAlgorithm_1stOrder",
                                      "GeometricLangevinAlgorithm_2ndOrder"]:
                     if FLAGS.sampler == "StochasticGradientLangevinDynamics":
-                        csv_writer.writerow([global_step, i, acc, loss_eval]
+                        run_writer.writerow([global_step, i, acc, loss_eval]
                                             + ['{:{width}.{precision}e}'.format(x, width=output_width,
                                                                                 precision=output_precision)
                                                for x in [sqrt(gradients), sqrt(noise)]])
                     else:
-                        csv_writer.writerow([global_step, i, acc, loss_eval]
+                        run_writer.writerow([global_step, i, acc, loss_eval]
                                       + ['{:{width}.{precision}e}'.format(loss_eval+kinetic_energy,
                                                                           width=output_width,
                                                                           precision=output_precision)]
                                       + ['{:{width}.{precision}e}'.format(x,width=output_width,precision=output_precision)
                                          for x in [kinetic_energy, sqrt(momenta), sqrt(gradients), sqrt(noise)]])
                 else:
-                    csv_writer.writerow([global_step, i, acc, loss_eval])
+                    run_writer.writerow([global_step, i, acc, loss_eval])
 
         if (i % print_intervals) == 0:
             print('Accuracy at step %s (%s): %s' % (i, global_step, acc))
@@ -202,9 +202,9 @@ def setup_output_files(FLAGS, nn, config_map):
         header = ['step', 'epoch', 'accuracy', 'loss', 'total_energy', 'kinetic_energy', 'scaled_momentum', 'scaled_gradient', 'scaled_noise']
     else:
         header = ['step', 'epoch', 'accuracy', 'loss']
-    csv_writer = setup_run_file(FLAGS.csv_file, header, config_map)
+    run_writer = setup_run_file(FLAGS.run_file, header, config_map)
     trajectory_writer = setup_trajectory_file(FLAGS.trajectory_file,
                                               nn.get("weights").get_shape()[0], nn.get("biases").get_shape()[0],
                                               config_map)
-    return csv_writer, trajectory_writer
+    return run_writer, trajectory_writer
 

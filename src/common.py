@@ -36,7 +36,7 @@ def initialize_config_map():
     """
     # output files
     config_map = {
-        "do_write_csv_file": False,
+        "do_write_run_file": False,
         "csv_file": None,
         "do_write_trajectory_file": False,
         "trajectory_file": None
@@ -67,7 +67,7 @@ def setup_run_file(filename, header, config_map):
     :return: CSV writer or None
     """
     if filename is not None:
-        config_map["do_write_csv_file"] = True
+        config_map["do_write_run_file"] = True
         csv_writer, config_map["csv_file"] = setup_csv_file(filename, header)
         return csv_writer
     else:
@@ -97,7 +97,7 @@ def closeFiles(config_map):
 
     :param config_map: configuration dictionary
     """
-    if config_map["do_write_csv_file"]:
+    if config_map["do_write_run_file"]:
         assert config_map["csv_file"] is not None
         config_map["csv_file"].close()
         config_map["csv_file"] = None

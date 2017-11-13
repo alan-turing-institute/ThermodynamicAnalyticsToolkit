@@ -23,7 +23,7 @@ AT_KEYWORDS([ddsanalyser averages])
 # analyse a trajectory that was created by:
 # (Two clusters dataset with two inputs nodes, single output, linear activation)
 # DDSampler \
-# --csv_file run-two_clusters-dim_500-gamma_10-beta_1e4-max_steps_1000-noise_0.1-linear-seed_426.csv
+# --run_file run-two_clusters-dim_500-gamma_10-beta_1e4-max_steps_1000-noise_0.1-linear-seed_426.csv
 # --data_type 2 \
 # --dimension 500 \
 # --friction_constant 10 \

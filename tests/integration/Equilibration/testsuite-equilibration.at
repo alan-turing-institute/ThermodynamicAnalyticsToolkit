@@ -23,11 +23,11 @@ AT_KEYWORDS([ddsampler ddsoptimizer save_model restore_model])
 # run 1: Optimize network
 AT_CHECK([../../../DDSOptimizer \
 	--batch_size 10 \
-	--csv_file run-save_model.csv \
 	--data_type 2 \
 	--dimension 20 \
 	--max_steps 10 \
 	--optimizer GradientDescent \
+	--run_file run-save_model.csv \
 	--save_model model.cpkt \
 	--seed 426 \
 	--step_width 1e-1
@@ -36,7 +36,6 @@ AT_CHECK([../../../DDSOptimizer \
 # run 2: sample network
 AT_CHECK([../../../DDSampler \
 	--batch_size 10 \
-	--csv_file run-restore_model.csv \
 	--data_type 2 \
 	--dimension 20 \
 	--friction_constant 1 \
@@ -44,6 +43,7 @@ AT_CHECK([../../../DDSampler \
 	--max_steps 10 \
 	--optimizer GeometricLangevinAlgorithm_1stOrder \
 	--restore_model model.cpkt \
+	--run_file run-restore_model.csv \
 	--seed 426 \
 	--step_width 1e-1
 ], 0, [stdout], [stderr])

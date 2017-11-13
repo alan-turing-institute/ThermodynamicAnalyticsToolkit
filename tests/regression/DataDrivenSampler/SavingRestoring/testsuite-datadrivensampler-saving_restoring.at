@@ -23,7 +23,7 @@ AT_KEYWORDS([help ddsampler save_model restore_model])
 # run 1
 AT_CHECK([../../../DDSampler \
 	--batch_size 10 \
-	--csv_file run-save_model.csv \
+	--run_file run-save_model.csv \
 	--data_type 2 \
 	--dimension 20 \
 	--friction_constant 1 \
@@ -38,7 +38,7 @@ AT_CHECK([../../../DDSampler \
 # run 2
 AT_CHECK([../../../DDSampler \
 	--batch_size 10 \
-	--csv_file run-restore_model.csv \
+	--run_file run-restore_model.csv \
 	--data_type 2 \
 	--dimension 20 \
 	--friction_constant 1 \

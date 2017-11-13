@@ -29,7 +29,7 @@ AT_CHECK([../../../DDSampler \
 	--max_steps 20 \
 	--optimizer GradientDescent \
 	--seed 426 \
-	--csv_file run-base.csv
+	--run_file run-base.csv
 ], 0, [stdout], [stderr])
 
 # run 2: same seed
@@ -41,7 +41,7 @@ AT_CHECK([../../../DDSampler \
 	--max_steps 20 \
 	--optimizer GradientDescent \
 	--seed 426 \
-	--csv_file run-sameseed.csv
+	--run_file run-sameseed.csv
 ], 0, [stdout], [stderr])
 
 
@@ -54,7 +54,7 @@ AT_CHECK([../../../DDSampler \
 	--max_steps 20 \
 	--optimizer GradientDescent \
 	--seed 427 \
-	--csv_file run-otherseed.csv
+	--run_file run-otherseed.csv
 ], 0, [stdout], [stderr])
 
 # now compare all

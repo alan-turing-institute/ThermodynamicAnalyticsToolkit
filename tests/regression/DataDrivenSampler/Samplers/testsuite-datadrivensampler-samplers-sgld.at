@@ -23,7 +23,7 @@ AT_KEYWORDS([samplers ddsampler SGLD])
 # run 1
 AT_CHECK([../../../DDSampler \
 	--batch_size 10 \
-	--csv_file run-SGLD.csv \
+	--run_file run-SGLD.csv \
 	--data_type 2 \
 	--dimension 20 \
 	--inverse_temperature 1 \

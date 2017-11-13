@@ -28,7 +28,7 @@ AT_CHECK([../../../DDSampler \
 	--learning_rate 0.03 \
 	--max_steps 20 \
 	--optimizer GradientDescent \
-	--csv_file run-first.csv
+	--run_file run-first.csv
 ], 0, [stdout], [stderr])
 
 # run 2
@@ -39,7 +39,7 @@ AT_CHECK([../../../DDSampler \
 	--learning_rate 0.03 \
 	--max_steps 20 \
 	--optimizer GradientDescent \
-	--csv_file run-second.csv
+	--run_file run-second.csv
 ], 0, [stdout], [stderr])
 
 # now compare

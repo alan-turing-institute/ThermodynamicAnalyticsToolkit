@@ -28,7 +28,7 @@ AT_CHECK([../../../DDSOptimizer \
 	--max_steps 100 \
 	--optimizer GradientDescent \
 	--seed 426 \
-	--csv_file run.csv
+	--run_file run.csv
 ], 0, [stdout], [stderr])
 AT_CHECK([diff run.csv ${abs_top_srcdir}/tests/regression/DataOptimizer/Datasets/post/run-foursquares.csv], 0, [ignore], [ignore])
 

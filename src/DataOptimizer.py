@@ -20,8 +20,6 @@ def parse_parameters():
     """
     parser = argparse.ArgumentParser()
     # please adhere to alphabetical ordering
-    parser.add_argument('--csv_file', type=str, default=None,
-        help='CSV run file name to output accuracy and loss values.')
     parser.add_argument('--data_type', type=int, default=DatasetGenerator.SPIRAL,
         help='Which data set to use: (0) two circles, (1) squares, (2) two clusters, (3) spiral.')
     parser.add_argument('--dimension', type=int, default=10,
@@ -48,6 +46,8 @@ def parse_parameters():
         help='Activation function to use for output layer: tanh, relu, linear')
     parser.add_argument('--restore_model', type=str, default=None,
         help='Restore model (weights and biases) from a file.')
+    parser.add_argument('--run_file', type=str, default=None,
+        help='CSV run file name to runtime information such as output accuracy and loss values.')
     parser.add_argument('--save_model', type=str, default=None,
         help='Save model (weights and biases) to a file for later restoring.')
     parser.add_argument('--seed', type=int, default=None,
@@ -70,16 +70,16 @@ def setup_output_files(FLAGS, nn, config_map):
     :return: CSV writer objects for run and trajectory
     """
     print("Setting up output files")
-    csv_writer = setup_run_file(FLAGS.csv_file,
+    run_writer = setup_run_file(FLAGS.run_file,
                                 ['step', 'epoch', 'accuracy', 'loss', 'scaled_gradient'],
                                 config_map)
     trajectory_writer = setup_trajectory_file(FLAGS.trajectory_file,
                                               nn.get("weights").get_shape()[0], nn.get("biases").get_shape()[0],
                                               config_map)
-    return csv_writer, trajectory_writer
+    return run_writer, trajectory_writer
 
 
-def train(FLAGS, ds, sess, nn, xinput, csv_writer, trajectory_writer, config_map):
+def train(FLAGS, ds, sess, nn, xinput, run_writer, trajectory_writer, config_map):
     """ Performs the actual training of the neural network `nn` given a dataset `ds` and a
     Session `session`.
 
@@ -88,7 +88,7 @@ def train(FLAGS, ds, sess, nn, xinput, csv_writer, trajectory_writer, config_map
     :param sess: Session object
     :param nn: neural network
     :param xinput: input nodes of neural network
-    :param csv_writer: run csv writer
+    :param run_writer: run csv writer
     :param trajectory_writer: trajectory csv writer
     :param config_map: configuration dictionary
     """
@@ -110,8 +110,8 @@ def train(FLAGS, ds, sess, nn, xinput, csv_writer, trajectory_writer, config_map
             sess.run(test_nodes,feed_dict=feed_dict)
 
         if i % FLAGS.every_nth == 0:
-            if config_map["do_write_csv_file"]:
-                csv_writer.writerow([global_step, i, acc, loss_eval, scaled_grad])
+            if config_map["do_write_run_file"]:
+                run_writer.writerow([global_step, i, acc, loss_eval, scaled_grad])
             if config_map["do_write_trajectory_file"]:
                 weights_eval, biases_eval = \
                     sess.run([nn.get("weights"), nn.get("biases")],feed_dict=feed_dict)
