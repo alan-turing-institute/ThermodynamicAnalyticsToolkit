@@ -100,8 +100,9 @@ def main(_):
                 )
             csv_file.close()
 
-        if FLAGS.diffusion_map_file is not None or FLAGS.landmarks is not None:
-            # compute diffusion map
+        # compute diffusion map and write to file
+        if FLAGS.diffusion_map_file is not None or FLAGS.diffusion_matrix_file is not None \
+                or FLAGS.landmarks is not None:
             print("Computing diffusion map")
             try:
                 vectors, values, q = compute_diffusion_maps(trajectory)
@@ -154,6 +155,7 @@ def main(_):
                             +list(np.asarray(trajectory[i,:])) \
                             +[freeEnergies[ev_index][k], vectors[i,ev_index]])
                     csv_file.close()
+
 
 if __name__ == '__main__':
     FLAGS, unparsed = parse_parameters()
