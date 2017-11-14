@@ -40,7 +40,7 @@ class Dataset:
         self.ys = ys
         self.set_test_train_ratio(0.5)
         self.slice_index = math.floor(len(self.xs) * self.test_train_ratio)
-        # shuffle once to prevent and undistributed testset
+        # shuffle once to prevent and undistributed (test) set
         self.shuffle_all()
 
     def set_test_train_ratio(self, ratio):
@@ -55,6 +55,9 @@ class Dataset:
 
     def get_testset(self):
         """ Returns the current testset set for this epoch as a whole.
+
+        Note that the testset is never shuffled (only during
+        :method Dataset.__init__():).
 
         :return: tuple of testset input and testset labels.
         """
@@ -71,7 +74,7 @@ class Dataset:
         """
         if self.epochStarted():
             # shuffle on start of epoch
-            #self.shuffle_train()
+            self.shuffle_train()
             pass
         if self.batch_start + batch_size >= self.slice_index:
             # return rest
@@ -80,7 +83,7 @@ class Dataset:
             remaining_size = batch_size-(self.slice_index-self.batch_start)
             if remaining_size != 0:
                 # reshuffle like on epoch restart
-                #self.shuffle_train()
+                self.shuffle_train()
                 # note that this copies the array and is not inplace!
                 batch_xs = np.append(batch_xs, self.xs[0:remaining_size])
                 batch_ys = np.append(batch_ys, self.ys[0:remaining_size])
