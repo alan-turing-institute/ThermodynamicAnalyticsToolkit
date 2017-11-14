@@ -22,7 +22,7 @@ AT_KEYWORDS([help ddsoptimizer save_model restore_model])
 
 # run 1
 AT_CHECK([../../../DDSOptimizer \
-	--batch_size 10 \
+	--batch_size 20 \
 	--run_file run-save_model.csv \
 	--data_type 2 \
 	--dimension 20 \
@@ -35,7 +35,7 @@ AT_CHECK([../../../DDSOptimizer \
 
 # run 2
 AT_CHECK([../../../DDSOptimizer \
-	--batch_size 10 \
+	--batch_size 20 \
 	--run_file run-restore_model.csv \
 	--data_type 2 \
 	--dimension 20 \

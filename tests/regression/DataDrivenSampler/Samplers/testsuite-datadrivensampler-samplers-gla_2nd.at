@@ -22,7 +22,7 @@ AT_KEYWORDS([samplers ddsampler GLA 2nd])
 
 # run 1
 AT_CHECK([../../../DDSampler \
-	--batch_size 10 \
+	--batch_size 20 \
 	--run_file run-GLA_2nd.csv \
 	--data_type 2 \
 	--dimension 20 \

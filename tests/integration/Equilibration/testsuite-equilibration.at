@@ -22,7 +22,7 @@ AT_KEYWORDS([ddsampler ddsoptimizer save_model restore_model])
 
 # run 1: Optimize network
 AT_CHECK([../../../DDSOptimizer \
-	--batch_size 10 \
+	--batch_size 20 \
 	--data_type 2 \
 	--dimension 20 \
 	--max_steps 10 \
@@ -35,7 +35,7 @@ AT_CHECK([../../../DDSOptimizer \
 
 # run 2: sample network
 AT_CHECK([../../../DDSampler \
-	--batch_size 10 \
+	--batch_size 20 \
 	--data_type 2 \
 	--dimension 20 \
 	--friction_constant 1 \
