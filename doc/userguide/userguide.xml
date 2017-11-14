@@ -6,11 +6,224 @@
       <firstname>Frederik</firstname>
       <surname>Heber</surname>
       <email>frederik.heber@gmail.com</email>
-      <address>The University of Edinburgh</address>
+      <address>School of Mathematics, 5613, JCMB, Peter Guthrie Tait Road, Edinburgh, EH9 3FD </address>
   </author>
   <chapter>
     <title>Introduction</title>
-    <section></section>
+    <section>General concepts</section>
+      <para>Before we dive into the internals of this program suite, let us
+      first introduce some general underlying concepts assuming that the
+      reader is only roughly familiar with them. This is not meant as a 
+      replacement for the study of more in-depth material but should rather
+      be seen as a reminder of the terms and notation that will appear later 
+      on.</para>
+      <section>Neural Networks</section>
+        <para>A neural network (NN) is a tool used in the context of machine 
+        learning.
+        Formally, it is a graph with nodes and edges, where nodes represent
+        (simple) functions. The edges represent scalar values by which the
+        output of one node is scaled as input to another node.  The scalar value
+        is called <emphasis>weight</emphasis> and each node also has a
+        constant value, the <emphasis>bias</emphasis>, that does not depend
+        on the input of other nodes.
+        Nodes are organised in layers and nodes are (mostly) only connected 
+        between adjacent layer. 
+        Special are the very first layer with input nodes that simply accept 
+        input from the user and the very last layer whose output is eventually 
+        all that matters.</para>
+        <para>Typically, a NN might be used for the task of classification:
+        Data is fed into the network's input layer and its output layer has nodes
+        equal to the number of classes to be distinguished. This can for example
+        be used for image classification.</para>
+        <para>The essential task at hand is to determine a good set of 
+        parameters, i.e. values for the weights and biases, such that the task
+        is performed best with respect to some measure.</para>
+        <section>The loss function as a high-dimensional manifold</section>
+      <para></para>
+        <section>Exploring the manifold: Sampling in high dimensions</section>
+      <para></para>
+  </chapter>
+  <chapter>
+    <title>Quickstart: a small sampling example</title>
+    <section>Introduction to sampling on neural networks</section>
+      <para>Assume we are given a very simple data set as depicted in figure %TODO%. 
+      The goal is to classify all red and blue dots into two different classes. This
+      problem  is quite simple to solve: a line in the two-dimensional space can 
+      easily separate the two classes.</para>
+      <para>A very simple neural network, a perceptron, is all we need:  it uses 
+      two inputs nodes, namely each coordinate component, and a single output 
+      node, whose sign gives the class the input item belongs to. The network
+      is given in Figure %TODO%.</para>
+      <para>In the following we want to use the mean square loss, i.e. the 
+      euclidian distance between the output from the network and the expected
+      values per item, as the network's loss function. The loss depends 
+      implicitly on the dataset and explicitly on the weights and biases 
+      associated with the network. In our case, we have two weights for the two
+      edges between input nodes and the output node and a single bias attached
+      to the output node.</para>
+      <para>In sampling we look at a system of particles that have two internal
+      properties: location and momentum. The location is simply their current 
+      value, that changes through its velocity over time. The velocity again 
+      changes because the particle is inside a potential that drives it towards
+      the minimum. The system is described by a so-called Hamilton operator
+      that gives rise to its Dynamics. If noise is additionally taken into 
+      account, then we look at Langevin Dynamics.</para>
+      <para>Returning to the neural networks, the role of the particles is taken
+      by the degrees of freedom of the system, weights and biases. The loss
+      function is called the <emphasis>potential</emphasis> and it is accompanied 
+      by a <emphasis>kinetic energy</emphasis> that is simply the sum of all
+      squared momenta. Adding Momentum to Optimizers in neural networks is a
+      concept known already and inspired by physics. The momentum helps in
+      overcoming areas of the loss function where it is essentially flat.</para>
+    <section>Optimizing the network</section>
+      <para>As weights (and biases) are usually uniformly random initialized and
+      the potential may therefore start with large values, we first have to 
+      optimize the network, using (Stochastic) Gradient Descent (GD).</para>
+      <programlisting>./DDSOptimizer \
+      --batch_size 50 \
+      --data_type 2 \
+      --dimension 500 \
+      --loss mean_squared \
+      --max_steps 1000 \
+      --noise 0.1 \
+      --optimizer GradientDescent \
+      --save_model model.ckpt \
+      --seed 426 \
+      --step_width 1e-2
+      </programlisting>
+      <para>This call will create an internal dataset called "two clusters" with 500 
+      points using random number see 426 (to generate the dataset in a 
+      deterministic fashion) using 10% of noise. 
+      It will then perform a (Stochastic) Gradient  Descent optimization of the 
+      parameters of the network using a step width/learning rate of 0.01 and
+      do this for 1000 steps after which it stops and writes the resulting neural
+      network in a TensorFlow-specific format.</para>
+    <section>Sampling trajectories on the loss manifold</section>
+      <para>We continue from this optimized or equilibrated state with sampling.
+      It is called equilibrated as the network's parameter should now be close to
+      a (local) minimum of the potential function and hence in equilibrium. This
+      means that small changes to the parameters will result in gradients that 
+      force it back into the minimum.</para>
+      <para>Let us call the sampler.</para>
+      <programlisting>./DDSampler \
+      --batch_size 50 \
+      --data_type 2 \
+      --dimension 500 \
+      --friction_constant 10 \
+      --inverse_temperature 10 \
+      --loss mean_squared \
+      --max_steps 100000 \
+      --noise 0.1 \
+      --sampler GeometricLangevinAlgorithm_2ndOrder \
+      --restore_model model.ckpt \
+      --run_file run.csv \
+      --seed 426 \
+      --step_width 1e-2 \
+      --trajectory_file trajectory.csv
+      </programlisting>
+      <para>This will cause the sampler to prepare the same dataset as before as
+      we used the same seed, data_type, dimension, and noise.
+      Moreover, the sampler will load the neural network from the model, i.e.
+      using the optimized parameters right from the start.
+      Afterwards it will use the Geometric Langevin Algorithm (GLA) in 2nd order
+      discetization using again step_width of 0.01 and running for 100,000 steps
+      in total. The GLA is a descretized variant of Langevin Dynamics whose 
+      accuracy scales with the inverse square of the step_width (hence, 2nd 
+      order).
+      After it is finished, it will create two files: A run file containing run 
+      time information such as the step, the potential, kinetic and total energy
+      at each step. And a trajectory file with each parameter of the neural
+      network at each step. These two files we need in the next stage.</para>
+    <section>Analysing trajectories</section>
+      <para>Eventually, we now perform the diffusion map analysis on the obtained
+      trajectories. The trajectory file written in the last step is simply matrix
+      of dimension (number of parameters) times (number of trajectory steps).
+      The eigenvector to the largest (but one) eigenvalue will give the dominant 
+      direction in which the trajectory is moving.</para>
+      <note>The largest eigenvalue is usually unity and its eigenvector is 
+      constant.</note>
+      <para>The analysis can perform three different tasks:</para>
+      <itemizedlist>
+        <listitem>Calculating averages.</listitem>
+        <listitem>Calculating the diffusion map'slargest  eigenvalues and 
+        eigenvectors.</listitem>
+        <listitem>Calculating landmarks and level sets to obtain an approximation
+        to the free energy.</listitem>
+      </itemizedlist>
+      <section>Averages</section>
+        <para>Averages are calculated by specifying two options as follows:</para>
+        <programlisting>./DDSAnalyser \
+        --average_run_file average_run.csv \
+        --average_trajectory_file average_trajectory.csv \
+        --drop_burnin 100 \
+        --every_nth 10 \
+        --run_file run.csv \
+        --steps 10 \
+        --trajectory_file trajectory.csv
+        </programlisting>
+        <para>This will load both the run and the trajectory file and average
+         over them using only every 10th data point (every_nth) and also 
+         dropping the first steps below 100 (drop_burnin). It will produce then
+         ten average for each of energies in the run file and each of the 
+         parameters in the trajectories file (along with the variance) from the
+         first non-dropped step till one of the ten end steps. These end steps
+         are obtained by equidistantly splitting up the whole step interval.</para>
+      <section>Diffusion map</section>
+        <para>The eigenvalues and eigenvectors can be written as well to two 
+        output files.</para>
+          <programlisting>./DDSAnalyser \
+          --diffusion_map_file diffusion_map_values.csv \
+          --diffusion_mapmethod vanilla \
+          --diffusion_mtrixp_file diffusion_map_vectors.csv \
+          --drop_burnin 100 \
+          --every_nth 10 \
+          --steps 10 \
+          --trajectory_file trajectory.csv
+          </programlisting>
+          <para>The files ending in <quote>..values.csv</quote> contains the
+          eigenvalues in two columns, the first is the eigenvalue index,the 
+          second is the eigenvalue.</para>
+          <para>The other file is simply a matrix of the eigenvector components
+          in one direction and the trajectory steps in the other. Additionally,
+          it contains the parameters at the steps and also the loss and the
+          kernel matrix entry.</para>
+          <para>Note that again the all values up till step 100 are dropped 
+          and only every 10th trajectory point is considered afterwards.</para>
+          <para>There are two methods available. Here, we have used the
+          simpler (and less accurate) (plain old) vanilla method.</para>
+      <section>Free energy</section>
+        <para>Last but not least, the free energy is calculated.</para>
+          <programlisting>./DDSAnalyser \
+          --diffusion_mapmethod TMDMap \
+          --drop_burnin 100 \
+          --every_nth 10 \
+          --inverse_temperature 10 \
+          --landmarks 5 \
+          --landmark_file landmarks-ev_1.csv \
+          --number_of_eigenvectors 2 \
+          --steps 10 \
+          --trajectory_file trajectory.csv
+          </programlisting>
+          <para>This will extract landmark points from the trajectory. 
+          Basically, the loss manifold is discretized using these landmarks
+          where all configurations close to a landmark step are combined
+          onto a so-called level-set, i.e. all these configurations have a
+          similar loss function value. By knowing the number of configurations
+          in each level set and knowing the level sets loss value, an 
+          approximation of the free energy is computed.</para>
+          <para>This is computed for every step of the trajectory and it is
+          insightful to look at the free energy over the course of the
+          trajectory represented by the first eigenvalue. If in this graph
+          clear minima with maxima in between can be seen, then there
+          are energetic barriers between two local minima. If on the other
+          hand there are flat areas, then we found enthalpic barriers.</para>
+          <para>Both these types of barriers obstruct trajectories and keep
+          the optimization trapped in so-called meta-stable states. Each type
+          of barrier requires a different type of remedy to overcome.</para>
+        <section>Conclusion</section>
+          <para>This has been the very quick introduction into samping done
+          on neural network's loss function manifolds. You have to take it
+          from here.</para>
   </chapter>
   <chapter>
     <title>Acknowledgements</title>
