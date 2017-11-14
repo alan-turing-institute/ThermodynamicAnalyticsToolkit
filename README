@@ -1,8 +1,0 @@
-This is project with Ben Leimkuhler and Zofia Trstanova on the TensorFlow framework.
-
-Ben sees with very simple data sets from TensorFlow's playground (playground.tensorflow.org)
-that there are metastable regimes during the optimization.
-
-He suggest that we should couple it with Bayesian sampling models, which Zofia
-implemented in MatLab, and run lots of numerical experiments.
-
