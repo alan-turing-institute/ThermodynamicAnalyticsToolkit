@@ -11,8 +11,14 @@ class Dataset:
     To use the class as instance ds:
     1. First provide data by calling: ds.init(xs,ys)
     2. Next, obtain batches by: bxs,bys = ds.next_batch(10)
-    3. Check, whether you have obtained all batches ones: ds.epochFinished()
+    3. Check, whether you have obtained all batches once: ds.epochFinished()
     4. Then, you have done one training step. Continue at step 2.
+
+    When a new epoch starts the set is always reshuffled.
+
+    Note that if the size of your datums modulus the batch size is not zero,
+    the set will be reshuffled and more items added to fill the remaining
+    space in the batch. Then, calling epochFinished is not useful.
 
     """
     
@@ -35,7 +41,7 @@ class Dataset:
         self.set_test_train_ratio(0.5)
         self.slice_index = math.floor(len(self.xs) * self.test_train_ratio)
         # shuffle once to prevent and undistributed testset
-        self.shuffle()
+        self.shuffle_all()
 
     def set_test_train_ratio(self, ratio):
         """ Sets the test/train ratio of the dataset, i.e. where to split.
@@ -65,7 +71,7 @@ class Dataset:
         """
         if self.epochStarted():
             # shuffle on start of epoch
-            self.shuffle()
+            self.shuffle_train()
         if self.batch_start + batch_size >= self.slice_index:
             # return rest
             batch_xs = self.xs[self.batch_start:self.slice_index]
@@ -73,7 +79,7 @@ class Dataset:
             remaining_size = batch_size-(self.slice_index-self.batch_start)
             if remaining_size != 0:
                 # reshuffle like on epoch restart
-                self.shuffle()
+                self.shuffle_train()
                 # note that this copies the array and is not inplace!
                 batch_xs = np.append(batch_xs, self.xs[0:remaining_size])
                 batch_ys = np.append(batch_ys, self.ys[0:remaining_size])
@@ -113,10 +119,33 @@ class Dataset:
         self.epochs = 0
         self.batch_start = 0
 
-    def shuffle(self):
-        """ Shuffle data set.
+    def shuffle_test(self):
+        """ Shuffles only the test set
         """
-        randomize = np.arange(len(self.xs))
+        self.shuffle(self.slice_index, len(self.xs))
+
+    def shuffle_train(self):
+        """ Shuffles only the train set
+        """
+        self.shuffle(0, self.slice_index)
+
+    def shuffle_all(self):
+        """ Shuffle the whole dataset
+
+        :return:
+        """
+        self.shuffle(0, len(self.xs))
+
+    def shuffle(self, start_index, end_index):
+        """ Shuffle (parts of) the data set.
+
+        :param start_index: starting index to start shuffling from
+        :param end_index: end index (+1) before which to end shuffling
+        """
+        #print("Shuffling from "+str(start_index)+" to "+str(end_index))
+        size_set = end_index - start_index
+        randomize = np.arange(size_set)+start_index
+        #print("Randomized set is "+str(randomize))
         np.random.shuffle(randomize)
-        self.xs = np.array(self.xs)[randomize]
-        self.ys = np.array(self.ys)[randomize]
+        self.xs[start_index:end_index] = np.array(self.xs)[randomize]
+        self.ys[start_index:end_index] = np.array(self.ys)[randomize]

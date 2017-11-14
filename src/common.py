@@ -120,7 +120,7 @@ def create_classification_dataset(FLAGS, config_map):
         dimension=FLAGS.dimension,
         noise=FLAGS.noise,
         data_type=FLAGS.data_type)
-    # use all as test set
+    # use all as train set
     ds.set_test_train_ratio(1)
     dsgen.setup_config_map(config_map)
 
