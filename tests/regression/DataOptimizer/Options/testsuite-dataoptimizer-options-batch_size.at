@@ -15,29 +15,39 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-### test on different samplers
+### test on option batch_size
 
-AT_SETUP([Samplers - GLA 1st])
-AT_KEYWORDS([samplers ddsampler GLA 1st])
+AT_SETUP([Options - batch size])
+AT_KEYWORDS([options ddsoptimizer batch_size])
 
-# run 1
-AT_CHECK([../../../DDSampler \
-	--batch_size 20 \
-	--run_file run-GLA_1st.csv \
+# run 1: batch size of 10
+AT_CHECK([../../../DDSOptimizer \
+	--batch_size 10 \
+	--run_file run-batch_size_10.csv \
 	--data_type 2 \
 	--dimension 20 \
-	--friction_constant 1 \
-	--inverse_temperature 1 \
-	--step_width 1e-2 \
+	--every_nth 1 \
 	--max_steps 20 \
-	--sampler GeometricLangevinAlgorithm_1stOrder\
+	--optimizer GradientDescent \
 	--seed 426 \
-	--trajectory_file trajectory-GLA_1st.csv
+	--step_width 1e-2
 ], 0, [stdout], [stderr])
 
-# now compare
-AT_CHECK([diff run-GLA_1st.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-GLA_1st.csv], 0, [ignore], [ignore])
-AT_CHECK([diff trajectory-GLA_1st.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-GLA_1st.csv], 0, [ignore], [ignore])
+# run 2: batch size of 5
+AT_CHECK([../../../DDSOptimizer \
+	--batch_size 5 \
+	--run_file run-batch_size_5.csv \
+	--data_type 2 \
+	--dimension 20 \
+	--every_nth 1 \
+	--max_steps 20 \
+	--optimizer GradientDescent \
+	--seed 426 \
+	--step_width 1e-2
+], 0, [stdout], [stderr])
+
+# check that we obtain different results
+AT_CHECK([diff run-batch_size_10.csv run-batch_size_5.csv], 1, [ignore], [ignore])
 
 AT_CLEANUP
 

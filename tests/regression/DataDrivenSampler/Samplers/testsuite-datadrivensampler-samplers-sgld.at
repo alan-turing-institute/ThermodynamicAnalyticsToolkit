@@ -15,7 +15,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-### test on reproducible runs using two clusters dataset
+### test on different samplers
 
 AT_SETUP([Samplers - SGLD])
 AT_KEYWORDS([samplers ddsampler SGLD])

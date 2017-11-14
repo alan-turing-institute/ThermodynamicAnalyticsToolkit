@@ -15,29 +15,30 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-### test on different samplers
+### test on option every_nth
 
-AT_SETUP([Samplers - GLA 1st])
-AT_KEYWORDS([samplers ddsampler GLA 1st])
+AT_SETUP([Options - every nth])
+AT_KEYWORDS([options ddsoptimizer every_nth])
 
 # run 1
-AT_CHECK([../../../DDSampler \
-	--batch_size 20 \
-	--run_file run-GLA_1st.csv \
+AT_CHECK([../../../DDSOptimizer \
+	--batch_size 10 \
+	--run_file run-every_nth.csv \
 	--data_type 2 \
 	--dimension 20 \
-	--friction_constant 1 \
-	--inverse_temperature 1 \
-	--step_width 1e-2 \
+	--every_nth 10 \
 	--max_steps 20 \
-	--sampler GeometricLangevinAlgorithm_1stOrder\
+	--optimizer GradientDescent \
 	--seed 426 \
-	--trajectory_file trajectory-GLA_1st.csv
+	--step_width 1e-2 \
+	--trajectory_file trajectory-every_nth.csv
 ], 0, [stdout], [stderr])
 
-# now compare
-AT_CHECK([diff run-GLA_1st.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-GLA_1st.csv], 0, [ignore], [ignore])
-AT_CHECK([diff trajectory-GLA_1st.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-GLA_1st.csv], 0, [ignore], [ignore])
+# check lengths
+AT_CHECK([wc -l run-every_nth.csv], 0, [stdout], [stderr])
+AT_CHECK([grep "3 " stdout], 0, [ignore], [ignore])
+AT_CHECK([wc -l trajectory-every_nth.csv], 0, [stdout], [stderr])
+AT_CHECK([grep "3 " stdout], 0, [ignore], [ignore])
 
 AT_CLEANUP
 

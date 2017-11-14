@@ -15,7 +15,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-### test on reproducible runs using two clusters dataset
+### test on option every_nth
 
 AT_SETUP([Options - every nth])
 AT_KEYWORDS([options ddsampler every_nth])

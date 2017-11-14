@@ -15,7 +15,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-### 
+### test on option step_width
 
 AT_SETUP([Optimizer Options - step width])
 AT_KEYWORDS([help ddsoptimizer step_width])
@@ -25,11 +25,12 @@ AT_CHECK([../../../DDSOptimizer \
 	--batch_size 10 \
 	--run_file run-step_width_1e-1.csv \
 	--data_type 2 \
+	--every_nth 1 \
 	--dimension 20 \
-	--step_width 1e-1 \
 	--max_steps 20 \
 	--optimizer GradientDescent \
-	--seed 426
+	--seed 426 \
+	--step_width 1e-1
 ], 0, [stdout], [stderr])
 
 # run 2
@@ -38,10 +39,11 @@ AT_CHECK([../../../DDSOptimizer \
 	--run_file run-step_width_1e-2.csv \
 	--data_type 2 \
 	--dimension 20 \
-	--step_width 1e-2 \
+	--every_nth 1 \
 	--max_steps 20 \
 	--optimizer GradientDescent\
-	--seed 426
+	--seed 426 \
+	--step_width 1e-2
 ], 0, [stdout], [stderr])
 
 # check that both differ, i.e. step_width is used

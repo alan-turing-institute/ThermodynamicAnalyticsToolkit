@@ -30,6 +30,8 @@ m4_include([DataOptimizer/Reproducibility/testsuite-dataoptimizer-reproducibilit
 m4_include([DataOptimizer/Reproducibility/testsuite-dataoptimizer-reproducibility-no_seeds.at])
 
 # tests on options
+m4_include([DataOptimizer/Options/testsuite-dataoptimizer-options-batch_size.at])
+m4_include([DataOptimizer/Options/testsuite-dataoptimizer-options-every_nth.at])
 m4_include([DataOptimizer/Options/testsuite-dataoptimizer-options-step_width.at])
 
 # Saving and restoring models
