@@ -25,10 +25,10 @@ AT_CHECK([../../../DDSampler \
 	--data_type 2 \
 	--batch_size 10 \
 	--hidden_dimension 2 \
-	--learning_rate 0.03 \
 	--max_steps 20 \
-	--optimizer GradientDescent \
-	--run_file run-first.csv
+	--sampler StochasticGradientLangevinDynamics \
+	--run_file run-first.csv \
+	--step_width 0.03
 ], 0, [stdout], [stderr])
 
 # run 2
@@ -36,10 +36,10 @@ AT_CHECK([../../../DDSampler \
 	--data_type 2 \
 	--batch_size 10 \
 	--hidden_dimension 2 \
-	--learning_rate 0.03 \
 	--max_steps 20 \
-	--optimizer GradientDescent \
-	--run_file run-second.csv
+	--sampler StochasticGradientLangevinDynamics \
+	--run_file run-second.csv \
+	--step_width 0.03
 ], 0, [stdout], [stderr])
 
 # now compare

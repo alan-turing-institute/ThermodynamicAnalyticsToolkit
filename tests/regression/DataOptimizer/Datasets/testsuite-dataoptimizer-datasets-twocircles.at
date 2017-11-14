@@ -24,11 +24,11 @@ AT_CHECK([../../../DDSOptimizer \
 	--data_type 0 \
 	--batch_size 10 \
 	--hidden_dimension 4 \
-	--learning_rate 0.03 \
 	--max_steps 100 \
 	--optimizer GradientDescent \
 	--seed 426 \
-	--run_file run.csv
+	--run_file run.csv \
+	--step_width 0.03
 ], 0, [stdout], [stderr])
 AT_CHECK([diff run.csv ${abs_top_srcdir}/tests/regression/DataOptimizer/Datasets/post/run-twocircles.csv], 0, [ignore], [ignore])
 

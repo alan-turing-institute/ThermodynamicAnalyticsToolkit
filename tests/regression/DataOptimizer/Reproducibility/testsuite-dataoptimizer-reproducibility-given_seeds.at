@@ -25,11 +25,11 @@ AT_CHECK([../../../DDSOptimizer \
 	--data_type 2 \
 	--batch_size 10 \
 	--hidden_dimension 2 \
-	--learning_rate 0.03 \
 	--max_steps 20 \
 	--optimizer GradientDescent \
 	--seed 426 \
-	--run_file run-base.csv
+	--run_file run-base.csv \
+	--step_width 0.03
 ], 0, [stdout], [stderr])
 
 # run 2: same seed
@@ -37,11 +37,11 @@ AT_CHECK([../../../DDSOptimizer \
 	--data_type 2 \
 	--batch_size 10 \
 	--hidden_dimension 2 \
-	--learning_rate 0.03 \
 	--max_steps 20 \
 	--optimizer GradientDescent \
 	--seed 426 \
-	--run_file run-sameseed.csv
+	--run_file run-sameseed.csv \
+	--step_width 0.03
 ], 0, [stdout], [stderr])
 
 
@@ -50,11 +50,11 @@ AT_CHECK([../../../DDSOptimizer \
 	--data_type 2 \
 	--batch_size 10 \
 	--hidden_dimension 2 \
-	--learning_rate 0.03 \
 	--max_steps 20 \
 	--optimizer GradientDescent \
 	--seed 427 \
-	--run_file run-otherseed.csv
+	--run_file run-otherseed.csv \
+	--step_width 0.03
 ], 0, [stdout], [stderr])
 
 # now compare all

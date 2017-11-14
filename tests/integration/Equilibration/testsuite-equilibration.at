@@ -41,7 +41,7 @@ AT_CHECK([../../../DDSampler \
 	--friction_constant 1 \
 	--inverse_temperature 1 \
 	--max_steps 10 \
-	--optimizer GeometricLangevinAlgorithm_1stOrder \
+	--sampler GeometricLangevinAlgorithm_1stOrder \
 	--restore_model model.cpkt \
 	--run_file run-restore_model.csv \
 	--seed 426 \
