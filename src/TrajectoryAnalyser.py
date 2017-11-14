@@ -45,7 +45,7 @@ def parse_parameters():
     parser.add_argument('--run_file', type=str, default=None,
         help='CSV run file name to read run time values from.')
     parser.add_argument('--steps', type=int, default=20,
-        help='How many evaluation steps to take')
+        help='How many evaluation steps for averages to take')
     parser.add_argument('--trajectory_file', type=str, default=None,
         help='CSV trajectory file name to read trajectories from and compute diffusion maps on.')
     parser.add_argument('--version', '-V', action="store_true",
