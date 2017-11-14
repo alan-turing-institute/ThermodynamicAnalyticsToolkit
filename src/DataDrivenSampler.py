@@ -23,6 +23,8 @@ def parse_parameters():
     """
     parser = argparse.ArgumentParser()
     # please adhere to alphabetical ordering
+    parser.add_argument('--batch_size', type=int, default=10,
+        help='The number of samples used to divide sample set into batches in one training step.')
     parser.add_argument('--data_type', type=int, default=DatasetGenerator.SPIRAL,
         help='Which data set to use: (0) two circles, (1) squares, (2) two clusters, (3) spiral.')
     parser.add_argument('--dimension', type=int, default=10,
@@ -113,9 +115,9 @@ def sample(FLAGS, ds, sess, nn, xinput, run_writer, trajectory_writer, config_ma
     print_intervals = max(1,int(FLAGS.max_steps/100))
     for i in range(FLAGS.max_steps):
         #print("Current step is "+str(i))
-        test_xs, test_ys = ds.get_testset()
+        batch_xs, batch_ys = ds.next_batch(FLAGS.batch_size)
         feed_dict={
-            xinput: test_xs, placeholder_nodes["y_"]: test_ys,
+            xinput: batch_xs, placeholder_nodes["y_"]: batch_ys,
             placeholder_nodes["step_width"]: FLAGS.step_width,
             placeholder_nodes["inverse_temperature"]: FLAGS.inverse_temperature,
             placeholder_nodes["friction_constant"]: FLAGS.friction_constant
