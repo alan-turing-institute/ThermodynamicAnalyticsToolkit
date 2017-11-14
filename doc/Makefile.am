@@ -18,7 +18,7 @@ dist_pdf_DATA = @PACKAGE@.pdf
 if have_fop
 if have_xsltproc
 
-@PACKAGE@.fo: $(top_srcdir)/doc/userguide/userguide.xml
+@PACKAGE@.fo: $(top_srcdir)/doc/userguide/userguide.xml $(XML_CATALOG_FILES)
 	XML_CATALOG_FILES=$(XML_CATALOG_FILES) $(XSLTPROC) $(XSLTPROC_FLAGS) -o $@ $(PDF_STYLESHEET) $<
 @PACKAGE@.pdf: @PACKAGE@.fo
 	$(FOP) -fo $< -pdf $@
