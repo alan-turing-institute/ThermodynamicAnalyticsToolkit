@@ -70,7 +70,14 @@ class Dataset:
             # return rest
             batch_xs = self.xs[self.batch_start:self.slice_index]
             batch_ys = self.ys[self.batch_start:self.slice_index]
-            self.batch_start = self.slice_index
+            remaining_size = batch_size-(self.slice_index-self.batch_start)
+            if remaining_size != 0:
+                # reshuffle like on epoch restart
+                self.shuffle()
+                # note that this copies the array and is not inplace!
+                batch_xs = np.append(batch_xs, self.xs[0:remaining_size])
+                batch_ys = np.append(batch_ys, self.ys[0:remaining_size])
+            self.batch_start = remaining_size
         else:
             # return full batch
             batch_end = self.batch_start+batch_size
