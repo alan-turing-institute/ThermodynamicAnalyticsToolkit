@@ -12,6 +12,7 @@ TESTSCRIPTS += \
 	$(srcdir)/DataDrivenSampler/testsuite-datadrivensampler-simple.at \
 	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-batch_size.at \
 	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-every_nth.at \
+	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-every_nth-misspelled.at \
 	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-friction_constant.at \
 	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-inverse_temperature.at \
 	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-step_width.at \

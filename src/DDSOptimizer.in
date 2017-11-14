@@ -66,5 +66,10 @@ if __name__ == '__main__':
         sys.exit(0)
 
     print("Using parameters: "+str(FLAGS))
+
+    if len(unparsed) != 0:
+        print("There are unparsed parameters '"+str(unparsed)+"', have you misspelled some?")
+        sys.exit(255)
+
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
 

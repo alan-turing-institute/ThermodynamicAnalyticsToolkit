@@ -90,6 +90,10 @@ if __name__ == '__main__':
 
     print("Using parameters: "+str(FLAGS))
 
+    if len(unparsed) != 0:
+        print("There are unparsed parameters '"+str(unparsed)+"', have you misspelled some?")
+        sys.exit(255)
+
     if FLAGS.sampler not in ["GeometricLangevinAlgorithm_1stOrder", "GeometricLangevinAlgorithm_2ndOrder"] \
         and FLAGS.friction_constant != 0.:
         print("You set friction_constant but only GLA 1st and 2nd order use it.")

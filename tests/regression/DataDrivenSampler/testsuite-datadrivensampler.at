@@ -34,6 +34,7 @@ m4_include([DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-gla_
 # tests on various options
 m4_include([DataDrivenSampler/Options/testsuite-datadrivensampler-options-batch_size.at])
 m4_include([DataDrivenSampler/Options/testsuite-datadrivensampler-options-every_nth.at])
+m4_include([DataDrivenSampler/Options/testsuite-datadrivensampler-options-every_nth-misspelled.at])
 m4_include([DataDrivenSampler/Options/testsuite-datadrivensampler-options-friction_constant.at])
 m4_include([DataDrivenSampler/Options/testsuite-datadrivensampler-options-inverse_temperature.at])
 m4_include([DataDrivenSampler/Options/testsuite-datadrivensampler-options-step_width.at])
