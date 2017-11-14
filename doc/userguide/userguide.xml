@@ -3,7 +3,7 @@
   <!ENTITY dataset_two_clusters SYSTEM "pictures/dataset_two_clusters.png" NDATA PNG>
   <!ENTITY simple_single_layer_perceptron SYSTEM "pictures/simple_single_layer_perceptron.png" NDATA PNG>
 ]>
-<book>
+<book xmlns:xlink="http://www.w3.org/1999/xlink">
   <title>DataDrivenSampler - Manual</title>
   <author>
       <firstname>Frederik</firstname>
@@ -18,29 +18,110 @@
     <title xml:id="introduction.title">Introduction</title>
     <section xml:id="introduction.whatis">
       <title xml:id="introduction.whatis.title">What is DataDrivenSampler?</title>
-      <para>
+      <para>Typical optimzation in neural network training using methods such
+      as Gradient Descent, Stochastic Gradient Descent or derived methods
+      using momentum will only find local minima. Neural networks, given enough
+      data and  processing power, work marvelously and one may wonder why.
       </para>
+      <para>The essential idea behind this program package is that we use
+      sampling instead of optimization: we are not interested in the local 
+      minimum closest to some random initial configuration and be done. 
+      Instead we aiming at finding all of the minima and all possible barriers 
+      in between by treating the loss function as a high-dimensional potential
+      and the weights and biases of the neural network as particles in a 
+      stochastic differential equation, namely Langevin Dynamics.</para>
+      <para>The hope is to elucidate the marvel behind the wondrous 
+      performance of neural networks and also to gather means of optimizing
+      its topologies given a specific dataset to train.</para>
+      <para>In essence, this program suite provides samplers using 
+      <link xlink:href="https://www.tensorflow.org/">TensorFlow</link> and
+      analysis tools to extract specific statistical quantities from the 
+      computed particle trajectories.</para>
+      <para>It can be used both inside python and as stand-alone command-line
+      tools.</para>
     </section>
     <section xml:id="introduction.installation">
-      <title xml:id="introduction.installation.title">Installation</title>
-      <para>
+      <title xml:id="introduction.installation.title">Installation requirements</title>
+      <para>This program suite is implemented using python3 and the development
+      mainly focused on Linux (development machine uses Ubuntu 16.04). At the
+      moment other operation systems are not supported but may still work.</para>
+      <para>It has the following non-trivial dependencies:
+        <itemizedlist>
+          <listitem>TensorFlow: see below</listitem>
+          <listitem>Numpy: see <uri>www.numpy.org</uri></listitem>
+          <listitem>Pandas: see <uri>pandas.pydata.org</uri></listitem>
+          <listitem>sklearn: see <uri>scikit-learn.org</uri></listitem>
+        </itemizedlist>
+        Note that most of these packages can be easily installed using either
+        the repository tool (using some linux derivate such as Ubuntu), e.g.
+        <programlisting>sudo apt install python3-numpy</programlisting>or via
+        <command>pip3</command>, i.e.
+        <programlisting>pip3 install numpy</programlisting>
       </para>
-    </section> 
+      <section xml:id="introduction.installation.tensorflow">
+        <title>Tensorflow installation</title>
+        <para>DataDrivenSampler is based on <productname>TensorFlow</productname>
+        which is available at the time of writing from
+        <uri>www.tensorflow.org</uri>. It is not quite as simple to install
+        as the other required packages.
+        Please proceed with the installation instructions there, prior to 
+        installing this package. Henceforth, we assume that there is a working 
+        tensorflow on your system, i.e. inside the python3 shell</para>
+        <programlisting>import tensorflow as tf</programlisting>
+        <para>does <emphasis>not</emphasis> through an error.</para>
+      </section>
+      <para>This package is distributed via autotools, "compiled" and installed 
+      via automake. If you are familiar with this set of tools, there should be
+      no problem. If not, please refer to the text INSTALL file that is included
+      in this distributable archive. The installation, very briefly, goes like this:
+      <programlisting>
+      mkdir build64
+      cd build64
+      ../configure --prefix="somepath" -C PYTHON="path to python3"
+      make
+      make install
+      </programlisting>
+      Here, "compilation" is done in an extra folder, i.e. it is an 
+      out-of-source build, that prevents cluttering of the sourc folder.</para>
+      <para>Please replace <quote>somepath</quote> and <quote>path to python3
+      </quote> by the desired installation path and the full path to the 
+      <command>python3</command> executable on your system.</para>
+      <note>We recommend executing
+        <programlisting>make check</programlisting>
+        additionally. This will execute every test on the extensive testsuite
+        and report any errors. None should fail. If all fail, a possible cause 
+        might be a not working tensorflow installation. If some fail, please
+        contact the author, see <xref linkend="introduction.feedback"/>.
+      </note>
+    </section>
     <section xml:id="introduction.license">
       <title xml:id="introduction.license.title">License</title>
-      <para>
-      </para>
-    </section> 
+      <para>As long as no other license statement is given, DataDrivenSampler is
+      free for user under the GNU Public License (GPL) Version 3 (see
+      <uri>www.gnu.de/documents/gpl-3.0.de.html</uri>).</para>
+    </section>
     <section xml:id="introduction.disclaimer">
       <title xml:id="introduction.disclaimer.title">Disclaimer</title>
-      <para>
-      </para>
-    </section> 
+      <para>We quote section 11 from the GPLv3 license:</para>
+      <remark>Because the program is licensed free of charge, there is
+not warranty for the program, to the extent permitted by applicable law.
+Except when otherwise stated in writing in the copyright holders and/or
+other parties provide the program &quot;as is&quot; without warranty of
+any kind, either expressed or implied. Including, but not limited to,
+the implied warranties of merchantability and fitness for a particular
+purpose. The entire risk as to the quality and performance of the
+program is with you. Should the program prove defective, you assume the
+cost of all necessary servicing, repair, or correction.</remark>
+    </section>
     <section xml:id="introduction.feedback">
       <title xml:id="introduction.feedback.title">Feedback</title>
-      <para>
-      </para>
-    </section> 
+      <para>If you encounter any bugs, errors, or would like to submit
+      feature request, please use the email address provided at the very
+      beginning of this user guide. The author is especially thankful for
+      any description of all related events prior to occurrence of the
+      error, saved &quot;session scripts&quot; (see below) and auxiliary files.
+      Please mind sensible space restrictions of email attachments.</para>
+    </section>
   </chapter>
   <chapter xml.id="quickstart">
     <title  xml.id="quickstart.title">Quickstart</title>
@@ -92,161 +173,199 @@
       concept known already and inspired by physics. The momentum helps in
       overcoming areas of the loss function where it is essentially flat.</para>
     </section>
-    <section xml:id="quickstart.optimizing">
-      <title  xml:id="quickstart.optimizing.title">Optimizing the network</title>
-      <para>As weights (and biases) are usually uniformly random initialized and
-      the potential may therefore start with large values, we first have to 
-      optimize the network, using (Stochastic) Gradient Descent (GD).</para>
-      <programlisting>./DDSOptimizer \
-  --batch_size 50 \
-  --data_type 2 \
-  --dimension 500 \
-  --loss mean_squared \
-  --max_steps 1000 \
-  --noise 0.1 \
-  --optimizer GradientDescent \
-  --save_model model.ckpt \
-  --seed 426 \
-  --step_width 1e-2
-      </programlisting>
-      <para>This call will create an internal dataset called "two clusters" with 500 
-      points using random number see 426 (to generate the dataset in a 
-      deterministic fashion) using 10% of noise. 
-      It will then perform a (Stochastic) Gradient  Descent optimization of the 
-      parameters of the network using a step width/learning rate of 0.01 and
-      do this for 1000 steps after which it stops and writes the resulting neural
-      network in a TensorFlow-specific format.</para>
-    </section>  
-    <section xml:id="quickstart.sampling">
-      <title  xml:id="quickstart.sampling.title">Sampling trajectories on the loss manifold</title>
-      <para>We continue from this optimized or equilibrated state with sampling.
-      It is called equilibrated as the network's parameter should now be close to
-      a (local) minimum of the potential function and hence in equilibrium. This
-      means that small changes to the parameters will result in gradients that 
-      force it back into the minimum.</para>
-      <para>Let us call the sampler.</para>
-      <programlisting>./DDSampler \
-  --batch_size 50 \
-  --data_type 2 \
-  --dimension 500 \
-  --friction_constant 10 \
-  --inverse_temperature 10 \
-  --loss mean_squared \
-  --max_steps 100000 \
-  --noise 0.1 \
-  --sampler GeometricLangevinAlgorithm_2ndOrder \
-  --restore_model model.ckpt \
-  --run_file run.csv \
-  --seed 426 \
-  --step_width 1e-2 \
-  --trajectory_file trajectory.csv
-      </programlisting>
-      <para>This will cause the sampler to prepare the same dataset as before as
-      we used the same seed, data_type, dimension, and noise.
-      Moreover, the sampler will load the neural network from the model, i.e.
-      using the optimized parameters right from the start.
-      Afterwards it will use the Geometric Langevin Algorithm (GLA) in 2nd order
-      discetization using again step_width of 0.01 and running for 100,000 steps
-      in total. The GLA is a descretized variant of Langevin Dynamics whose 
-      accuracy scales with the inverse square of the step_width (hence, 2nd 
-      order).
-      After it is finished, it will create two files: A run file containing run 
-      time information such as the step, the potential, kinetic and total energy
-      at each step. And a trajectory file with each parameter of the neural
-      network at each step. These two files we need in the next stage.</para>
+    <section xml:id="quickstart.python">
+      <title  xml:id="quickstart.python.title">Using Python</title>
+      <para>
+      The package can be readily used inside any python3 shell or script.
+      However, this interface rather lends itself to quick testing than rigorous
+      experiments except you perform all your scientific experiments inside
+      python scripts kept safely inside a code versioning system such as 
+      <command>git</command>.
+      </para>
+      <para>
+      If you have installed the package in the folder "/foo", i.e.  there is 
+      a folder "DataDrivenSampler" with a file <command>DataDrivenSampler.py
+      </command> residing in there, then you probably need to add it to the 
+      <command>PYTHONPATH</command> as follows</para>
+      <programlisting>PYTHONPATH=/foo python3</programlisting>
+      <para>In this shell, you may import the sampling part of the package as 
+      follows 
+      <programlisting>from DataDrivenSampler.DataDrivenSampler import sample</programlisting>
+      This will import the function <command>sample()</command> from the
+      file mentioned before.</para>
+      <para>At the current time of writing, there is not a fully stream-line 
+      interface available to use in python. If you generally want to know, how
+      to call high-level functions of DataDrivenSampler, have a look at the
+      files <command>src/DDSampler.in</command>, <command>src/DDSOptimizer.in</command>
+      and <command>src/DDSAnalyser.in</command> which perform sampling,
+      optimization or analysis of trajectories, respectively. Note that there
+      is a global struct "FLAGS" which contains all of the parameters. Simply
+      create the struct and add any variable needed. 
+      Keep in mind that all these three programs are simply python scripts
+      themselves using the package installed in "/foo".</para>
     </section>
-    <section xml:id="quickstart.analysing">
-      <title  xml:id="quickstart.analysing.title">Analysing trajectories</title>
-      <para>Eventually, we now perform the diffusion map analysis on the obtained
-      trajectories. The trajectory file written in the last step is simply matrix
-      of dimension (number of parameters) times (number of trajectory steps).
-      The eigenvector to the largest (but one) eigenvalue will give the dominant 
-      direction in which the trajectory is moving.</para>
-      <note>The largest eigenvalue is usually unity and its eigenvector is 
-      constant.</note>
-      <para>The analysis can perform three different tasks:</para>
-      <itemizedlist>
-        <listitem>Calculating averages.</listitem>
-        <listitem>Calculating the diffusion map'slargest  eigenvalues and 
-        eigenvectors.</listitem>
-        <listitem>Calculating landmarks and level sets to obtain an approximation
-        to the free energy.</listitem>
-      </itemizedlist>
-      <section xml:id="quickstart.analysing.averages">
-        <title  xml:id="quickstart.analysing.averages.title">Averages</title>
-        <para>Averages are calculated by specifying two options as follows:</para>
-        <programlisting>./DDSAnalyser \
-  --average_run_file average_run.csv \
-  --average_trajectory_file average_trajectory.csv \
-  --drop_burnin 100 \
-  --every_nth 10 \
-  --run_file run.csv \
-  --steps 10 \
-  --trajectory_file trajectory.csv
+    <section xml:id="quickstart.cmdline">
+      <title  xml:id="quickstart.cmdline.title">Using Command-line interface</title>
+      All the tests use the command-line interface and for performing rigorous
+      scientific experiments, we recommend using this interface as well. Here,
+      it is to do parameter studies and have extensive runs using different
+      seeds.
+      <section xml:id="quickstart.cmdline.optimizing">
+        <title  xml:id="quickstart.cmdline.optimizing.title">Optimizing the network</title>
+        <para>As weights (and biases) are usually uniformly random initialized and
+        the potential may therefore start with large values, we first have to 
+        optimize the network, using (Stochastic) Gradient Descent (GD).</para>
+        <programlisting>./DDSOptimizer \
+    --batch_size 50 \
+    --data_type 2 \
+    --dimension 500 \
+    --loss mean_squared \
+    --max_steps 1000 \
+    --noise 0.1 \
+    --optimizer GradientDescent \
+    --save_model model.ckpt \
+    --seed 426 \
+    --step_width 1e-2
         </programlisting>
-      <para>This will load both the run and the trajectory file and average
-       over them using only every 10th data point (every_nth) and also 
-       dropping the first steps below 100 (drop_burnin). It will produce then
-       ten average for each of energies in the run file and each of the 
-       parameters in the trajectories file (along with the variance) from the
-       first non-dropped step till one of the ten end steps. These end steps
-       are obtained by equidistantly splitting up the whole step interval.</para>
+        <para>This call will create an internal dataset called "two clusters" with 500 
+        points using random number see 426 (to generate the dataset in a 
+        deterministic fashion) using 10% of noise. 
+        It will then perform a (Stochastic) Gradient  Descent optimization of the 
+        parameters of the network using a step width/learning rate of 0.01 and
+        do this for 1000 steps after which it stops and writes the resulting neural
+        network in a TensorFlow-specific format.</para>
+      </section>  
+      <section xml:id="quickstart.cmdline.sampling">
+        <title  xml:id="quickstart.cmdline.sampling.title">Sampling trajectories on the loss manifold</title>
+        <para>We continue from this optimized or equilibrated state with sampling.
+        It is called equilibrated as the network's parameter should now be close to
+        a (local) minimum of the potential function and hence in equilibrium. This
+        means that small changes to the parameters will result in gradients that 
+        force it back into the minimum.</para>
+        <para>Let us call the sampler.</para>
+        <programlisting>./DDSampler \
+    --batch_size 50 \
+    --data_type 2 \
+    --dimension 500 \
+    --friction_constant 10 \
+    --inverse_temperature 10 \
+    --loss mean_squared \
+    --max_steps 100000 \
+    --noise 0.1 \
+    --sampler GeometricLangevinAlgorithm_2ndOrder \
+    --restore_model model.ckpt \
+    --run_file run.csv \
+    --seed 426 \
+    --step_width 1e-2 \
+    --trajectory_file trajectory.csv
+        </programlisting>
+        <para>This will cause the sampler to prepare the same dataset as before as
+        we used the same seed, data_type, dimension, and noise.
+        Moreover, the sampler will load the neural network from the model, i.e.
+        using the optimized parameters right from the start.
+        Afterwards it will use the Geometric Langevin Algorithm (GLA) in 2nd order
+        discetization using again step_width of 0.01 and running for 100,000 steps
+        in total. The GLA is a descretized variant of Langevin Dynamics whose 
+        accuracy scales with the inverse square of the step_width (hence, 2nd 
+        order).
+        After it is finished, it will create two files: A run file containing run 
+        time information such as the step, the potential, kinetic and total energy
+        at each step. And a trajectory file with each parameter of the neural
+        network at each step. These two files we need in the next stage.</para>
       </section>
-      <section  xml:id="quickstart.analysing.diffusion_map">
-        <title  xml:id="quickstart.analysing.diffusion_map.title">Diffusion map</title>
-        <para>The eigenvalues and eigenvectors can be written as well to two 
-        output files.</para>
+      <section xml:id="quickstart.cmdline.analysing">
+        <title  xml:id="quickstart.cmdline.analysing.title">Analysing trajectories</title>
+        <para>Eventually, we now perform the diffusion map analysis on the obtained
+        trajectories. The trajectory file written in the last step is simply matrix
+        of dimension (number of parameters) times (number of trajectory steps).
+        The eigenvector to the largest (but one) eigenvalue will give the dominant 
+        direction in which the trajectory is moving.</para>
+        <note>The largest eigenvalue is usually unity and its eigenvector is 
+        constant.</note>
+        <para>The analysis can perform three different tasks:</para>
+        <itemizedlist>
+          <listitem>Calculating averages.</listitem>
+          <listitem>Calculating the diffusion map'slargest  eigenvalues and 
+          eigenvectors.</listitem>
+          <listitem>Calculating landmarks and level sets to obtain an approximation
+          to the free energy.</listitem>
+        </itemizedlist>
+        <section xml:id="quickstart.cmdline.analysing.averages">
+          <title  xml:id="quickstart.cmdline.analysing.averages.title">Averages</title>
+          <para>Averages are calculated by specifying two options as follows:</para>
           <programlisting>./DDSAnalyser \
-  --diffusion_map_file diffusion_map_values.csv \
-  --diffusion_mapmethod vanilla \
-  --diffusion_mtrixp_file diffusion_map_vectors.csv \
-  --drop_burnin 100 \
-  --every_nth 10 \
-  --steps 10 \
-  --trajectory_file trajectory.csv
+    --average_run_file average_run.csv \
+    --average_trajectory_file average_trajectory.csv \
+    --drop_burnin 100 \
+    --every_nth 10 \
+    --run_file run.csv \
+    --steps 10 \
+    --trajectory_file trajectory.csv
           </programlisting>
-        <para>The files ending in <quote>..values.csv</quote> contains the
-        eigenvalues in two columns, the first is the eigenvalue index,the 
-        second is the eigenvalue.</para>
-        <para>The other file is simply a matrix of the eigenvector components
-        in one direction and the trajectory steps in the other. Additionally,
-        it contains the parameters at the steps and also the loss and the
-        kernel matrix entry.</para>
-        <para>Note that again the all values up till step 100 are dropped 
-        and only every 10th trajectory point is considered afterwards.</para>
-        <para>There are two methods available. Here, we have used the
-        simpler (and less accurate) (plain old) vanilla method.</para>
-      </section>
-      <section xml:id="quickstart.analysing.free_energy">
-        <title  xml:id="quickstart.analysing.free_energy.title">Free energy</title>
-        <para>Last but not least, the free energy is calculated.</para>
-          <programlisting>./DDSAnalyser \
-  --diffusion_mapmethod TMDMap \
-  --drop_burnin 100 \
-  --every_nth 10 \
-  --inverse_temperature 10 \
-  --landmarks 5 \
-  --landmark_file landmarks-ev_1.csv \
-  --number_of_eigenvectors 2 \
-  --steps 10 \
-  --trajectory_file trajectory.csv
-          </programlisting>
-        <para>This will extract landmark points from the trajectory. 
-        Basically, the loss manifold is discretized using these landmarks
-        where all configurations close to a landmark step are combined
-        onto a so-called level-set, i.e. all these configurations have a
-        similar loss function value. By knowing the number of configurations
-        in each level set and knowing the level sets loss value, an 
-        approximation of the free energy is computed.</para>
-        <para>This is computed for every step of the trajectory and it is
-        insightful to look at the free energy over the course of the
-        trajectory represented by the first eigenvalue. If in this graph
-        clear minima with maxima in between can be seen, then there
-        are energetic barriers between two local minima. If on the other
-        hand there are flat areas, then we found enthalpic barriers.</para>
-        <para>Both these types of barriers obstruct trajectories and keep
-        the optimization trapped in so-called meta-stable states. Each type
-        of barrier requires a different type of remedy to overcome.</para>
+        <para>This will load both the run and the trajectory file and average
+         over them using only every 10th data point (every_nth) and also 
+         dropping the first steps below 100 (drop_burnin). It will produce then
+         ten average for each of energies in the run file and each of the 
+         parameters in the trajectories file (along with the variance) from the
+         first non-dropped step till one of the ten end steps. These end steps
+         are obtained by equidistantly splitting up the whole step interval.</para>
+        </section>
+        <section  xml:id="quickstart.cmdline.analysing.diffusion_map">
+          <title  xml:id="quickstart.cmdline.analysing.diffusion_map.title">Diffusion map</title>
+          <para>The eigenvalues and eigenvectors can be written as well to two 
+          output files.</para>
+            <programlisting>./DDSAnalyser \
+    --diffusion_map_file diffusion_map_values.csv \
+    --diffusion_mapmethod vanilla \
+    --diffusion_mtrixp_file diffusion_map_vectors.csv \
+    --drop_burnin 100 \
+    --every_nth 10 \
+    --steps 10 \
+    --trajectory_file trajectory.csv
+            </programlisting>
+          <para>The files ending in <quote>..values.csv</quote> contains the
+          eigenvalues in two columns, the first is the eigenvalue index,the 
+          second is the eigenvalue.</para>
+          <para>The other file is simply a matrix of the eigenvector components
+          in one direction and the trajectory steps in the other. Additionally,
+          it contains the parameters at the steps and also the loss and the
+          kernel matrix entry.</para>
+          <para>Note that again the all values up till step 100 are dropped 
+          and only every 10th trajectory point is considered afterwards.</para>
+          <para>There are two methods available. Here, we have used the
+          simpler (and less accurate) (plain old) vanilla method.</para>
+        </section>
+        <section xml:id="quickstart.cmdline.analysing.free_energy">
+          <title  xml:id="quickstart.cmdline.analysing.free_energy.title">Free energy</title>
+          <para>Last but not least, the free energy is calculated.</para>
+            <programlisting>./DDSAnalyser \
+    --diffusion_mapmethod TMDMap \
+    --drop_burnin 100 \
+    --every_nth 10 \
+    --inverse_temperature 10 \
+    --landmarks 5 \
+    --landmark_file landmarks-ev_1.csv \
+    --number_of_eigenvectors 2 \
+    --steps 10 \
+    --trajectory_file trajectory.csv
+            </programlisting>
+          <para>This will extract landmark points from the trajectory. 
+          Basically, the loss manifold is discretized using these landmarks
+          where all configurations close to a landmark step are combined
+          onto a so-called level-set, i.e. all these configurations have a
+          similar loss function value. By knowing the number of configurations
+          in each level set and knowing the level sets loss value, an 
+          approximation of the free energy is computed.</para>
+          <para>This is computed for every step of the trajectory and it is
+          insightful to look at the free energy over the course of the
+          trajectory represented by the first eigenvalue. If in this graph
+          clear minima with maxima in between can be seen, then there
+          are energetic barriers between two local minima. If on the other
+          hand there are flat areas, then we found enthalpic barriers.</para>
+          <para>Both these types of barriers obstruct trajectories and keep
+          the optimization trapped in so-called meta-stable states. Each type
+          of barrier requires a different type of remedy to overcome.</para>
+        </section>
       </section>
     </section>
     <section xml:id="quickstart.conclusion">
@@ -257,7 +376,7 @@
     </section>
   </chapter>
   <chapter xml:id="reference">
-    <title xml:id="reference">The reference</title>
+    <title xml:id="reference.title">The reference</title>
     <section xml:id="reference.concepts">
     <title xml:id="reference.concepts.title">General concepts</title>
     <para>Before we dive into the internals of this program suite, let us
