@@ -108,9 +108,10 @@ class NeuralNetwork(object):
         self.summary_nodes.clear()
         # DON'T: this will produce ever the same random number tensor!
         # only set op-level seeds!
+        output_seed = None
         if seed is not None:
             tf.set_random_seed(seed)
-            seed = seed+len(layer_dimensions)
+            output_seed = seed+len(layer_dimensions)
 
         input_dimension = int(input_layer.get_shape()[-1])
         y_ = self.add_true_labels(output_dimension)
@@ -124,11 +125,11 @@ class NeuralNetwork(object):
                                        layer_dimensions, keep_prob, hidden_activation, seed=seed)
             y = self.add_output_layer(last_hidden_layer, layer_dimensions[-1],
                                       output_dimension, output_activation,
-                                      seed=seed)
+                                      seed=output_seed)
         else:
             y = self.add_output_layer(input_layer, input_dimension,
                                       output_dimension, output_activation,
-                                      seed=seed)
+                                      seed=output_seed)
 
         # print ("Creating summaries")
         self.add_losses(y, y_)
