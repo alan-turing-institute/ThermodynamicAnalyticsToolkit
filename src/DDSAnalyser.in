@@ -52,8 +52,8 @@ def main(_):
         if FLAGS.average_run_file is not None:
             csv_writer, csv_file = setup_csv_file(FLAGS.average_run_file,
                 ['step', 'average_kinetic_energy', 'variance_kinetic_energy', \
-                    'average_loss', 'average_total', \
-                    'average_total', 'variance_total'])
+                    'average_loss', 'variance_loss', \
+                    'average_total_energy', 'variance_total_energy'])
             for step, avg_kin, var_kin, avg_loss, var_loss, avg_total, var_total in zip(end_list,
                 average_kinetic, variance_kinetic,
                 average_loss, variance_loss,

@@ -1,4 +1,4 @@
-step,average_kinetic_energy,variance_kinetic_energy,average_loss,average_total,average_total,variance_total
+step,average_kinetic_energy,variance_kinetic_energy,average_loss,variance_loss,average_total_energy,variance_total_energy
 98,9.25572144e-04,1.30480163e-06,1.77323898e-01,1.29711758e-04,1.78249421e-01,1.55184925e-04
 196,5.24163292e-04,8.16979511e-07,1.70304066e-01,1.14504469e-04,1.70828193e-01,1.33046804e-04
 294,4.03011101e-04,5.78111537e-07,1.67137578e-01,9.64460652e-05,1.67540564e-01,1.10379827e-04
