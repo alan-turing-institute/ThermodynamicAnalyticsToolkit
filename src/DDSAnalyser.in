@@ -33,7 +33,7 @@ def main(_):
         loss=run[start::FLAGS.every_nth,1]
         kinetic_energy=run[start::FLAGS.every_nth,2]
         total_energy=run[start::FLAGS.every_nth,3]
-        no_steps = len(steps[start:])
+        no_steps = len(steps)
 
         print("%d steps after dropping burn in." % (no_steps))
         print("%lg average and %lg variance in loss." % (np.average(loss), loss.var()))
@@ -76,10 +76,10 @@ def main(_):
         df_trajectory = pd.read_csv(FLAGS.trajectory_file, sep=',', header=0)
         trajectoryLoaded=np.asarray(df_trajectory)
 
+        # burnin is specified in "real" steps disregarding every_nth
         start = next(x[0] for x in enumerate(trajectoryLoaded[:,0]) if x[1] > FLAGS.drop_burnin)
 
         steps=trajectoryLoaded[start::FLAGS.every_nth,0]
-        # burnin is specified in "real" steps disregarding every_nth
         loss=trajectoryLoaded[start::FLAGS.every_nth,1]
         trajectory=trajectoryLoaded[start::FLAGS.every_nth,2:]
 
