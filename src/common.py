@@ -92,21 +92,6 @@ def setup_trajectory_file(filename, no_weights, no_biases, config_map):
         return None
 
 
-def closeFiles(config_map):
-    """ Closes the output files if they have been opened.
-
-    :param config_map: configuration dictionary
-    """
-    if config_map["do_write_run_file"]:
-        assert config_map["csv_file"] is not None
-        config_map["csv_file"].close()
-        config_map["csv_file"] = None
-    if config_map["do_write_trajectory_file"]:
-        assert config_map["trajectory_file"] is not None
-        config_map["trajectory_file"].close()
-        config_map["trajectory_file"] = None
-
-
 def create_classification_dataset(FLAGS, config_map):
     """ Creates the dataset object using a classification generator.
 

@@ -6,56 +6,21 @@ sys.path.insert(1, '@pythondir@')
 import tensorflow as tf
 import numpy as np
 
+from DataDrivenSampler.common import get_filename_from_fullpath
+from DataDrivenSampler.DataOptimizer import parse_parameters
+from DataDrivenSampler.models.model import model
 from DataDrivenSampler.version import get_package_version, get_build_hash
-from DataDrivenSampler.DataOptimizer import parse_parameters, train, setup_output_files
-from DataDrivenSampler.common import create_classification_dataset, closeFiles, \
-    construct_network_model, get_activations, get_filename_from_fullpath, initialize_config_map
 
+FLAGS = None
 
 def main(_):
-    config_map = initialize_config_map()
+    network_model = model(FLAGS)
 
-    # init random: None will use random seed
-    np.random.seed(FLAGS.seed)
+    network_model.init_network(FLAGS.restore_model, setup="train")
 
-    xinput, x, ds = create_classification_dataset(FLAGS, config_map)
+    network_model.train()
 
-    activations = get_activations()
-    nn = construct_network_model(FLAGS, config_map, x,
-                                 hidden_activation=activations[FLAGS.hidden_activation],
-                                 output_activation=activations[FLAGS.output_activation],
-                                 loss_name=FLAGS.loss)
-
-    csv_writer, trajectory_writer = \
-        setup_output_files(FLAGS, nn, config_map)
-
-    print("weight vars: "+str(tf.get_collection(tf.GraphKeys.WEIGHTS)))
-    print("bias vars: "+str(tf.get_collection(tf.GraphKeys.BIASES)))
-
-    saver = tf.train.Saver(tf.get_collection(tf.GraphKeys.WEIGHTS)+
-                            tf.get_collection(tf.GraphKeys.BIASES)+ \
-                            tf.get_collection("Variables_to_Save"))
-    sess = tf.Session(
-        config=tf.ConfigProto(
-            intra_op_parallelism_threads = None,
-            inter_op_parallelism_threads = 1))
-
-    if FLAGS.restore_model is not None:
-        # initializing is not needed when restoring
-        tf.reset_default_graph()
-
-        restore_path = saver.restore(sess, FLAGS.restore_model.replace('.meta', ''))
-        print("Model restored from file: %s" % restore_path)
-    else:
-        nn.init_graph(sess)
-
-    train(FLAGS, ds, sess, nn, xinput, csv_writer, trajectory_writer, config_map)
-
-    closeFiles(config_map)
-
-    if FLAGS.save_model is not None:
-        save_path = saver.save(sess, FLAGS.save_model.replace('.meta', ''))
-        print("Model saved in file: %s" % save_path)
+    network_model.finish()
 
 if __name__ == '__main__':
     FLAGS, unparsed = parse_parameters()

@@ -9,8 +9,7 @@
 
 import argparse
 
-from DataDrivenSampler.common import setup_run_file, setup_trajectory_file
-from DataDrivenSampler.datasets.classificationdatasets import ClassificationDatasets as DatasetGenerator
+from DataDrivenSampler.datasets.classificationdatasets import ClassificationDatasets
 
 
 def parse_parameters():
@@ -22,7 +21,7 @@ def parse_parameters():
     # please adhere to alphabetical ordering
     parser.add_argument('--batch_size', type=int, default=10,
         help='The number of samples used to divide sample set into batches in one training step.')
-    parser.add_argument('--data_type', type=int, default=DatasetGenerator.SPIRAL,
+    parser.add_argument('--data_type', type=int, default=ClassificationDatasets.SPIRAL,
         help='Which data set to use: (0) two circles, (1) squares, (2) two clusters, (3) spiral.')
     parser.add_argument('--dimension', type=int, default=10,
         help='Number P of samples (Y^i,X^i)^P_{i=1} to generate for the desired dataset type.')
@@ -61,71 +60,3 @@ def parse_parameters():
     parser.add_argument('--version', '-V', action="store_true",
         help='Gives version information')
     return parser.parse_known_args()
-
-
-def setup_output_files(FLAGS, nn, config_map):
-    """ Prepares the distinct headers for each output file
-
-    :param FLAGS: FLAGS dictionary with command-line parameters
-    :param nn: neural network object for obtaining nodes
-    :param config_map: configuration dictionary
-    :return: CSV writer objects for run and trajectory
-    """
-    print("Setting up output files")
-    run_writer = setup_run_file(FLAGS.run_file,
-                                ['step', 'epoch', 'accuracy', 'loss', 'scaled_gradient'],
-                                config_map)
-    trajectory_writer = setup_trajectory_file(FLAGS.trajectory_file,
-                                              nn.get("weights").get_shape()[0], nn.get("biases").get_shape()[0],
-                                              config_map)
-    return run_writer, trajectory_writer
-
-
-def train(FLAGS, ds, sess, nn, xinput, run_writer, trajectory_writer, config_map):
-    """ Performs the actual training of the neural network `nn` given a dataset `ds` and a
-    Session `session`.
-
-    :param FLAGS: FLAGS dictionary with command-line parameters
-    :param ds: dataset
-    :param sess: Session object
-    :param nn: neural network
-    :param xinput: input nodes of neural network
-    :param run_writer: run csv writer
-    :param trajectory_writer: trajectory csv writer
-    :param config_map: configuration dictionary
-    """
-    placeholder_nodes = nn.get_dict_of_nodes(["step_width", "y_"])
-    test_nodes = nn.get_list_of_nodes(["merged", "train_step", "accuracy", "global_step",
-                                       "loss", "y_", "y", "scaled_gradient"])
-    output_width=8
-    output_precision=8
-
-    print("Starting to train")
-    for i in range(FLAGS.max_steps):
-        print("Current step is "+str(i))
-        batch_xs, batch_ys = ds.next_batch(FLAGS.batch_size)
-        feed_dict={
-            xinput: batch_xs, placeholder_nodes["y_"]: batch_ys,
-            placeholder_nodes["step_width"]: FLAGS.step_width
-        }
-        summary, _, acc, global_step, loss_eval, y_true_eval, y_eval, scaled_grad = \
-            sess.run(test_nodes,feed_dict=feed_dict)
-
-        if i % FLAGS.every_nth == 0:
-            if config_map["do_write_run_file"]:
-                run_writer.writerow([global_step, i, acc, loss_eval, scaled_grad])
-            if config_map["do_write_trajectory_file"]:
-                weights_eval, biases_eval = \
-                    sess.run([nn.get("weights"), nn.get("biases")],feed_dict=feed_dict)
-                trajectory_writer.writerow(
-                    [global_step, loss_eval]
-                    + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
-                       for sublist in weights_eval for item in sublist]
-                    + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
-                       for item in biases_eval])
-
-        print('Accuracy at step %s (%s): %s' % (i, global_step, acc))
-        #print('Loss at step %s: %s' % (i, loss_eval))
-        #print('y_ at step %s: %s' % (i, str(y_true_eval[0:9].transpose())))
-        #print('y at step %s: %s' % (i, str(y_eval[0:9].transpose())))
-    print("TRAINED.")
