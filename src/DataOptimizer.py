@@ -19,7 +19,7 @@ def parse_parameters():
     """
     parser = argparse.ArgumentParser()
     # please adhere to alphabetical ordering
-    parser.add_argument('--batch_size', type=int, default=10,
+    parser.add_argument('--batch_size', type=int, default=None,
         help='The number of samples used to divide sample set into batches in one training step.')
     parser.add_argument('--data_type', type=int, default=ClassificationDatasets.SPIRAL,
         help='Which data set to use: (0) two circles, (1) squares, (2) two clusters, (3) spiral.')

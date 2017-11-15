@@ -33,6 +33,10 @@ if __name__ == '__main__':
 
     print("Using parameters: "+str(FLAGS))
 
+    if FLAGS.batch_size is None:
+        print("No batch_size was specified, using true gradients.")
+        FLAGS.batch_size = FLAGS.dimension
+
     if len(unparsed) != 0:
         print("There are unparsed parameters '"+str(unparsed)+"', have you misspelled some?")
         sys.exit(255)
