@@ -5,6 +5,8 @@ import tensorflow as tf
 from distutils.version import LooseVersion
 
 from TATi.models.basetype import dds_basetype
+from TATi.samplers.covariancecontrolledadaptivelangevinthermostatsampler \
+    import CovarianceControlledAdaptiveLangevinThermostat as CCAdLSampler
 from TATi.samplers.baoabsampler import BAOABSampler
 from TATi.samplers.geometriclangevinalgorithmfirstordersampler import GeometricLangevinAlgorithmFirstOrderSampler
 from TATi.samplers.geometriclangevinalgorithmsecondordersampler import GeometricLangevinAlgorithmSecondOrderSampler
@@ -190,7 +192,7 @@ class NeuralNetwork(object):
         tf.summary.scalar('accuracy', accuracy)
 
     def add_sample_method(self, loss, sampling_method, seed,
-                          prior):
+                          prior, sigma=None, sigmaA=None):
         """ Adds nodes for training the neural network.
 
         :param loss: node for the desired loss function to minimize during training
@@ -198,6 +200,8 @@ class NeuralNetwork(object):
         :param seed: seed value for the random number generator to obtain reproducible runs
         :param prior: dict with keys factor, lower_boundary and upper_boundary that
                 specifies a wall-repelling force to ensure a prior on the parameters
+        :param sigma: scale of noise injected to momentum per step for CCaDL only
+        :param sigmaA: scale of noise in convex combination for CCaDL only
         """
         # have this outside scope as it is used by both training and learning
         if 'global_step' not in self.summary_nodes.keys():
@@ -242,6 +246,9 @@ class NeuralNetwork(object):
                 sampler = HamiltonianMonteCarloSampler(step_width, inverse_temperature, current_step, next_eval_step, accept_seed=accept_seed, seed=seed)
             elif sampling_method == "BAOAB":
                 sampler = BAOABSampler(step_width, inverse_temperature, friction_constant, seed=seed)
+            elif sampling_method == "CovarianceControlledAdaptiveLangevinThermostat":
+                sampler = CCAdLSampler(step_width, inverse_temperature, friction_constant,
+                                       sigma=sigma, sigmaA=sigmaA, seed=seed)
             else:
                 raise NotImplementedError("Unknown sampler")
             if len(prior) != 0:

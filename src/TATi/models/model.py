@@ -287,6 +287,8 @@ class model:
             sampler="GeometricLangevinAlgorithm_1stOrder",
             save_model=None,
             seed=None,
+            sigma=1.,
+            sigmaA=1.,
             step_width=0.03,
             trajectory_file=None,
             use_reweighting=False,
@@ -328,6 +330,8 @@ class model:
                 sampler=sampler,
                 save_model=save_model,
                 seed=seed,
+                sigma=sigma,
+                sigmaA=sigmaA,
                 step_width=step_width,
                 trajectory_file=trajectory_file,
                 use_reweighting=use_reweighting,
@@ -439,7 +443,11 @@ class model:
         if setup == "train":
             self.nn.add_train_method(self.loss, optimizer_method=self.FLAGS.optimizer, prior=prior)
         elif setup == "sample":
-            self.nn.add_sample_method(self.loss, sampling_method=self.FLAGS.sampler, seed=self.FLAGS.seed, prior=prior)
+            if self.FLAGS.sampler != "CovarianceControlledAdaptiveLangevinThermostat":
+                self.nn.add_sample_method(self.loss, sampling_method=self.FLAGS.sampler, seed=self.FLAGS.seed, prior=prior)
+            else:
+                self.nn.add_sample_method(self.loss, sampling_method=self.FLAGS.sampler, seed=self.FLAGS.seed, prior=prior,
+                                          sigma=self.FLAGS.sigma, sigmaA=self.FLAGS.sigmaA)
         else:
             logging.info("Not adding sample or train method.")
 
@@ -529,7 +537,8 @@ class model:
                 header += ['ensemble_average_loss', 'average_virials']
             elif self.FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder",
                                         "GeometricLangevinAlgorithm_2ndOrder",
-                                        "BAOAB"]:
+                                        "BAOAB",
+                                        "CovarianceControlledAdaptiveLangevinThermostat"]:
                 header += ['ensemble_average_loss', 'average_kinetic_energy', 'average_virials']
             elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
                 header += ['ensemble_average_loss', 'average_kinetic_energy', 'average_virials', 'average_rejection_rate']
@@ -543,7 +552,8 @@ class model:
             header += ['scaled_gradient', 'virial', 'scaled_noise']
         elif self.FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder",
                                     "GeometricLangevinAlgorithm_2ndOrder",
-                                    "BAOAB"]:
+                                    "BAOAB",
+                                    "CovarianceControlledAdaptiveLangevinThermostat"]:
             header += ['total_energy', 'kinetic_energy', 'scaled_momentum',
                       'scaled_gradient', 'virial', 'scaled_noise']
         elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
@@ -641,7 +651,8 @@ class model:
         # check that sampler's parameters are actually used
         if self.FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder",
                                   "GeometricLangevinAlgorithm_2ndOrder",
-                                  "BAOAB"]:
+                                  "BAOAB",
+                                  "CovarianceControlledAdaptiveLangevinThermostat"]:
             gamma, beta, deltat = self.sess.run(self.nn.get_list_of_nodes(
                 ["friction_constant", "inverse_temperature", "step_width"]), feed_dict={
                 placeholder_nodes["step_width"]: self.FLAGS.step_width,
@@ -722,7 +733,8 @@ class model:
                                       "GeometricLangevinAlgorithm_1stOrder",
                                       "GeometricLangevinAlgorithm_2ndOrder",
                                       "HamiltonianMonteCarlo",
-                                      "BAOAB"]:
+                                      "BAOAB",
+                                      "CovarianceControlledAdaptiveLangevinThermostat"]:
                 check_total, check_kinetic, check_momenta, check_gradients, check_virials, check_noise = \
                     self.sess.run([total_energy_t, zero_kinetic_energy, zero_momenta, zero_gradients, zero_virials, zero_noise])
                 assert (abs(check_kinetic) < 1e-10)
@@ -756,7 +768,8 @@ class model:
                                       "GeometricLangevinAlgorithm_1stOrder",
                                       "GeometricLangevinAlgorithm_2ndOrder",
                                       "HamiltonianMonteCarlo",
-                                      "BAOAB"]:
+                                      "BAOAB",
+                                      "CovarianceControlledAdaptiveLangevinThermostat"]:
                 if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
                     gradients, virials, noise = \
                         self.sess.run([gradients_t, virials_t, noise_t])
@@ -819,7 +832,8 @@ class model:
                                               "GeometricLangevinAlgorithm_1stOrder",
                                               "GeometricLangevinAlgorithm_2ndOrder",
                                               "HamiltonianMonteCarlo",
-                                              "BAOAB"]:
+                                              "BAOAB",
+                                              "CovarianceControlledAdaptiveLangevinThermostat"]:
                         run_line = [0, global_step, current_step] + ['{:1.3f}'.format(acc)] \
                                    + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
                                                                        precision=output_precision)] \

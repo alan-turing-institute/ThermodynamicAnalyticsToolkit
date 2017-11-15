@@ -1253,6 +1253,7 @@ sys.path.insert(1,"&lt;path_to_TATi&gt;/lib/python3.5/site-packages/")</programl
     recommend BAOAB at the moment as it is the most accurate with second order
     convergence for average values over the step width size and even fourth
     order in the high-friction limit.</para>
+    
     <section xml:id="reference.samplers.sgld">
       <title xml:id="reference.samplers.sgld.title">Stochastic Gradient Langevin Dynamics</title>
       <para>The 
@@ -1271,6 +1272,23 @@ sys.path.insert(1,"&lt;path_to_TATi&gt;/lib/python3.5/site-packages/")</programl
       <command>step_width</command> needs to be small enough with respect
       to the gradient sizes of your problem.</note>
     </section>
+
+    <section xml:id="reference.samplers.ccadl">
+      <title xml:id="reference.samplers.ccadl.title">Covariance Controlled Adaptive Langevin</title>
+      <para>This is an extension of
+      <glossterm baseform="SGD" linkend="SGD">Stochastic Gradient Descent</glossterm>
+      proposed by <citation role="REFDB">Shang2015</citation>. The key idea is 
+      to dissipate the extra heat caused by the approximate gradients through
+      a suitable thermostat. However, the discretisation used here is not based
+      on the (first-order) Euler-Maruyama as <glossterm linkend="SGLD">SGLD</glossterm>
+      but on <glossterm linkend="GLA">GLA</glossterm> 2nd order.</para>
+      <note><command>sigma</command>  and <command>sigmaA</command> are two
+      additional parameters that control the action of the thermostat. 
+      Moreover, we require the same parameters as for <glossterm linkend="GLA">GLA</glossterm>
+      2nd order.
+      </note>
+    </section>
+
     <section xml:id="reference.samplers.gla">
       <title xml:id="reference.samplers.gla.title">Geometric Langevin Algorithms</title>
       <para><firstterm linkend="GLA">GLA</firstterm> results from a first-order splitting
@@ -1280,8 +1298,9 @@ sys.path.insert(1,"&lt;path_to_TATi&gt;/lib/python3.5/site-packages/")</programl
       second order accuracy at basically no extra cost.</para>
       <note>
       <para>All <glossterm linkend="GLA">GLA</glossterm> samplers have two
-      more parameters: the inverse temperature beta and the friction constant
-      gamma. Inverse temperature controls the average momentum of each 
+      more parameters: <command>inverse_temperature</command> (also known as 
+      beta) and <command>friction_constant</command> (also known as gamma). 
+      Inverse temperature controls the average momentum of each 
       parameter while the friction constant decides over how much of the 
       momentum is replaced by random noise, i.e. the random walker character
       of the trajectory.</para>
@@ -1289,6 +1308,7 @@ sys.path.insert(1,"&lt;path_to_TATi&gt;/lib/python3.5/site-packages/")</programl
       and need to be find by try&amp;error and the moment.</para>
       </note>
     </section>
+    
     <section xml:id="reference.samplers.baoab">
       <title xml:id="reference.samplers.baoab.title">BAOAB</title>
       <para>BAOAB derives from the basic building blocks A (position update),
@@ -1298,9 +1318,10 @@ sys.path.insert(1,"&lt;path_to_TATi&gt;/lib/python3.5/site-packages/")</programl
       second-order accuracy and superb overall accuracy with respect to 
       positions. See <citation role="REFDB">Leimkuhler2012</citation> for
       more details.</para>
-      <note>BAOAB has the same two additional parameters as the 
+      <note>BAOAB has the same two additional parameters as given in the
       <xref linkend="reference.samplers.gla">GLAs</xref></note>
     </section>
+    
     <section xml:id="reference.samplers.hmc">
       <title xml:id="reference.samplers.hmc.title">Hamiltonian Monte Carlo</title>
       <para><firstterm linkend="HMC">HMC</firstterm> is based on Hamiltonian
@@ -1309,6 +1330,7 @@ sys.path.insert(1,"&lt;path_to_TATi&gt;/lib/python3.5/site-packages/")</programl
       It has first been proposed by <citation role="REFDB">Duane1987</citation>.
       </para>
     </section>
+    
   </section>
   <section xml:id="reference.exploring">
     <title xml:id="reference.exploring.title">Exploring the manifold</title>

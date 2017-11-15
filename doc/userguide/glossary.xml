@@ -1,6 +1,15 @@
 ﻿<glossary version="4.5" 
   xmlns="http://docbook.org/ns/docbook">
   
+  <glossentry xml:id="CCAdL">
+    <glossterm>Covariance Controlled Adaptive Langevin
+    (<acronym>CCAdL</acronym>)</glossterm>
+    <glossdef>
+      <para>This is an extension of SGD that uses a thermostat to dissipate
+      the extra noise through approximate gradients from the system.</para>
+    </glossdef>
+  </glossentry>
+  
   <glossentry xml:id="GD">
     <glossterm>Gradient Descent
     (<acronym>GD</acronym>)</glossterm>

@@ -1,5 +1,6 @@
 TATI_samplers_PYTHON = \
     baoabsampler.py \
+    covariancecontrolledadaptivelangevinthermostatsampler.py \
 	gradientdescent.py \
 	geometriclangevinalgorithmfirstordersampler.py \
 	geometriclangevinalgorithmsecondordersampler.py \

@@ -41,6 +41,8 @@ class MockFlags:
                  sampler="GeometricLangevinAlgorithm_1stOrder",
                  save_model=None,
                  seed=None,
+                 sigma=1.,
+                 sigmaA=1.,
                  step_width=0.03,
                  trajectory_file=None,
                  use_reweighting=False,
@@ -84,6 +86,8 @@ class MockFlags:
         :param sampler: Choose the sampler to use for sampling: GeometricLangevinAlgorithm_1stOrder, GeometricLangevinAlgorithm_2ndOrder, StochasticGradientLangevinDynamics
         :param save_model: Save model (weights and biases) to a file for later restoring.
         :param seed: Seed to use for random number generators.
+        :param sigma: Scale of noise injected to momentum per step for CCaDL.
+        :param sigmaA: Scale of noise in convex combination for CCaDL.
         :param step_width: step width \Delta t to use, e.g. 0.01
         :param trajectory_file: CSV file name to output trajectories of sampling, i.e. weights and evaluated loss function.
         :param use_reweighting:
@@ -126,6 +130,8 @@ class MockFlags:
         self.sampler = sampler
         self.save_model = save_model
         self.seed = seed
+        self.sigma = sigma
+        self.sigmaA = sigmaA
         self.step_width = step_width
         self.trajectory_file = trajectory_file
         self.use_reweighting = use_reweighting

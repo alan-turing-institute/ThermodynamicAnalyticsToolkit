@@ -21,6 +21,27 @@
   </biblioset>
 </biblioentry>
 
+<biblioentry role="incollection" id="ccadl">
+  <abbrev id="ccadl.abbrev">Shang2015</abbrev>
+  <biblioset role="incollection">
+    <author>
+      <firstname>X.</firstname><surname>Shang</surname>
+      <firstname>Z.</firstname><surname>Zhu</surname>
+      <firstname>B.</firstname><surname>Leimkuhler</surname>
+      <firstname>A. J,</firstname><surname>Storkey</surname>
+    </author>
+    <title>Covariance-Controlled Adaptive Langevin Thermostat for Large-Scale Bayesian Sampling</title>
+    <pagenums>37-45</pagenums>
+    <bibliosource class="doi">10.1515/jip-2012-0071</bibliosource>
+  </biblioset>
+    
+  <biblioset role="incollection">
+    <title>Advances in Neural Information Processing Systems 28</title>
+    <pubdate>2015</pubdate>
+    <editor>C. Cortes and N. D. Lawrence and D. D. Lee and M. Sugiyama and R. Garnett</editor>
+  </biblioset>
+</biblioentry>
+
 <biblioentry role="article" id="gla">
   <abbrev id="gla.abbrev">Leimkuhler2015</abbrev>
   <biblioset role="article">

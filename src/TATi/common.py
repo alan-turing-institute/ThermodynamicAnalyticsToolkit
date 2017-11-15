@@ -235,6 +235,10 @@ def add_sampler_options_to_parser(parser):
         + 'StochasticGradientLangevinDynamics, ' \
         + 'BAOAB, ' \
         + 'HamiltonianMonteCarlo, ')
+    parser.add_argument('--sigma', type=float, default=1.,
+        help='Scale of noise injected to momentum per step for CCaDL.')
+    parser.add_argument('--sigmaA', type=float, default=1.,
+        help='Scale of noise in convex combination for CCaDL.')
     parser.add_argument('--step_width', type=float, default=0.03,
         help='step width \Delta t to use, e.g. 0.01')
 

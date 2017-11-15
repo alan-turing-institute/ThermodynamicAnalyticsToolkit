@@ -1,4 +1,3 @@
-# This is heavily inspired by  https://github.com/openai/iaf/blob/master/tf_utils/adamax.py
 from tensorflow.python.ops import control_flow_ops
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import state_ops
