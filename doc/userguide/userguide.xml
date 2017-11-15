@@ -190,22 +190,107 @@ cost of all necessary servicing, repair, or correction.</remark>
       <programlisting>PYTHONPATH=/foo python3</programlisting>
       <para>In this shell, you may import the sampling part of the package as 
       follows 
-      <programlisting>from DataDrivenSampler.DataDrivenSampler import sample</programlisting>
-      This will import the function <command>sample()</command> from the
+      <programlisting>from DataDrivenSampler.models.model import model</programlisting>
+      This will import the abstract <command>model</command> class from the
       file mentioned before.</para>
-      <para>At the current time of writing, there is not a fully stream-line 
-      interface available to use in python. If you generally want to know, how
-      to call high-level functions of DataDrivenSampler, have a look at the
-      files <command>src/DDSampler.in</command>, <command>src/DDSOptimizer.in</command>
-      and <command>src/DDSAnalyser.in</command> which perform sampling,
-      optimization or analysis of trajectories, respectively. Note that there
-      is a global struct "FLAGS" which contains all of the parameters. Simply
-      create the struct and add any variable needed. 
-      Keep in mind that all these three programs are simply python scripts
-      themselves using the package installed in "/foo".</para>
+      <section xml:id="quickstart.python.optimizing">
+        <title  xml:id="quickstart.python.optimizing.title">Optimizing the network</title>
+        <para>Let us first start with optimizing the network.</para>
+        <programlisting>from DataDrivenSampler.models.model import model
+        
+FLAGS = None
+FLAGS.batch=size = 50 # if unequal to dimension, we use SGD
+FLAGS.data_type = 2 # pick two clusters
+FLAGS.dimension = 500
+FLAGS.max_steps = 100
+FLAGS.optimizer = "GradientDescent"
+# only for making runs reproducible, otherwise set to None
+FLAGS.seed = 426 
+FLAGS.step_width = 0.03
+
+network_model = model(FLAGS)
+network_model.init_network(FLAGS.restore_model, setup="train")
+network_model.train()
+network_model.finish()
+        </programlisting>
+        <para>
+        As you see, all options are set in a struct called <command>FLAGS</command> 
+        that control how the optimization is performed. For all full set of 
+        available options, please have a look at the file "DataOptimizer.py" and 
+        the function <command>parse_parameters()</command> therein.
+        </para>
+      </section>
+      <section xml:id="quickstart.python.sampling">
+        <title  xml:id="quickstart.python.sampling.title">Sampling the network</title>
+        <para>After optimization we may continue sampling the network.</para>
+        <programlisting>from DataDrivenSampler.models.model import model
+        
+FLAGS = None
+# if unequal to dimension, we use stochastic gradients
+FLAGS.batch=size = 50 
+FLAGS.data_type = 2 # pick two clusters
+FLAGS.dimension = 500
+FLAGS.friction_constant = 10
+FLAGS.inverse_temperature = 1e3
+FLAGS.max_steps = 100000
+FLAGS.sampler= "GeometricLangevinAlgorithm_2ndOrder"
+# only for making runs reproducible, otherwise set to None
+FLAGS.seed = 426 
+FLAGS.step_width = 1e-2
+
+network_model = model(FLAGS)
+network_model.init_network(FLAGS.restore_model, setup="sample")
+network_model.sample()
+network_model.finish()
+        </programlisting>
+        <para>
+        The functions we call are essentially the same as in the optimizing,
+        only "train" is replaced by "sample" and the <command>FLAGS</command> 
+        have changed in some parts.
+        Again, for all full set of available options, please have a look at the 
+        file "DatDrivenSampler.py" and the function 
+        <command>parse_parameters()</command> therein.
+        </para>
+      </section>
+      <section xml:id="quickstart.python.analysis">
+        <title  xml:id="quickstart.python.analysis.title">Analysing trajectories</title>
+        <para>Analysis is so for constrained to parsing in run and trajectory
+        files that you would write through optimization and sampling runs.</para>
+        <para>To this end, specify <command>FLAGS.run_file</command> and
+        <command>FLAGS.trajectory_file</command> with some valid file names.</para>
+        <para>Subsequently, these may be easily parsed as follows, see also
+         "DDSAnalyser.in".</para>
+        <programlisting>import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+df_trajectory = pd.read_csv(FLAGS.trajectory_file, sep=',', /
+    header=0)
+trajectory=np.asarray(df_trajectory)
+
+conv=np.zeros(traj.shape)
+
+# then we plot the running averages of the parameters
+# inside weights
+for i in range(1,traj.shape[0]):
+    for d in range(traj.shape[1]):
+        
+        conv[i,d]=np.mean(traj[:i,d])
+
+[plt.scatter(range(len(traj)), conv[:,i]) /
+    for i in range(traj.shape[1])]
+plt.show()
+
+print(conv[-1,:])
+        </programlisting>
+        <para>This would give a plot of the running average for each parameter
+        in the trajectory file. In a similar, the run file can be loaded and its
+        average quantities such as loss or kinetic energy be analysed and 
+        plotted.</para>
+      </section>
     </section>
     <section xml:id="quickstart.cmdline">
-      <title  xml:id="quickstart.cmdline.title">Using Command-line interface</title>
+      <title  xml:id="quickstart.cmdline.title">Using command-line interface</title>
       All the tests use the command-line interface and for performing rigorous
       scientific experiments, we recommend using this interface as well. Here,
       it is to do parameter studies and have extensive runs using different
