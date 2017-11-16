@@ -143,13 +143,6 @@ def construct_network_model(FLAGS, config_map, x,
     print("Constructing neural network")
     hidden_dimension=get_list_from_string(FLAGS.hidden_dimension)
     nn=NeuralNetwork()
-    if setup == "sample":
-        train_method = FLAGS.sampler
-    elif setup == "train":
-            train_method = FLAGS.optimizer
-    else:
-        print("Unknown setup "+setup)
-        sys.exit(255)
     loss = nn.create(
         x, hidden_dimension, config_map["output_dimension"],
         seed=FLAGS.seed,

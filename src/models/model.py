@@ -136,8 +136,7 @@ class model:
         elif setup == "sample":
             self.nn.add_sample_method(loss, sampling_method=self.FLAGS.sampler, seed=self.FLAGS.seed)
         else:
-            print("Unknown setup desired for the model")
-            sys.exit(255)
+            print("Not adding sample or train method.")
 
         if self.saver is None:
             self.saver = tf.train.Saver(tf.get_collection(tf.GraphKeys.WEIGHTS) +
@@ -166,17 +165,17 @@ class model:
             header = self.get_sample_header()
         elif setup == "train":
             header = self.get_train_header()
-        else:
-            print("Unknown setup desired for the model")
-            sys.exit(255)
 
-        if self.run_writer is None:
-            self.run_writer = setup_run_file(self.FLAGS.run_file, header, self.config_map)
-        if self.trajectory_writer is None:
-            self.trajectory_writer = setup_trajectory_file(self.FLAGS.trajectory_file,
-                                                           self.nn.get("weights").get_shape()[0],
-                                                           self.nn.get("biases").get_shape()[0],
-                                                           self.config_map)
+        try:
+            if self.run_writer is None:
+                self.run_writer = setup_run_file(self.FLAGS.run_file, header, self.config_map)
+            if self.trajectory_writer is None:
+                self.trajectory_writer = setup_trajectory_file(self.FLAGS.trajectory_file,
+                                                               self.nn.get("weights").get_shape()[0],
+                                                               self.nn.get("biases").get_shape()[0],
+                                                               self.config_map)
+        except AttributeError:
+            pass
 
     def get_sample_header(self):
         """ Prepares the distinct header for the run file for sampling
@@ -460,7 +459,9 @@ class model:
         """
         self.close_files()
 
-        if self.FLAGS.save_model is not None:
-            save_path = self.saver.save(self.sess, self.FLAGS.save_model.replace('.meta', ''))
-            print("Model saved in file: %s" % save_path)
-
+        try:
+            if self.FLAGS.save_model is not None:
+                save_path = self.saver.save(self.sess, self.FLAGS.save_model.replace('.meta', ''))
+                print("Model saved in file: %s" % save_path)
+        except AttributeError:
+            pass
