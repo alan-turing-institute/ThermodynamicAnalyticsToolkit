@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import sys
+import pandas as pd
 
 from math import sqrt
 from DataDrivenSampler.common import create_classification_dataset, \
@@ -169,9 +170,16 @@ class model:
         """
         return ['step', 'epoch', 'accuracy', 'loss', 'scaled_gradient']
 
-    def sample(self):
+    def sample(self, return_run_info = False, return_trajectories = False):
         """ Performs the actual sampling of the neural network `nn` given a dataset `ds` and a
         Session `session`.
+
+        :param return_run_info: if set to true, run information will be accumulated
+                inside a numpy array and returned
+        :param return_trajectories: if set to true, trajectories will be accumulated
+                inside a numpy array and returned (adhering to FLAGS.every_nth)
+        :return: either twice None or a pandas dataframe depending on whether either
+                parameter has evaluated to True
         """
         # create global variable to hold kinetic energy
         with tf.variable_scope("accumulate", reuse=True):
@@ -190,6 +198,26 @@ class model:
 
         output_width = 8
         output_precision = 8
+
+        written_row = 0
+
+        run_info = None
+        if return_run_info:
+            steps = (self.FLAGS.max_steps % self.FLAGS.every_nth)+1
+            no_params = len(self.get_sample_header())
+            run_info = pd.DataFrame(
+                np.zeros((steps, no_params)),
+                columns=self.get_train_header())
+
+        trajectory = None
+        if return_run_info:
+            steps = (self.FLAGS.max_steps % self.FLAGS.every_nth)+1
+            no_params = self.nn.get("weights").get_shape()[0]+self.nn.get("biases").get_shape()[0]
+            trajectory = pd.DataFrame(
+                np.zeros((steps, no_params)),
+                columns=get_trajectory_header(
+                    self.nn.get("weights").get_shape()[0],
+                    self.nn.get("biases").get_shape()[0]))
 
         # check that sampler's parameters are actually used
         if self.FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder", "GeometricLangevinAlgorithm_2ndOrder"]:
@@ -233,8 +261,9 @@ class model:
             # is not important. Only a subsequent, distinct tf.run() call would produce a different loss_eval.
             summary, _, acc, global_step, loss_eval, y_true_eval, y_eval = \
                 self.sess.run(test_nodes, feed_dict=feed_dict)
-            if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics", "GeometricLangevinAlgorithm_1stOrder",
-                                 "GeometricLangevinAlgorithm_2ndOrder"]:
+            if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics",
+                                      "GeometricLangevinAlgorithm_1stOrder",
+                                      "GeometricLangevinAlgorithm_2ndOrder"]:
                 if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
                     gradients, noise = \
                         self.sess.run([gradients_t, noise_t])
@@ -242,36 +271,48 @@ class model:
                     kinetic_energy, momenta, gradients, noise = \
                         self.sess.run([kinetic_energy_t, momenta_t, gradients_t, noise_t])
             if i % self.FLAGS.every_nth == 0:
-                if self.config_map["do_write_trajectory_file"]:
+                if self.config_map["do_write_trajectory_file"] or return_trajectories:
                     weights_eval, biases_eval = self.sess.run(
                         [self.nn.get("weights"), self.nn.get("biases")],
                         feed_dict=feed_dict)
-                    self.trajectory_writer.writerow(
-                        [global_step, loss_eval]
-                        + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
-                           for sublist in weights_eval for item in sublist]
-                        + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
-                           for item in biases_eval])
+                    trajectory_line = [global_step, loss_eval]\
+                                      + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
+                                         for sublist in weights_eval for item in sublist]\
+                                      + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
+                                         for item in biases_eval]
 
-                if self.config_map["do_write_run_file"]:
-                    if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics", "GeometricLangevinAlgorithm_1stOrder",
-                                         "GeometricLangevinAlgorithm_2ndOrder"]:
+                    if self.config_map["do_write_trajectory_file"]:
+                        self.trajectory_writer.writerow(trajectory_line)
+                    if return_trajectories:
+                        trajectory.loc[written_row] = trajectory_line
+
+                if self.config_map["do_write_run_file"] or return_run_info:
+                    run_line  = []
+                    if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics",
+                                              "GeometricLangevinAlgorithm_1stOrder",
+                                              "GeometricLangevinAlgorithm_2ndOrder"]:
                         if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
-                            self.run_writer.writerow([global_step, i, acc, loss_eval]
-                                                + ['{:{width}.{precision}e}'.format(x, width=output_width,
-                                                                                    precision=output_precision)
-                                                   for x in [sqrt(gradients), sqrt(noise)]])
+                            run_line = [global_step, i, acc, loss_eval]\
+                                       + ['{:{width}.{precision}e}'.format(x, width=output_width,
+                                                                           precision=output_precision)
+                                          for x in [sqrt(gradients), sqrt(noise)]]
                         else:
-                            self.run_writer.writerow([global_step, i, acc, loss_eval]
-                                                + ['{:{width}.{precision}e}'.format(loss_eval + kinetic_energy,
-                                                                                    width=output_width,
-                                                                                    precision=output_precision)]
-                                                + ['{:{width}.{precision}e}'.format(x, width=output_width,
-                                                                                    precision=output_precision)
-                                                   for x in
-                                                   [kinetic_energy, sqrt(momenta), sqrt(gradients), sqrt(noise)]])
+                            run_line = [global_step, i, acc, loss_eval] \
+                                       + ['{:{width}.{precision}e}'.format(loss_eval + kinetic_energy,
+                                                                           width=output_width,
+                                                                           precision=output_precision)]\
+                                       + ['{:{width}.{precision}e}'.format(x, width=output_width,
+                                                                           precision=output_precision)
+                                          for x in [kinetic_energy, sqrt(momenta), sqrt(gradients), sqrt(noise)]]
+
                     else:
-                        self.run_writer.writerow([global_step, i, acc, loss_eval])
+                        run_line = [global_step, i, acc, loss_eval]
+
+                    if self.config_map["do_write_run_file"]:
+                        self.run_writer.writerow(run_line)
+                    if return_run_info:
+                        run_info.loc[written_row] = run_line
+                written_row+=1
 
             if (i % print_intervals) == 0:
                 print('Accuracy at step %s (%s): %s' % (i, global_step, acc))
@@ -280,9 +321,16 @@ class model:
                 # print('y at step %s: %s' % (i, str(y_eval[0:9].transpose())))
         print("SAMPLED.")
 
-    def train(self):
+    def train(self, return_run_info = False, return_trajectories = False):
         """ Performs the actual training of the neural network `nn` given a dataset `ds` and a
         Session `session`.
+
+        :param return_run_info: if set to true, run information will be accumulated
+                inside a numpy array and returned
+        :param return_trajectories: if set to true, trajectories will be accumulated
+                inside a numpy array and returned (adhering to FLAGS.every_nth)
+        :return: either twice None or a pandas dataframe depending on whether either
+                parameter has evaluated to True
         """
         with tf.variable_scope("accumulate", reuse=True):
             gradients_t = tf.get_variable("gradients")
@@ -295,6 +343,28 @@ class model:
         output_width = 8
         output_precision = 8
 
+        written_row = 0
+
+        run_info = None
+        if return_run_info:
+            steps = (self.FLAGS.max_steps % self.FLAGS.every_nth)+1
+            header = self.get_train_header()
+            no_params = len(header)
+            run_info = pd.DataFrame(
+                np.zeros((steps, no_params)),
+                columns=header)
+
+        trajectory = None
+        if return_trajectories:
+            steps = (self.FLAGS.max_steps % self.FLAGS.every_nth)+1
+            header = get_trajectory_header(
+                self.nn.get("weights").get_shape()[0],
+                self.nn.get("biases").get_shape()[0])
+            no_params = len(header)
+            trajectory = pd.DataFrame(
+                np.zeros((steps, no_params)),
+                columns=header)
+
         print("Starting to train")
         for i in range(self.FLAGS.max_steps):
             print("Current step is " + str(i))
@@ -303,7 +373,8 @@ class model:
                 self.xinput: batch_xs, placeholder_nodes["y_"]: batch_ys,
                 placeholder_nodes["step_width"]: self.FLAGS.step_width
             }
-            # zero gradients
+
+            # zero accumulated gradient
             check_gradients = self.sess.run([zero_gradients])[0]
             assert (abs(check_gradients) < 1e-10)
 
@@ -313,27 +384,35 @@ class model:
             gradients = self.sess.run([gradients_t])[0]
 
             if i % self.FLAGS.every_nth == 0:
+                run_line = [global_step, i, acc, loss_eval] \
+                    + ['{:{width}.{precision}e}'.format(sqrt(gradients),
+                                                    width=output_width,
+                                                    precision=output_precision)]
                 if self.config_map["do_write_run_file"]:
-                    self.run_writer.writerow(
-                        [global_step, i, acc, loss_eval]
-                        + ['{:{width}.{precision}e}'.format(sqrt(gradients),
-                                                            width=output_width,
-                                                            precision=output_precision)])
-                if self.config_map["do_write_trajectory_file"]:
+                    self.run_writer.writerow(run_line)
+                if return_run_info:
+                    run_info.loc[written_row] = run_line
+                if return_trajectories or self.config_map["do_write_trajectory_file"]:
                     weights_eval, biases_eval = \
                         self.sess.run([self.nn.get("weights"), self.nn.get("biases")], feed_dict=feed_dict)
-                    self.trajectory_writer.writerow(
-                        [global_step, loss_eval]
-                        + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
-                           for sublist in weights_eval for item in sublist]
-                        + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
-                           for item in biases_eval])
+                    trajectory_line = [global_step, loss_eval] \
+                                      + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
+                                         for sublist in weights_eval for item in sublist] \
+                                      + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
+                                         for item in biases_eval]
+                    if self.config_map["do_write_trajectory_file"]:
+                        self.trajectory_writer.writerow(trajectory_line)
+                    if return_trajectories:
+                        trajectory.loc[written_row] = trajectory_line
+                written_row+=1
 
             print('Accuracy at step %s (%s): %s' % (i, global_step, acc))
             # print('Loss at step %s: %s' % (i, loss_eval))
             # print('y_ at step %s: %s' % (i, str(y_true_eval[0:9].transpose())))
             # print('y at step %s: %s' % (i, str(y_eval[0:9].transpose())))
         print("TRAINED.")
+
+        return run_info, trajectory
 
     def close_files(self):
         """ Closes the output files if they have been opened.
