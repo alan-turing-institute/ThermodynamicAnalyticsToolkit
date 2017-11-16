@@ -1,3 +1,4 @@
+from tensorflow.python.ops import control_flow_ops
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import math_ops
 import tensorflow as tf
@@ -32,6 +33,9 @@ class GradientDescent(tf.train.GradientDescentOptimizer):
         :param var: variables
         """
         lr_t = math_ops.cast(self._learning_rate_t, var.dtype.base_dtype)
-        self.scaled_gradient = tf.norm(lr_t * grad)
-        tf.summary.scalar('scaled_gradient', self.scaled_gradient)
-        return super(GradientDescent, self)._apply_dense(grad, var)
+        scaled_gradient = lr_t * grad
+        with tf.variable_scope("accumulate", reuse=True):
+            gradient_global = tf.get_variable("gradients")
+            gradient_global_t = tf.assign_add(gradient_global, tf.reduce_sum(tf.multiply(scaled_gradient, scaled_gradient)))
+        control_group_gradient_descent_t = super(GradientDescent, self)._apply_dense(grad, var)
+        return control_flow_ops.group(*[control_group_gradient_descent_t, gradient_global_t])

@@ -58,8 +58,8 @@ class model:
 
         :param filename: name of file containing stored model
         """
-        if setup == "sample":
-            self.create_resource_variables()
+        #if setup == "sample":
+        self.create_resource_variables()
 
         activations = get_activations()
         self.nn = construct_network_model(self.FLAGS, self.config_map, self.x,
@@ -233,9 +233,14 @@ class model:
         """ Performs the actual training of the neural network `nn` given a dataset `ds` and a
         Session `session`.
         """
+        with tf.variable_scope("accumulate", reuse=True):
+            gradients_t = tf.get_variable("gradients")
+            zero_gradients = gradients_t.assign(0.)
+
         placeholder_nodes = self.nn.get_dict_of_nodes(["step_width", "y_"])
         test_nodes = self.nn.get_list_of_nodes(["merged", "train_step", "accuracy", "global_step",
-                                           "loss", "y_", "y", "scaled_gradient"])
+                                                "loss", "y_", "y"])+[gradients_t]
+
         output_width = 8
         output_precision = 8
 
@@ -247,12 +252,22 @@ class model:
                 self.xinput: batch_xs, placeholder_nodes["y_"]: batch_ys,
                 placeholder_nodes["step_width"]: self.FLAGS.step_width
             }
+            # zero gradients
+            check_gradients = self.sess.run([zero_gradients])[0]
+            assert (abs(check_gradients) < 1e-10)
+
             summary, _, acc, global_step, loss_eval, y_true_eval, y_eval, scaled_grad = \
                 self.sess.run(test_nodes, feed_dict=feed_dict)
 
+            gradients = self.sess.run([gradients_t])[0]
+
             if i % self.FLAGS.every_nth == 0:
                 if self.config_map["do_write_run_file"]:
-                    self.run_writer.writerow([global_step, i, acc, loss_eval, scaled_grad])
+                    self.run_writer.writerow(
+                        [global_step, i, acc, loss_eval]
+                        + ['{:{width}.{precision}e}'.format(sqrt(gradients),
+                                                            width=output_width,
+                                                            precision=output_precision)])
                 if self.config_map["do_write_trajectory_file"]:
                     weights_eval, biases_eval = \
                         self.sess.run([self.nn.get("weights"), self.nn.get("biases")], feed_dict=feed_dict)

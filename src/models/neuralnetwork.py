@@ -241,7 +241,6 @@ class NeuralNetwork(object):
             # DON'T put the nodes in there before the minimize call!
             # only after minimize was .._apply_dense() called and the nodes are ready
             self.summary_nodes['train_step'] = train_step
-            self.summary_nodes['scaled_gradient'] = optimizer.scaled_gradient
 
     def set_loss_function(self, loss_name):
         """ Set the loss function to minimize when optimizing.
