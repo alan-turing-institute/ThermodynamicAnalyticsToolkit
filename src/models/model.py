@@ -5,7 +5,11 @@ import sys
 from math import sqrt
 from DataDrivenSampler.common import create_classification_dataset, \
     construct_network_model, get_activations, get_filename_from_fullpath, \
-    initialize_config_map, setup_run_file, setup_trajectory_file
+    get_trajectory_header, initialize_config_map, setup_run_file, setup_trajectory_file
+
+from DataDrivenSampler.datasets.classificationdatasets import ClassificationDatasets
+
+from DataDrivenSampler.models.mock_flags import MockFlags
 
 
 class model:
@@ -52,6 +56,53 @@ class model:
             noise_t = tf.get_variable("noise", shape=[], trainable=False,
                                       initializer=tf.zeros_initializer,
                                       use_resource=True)
+    @staticmethod
+    def create_mock_flags(
+            batch_size=10,
+            data_type=ClassificationDatasets.SPIRAL,
+            dimension=10,
+            dropout=0.9,
+            every_nth=1,
+            friction_constant=0.,
+            hidden_activation="relu",
+            hidden_dimension="",
+            input_columns="1 2",
+            inverse_temperature=1.,
+            loss="mean_squared",
+            max_steps=1000,
+            noise=0.,
+            optimizer="GradientDescent",
+            output_activation="tanh",
+            restore_model=None,
+            run_file=None,
+            sampler="GeometricLangevinAlgorithm_1stOrder",
+            save_model=None,
+            seed=None,
+            step_width=0.03,
+            trajectory_file=None):
+            return MockFlags(
+                batch_size=batch_size,
+                data_type=data_type,
+                dimension=dimension,
+                dropout=dropout,
+                every_nth=every_nth,
+                friction_constant=friction_constant,
+                hidden_activation=hidden_activation,
+                hidden_dimension=hidden_dimension,
+                input_columns=input_columns,
+                inverse_temperature=inverse_temperature,
+                loss=loss,
+                max_steps=max_steps,
+                noise=noise,
+                optimizer=optimizer,
+                output_activation=output_activation,
+                restore_model=restore_model,
+                run_file=run_file,
+                sampler=sampler,
+                save_model=save_model,
+                seed=seed,
+                step_width=step_width,
+                trajectory_file=trajectory_file)
 
     def init_network(self, filename = None, setup = None):
         """ Initializes the graph, from a stored model if filename is not None.
