@@ -74,6 +74,19 @@ def setup_run_file(filename, header, config_map):
         return None
 
 
+def get_trajectory_header(no_weights, no_biases):
+    """ Returns the header for CSV trajectory file based on the given number
+    of weights and biases.
+
+    :param no_weights: number of weights of the network
+    :param no_biases: number of biases of the network
+    :return: list of strings with column names
+    """
+    return ['step', 'loss']\
+           + [str("weight")+str(i) for i in range(0,no_weights)]\
+           + [str("bias") + str(i) for i in range(0, no_biases)]
+
+
 def setup_trajectory_file(filename, no_weights, no_biases, config_map):
     """ Opens the trajectory file if a proper `filename` is given.
 
@@ -84,9 +97,7 @@ def setup_trajectory_file(filename, no_weights, no_biases, config_map):
     if filename is not None:
         config_map["do_write_trajectory_file"] = True
         trajectory_writer, config_map["trajectory_file"] = \
-            setup_csv_file(filename, ['step', 'loss']
-                           + [str("weight")+str(i) for i in range(0,no_weights)]
-                           + [str("bias") + str(i) for i in range(0, no_biases)])
+            setup_csv_file(filename, get_trajectory_header(no_weights, no_biases))
         return trajectory_writer
     else:
         return None
