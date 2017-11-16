@@ -197,59 +197,57 @@ cost of all necessary servicing, repair, or correction.</remark>
         <title  xml:id="quickstart.python.optimizing.title">Optimizing the network</title>
         <para>Let us first start with optimizing the network.</para>
         <programlisting>from DataDrivenSampler.models.model import model
-        
-FLAGS = None
-FLAGS.batch=size = 50 # if unequal to dimension, we use SGD
-FLAGS.data_type = 2 # pick two clusters
-FLAGS.dimension = 500
-FLAGS.max_steps = 100
-FLAGS.optimizer = "GradientDescent"
-# only for making runs reproducible, otherwise set to None
-FLAGS.seed = 426 
-FLAGS.step_width = 0.03
 
-network_model = model(FLAGS)
-network_model.init_network(FLAGS.restore_model, setup="train")
-network_model.train()
-network_model.finish()
+FLAGS = model.create_mock_flags(
+    batch_size=500,
+    data_type=2,
+    dimension=500,
+    max_steps=100,
+    noise=0.1,
+    optimizer="GradientDescent",
+    output_activation="linear",
+    sampler="GeometricLangevinAlgorithm_2ndOrder",
+    seed=426,
+    step_width=1e-2
+)
+nn = model(FLAGS)
+nn.init_network(None, setup="train")
+run_info, trajectory = nn.train(return_run_info=True, return_trajectories=True)
+nn.finish()
+
+print("Train results")
+print(run_info[0:10])
+print(trajectory[0:10])
         </programlisting>
         <para>
         As you see, all options are set in a struct called <command>FLAGS</command> 
-        that control how the optimization is performed. For all full set of 
-        available options, please have a look at the file "DataOptimizer.py" and 
-        the function <command>parse_parameters()</command> therein.
-        </para>
+        that control how the optimization is performed. There is a helper function
+        that creates the FLAGS for you with some default parameters. 
+        Afterwards, the network is initialized, then we call <command>train()</command>
+        which performs the training and returns runtime info and trajectory
+        as a pandas DataFrame.</para>
       </section>
       <section xml:id="quickstart.python.sampling">
         <title  xml:id="quickstart.python.sampling.title">Sampling the network</title>
         <para>After optimization we may continue sampling the network.</para>
-        <programlisting>from DataDrivenSampler.models.model import model
-        
-FLAGS = None
-# if unequal to dimension, we use stochastic gradients
-FLAGS.batch=size = 50 
-FLAGS.data_type = 2 # pick two clusters
-FLAGS.dimension = 500
-FLAGS.friction_constant = 10
-FLAGS.inverse_temperature = 1e3
-FLAGS.max_steps = 100000
-FLAGS.sampler= "GeometricLangevinAlgorithm_2ndOrder"
-# only for making runs reproducible, otherwise set to None
-FLAGS.seed = 426 
-FLAGS.step_width = 1e-2
+        <programlisting>...
+FLAGS.max_steps = 10000
+nn.reset_flags(FLAGS)
+nn.init_network(None, setup="sample")
+run_info, trajectory = nn.sample(return_run_info=True, return_trajectories=True)
+nn.finish()
 
-network_model = model(FLAGS)
-network_model.init_network(FLAGS.restore_model, setup="sample")
-network_model.sample()
-network_model.finish()
+print("Sample results")
+print(run_info[0:10])
+print(trajectory[0:10])
         </programlisting>
         <para>
-        The functions we call are essentially the same as in the optimizing,
-        only "train" is replaced by "sample" and the <command>FLAGS</command> 
-        have changed in some parts.
-        Again, for all full set of available options, please have a look at the 
-        file "DatDrivenSampler.py" and the function 
-        <command>parse_parameters()</command> therein.
+        The only thing we do is change the number of steps, we need to reset
+        the FLAGS structure internal to model. Afterwards, we again initialize
+        the network which will add only the sampling nodes and prepare output
+        files differently.
+        Again, at the very end we obtain pandas DataFrame containing runtime 
+        information and trajectory.
         </para>
       </section>
       <section xml:id="quickstart.python.analysis">
