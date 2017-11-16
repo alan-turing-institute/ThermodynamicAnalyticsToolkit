@@ -1,5 +1,6 @@
 import csv
 import os
+import sys
 import tensorflow as tf
 
 from DataDrivenSampler.datasets.classificationdatasets import ClassificationDatasets as DatasetGenerator
@@ -128,7 +129,7 @@ def create_classification_dataset(FLAGS, config_map):
 
 def construct_network_model(FLAGS, config_map, x,
                             hidden_activation=tf.nn.relu, output_activation=tf.nn.tanh,
-                            loss_name="mean_squared"):
+                            loss_name="mean_squared", setup="train"):
     """ Constructs the neural network
 
     :param FLAGS: FLAGS dictionary with command-line parameters
@@ -142,13 +143,15 @@ def construct_network_model(FLAGS, config_map, x,
     print("Constructing neural network")
     hidden_dimension=get_list_from_string(FLAGS.hidden_dimension)
     nn=NeuralNetwork()
-    try:
+    if setup == "sample":
         train_method = FLAGS.sampler
-    except AttributeError:
-        train_method = FLAGS.optimizer
-    nn.create(
+    elif setup == "train":
+            train_method = FLAGS.optimizer
+    else:
+        print("Unknown setup "+setup)
+        sys.exit(255)
+    loss = nn.create(
         x, hidden_dimension, config_map["output_dimension"],
-        optimizer=train_method,
         seed=FLAGS.seed,
         add_dropped_layer=False,
         hidden_activation=hidden_activation,

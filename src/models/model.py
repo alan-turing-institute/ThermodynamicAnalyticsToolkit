@@ -29,6 +29,8 @@ class model:
 
         self.xinput, self.x, self.ds = create_classification_dataset(self.FLAGS, self.config_map)
 
+        self.resources_created = None
+
         self.nn = None
         self.saver = None
         self.sess = None
@@ -39,12 +41,18 @@ class model:
         self.run_writer = None
         self.trajectory_writer = None
 
-    @staticmethod
-    def create_resource_variables():
+    def reset_flags(self, FLAGS):
+        """ Use to pass a different set of FLAGS controlling training or sampling.
+
+        :param FLAGS: new set of parameters
+        """
+        self.FLAGS = FLAGS
+
+    def create_resource_variables(self):
         """ Creates some global resource variables to hold statistical quantities
         during sampling.
         """
-        with tf.variable_scope("accumulate"):
+        with tf.variable_scope("accumulate", reuse=self.resources_created):
             kinetic_energy_t = tf.get_variable("kinetic", shape=[], trainable=False,
                                                initializer=tf.zeros_initializer,
                                                use_resource=True)
@@ -57,6 +65,8 @@ class model:
             noise_t = tf.get_variable("noise", shape=[], trainable=False,
                                       initializer=tf.zeros_initializer,
                                       use_resource=True)
+        self.resources_created = True
+
     @staticmethod
     def create_mock_flags(
             batch_size=10,
@@ -114,18 +124,30 @@ class model:
         self.create_resource_variables()
 
         activations = get_activations()
-        self.nn = construct_network_model(self.FLAGS, self.config_map, self.x,
-                                          hidden_activation=activations[self.FLAGS.hidden_activation],
-                                          output_activation=activations[self.FLAGS.output_activation],
-                                          loss_name=self.FLAGS.loss)
+        if self.nn is None:
+            self.nn = construct_network_model(self.FLAGS, self.config_map, self.x,
+                                              hidden_activation=activations[self.FLAGS.hidden_activation],
+                                              output_activation=activations[self.FLAGS.output_activation],
+                                              loss_name=self.FLAGS.loss,
+                                              setup=setup)
+        loss = self.nn.get_list_of_nodes(["loss"])[0]
+        if setup == "train":
+            self.nn.add_train_method(loss, optimizer_method=self.FLAGS.optimizer)
+        elif setup == "sample":
+            self.nn.add_sample_method(loss, sampling_method=self.FLAGS.sampler, seed=self.FLAGS.seed)
+        else:
+            print("Unknown setup desired for the model")
+            sys.exit(255)
 
-        self.saver = tf.train.Saver(tf.get_collection(tf.GraphKeys.WEIGHTS) +
-                               tf.get_collection(tf.GraphKeys.BIASES) + \
-                               tf.get_collection("Variables_to_Save"))
-        self.sess = tf.Session(
-            config=tf.ConfigProto(
-                intra_op_parallelism_threads=None,
-                inter_op_parallelism_threads=1))
+        if self.saver is None:
+            self.saver = tf.train.Saver(tf.get_collection(tf.GraphKeys.WEIGHTS) +
+                                   tf.get_collection(tf.GraphKeys.BIASES) + \
+                                   tf.get_collection("Variables_to_Save"))
+        if self.sess is None:
+            self.sess = tf.Session(
+                config=tf.ConfigProto(
+                    intra_op_parallelism_threads=None,
+                    inter_op_parallelism_threads=1))
 
         self.nn.init_graph(self.sess)
 
@@ -147,11 +169,14 @@ class model:
         else:
             print("Unknown setup desired for the model")
             sys.exit(255)
-        self.run_writer = setup_run_file(self.FLAGS.run_file, header, self.config_map)
-        self.trajectory_writer = setup_trajectory_file(self.FLAGS.trajectory_file,
-                                                       self.nn.get("weights").get_shape()[0],
-                                                       self.nn.get("biases").get_shape()[0],
-                                                       self.config_map)
+
+        if self.run_writer is None:
+            self.run_writer = setup_run_file(self.FLAGS.run_file, header, self.config_map)
+        if self.trajectory_writer is None:
+            self.trajectory_writer = setup_trajectory_file(self.FLAGS.trajectory_file,
+                                                           self.nn.get("weights").get_shape()[0],
+                                                           self.nn.get("biases").get_shape()[0],
+                                                           self.config_map)
 
     def get_sample_header(self):
         """ Prepares the distinct header for the run file for sampling
@@ -194,7 +219,7 @@ class model:
 
         placeholder_nodes = self.nn.get_dict_of_nodes(
             ["friction_constant", "inverse_temperature", "step_width", "y_"])
-        test_nodes = self.nn.get_list_of_nodes(["merged", "train_step", "accuracy", "global_step", "loss", "y_", "y"])
+        test_nodes = self.nn.get_list_of_nodes(["merged", "sample_step", "accuracy", "global_step", "loss", "y_", "y"])
 
         output_width = 8
         output_precision = 8
@@ -204,20 +229,22 @@ class model:
         run_info = None
         if return_run_info:
             steps = (self.FLAGS.max_steps % self.FLAGS.every_nth)+1
-            no_params = len(self.get_sample_header())
+            header = self.get_sample_header()
+            no_params = len(header)
             run_info = pd.DataFrame(
                 np.zeros((steps, no_params)),
-                columns=self.get_train_header())
+                columns=header)
 
         trajectory = None
-        if return_run_info:
+        if return_trajectories:
             steps = (self.FLAGS.max_steps % self.FLAGS.every_nth)+1
-            no_params = self.nn.get("weights").get_shape()[0]+self.nn.get("biases").get_shape()[0]
+            header = get_trajectory_header(
+                self.nn.get("weights").get_shape()[0],
+                self.nn.get("biases").get_shape()[0])
+            no_params = len(header)
             trajectory = pd.DataFrame(
                 np.zeros((steps, no_params)),
-                columns=get_trajectory_header(
-                    self.nn.get("weights").get_shape()[0],
-                    self.nn.get("biases").get_shape()[0]))
+                columns=header)
 
         # check that sampler's parameters are actually used
         if self.FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder", "GeometricLangevinAlgorithm_2ndOrder"]:

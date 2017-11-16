@@ -83,7 +83,7 @@ class NeuralNetwork(object):
 
     def create(self, input_layer,
                layer_dimensions, output_dimension,
-               optimizer, seed=None,
+               seed=None,
                add_dropped_layer=False,
                hidden_activation=tf.nn.relu,
                output_activation=tf.nn.tanh,
@@ -98,7 +98,6 @@ class NeuralNetwork(object):
         :param layer_dimensions: a list of ints giving the number of nodes for
             each hidden layer.
         :param output_dimension: the number of nodes in the output layer
-        :param optimizer: name of optimizer to use
         :param seed: seed for reproducible random values
         :param add_dropped_layer: whether to add dropped layer or not to protect against overfitting
         :param hidden_activation: activation function for the hidden layer
@@ -135,11 +134,6 @@ class NeuralNetwork(object):
         self.add_losses(y, y_)
         loss = self.set_loss_function(loss_name)
         self.add_accuracy_summary(y, y_)
-
-        if optimizer == "GradientDescent":
-            self.add_train_method_optimizer(loss, optimizer, seed)
-        else:
-            self.add_train_method_sampler(loss, optimizer, seed)
 
         merged = tf.summary.merge_all()  # Merge all the summaries
         self.summary_nodes['merged'] = merged
@@ -178,7 +172,7 @@ class NeuralNetwork(object):
                 self.summary_nodes['accuracy'] = accuracy
         tf.summary.scalar('accuracy', accuracy)
 
-    def add_train_method_sampler(self, loss, sampling_method, seed):
+    def add_sample_method(self, loss, sampling_method, seed):
         """ Adds nodes for training the neural network.
 
         :param loss: node for the desired loss function to minimize during training
@@ -213,14 +207,13 @@ class NeuralNetwork(object):
 
             # DON'T put the nodes in there before the minimize call!
             # only after minimize was .._apply_dense() called and the nodes are ready
-            self.summary_nodes['train_step'] = train_step
+            self.summary_nodes['sample_step'] = train_step
 
-    def add_train_method_optimizer(self, loss, optimizer_method, seed):
+    def add_train_method(self, loss, optimizer_method):
         """ Adds nodes for training the neural network using an optimizer.
 
         :param loss: node for the desired loss function to minimize during training
         :param optimizer_method: name of the optimizer method, e.g. GradientDescent
-        :param seed: seed value for the random number generator to obtain reproducible runs
         """
         with tf.name_scope('train'):
             # DON'T add placeholders only sometimes, e.g. when only a specific optimizer
