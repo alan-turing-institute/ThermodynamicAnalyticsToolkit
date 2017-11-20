@@ -96,8 +96,8 @@ def main(_):
 
                 # evaluate the loss
                 loss_eval = sess.run(loss, feed_dict=feed_dict)
-                print("Loss at the given parameters w("+str(w1)+","+str(w2)+"), b("
-                      +str(b)+") is "+str(loss_eval[0]))
+                #print("Loss at the given parameters w("+str(w1)+","+str(w2)+"), b("
+                #      +str(b)+") is "+str(loss_eval[0]))
 
                 if FLAGS.csv_file is not None:
                     csv_writer.writerow([w1,w2,b,loss_eval[0]])
