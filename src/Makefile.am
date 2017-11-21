@@ -23,14 +23,16 @@ $(srcdir)/.git-version: FORCE
 bin_SCRIPTS = \
 	DDSampler \
 	DDSOptimizer \
-	DDSAnalyser
+	DDSAnalyser \
+	LossFunctionSampler
 
 CLEANFILES = $(bin_SCRIPTS)
 EXTRA_DIST = \
 	$(srcdir)/.git-version \
 	DDSampler.in \
 	DDSOptimizer.in \
-	DDSAnalyser.in
+	DDSAnalyser.in \
+	LossFunctionSampler.in
 
 do_substitution = sed -e 's,[@]pythondir[@],$(pythondir),g' \
 	-e 's,[@]PACKAGE[@],$(PACKAGE),g' \
@@ -48,6 +50,10 @@ DDSOptimizer: DDSOptimizer.in Makefile
 DDSAnalyser: DDSAnalyser.in Makefile
 	$(do_substitution) < $(srcdir)/DDSAnalyser.in > DDSAnalyser
 	chmod +x DDSAnalyser
+
+LossFunctionSampler: LossFunctionSampler.in Makefile
+	$(do_substitution) < $(srcdir)/LossFunctionSampler.in > LossFunctionSampler
+	chmod +x LossFunctionSampler
 
 $(srcdir)/version.py: $(srcdir)/.git-version
 	echo -e "def get_package_name():\n\t return \"$(PACKAGE_NAME)\"" >$@

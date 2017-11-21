@@ -1,13 +1,14 @@
 #!/usr/bin/env @PYTHON@
 
 import sys, getopt
-#sys.path.insert(1, '@pythondir@')
+sys.path.insert(1, '@pythondir@')
 
 import tensorflow as tf
 
 import numpy as np
 
 import argparse
+import math
 
 from DataDrivenSampler.datasets.classificationdatasets import ClassificationDatasets
 
@@ -63,9 +64,11 @@ def main(_):
 
     sess = network_model.sess
     weights = tf.get_collection(tf.GraphKeys.WEIGHTS)
+    length_weights = weights[0].get_shape()[0]
     weights_placeholder = tf.placeholder(shape=weights[0].get_shape(), dtype=weights[0].dtype.base_dtype)
     set_weights_t = weights[0].assign(weights_placeholder)
     biases = tf.get_collection(tf.GraphKeys.BIASES)
+    length_biases = shape=biases[0].get_shape()[0]
     biases_placeholder = tf.placeholder(shape=biases[0].get_shape(), dtype=biases[0].dtype.base_dtype)
     set_biases_t = biases[0].assign(biases_placeholder)
     batch_xs, batch_ys = network_model.ds.next_batch(FLAGS.dimension)
@@ -75,32 +78,102 @@ def main(_):
     }
     loss = network_model.nn.get_list_of_nodes(["loss"])
 
-    if FLAGS.csv_file is not None:
-        csv_writer, csv_file = setup_csv_file(FLAGS.csv_file, ["w1","w2","b","loss"])
-
     weights_interval_start = float(FLAGS.interval_weights[0])
     weights_interval_end = float(FLAGS.interval_weights[1])
     weights_interval_length = weights_interval_end - weights_interval_start
     biases_interval_start = float(FLAGS.interval_biases[0])
     biases_interval_end = float(FLAGS.interval_biases[1])
     biases_interval_length = biases_interval_end - biases_interval_start
-    for w1 in np.arange(0,FLAGS.samples_weights+1)*weights_interval_length/float(FLAGS.samples_weights+1)+weights_interval_start:
-        for w2 in np.arange(0, FLAGS.samples_weights + 1) * weights_interval_length / float(FLAGS.samples_weights + 1)+weights_interval_start:
-            for b in np.arange(0, FLAGS.samples_biases + 1) * biases_interval_length / float(
-                            FLAGS.samples_biases + 1)+biases_interval_start:
-                # set the parameters
-                sess.run([set_weights_t, set_biases_t], feed_dict={
-                    weights_placeholder: [[w1], [w2]],
-                    biases_placeholder: [b]
-                })
 
-                # evaluate the loss
-                loss_eval = sess.run(loss, feed_dict=feed_dict)
-                #print("Loss at the given parameters w("+str(w1)+","+str(w2)+"), b("
-                #      +str(b)+") is "+str(loss_eval[0]))
+    header = []
+    for i in range(length_weights):
+        header.append("w"+str(i))
+    for i in range(length_biases):
+        header.append("b"+str(i))
+    header.append("loss")
 
-                if FLAGS.csv_file is not None:
-                    csv_writer.writerow([w1,w2,b,loss_eval[0]])
+    if FLAGS.csv_file is not None:
+        csv_writer, csv_file = setup_csv_file(FLAGS.csv_file, header)
+
+    weights_linspace = np.arange(0,FLAGS.samples_weights+1)*weights_interval_length/float(
+            FLAGS.samples_weights+1)+weights_interval_start
+    biases_linspace = np.arange(0,FLAGS.samples_biases+1)*biases_interval_length/float(
+            FLAGS.samples_biases+1)+biases_interval_start
+    weights_index_grid = np.zeros(length_weights, dtype=int)
+    weights_len_grid = FLAGS.samples_weights+1
+    biases_index_grid = np.zeros(length_biases, dtype=int)
+    biases_len_grid = FLAGS.samples_biases+1
+
+    def check_end():
+        isend = True
+        for i in range(length_weights):
+            if weights_index_grid[i] != weights_len_grid-1:
+                isend = False
+                break
+        for i in range(length_biases):
+            if biases_index_grid[i] != biases_len_grid-1:
+                isend = False
+                break
+        return isend
+
+    def next_index():
+        incremented = False
+        for i in range(length_weights):
+            if weights_index_grid[i] != weights_len_grid-1:
+                weights_index_grid[i] += 1
+                incremented = True
+                for j in range(i):
+                    weights_index_grid[j]=0
+                break
+        if not incremented:
+            for i in range(length_biases):
+                if biases_index_grid[i] != biases_len_grid-1:
+                    biases_index_grid[i] += 1
+                    for j in range(i):
+                        biases_index_grid[j]=0
+                    for j in range(length_weights):
+                        weights_index_grid[j]=0
+                    break
+
+    weights_vals = np.zeros([length_weights, 1])
+    biases_vals = np.zeros([length_biases])
+    is_at_end = False
+    while not is_at_end:
+        # set the parameters
+
+        weights_vals[:,0] = [weights_linspace[ weights_index_grid[i] ] for i in range(length_weights)]
+        biases_vals[:] = [biases_linspace[ biases_index_grid[i] ] for i in range(length_biases)]
+        sess.run([set_weights_t, set_biases_t], feed_dict={
+            weights_placeholder: weights_vals,
+            biases_placeholder: biases_vals
+        })
+
+        # evaluate the loss
+        loss_eval = sess.run(loss, feed_dict=feed_dict)
+        #print("Loss at the given parameters w("+str(w1)+","+str(w2)+"), b("
+        #      +str(b)+") is "+str(loss_eval[0]))
+
+        # get the weights and biases to check against what we set
+        weights_eval, biases_eval = sess.run(
+            [network_model.nn.get("weights"), network_model.nn.get("biases")],
+            feed_dict=feed_dict)
+        for i in range(length_weights):
+            #print("Comparing "+str(weights_eval[i][0])+" against "+str(weights_vals[i,0]))
+            assert( math.fabs(weights_eval[i][0] - weights_vals[i,0]) < 1e-6 )
+        for i in range(length_biases):
+            #print("Comparing "+str(biases_eval[i])+" against "+str(biases_vals[i]))
+            assert( math.fabs(biases_eval[i] - biases_vals[i]) < 1e-6 )
+
+        if FLAGS.csv_file is not None:
+            print_row = []
+            print_row.extend(weights_vals[:,0])
+            print_row.extend(biases_vals[:])
+            print_row.append(loss_eval[0])
+            csv_writer.writerow(print_row)
+
+        is_at_end = check_end()
+
+        next_index()
 
     network_model.finish()
 
