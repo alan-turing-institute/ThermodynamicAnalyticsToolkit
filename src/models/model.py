@@ -279,6 +279,16 @@ class model:
                 assert (abs(check_momenta) < 1e-10)
                 assert (abs(check_gradients) < 1e-10)
                 assert (abs(check_noise) < 1e-10)
+
+            # get the weights and biases as otherwise the loss won't match
+            # tf first computes loss, then gradient, then performs variable update
+            # hence, after the sample step, we would have updated variables but old loss
+            if i % self.FLAGS.every_nth == 0:
+                if self.config_map["do_write_trajectory_file"] or return_trajectories:
+                    weights_eval, biases_eval = self.sess.run(
+                        [self.nn.get("weights"), self.nn.get("biases")],
+                        feed_dict=feed_dict)
+
             # NOTE: All values from nodes contained in the same call to tf.run() with train_step
             # will be evaluated as if before train_step. Nodes that are changed in the update due to
             # train_step (e.g. momentum_t) however are updated.
@@ -300,9 +310,6 @@ class model:
                         self.sess.run([kinetic_energy_t, momenta_t, gradients_t, noise_t])
             if i % self.FLAGS.every_nth == 0:
                 if self.config_map["do_write_trajectory_file"] or return_trajectories:
-                    weights_eval, biases_eval = self.sess.run(
-                        [self.nn.get("weights"), self.nn.get("biases")],
-                        feed_dict=feed_dict)
                     trajectory_line = [global_step, loss_eval]\
                                       + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
                                          for sublist in weights_eval for item in sublist]\
