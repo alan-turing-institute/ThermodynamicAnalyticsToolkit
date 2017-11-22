@@ -266,6 +266,8 @@ class model:
                 placeholder_nodes["inverse_temperature"]: self.FLAGS.inverse_temperature,
                 placeholder_nodes["friction_constant"]: self.FLAGS.friction_constant
             }
+            if self.FLAGS.dropout is not None:
+                feed_dict.update({placeholder_nodes["keep_prob"] : self.FLAGS.dropout})
             # print("Testset is x: "+str(test_xs[:])+", y: "+str(test_ys[:]))
             # print("Testset is x: "+str(test_xs[:])+", y: "+str(test_ys[:]))
 

@@ -25,7 +25,7 @@ def parse_parameters():
         help='Which data set to use: (0) two circles, (1) squares, (2) two clusters, (3) spiral.')
     parser.add_argument('--dimension', type=int, default=10,
         help='Number P of samples (Y^i,X^i)^P_{i=1} to generate for the desired dataset type.')
-    parser.add_argument('--dropout', type=float, default=0.9,
+    parser.add_argument('--dropout', type=float, default=None,
         help='Keep probability for training dropout, e.g. 0.9')
     parser.add_argument('--every_nth', type=int, default=1,
         help='Store only every nth trajectory (and run) point to files, e.g. 10')

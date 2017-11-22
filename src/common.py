@@ -146,7 +146,7 @@ def construct_network_model(FLAGS, config_map, x,
     loss = nn.create(
         x, hidden_dimension, config_map["output_dimension"],
         seed=FLAGS.seed,
-        add_dropped_layer=False,
+        add_dropped_layer=(FLAGS.dropout is not None),
         hidden_activation=hidden_activation,
         output_activation=output_activation,
         loss_name=loss_name
