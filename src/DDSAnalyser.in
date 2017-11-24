@@ -27,12 +27,21 @@ def main(_):
         df_run = pd.read_csv(FLAGS.run_file, sep=',', header=0)
         run=np.asarray(df_run.loc[:,['step','loss','kinetic_energy', 'total_energy']])
 
-        start = next(x[0] for x in enumerate(run[:,0]) if x[1] > FLAGS.drop_burnin)
+        if (len(run[:,0]) > 1) and (FLAGS.drop_burnin >= run[1,0]):
+            if FLAGS.drop_burnin < run[-1,0]:
+                start = next(x[0] for x in enumerate(run[:,0]) if x[1] > FLAGS.drop_burnin)
+            else:
+                sys.stderr.write("FLAGS.drop_burnin is too large, no data points left.")
+                sys.exit(1)
+        else:
+            start = 0
+        print("Starting run array at "+str(start))
 
         steps=run[start::FLAGS.every_nth,0]
         loss=run[start::FLAGS.every_nth,1]
         kinetic_energy=run[start::FLAGS.every_nth,2]
         total_energy=run[start::FLAGS.every_nth,3]
+
         no_steps = len(steps)
 
         print("%d steps after dropping burn in." % (no_steps))
@@ -59,7 +68,7 @@ def main(_):
                 average_loss, variance_loss,
                 average_total, variance_total):
                 csv_writer.writerow(
-                    [step]
+                    [steps[step-1]]
                     +['{:{width}.{precision}e}'.format(avg_kin, width=output_width, precision=output_precision)]+
                         ['{:{width}.{precision}e}'.format(var_kin, width=output_width, precision=output_precision)]
                     +['{:{width}.{precision}e}'.format(avg_loss, width=output_width, precision=output_precision)]+
@@ -76,8 +85,14 @@ def main(_):
         df_trajectory = pd.read_csv(FLAGS.trajectory_file, sep=',', header=0)
         trajectoryLoaded=np.asarray(df_trajectory)
 
-        # burnin is specified in "real" steps disregarding every_nth
-        start = next(x[0] for x in enumerate(trajectoryLoaded[:,0]) if x[1] > FLAGS.drop_burnin)
+        if (len(trajectoryLoaded[:,0]) > 1) and (FLAGS.drop_burnin >= trajectoryLoaded[1,0]):
+            if FLAGS.drop_burnin < trajectoryLoaded[-1,0]:
+                start = next(x[0] for x in enumerate(trajectoryLoaded[:,0]) if x[1] > FLAGS.drop_burnin)
+            else:
+                sys.stderr.write("FLAGS.drop_burnin is too large, no data points left.")
+                sys.exit(1)
+        else:
+            start = 0
 
         steps=trajectoryLoaded[start::FLAGS.every_nth,0]
         loss=trajectoryLoaded[start::FLAGS.every_nth,1]
