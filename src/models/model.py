@@ -62,6 +62,9 @@ class model:
             gradients_t = tf.get_variable("gradients", shape=[], trainable=False,
                                           initializer=tf.zeros_initializer,
                                           use_resource=True)
+            virials_t = tf.get_variable("virials", shape=[], trainable=False,
+                                        initializer=tf.zeros_initializer,
+                                        use_resource=True)
             noise_t = tf.get_variable("noise", shape=[], trainable=False,
                                       initializer=tf.zeros_initializer,
                                       use_resource=True)
@@ -181,10 +184,10 @@ class model:
         """ Prepares the distinct header for the run file for sampling
         """
         if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
-            header = ['step', 'epoch', 'accuracy', 'loss', 'scaled_gradient', 'scaled_noise']
+            header = ['step', 'epoch', 'accuracy', 'loss', 'scaled_gradient', 'virial', 'scaled_noise']
         elif self.FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder", "GeometricLangevinAlgorithm_2ndOrder"]:
             header = ['step', 'epoch', 'accuracy', 'loss', 'total_energy', 'kinetic_energy', 'scaled_momentum',
-                      'scaled_gradient', 'scaled_noise']
+                      'scaled_gradient', 'virial', 'scaled_noise']
         else:
             header = ['step', 'epoch', 'accuracy', 'loss']
         return header
@@ -192,7 +195,7 @@ class model:
     def get_train_header(self):
         """ Prepares the distinct header for the run file for training
         """
-        return ['step', 'epoch', 'accuracy', 'loss', 'scaled_gradient']
+        return ['step', 'epoch', 'accuracy', 'loss', 'scaled_gradient', 'virial']
 
     def sample(self, return_run_info = False, return_trajectories = False):
         """ Performs the actual sampling of the neural network `nn` given a dataset `ds` and a
@@ -213,6 +216,8 @@ class model:
             zero_momenta = momenta_t.assign(0.)
             gradients_t = tf.get_variable("gradients")
             zero_gradients = gradients_t.assign(0.)
+            virials_t = tf.get_variable("virials")
+            zero_virials = virials_t.assign(0.)
             noise_t = tf.get_variable("noise")
             zero_noise = noise_t.assign(0.)
 
@@ -273,11 +278,12 @@ class model:
 
             # zero kinetic energy
             if self.FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder", "GeometricLangevinAlgorithm_2ndOrder"]:
-                check_kinetic, check_momenta, check_gradients, check_noise = \
-                    self.sess.run([zero_kinetic_energy, zero_momenta, zero_gradients, zero_noise])
+                check_kinetic, check_momenta, check_gradients, check_virials, check_noise = \
+                    self.sess.run([zero_kinetic_energy, zero_momenta, zero_gradients, zero_virials, zero_noise])
                 assert (abs(check_kinetic) < 1e-10)
                 assert (abs(check_momenta) < 1e-10)
                 assert (abs(check_gradients) < 1e-10)
+                assert (abs(check_virials) < 1e-10)
                 assert (abs(check_noise) < 1e-10)
 
             # get the weights and biases as otherwise the loss won't match
@@ -303,11 +309,11 @@ class model:
                                       "GeometricLangevinAlgorithm_1stOrder",
                                       "GeometricLangevinAlgorithm_2ndOrder"]:
                 if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
-                    gradients, noise = \
-                        self.sess.run([gradients_t, noise_t])
+                    gradients, virials, noise = \
+                        self.sess.run([gradients_t, virials_t, noise_t])
                 else:
-                    kinetic_energy, momenta, gradients, noise = \
-                        self.sess.run([kinetic_energy_t, momenta_t, gradients_t, noise_t])
+                    kinetic_energy, momenta, gradients, virials, noise = \
+                        self.sess.run([kinetic_energy_t, momenta_t, gradients_t, virials_t, noise_t])
             if i % self.FLAGS.every_nth == 0:
                 if self.config_map["do_write_trajectory_file"] or return_trajectories:
                     trajectory_line = [global_step, loss_eval]\
@@ -330,7 +336,7 @@ class model:
                             run_line = [global_step, i, acc, loss_eval]\
                                        + ['{:{width}.{precision}e}'.format(x, width=output_width,
                                                                            precision=output_precision)
-                                          for x in [sqrt(gradients), sqrt(noise)]]
+                                          for x in [sqrt(gradients), abs(0.5*virials), sqrt(noise)]]
                         else:
                             run_line = [global_step, i, acc, loss_eval] \
                                        + ['{:{width}.{precision}e}'.format(loss_eval + kinetic_energy,
@@ -338,7 +344,7 @@ class model:
                                                                            precision=output_precision)]\
                                        + ['{:{width}.{precision}e}'.format(x, width=output_width,
                                                                            precision=output_precision)
-                                          for x in [kinetic_energy, sqrt(momenta), sqrt(gradients), sqrt(noise)]]
+                                          for x in [kinetic_energy, sqrt(momenta), sqrt(gradients), abs(0.5*virials), sqrt(noise)]]
 
                     else:
                         run_line = [global_step, i, acc, loss_eval]
@@ -370,6 +376,8 @@ class model:
         with tf.variable_scope("accumulate", reuse=True):
             gradients_t = tf.get_variable("gradients")
             zero_gradients = gradients_t.assign(0.)
+            virials_t = tf.get_variable("virials")
+            zero_virials = gradients_t.assign(0.)
 
         placeholder_nodes = self.nn.get_dict_of_nodes(["step_width", "y_"])
         test_nodes = self.nn.get_list_of_nodes(["merged", "train_step", "accuracy", "global_step",
@@ -410,19 +418,23 @@ class model:
             }
 
             # zero accumulated gradient
-            check_gradients = self.sess.run([zero_gradients])[0]
+            check_gradients, check_virials = self.sess.run([zero_gradients, zero_virials])
             assert (abs(check_gradients) < 1e-10)
+            assert (abs(check_virials) < 1e-10)
 
             summary, _, acc, global_step, loss_eval, y_true_eval, y_eval, scaled_grad = \
                 self.sess.run(test_nodes, feed_dict=feed_dict)
 
-            gradients = self.sess.run([gradients_t])[0]
+            gradients, virials = self.sess.run([gradients_t, virials_t])
 
             if i % self.FLAGS.every_nth == 0:
                 run_line = [global_step, i, acc, loss_eval] \
                     + ['{:{width}.{precision}e}'.format(sqrt(gradients),
                                                     width=output_width,
-                                                    precision=output_precision)]
+                                                    precision=output_precision)] \
+                    + ['{:{width}.{precision}e}'.format(abs(0.5*virials),
+                                                        width=output_width,
+                                                        precision=output_precision)]
                 if self.config_map["do_write_run_file"]:
                     self.run_writer.writerow(run_line)
                 if return_run_info:

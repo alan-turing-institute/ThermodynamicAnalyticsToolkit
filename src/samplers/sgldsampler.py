@@ -86,6 +86,9 @@ class SGLDSampler(optimizer.Optimizer):
         with tf.variable_scope("accumulate", reuse=True):
             gradient_global = tf.get_variable("gradients")
             gradient_global_t = tf.assign_add(gradient_global, tf.reduce_sum(tf.multiply(scaled_gradient, scaled_gradient)))
+            # configurational temperature
+            virial_global = tf.get_variable("virials")
+            virial_global_t = tf.assign_add(virial_global, tf.reduce_sum(tf.multiply(grad, var)))
 
         scaled_noise = tf.sqrt(2.*step_width_t/inverse_temperature_t) * random_noise_t
         with tf.variable_scope("accumulate", reuse=True):
@@ -93,7 +96,7 @@ class SGLDSampler(optimizer.Optimizer):
             noise_global_t = tf.assign_add(noise_global, tf.reduce_sum(tf.multiply(scaled_noise, scaled_noise)))
 
         var_update = state_ops.assign_sub(var, scaled_gradient + scaled_noise)
-        return control_flow_ops.group(*[var_update, gradient_global_t, noise_global_t])
+        return control_flow_ops.group(*[virial_global_t, var_update, gradient_global_t, noise_global_t])
 
     def _apply_sparse(self, grad, var):
         """ Adds nodes to TensorFlow's computational graph in the case of sparsely

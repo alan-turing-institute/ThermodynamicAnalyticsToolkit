@@ -37,5 +37,7 @@ class GradientDescent(tf.train.GradientDescentOptimizer):
         with tf.variable_scope("accumulate", reuse=True):
             gradient_global = tf.get_variable("gradients")
             gradient_global_t = tf.assign_add(gradient_global, tf.reduce_sum(tf.multiply(scaled_gradient, scaled_gradient)))
+            virial_global = tf.get_variable("virials")
+            virial_global_t = tf.assign_add(virial_global, tf.reduce_sum(tf.multiply(grad, var)))
         control_group_gradient_descent_t = super(GradientDescent, self)._apply_dense(grad, var)
-        return control_flow_ops.group(*[control_group_gradient_descent_t, gradient_global_t])
+        return control_flow_ops.group(*[virial_global_t, control_group_gradient_descent_t, gradient_global_t])

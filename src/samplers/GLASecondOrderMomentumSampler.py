@@ -67,6 +67,9 @@ class GLASecondOrderMomentumSampler(GLAFirstOrderMomentumSampler):
         with tf.variable_scope("accumulate", reuse=True):
             gradient_global = tf.get_variable("gradients")
             gradient_global_t = tf.assign_add(gradient_global, tf.reduce_sum(tf.multiply(scaled_gradient, scaled_gradient)))
+            # configurational temperature
+            virial_global = tf.get_variable("virials")
+            virial_global_t = tf.assign_add(virial_global, tf.reduce_sum(tf.multiply(grad, var)))
 
         # p^{n+1} = p^{n+1/2} − \nabla V (q^{n+1} ) \Delta t/2
         momentum_t = momentum.assign(momentum_noise_step_t - 0.5 * scaled_gradient)
@@ -85,6 +88,6 @@ class GLASecondOrderMomentumSampler(GLAFirstOrderMomentumSampler):
             kinetic_energy = tf.get_variable("kinetic")
             kinetic_energy_t = tf.assign_add(kinetic_energy, momentum_sq)
 
-        return control_flow_ops.group(*[gradient_global_t, var_update,
+        return control_flow_ops.group(*[gradient_global_t, virial_global_t, var_update,
                                         noise_global_t, momentum_t, momentum_global_t,
                                         kinetic_energy_t])
