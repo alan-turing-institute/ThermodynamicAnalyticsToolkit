@@ -32,3 +32,4 @@ m4_include([TrajectoryAnalyser/DiffusionMap/testsuite-trajectoryanalyser-diffusi
 # test on command-line options
 m4_include([TrajectoryAnalyser/Options/testsuite-trajectoryanalyser-options-drop_burnin-single_step.at])
 m4_include([TrajectoryAnalyser/Options/testsuite-trajectoryanalyser-options-drop_burnin-more_steps.at])
+m4_include([TrajectoryAnalyser/Options/testsuite-trajectoryanalyser-options-every_nth.at])

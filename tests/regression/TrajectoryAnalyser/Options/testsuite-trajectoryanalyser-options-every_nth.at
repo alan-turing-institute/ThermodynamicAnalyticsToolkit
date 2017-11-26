@@ -1,0 +1,42 @@
+#
+#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    Copyright (C) 2017 The University of Edinburgh
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### test on option every_nth
+
+AT_SETUP([Analyser Options - every_nth on run info])
+AT_KEYWORDS([options trajectoryanalyser every_nth run_info])
+
+# run1: every step
+AT_CHECK([../../../DDSAnalyser \
+	--average_run_file average_run-every_nth_1.csv \
+	--every_nth 1 \
+	--run_file ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/Options/pre/run-more_steps.csv \
+	--steps 1
+], 0, [stdout], [stderr])
+AT_CHECK([diff average_run-every_nth_1.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/Options/post/average_run-every_nth_1.csv], 0, [ignore], [ignore])
+
+# run2: every second step
+AT_CHECK([../../../DDSAnalyser \
+	--average_run_file average_run-every_nth_2.csv \
+	--every_nth 2 \
+	--run_file ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/Options/pre/run-more_steps.csv \
+	--steps 1
+], 0, [stdout], [stderr])
+AT_CHECK([diff average_run-every_nth_2.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/Options/post/average_run-every_nth_2.csv], 0, [ignore], [ignore])
+
+AT_CLEANUP
+
