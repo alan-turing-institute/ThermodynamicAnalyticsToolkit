@@ -39,7 +39,9 @@ TESTSCRIPTS += \
 	$(srcdir)/TrajectoryAnalyser/testsuite-trajectoryanalyser-simple.at \
 	$(srcdir)/TrajectoryAnalyser/Averages/testsuite-trajectoryanalyser-averages.at \
 	$(srcdir)/TrajectoryAnalyser/DiffusionMap/testsuite-trajectoryanalyser-diffusionmap-eigendecomposition.at \
-	$(srcdir)/TrajectoryAnalyser/DiffusionMap/testsuite-trajectoryanalyser-diffusionmap-free_energy.at
+	$(srcdir)/TrajectoryAnalyser/DiffusionMap/testsuite-trajectoryanalyser-diffusionmap-free_energy.at \
+	$(srcdir)/TrajectoryAnalyser/Options/testsuite-trajectoryanalyser-options-drop_burnin-more_steps.at \
+	$(srcdir)/TrajectoryAnalyser/Options/testsuite-trajectoryanalyser-options-drop_burnin-single_step.at
 
 EXTRA_DIST = \
 	testsuite.at \
