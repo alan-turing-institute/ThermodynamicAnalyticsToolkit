@@ -51,7 +51,10 @@ EXTRA_DIST = \
 	$(TESTSUITE) \
 	atlocal.in \
 	package.m4 \
-	$(TESTSCRIPTS)
+	$(TESTSCRIPTS) \
+	DataDrivenSampler \
+	DataOptimizer \
+	TrajectoryAnalyser
 
 max_jobs = 4
  
