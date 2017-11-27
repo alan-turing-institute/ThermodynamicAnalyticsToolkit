@@ -62,6 +62,8 @@ class SGLDSampler(optimizer.Optimizer):
         if self._seed is None:
             random_noise_t = tf.random_normal(grad.get_shape(), mean=0.,stddev=1.)
         else:
+            # increment such that we use different seed for each random tensor
+            self._seed += 1
             random_noise_t = tf.random_normal(grad.get_shape(), mean=0., stddev=1., seed=self._seed)
         #print("random_noise_t has shape "+str(random_noise_t.get_shape())+" with seed "+str(self._seed))
         return step_width_t, inverse_temperature_t, random_noise_t
