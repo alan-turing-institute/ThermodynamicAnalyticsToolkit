@@ -19,7 +19,6 @@
 
 AT_SETUP([Samplers - SGLD])
 AT_KEYWORDS([samplers ddsampler SGLD])
-AT_XFAIL_IF([/bin/true])
 
 # run 1
 AT_CHECK([../../../DDSampler \
