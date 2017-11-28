@@ -19,6 +19,7 @@
 
 AT_SETUP([Equilibration - First optimize, then sample])
 AT_KEYWORDS([ddsampler ddsoptimizer save_model restore_model])
+AT_XFAIL_IF([/bin/true])
 
 # run 1: Optimize network
 AT_CHECK([../../../DDSOptimizer \

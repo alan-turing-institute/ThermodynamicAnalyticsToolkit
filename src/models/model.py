@@ -184,10 +184,12 @@ class model:
         """ Prepares the distinct header for the run file for sampling
         """
         if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
-            header = ['step', 'epoch', 'accuracy', 'loss', 'scaled_gradient', 'virial', 'scaled_noise']
+            header = ['step', 'epoch', 'accuracy', 'loss', 'scaled_gradient', 'virial', 'scaled_noise',
+                      'average_virials']
         elif self.FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder", "GeometricLangevinAlgorithm_2ndOrder"]:
             header = ['step', 'epoch', 'accuracy', 'loss', 'total_energy', 'kinetic_energy', 'scaled_momentum',
-                      'scaled_gradient', 'virial', 'scaled_noise']
+                      'scaled_gradient', 'virial', 'scaled_noise',
+                      'average_kinetic_energy', 'average_virials']
         else:
             header = ['step', 'epoch', 'accuracy', 'loss']
         return header
@@ -195,7 +197,7 @@ class model:
     def get_train_header(self):
         """ Prepares the distinct header for the run file for training
         """
-        return ['step', 'epoch', 'accuracy', 'loss', 'scaled_gradient', 'virial']
+        return ['step', 'epoch', 'accuracy', 'loss', 'scaled_gradient', 'virial', 'average_virials']
 
     def sample(self, return_run_info = False, return_trajectories = False):
         """ Performs the actual sampling of the neural network `nn` given a dataset `ds` and a
@@ -229,6 +231,9 @@ class model:
         output_precision = 8
 
         written_row = 0
+
+        accumulated_kinetic_energy = 0.
+        accumulated_virials = 0.
 
         run_info = None
         if return_run_info:
@@ -311,9 +316,12 @@ class model:
                 if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
                     gradients, virials, noise = \
                         self.sess.run([gradients_t, virials_t, noise_t])
+                    accumulated_virials += virials
                 else:
                     kinetic_energy, momenta, gradients, virials, noise = \
                         self.sess.run([kinetic_energy_t, momenta_t, gradients_t, virials_t, noise_t])
+                    accumulated_kinetic_energy += kinetic_energy
+                    accumulated_virials += virials
             if i % self.FLAGS.every_nth == 0:
                 if self.config_map["do_write_trajectory_file"] or return_trajectories:
                     trajectory_line = [global_step, loss_eval]\
@@ -336,7 +344,7 @@ class model:
                             run_line = [global_step, i, acc, loss_eval]\
                                        + ['{:{width}.{precision}e}'.format(x, width=output_width,
                                                                            precision=output_precision)
-                                          for x in [sqrt(gradients), abs(0.5*virials), sqrt(noise)]]
+                                          for x in [sqrt(gradients), abs(0.5*virials), sqrt(noise), abs(0.5*accumulated_virials)/float(i+1.)]]
                         else:
                             run_line = [global_step, i, acc, loss_eval] \
                                        + ['{:{width}.{precision}e}'.format(loss_eval + kinetic_energy,
@@ -344,8 +352,8 @@ class model:
                                                                            precision=output_precision)]\
                                        + ['{:{width}.{precision}e}'.format(x, width=output_width,
                                                                            precision=output_precision)
-                                          for x in [kinetic_energy, sqrt(momenta), sqrt(gradients), abs(0.5*virials), sqrt(noise)]]
-
+                                          for x in [kinetic_energy, sqrt(momenta), sqrt(gradients), abs(0.5*virials), sqrt(noise),
+                                                    accumulated_kinetic_energy/float(i+1.), abs(0.5*accumulated_virials)/float(i+1.)]]
                     else:
                         run_line = [global_step, i, acc, loss_eval]
 
@@ -388,6 +396,8 @@ class model:
 
         written_row = 0
 
+        accumulated_virials = 0.
+
         run_info = None
         if return_run_info:
             steps = (self.FLAGS.max_steps % self.FLAGS.every_nth)+1
@@ -426,6 +436,7 @@ class model:
                 self.sess.run(test_nodes, feed_dict=feed_dict)
 
             gradients, virials = self.sess.run([gradients_t, virials_t])
+            accumulated_virials += virials
 
             if i % self.FLAGS.every_nth == 0:
                 run_line = [global_step, i, acc, loss_eval] \
@@ -433,6 +444,9 @@ class model:
                                                     width=output_width,
                                                     precision=output_precision)] \
                     + ['{:{width}.{precision}e}'.format(abs(0.5*virials),
+                                                        width=output_width,
+                                                        precision=output_precision)] \
+                    + ['{:{width}.{precision}e}'.format(abs(0.5*accumulated_virials)/float(i+1.),
                                                         width=output_width,
                                                         precision=output_precision)]
                 if self.config_map["do_write_run_file"]:

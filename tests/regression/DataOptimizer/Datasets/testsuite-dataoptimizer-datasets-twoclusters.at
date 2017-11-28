@@ -19,6 +19,7 @@
 
 AT_SETUP([Optimizer Datasets - two clusters])
 AT_KEYWORDS([twoclusters ddsoptimizer])
+AT_XFAIL_IF([/bin/true])
 
 AT_CHECK([../../../DDSOptimizer \
 	--data_type 2 \
