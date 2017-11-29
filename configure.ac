@@ -38,6 +38,7 @@ AC_CONFIG_FILES(
 AC_CONFIG_FILES([tests/DDSampler], [chmod +x tests/DDSampler])
 AC_CONFIG_FILES([tests/DDSOptimizer], [chmod +x tests/DDSOptimizer])
 AC_CONFIG_FILES([tests/DDSAnalyser], [chmod +x tests/DDSAnalyser])
+AC_CONFIG_FILES([tests/LossFunctionSampler], [chmod +x tests/LossFunctionSampler])
 AC_CONFIG_FILES([
         doc/Makefile
         doc/userguide/Makefile
