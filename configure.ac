@@ -25,6 +25,7 @@ AC_CONFIG_FILES(
 	src/datasets/Makefile
 	src/diffusion_maps/Makefile
 	src/models/Makefile
+	src/runtime/Makefile
 	src/samplers/Makefile
 	tests/Makefile)
 AC_CONFIG_TESTDIR([tests/integration])

@@ -1,0 +1,60 @@
+import sqlite3
+
+class runtime(object):
+    """ This class contains runtime information and capability
+    to write these to an sqlite file.
+
+    """
+
+    def __init__(self, FLAGS):
+        self.FLAGS = FLAGS
+
+        self.time_init_network = 0.
+        self.time_train_network = 0.
+        self.time_overall = 0.
+
+    def set_init_network_time(self, _time):
+        self.time_init_network = _time
+
+    def set_train_network_time(self, _time):
+        self.time_train_network = _time
+
+    def set_overall_time(self, _time):
+        self.time_overall = _time
+
+    def __del__(self):
+        if self.FLAGS.sql_db is not None:
+            with sqlite3.connect(self.FLAGS.sql_db) as connection:
+                cursor = connection.cursor()
+                # don't drop anything, just create if not exists
+                add_table_command = """
+                    CREATE TABLE IF NOT EXISTS run_time (
+                    id INTEGER PRIMARY KEY,
+                    batch_size INTEGER,
+                    dimension INTEGER,
+                    seed INTEGER,
+                    step_width FLOAT,
+                    init_time FLOAT,
+                    train_time FLOAT,
+                    overall_time FLOAT
+                    );
+                """
+                #print(add_table_command)
+                cursor.execute(add_table_command)
+                # add values
+                add_values_format = """
+                    INSERT INTO run_time
+                    (batch_size,dimension,seed,step_width,init_time,train_time, overall_time)
+                    VALUES ({batch_size}, {dimension}, {seed}, {step_width}, {init_time}, {train_time}, {overall_time});
+                """
+                add_values_command = add_values_format.format(
+                    batch_size=self.FLAGS.batch_size,
+                    dimension=self.FLAGS.dimension,
+                    seed=self.FLAGS.seed,
+                    step_width=self.FLAGS.step_width,
+                    init_time=self.time_init_network,
+                    train_time=self.time_train_network,
+                    overall_time=self.time_overall)
+                #print(add_values_command)
+                cursor.execute(add_values_command)
+                connection.commit()

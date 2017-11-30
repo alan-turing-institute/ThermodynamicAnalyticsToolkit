@@ -1,0 +1,62 @@
+#
+#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    Copyright (C) 2017 The University of Edinburgh
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### test on option sql_db
+
+AT_SETUP([Sampler Options - runtime sql database I])
+AT_KEYWORDS([options ddsampler runtime sql_db])
+
+AT_CHECK([../../../DDSampler \
+	--batch_size 10 \
+	--run_file run-step_width_1e-2.csv \
+	--data_type 2 \
+	--dimension 20 \
+	--friction_constant 1 \
+	--inverse_temperature 1 \
+	--sql_db sqlite.db \
+	--step_width 1e-2 \
+	--max_steps 20 \
+	--sampler GeometricLangevinAlgorithm_1stOrder\
+	--seed 426
+], 0, [stdout], [stderr])
+
+AT_CHECK([test -e sqlite.db], 0, [ignore], [ignore])
+
+AT_CLEANUP
+
+AT_SETUP([Sampler Options - runtime sql database II])
+AT_KEYWORDS([options ddsampler runtime sql_db])
+AT_SKIP_IF([sqlite3 -help])
+
+AT_CHECK([../../../DDSampler \
+	--batch_size 10 \
+	--run_file run-step_width_1e-2.csv \
+	--data_type 2 \
+	--dimension 20 \
+	--friction_constant 1 \
+	--inverse_temperature 1 \
+	--sql_db sqlite.db \
+	--step_width 1e-2 \
+	--max_steps 20 \
+	--sampler GeometricLangevinAlgorithm_1stOrder\
+	--seed 426
+], 0, [stdout], [stderr])
+
+AT_CHECK([sqlite3 sqlite.db -csv -header "SELECT * from run_time;"], 0, [ignore], [ignore])
+
+AT_CLEANUP
+

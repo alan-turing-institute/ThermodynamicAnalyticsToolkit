@@ -56,6 +56,8 @@ def parse_parameters():
         help='Save model (weights and biases) to a file for later restoring.')
     parser.add_argument('--seed', type=int, default=None,
         help='Seed to use for random number generators.')
+    parser.add_argument('--sql_db', type=str, default=None,
+        help='Supply file for writing timing information to sqlite database')
     parser.add_argument('--step_width', type=float, default=0.03,
         help='step width \Delta t to use, e.g. 0.01')
     parser.add_argument('--trajectory_file', type=str, default=None,

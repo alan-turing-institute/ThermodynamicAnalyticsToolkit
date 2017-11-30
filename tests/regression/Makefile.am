@@ -15,6 +15,7 @@ TESTSCRIPTS += \
 	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-every_nth-misspelled.at \
 	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-friction_constant.at \
 	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-inverse_temperature.at \
+	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-sql_db.at \
 	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-step_width.at \
 	$(srcdir)/DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-given_seeds.at \
 	$(srcdir)/DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-no_seeds.at \
@@ -31,6 +32,7 @@ TESTSCRIPTS += \
 	$(srcdir)/DataOptimizer/Datasets/testsuite-dataoptimizer-datasets-twospirals.at \
 	$(srcdir)/DataOptimizer/Options/testsuite-dataoptimizer-options-batch_size.at \
 	$(srcdir)/DataOptimizer/Options/testsuite-dataoptimizer-options-every_nth.at \
+	$(srcdir)/DataOptimizer/Options/testsuite-dataoptimizer-options-sql_db.at \
 	$(srcdir)/DataOptimizer/Options/testsuite-dataoptimizer-options-step_width.at \
 	$(srcdir)/DataOptimizer/Reproducibility/testsuite-dataoptimizer-reproducibility-given_seeds.at \
 	$(srcdir)/DataOptimizer/Reproducibility/testsuite-dataoptimizer-reproducibility-no_seeds.at \

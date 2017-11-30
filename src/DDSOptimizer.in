@@ -6,21 +6,36 @@ sys.path.insert(1, '@pythondir@')
 import tensorflow as tf
 import numpy as np
 
+import time
+
 from DataDrivenSampler.common import get_filename_from_fullpath
 from DataDrivenSampler.DataOptimizer import parse_parameters
 from DataDrivenSampler.models.model import model
 from DataDrivenSampler.version import get_package_version, get_build_hash
+from DataDrivenSampler.runtime.runtime import runtime
 
 FLAGS = None
 
 def main(_):
+    rt = runtime(FLAGS)
+
+    time_zero = time.process_time()
+
     network_model = model(FLAGS)
+
+    time_init_network_zero = time.process_time()
 
     network_model.init_network(FLAGS.restore_model, setup="train")
 
+    rt.set_init_network_time(time.process_time() - time_init_network_zero)
+
     network_model.train()
 
+    rt.set_train_network_time(time.process_time() - rt.time_init_network)
+
     network_model.finish()
+
+    rt.set_overall_time(time.process_time() - time_zero)
 
 if __name__ == '__main__':
     FLAGS, unparsed = parse_parameters()
