@@ -1,4 +1,4 @@
-﻿<?xml version='1.0' encoding='UTF-8'?>
+<?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN" "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" [
   <!ENTITY dataset_two_clusters SYSTEM "pictures/dataset_two_clusters.png" NDATA PNG>
   <!ENTITY simple_single_layer_perceptron SYSTEM "pictures/simple_single_layer_perceptron.png" NDATA PNG>
@@ -68,13 +68,14 @@
         installing this package. Henceforth, we assume that there is a working 
         tensorflow on your system, i.e. inside the python3 shell</para>
         <programlisting>import tensorflow as tf</programlisting>
-        <para>does <emphasis>not</emphasis> through an error.</para>
+        <para>does <emphasis>not</emphasis> throw an error.</para>
       </section>
       <para>This package is distributed via autotools, "compiled" and installed 
       via automake. If you are familiar with this set of tools, there should be
       no problem. If not, please refer to the text INSTALL file that is included
       in this distributable archive. The installation, very briefly, goes like this:
       <programlisting>
+      ./bootstrap.sh
       mkdir build64
       cd build64
       ../configure --prefix="somepath" -C PYTHON="path to python3"
@@ -351,15 +352,15 @@ print(conv[-1,:])
         in total. The GLA is a descretized variant of Langevin Dynamics whose 
         accuracy scales with the inverse square of the step_width (hence, 2nd 
         order).
-        After it is finished, it will create two files: A run file containing run 
+        After it is finished, it will create two files; a run file containing run 
         time information such as the step, the potential, kinetic and total energy
-        at each step. And a trajectory file with each parameter of the neural
+        at each step, and a trajectory file with each parameter of the neural
         network at each step. These two files we need in the next stage.</para>
       </section>
       <section xml:id="quickstart.cmdline.analysing">
         <title  xml:id="quickstart.cmdline.analysing.title">Analysing trajectories</title>
         <para>Eventually, we now perform the diffusion map analysis on the obtained
-        trajectories. The trajectory file written in the last step is simply matrix
+        trajectories. The trajectory file written in the last step is simply a matrix
         of dimension (number of parameters) times (number of trajectory steps).
         The eigenvector to the largest (but one) eigenvalue will give the dominant 
         direction in which the trajectory is moving.</para>
