@@ -17,7 +17,7 @@
 #
 ### test on option every_nth
 
-AT_SETUP([Options - every nth])
+AT_SETUP([Optimizer Options - every nth])
 AT_KEYWORDS([options ddsoptimizer every_nth])
 
 # run 1

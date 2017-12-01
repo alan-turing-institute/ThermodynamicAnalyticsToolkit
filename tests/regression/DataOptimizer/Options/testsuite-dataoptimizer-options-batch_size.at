@@ -17,7 +17,7 @@
 #
 ### test on option batch_size
 
-AT_SETUP([Options - batch size])
+AT_SETUP([Optimizer Options - batch size])
 AT_KEYWORDS([options ddsoptimizer batch_size])
 
 # run 1: batch size of 10
