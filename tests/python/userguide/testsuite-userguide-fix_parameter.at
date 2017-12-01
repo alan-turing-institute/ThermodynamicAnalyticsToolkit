@@ -19,6 +19,7 @@
 
 AT_SETUP([Examples - fix parameter])
 AT_KEYWORDS([fix_parameter])
+AT_XFAIL_IF([/bin/true])
 
 # run 1
 AT_CHECK([../../run \

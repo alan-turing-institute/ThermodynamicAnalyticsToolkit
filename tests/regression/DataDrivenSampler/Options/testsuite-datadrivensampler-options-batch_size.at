@@ -20,15 +20,17 @@
 AT_SETUP([Sampler Options - batch size])
 AT_KEYWORDS([options ddsampler batch_size])
 
+# dataset prepared as follows:
+# DatasetWriter --data_type 2 --dimension 10 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+
 # run 1: batch size of 10
 AT_CHECK([../../../DDSampler \
-	--batch_size 10 \
-	--run_file run-batch_size_10.csv \
-	--data_type 2 \
-	--dimension 20 \
+    --batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Options/pre/dataset-twoclusters.csv \
+    --batch_size 10 \
 	--every_nth 1 \
 	--friction_constant 1 \
 	--inverse_temperature 1 \
+	--run_file run-batch_size_10.csv \
 	--step_width 1e-2 \
 	--max_steps 20 \
 	--sampler GeometricLangevinAlgorithm_1stOrder\
@@ -37,15 +39,14 @@ AT_CHECK([../../../DDSampler \
 
 # run 2: batch size of 5
 AT_CHECK([../../../DDSampler \
+    --batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Options/pre/dataset-twoclusters.csv \
 	--batch_size 5 \
-	--run_file run-batch_size_5.csv \
-	--data_type 2 \
-	--dimension 20 \
 	--every_nth 1 \
 	--friction_constant 1 \
 	--inverse_temperature 1 \
 	--step_width 1e-2 \
 	--max_steps 20 \
+	--run_file run-batch_size_5.csv \
 	--sampler GeometricLangevinAlgorithm_1stOrder\
 	--seed 426
 ], 0, [stdout], [stderr])

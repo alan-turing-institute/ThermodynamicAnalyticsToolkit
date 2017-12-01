@@ -20,40 +20,43 @@
 AT_SETUP([Optimizer Reproducibility - same and different seed])
 AT_KEYWORDS([reproducibility seed twoclusters ddsoptimizer])
 
+# dataset prepared as follows:
+# DatasetWriter --data_type 2 --dimension 10 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+
 # run 1
 AT_CHECK([../../../DDSOptimizer \
-	--data_type 2 \
-	--batch_size 10 \
+    --batch_data_files ${abs_top_srcdir}/tests/regression/DataOptimizer/Reproducibility/pre/dataset-twoclusters.csv \
+    --batch_size 10 \
 	--hidden_dimension 2 \
 	--max_steps 20 \
 	--optimizer GradientDescent \
-	--seed 426 \
 	--run_file run-base.csv \
+	--seed 426 \
 	--step_width 0.03
 ], 0, [stdout], [stderr])
 
 # run 2: same seed
 AT_CHECK([../../../DDSOptimizer \
-	--data_type 2 \
-	--batch_size 10 \
+    --batch_data_files ${abs_top_srcdir}/tests/regression/DataOptimizer/Reproducibility/pre/dataset-twoclusters.csv \
+    --batch_size 10 \
 	--hidden_dimension 2 \
 	--max_steps 20 \
 	--optimizer GradientDescent \
-	--seed 426 \
 	--run_file run-sameseed.csv \
+	--seed 426 \
 	--step_width 0.03
 ], 0, [stdout], [stderr])
 
 
 # run 3: other seed
 AT_CHECK([../../../DDSOptimizer \
-	--data_type 2 \
-	--batch_size 10 \
+    --batch_data_files ${abs_top_srcdir}/tests/regression/DataOptimizer/Reproducibility/pre/dataset-twoclusters.csv \
+    --batch_size 10 \
 	--hidden_dimension 2 \
 	--max_steps 20 \
 	--optimizer GradientDescent \
-	--seed 427 \
 	--run_file run-otherseed.csv \
+	--seed 427 \
 	--step_width 0.03
 ], 0, [stdout], [stderr])
 

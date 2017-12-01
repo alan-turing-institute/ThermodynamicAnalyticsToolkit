@@ -20,18 +20,20 @@
 AT_SETUP([Sampler Options - runtime sql database I])
 AT_KEYWORDS([options ddsampler runtime sql_db])
 
+# dataset prepared as follows:
+# DatasetWriter --data_type 2 --dimension 10 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+
 AT_CHECK([../../../DDSampler \
-	--batch_size 10 \
-	--run_file run-step_width_1e-2.csv \
-	--data_type 2 \
-	--dimension 20 \
+    --batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Options/pre/dataset-twoclusters.csv \
+    --batch_size 10 \
 	--friction_constant 1 \
 	--inverse_temperature 1 \
-	--sql_db sqlite.db \
-	--step_width 1e-2 \
 	--max_steps 20 \
+	--run_file run-step_width_1e-2.csv \
 	--sampler GeometricLangevinAlgorithm_1stOrder\
-	--seed 426
+	--seed 426 \
+	--sql_db sqlite.db \
+	--step_width 1e-2
 ], 0, [stdout], [stderr])
 
 AT_CHECK([test -e sqlite.db], 0, [ignore], [ignore])
@@ -42,18 +44,20 @@ AT_SETUP([Sampler Options - runtime sql database II])
 AT_KEYWORDS([options ddsampler runtime sql_db])
 AT_SKIP_IF([sqlite3 -help])
 
+# dataset prepared as follows:
+# DatasetWriter --data_type 2 --dimension 10 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+
 AT_CHECK([../../../DDSampler \
-	--batch_size 10 \
-	--run_file run-step_width_1e-2.csv \
-	--data_type 2 \
-	--dimension 20 \
+    --batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Options/pre/dataset-twoclusters.csv \
+    --batch_size 10 \
 	--friction_constant 1 \
 	--inverse_temperature 1 \
-	--sql_db sqlite.db \
-	--step_width 1e-2 \
 	--max_steps 20 \
+	--run_file run-step_width_1e-2.csv \
 	--sampler GeometricLangevinAlgorithm_1stOrder\
-	--seed 426
+	--seed 426 \
+	--sql_db sqlite.db \
+	--step_width 1e-2
 ], 0, [stdout], [stderr])
 
 AT_CHECK([sqlite3 sqlite.db -csv -header "SELECT * from run_time;"], 0, [stdout], [ignore])

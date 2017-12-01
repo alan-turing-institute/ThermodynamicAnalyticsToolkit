@@ -17,14 +17,23 @@
 #
 ### 
 
-AT_SETUP([Equilibration - First optimize, then sample])
-AT_KEYWORDS([ddsampler ddsoptimizer save_model restore_model])
+AT_SETUP([Equilibration - Create data, optimize, then sample])
+AT_KEYWORDS([datasetwriter ddsoptimizer ddsampler save_model restore_model])
+AT_XFAIL_IF([/bin/true])
+
+# run 1: Create dataset
+AT_CHECK([../../../DatasetWriter \
+	--data_type 2 \
+	--dimension 20 \
+	--seed 426 \
+	--train_test_ratio 0 \
+	--test_data_file dataset-twocluster.csv
+], 0, [stdout], [stderr])
 
 # run 1: Optimize network
 AT_CHECK([../../../DDSOptimizer \
+	--batch_data_files dataset-twocluster.csv \
 	--batch_size 20 \
-	--data_type 2 \
-	--dimension 20 \
 	--max_steps 10 \
 	--optimizer GradientDescent \
 	--run_file run-save_model.csv \
@@ -35,9 +44,8 @@ AT_CHECK([../../../DDSOptimizer \
 
 # run 2: sample network
 AT_CHECK([../../../DDSampler \
+	--batch_data_files dataset-twocluster.csv \
 	--batch_size 20 \
-	--data_type 2 \
-	--dimension 20 \
 	--friction_constant 1 \
 	--inverse_temperature 1 \
 	--max_steps 10 \

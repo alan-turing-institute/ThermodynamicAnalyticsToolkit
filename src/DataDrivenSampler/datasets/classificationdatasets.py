@@ -52,44 +52,6 @@ class ClassificationDatasets:
         config_map["input_dimension"] = 2
         config_map["output_dimension"] = 1
 
-    @staticmethod
-    def create_input_layer(input_dimension, input_list):
-        """ Creates the input layer of TensorFlow's neural network.
-
-         As the input nodes are directly connected to the type of data we feed
-         into the network, the function is associated with the dataset generator
-         class.
-
-         As the datasets all have two-dimensional input, several expression may
-         be derived from this: first coordinate, second coordinate, squared first,
-         squared second, sine of first, sine of second.
-
-         All data resides in the domain [-r,r]^2.
-
-        :param input_dimension: number of nodes for the input layer
-        :param input_list: Pick of derived arguments to
-                actually feed into the net
-        :returns: generated nodes for direct input and derived input
-        """
-        # Input placeholders
-        with tf.name_scope('input'):
-            xinput = tf.placeholder(tf.float64, [None, input_dimension], name='x-input')
-            # print("xinput is "+str(xinput.get_shape()))
-
-            # pick from the various available input columns
-            arg_list_names = ["x1", "x2", "x1^2", "x2^2", "sin(x1)", "sin(x2)"]
-            picked_list_names = list(map(lambda i: arg_list_names[i - 1], input_list))
-            print("Picking as input columns (up to first ten shown only): " + str(picked_list_names[0:10]))
-            arg_list = [xinput[:, 0], xinput[:, 1]]
-            arg_list += [arg_list[0] * arg_list[0],
-                         arg_list[1] * arg_list[1],
-                         tf.sin(arg_list[0]),
-                         tf.sin(arg_list[1])]
-            picked_list = list(map(lambda i: arg_list[i - 1], input_list))
-            x = tf.transpose(tf.stack(picked_list))
-            print("x is " + str(x.get_shape()))
-        return xinput, x
-
     def generate(self, dimension, noise, data_type=SPIRAL):
         """ Generates dataset.
 

@@ -19,6 +19,7 @@
 
 AT_SETUP([Examples - optimization])
 AT_KEYWORDS([help optimize])
+AT_XFAIL_IF([/bin/true])
 
 # run 1
 AT_CHECK([../../run \

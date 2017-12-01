@@ -20,28 +20,29 @@
 AT_SETUP([Optimizer Options - batch size])
 AT_KEYWORDS([options ddsoptimizer batch_size])
 
+# dataset prepared as follows:
+# DatasetWriter --data_type 2 --dimension 10 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+
 # run 1: batch size of 10
 AT_CHECK([../../../DDSOptimizer \
-	--batch_size 10 \
-	--run_file run-batch_size_10.csv \
-	--data_type 2 \
-	--dimension 20 \
+    --batch_data_files ${abs_top_srcdir}/tests/regression/DataOptimizer/Options/pre/dataset-twoclusters.csv \
+    --batch_size 10 \
 	--every_nth 1 \
 	--max_steps 20 \
 	--optimizer GradientDescent \
+	--run_file run-batch_size_10.csv \
 	--seed 426 \
 	--step_width 1e-2
 ], 0, [stdout], [stderr])
 
 # run 2: batch size of 5
 AT_CHECK([../../../DDSOptimizer \
-	--batch_size 5 \
-	--run_file run-batch_size_5.csv \
-	--data_type 2 \
-	--dimension 20 \
+    --batch_data_files ${abs_top_srcdir}/tests/regression/DataOptimizer/Options/pre/dataset-twoclusters.csv \
+    --batch_size 5 \
 	--every_nth 1 \
 	--max_steps 20 \
 	--optimizer GradientDescent \
+	--run_file run-batch_size_5.csv \
 	--seed 426 \
 	--step_width 1e-2
 ], 0, [stdout], [stderr])

@@ -20,11 +20,13 @@
 AT_SETUP([Trajectories - Simple])
 AT_KEYWORDS([trajectory])
 
+# dataset prepared as follows:
+# DatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+
 # run 1
 AT_CHECK([../../../DDSampler \
+    --batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Trajectories/pre/dataset-twoclusters.csv \
 	--batch_size 20 \
-	--data_type 2 \
-	--dimension 20 \
 	--friction_constant 1 \
 	--inverse_temperature 1 \
 	--max_steps 1 \
@@ -42,11 +44,13 @@ AT_CLEANUP
 AT_SETUP([Trajectories - Single hidden layer])
 AT_KEYWORDS([trajectory hidden_dimension])
 
+# dataset prepared as follows:
+# DatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+
 # run 1
 AT_CHECK([../../../DDSampler \
+    --batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Trajectories/pre/dataset-twoclusters.csv \
 	--batch_size 20 \
-	--data_type 2 \
-	--dimension 20 \
 	--hidden_dimension 2 \
 	--friction_constant 1 \
 	--inverse_temperature 1 \
@@ -66,11 +70,13 @@ AT_CLEANUP
 AT_SETUP([Trajectories - Few hidden layers])
 AT_KEYWORDS([trajectory hidden_dimension])
 
+# dataset prepared as follows:
+# DatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+
 # run 1
 AT_CHECK([../../../DDSampler \
+    --batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Trajectories/pre/dataset-twoclusters.csv \
 	--batch_size 20 \
-	--data_type 2 \
-	--dimension 20 \
 	--hidden_dimension 2 2 2 \
 	--friction_constant 1 \
 	--inverse_temperature 1 \

@@ -124,7 +124,7 @@ def create_classification_dataset(FLAGS, config_map):
 
     # generate input layer
     input_columns = get_list_from_string(FLAGS.input_columns)
-    xinput, x = dsgen.create_input_layer(config_map["input_dimension"], input_columns)
+    xinput, x = create_input_layer(config_map["input_dimension"], input_columns)
     return xinput, x, ds
 
 
@@ -135,14 +135,8 @@ def add_data_options_to_parser(parser):
     :param parser: argparse's parser object
     """
     # please adhere to alphabetical ordering
-    parser.add_argument('--data_type', type=int, default=DatasetGenerator.SPIRAL,
-        help='Which data set to use: (0) two circles, (1) squares, (2) two clusters, (3) spiral.')
-    parser.add_argument('--dimension', type=int, default=10,
-        help='Number P of samples (Y^i,X^i)^P_{i=1} to generate for the desired dataset type.')
-    parser.add_argument('--noise', type=float, default=0.,
-        help='Amount of noise in [0,1] to use.')
-    parser.add_argument('--seed', type=int, default=None,
-        help='Seed to use for random number generators.')
+    parser.add_argument('--batch_data_files', type=str, nargs='+', default=[],
+        help='Names of CSV files to parse input data from')
 
 
 def add_model_options_to_parser(parser):
@@ -168,6 +162,8 @@ def add_model_options_to_parser(parser):
         help='Set the loss to be measured during sampling, e.g. mean_squared, log_loss, ...')
     parser.add_argument('--output_activation', type=str, default="tanh",
         help='Activation function to use for output layer: tanh, relu, linear')
+    parser.add_argument('--seed', type=int, default=None,
+        help='Seed to use for random number generators.')
 
 
 def add_common_options_to_parser(parser):
@@ -330,7 +326,7 @@ def create_input_layer(input_dimension, input_list):
     """
     # Input placeholders
     with tf.name_scope('input'):
-        xinput = tf.placeholder(tf.float32, [None, input_dimension], name='x-input')
+        xinput = tf.placeholder(tf.float64, [None, input_dimension], name='x-input')
         # print("xinput is "+str(xinput.get_shape()))
 
         # pick from the various available input columns

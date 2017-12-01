@@ -19,6 +19,7 @@
 
 AT_SETUP([Examples - sampling])
 AT_KEYWORDS([help sample])
+AT_XFAIL_IF([/bin/true])
 
 # run 1
 AT_CHECK([../../run \

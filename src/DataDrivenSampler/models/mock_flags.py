@@ -7,9 +7,8 @@ class MockFlags:
     """
 
     def __init__(self,
+                 batch_data_files=[],
                  batch_size=10,
-                 data_type=ClassificationDatasets.SPIRAL,
-                 dimension=10,
                  dropout=0.9,
                  every_nth=1,
                  fix_parameters=None,
@@ -22,7 +21,6 @@ class MockFlags:
                  inverse_temperature=1.,
                  loss="mean_squared",
                  max_steps=1000,
-                 noise=0.,
                  optimizer="GradientDescent",
                  output_activation="tanh",
                  restore_model=None,
@@ -35,9 +33,8 @@ class MockFlags:
     ):
         """ Init function to set various default values.
 
+        :param batch_data_files: set of files to read input from
         :param batch_size: The number of samples used to divide sample set into batches in one sampleing step.
-        :param data_type: Which data set to use: (0) two circles, (1) squares, (2) two clusters, (3) spiral.
-        :param dimension: Number P of samples (Y^i,X^i)^P_{i=1} to generate for the desired dataset type.
         :param dropout: Keep probability for sampleing dropout, e.g. 0.9
         :param every_nth: Store only every nth trajectory (and run) point to files, e.g. 10
         :param fix_parameters: string formatted as "name=value;..." with name of parameter fixed to value
@@ -50,7 +47,6 @@ class MockFlags:
         :param inverse_temperature: Inverse temperature that scales the gradients
         :param loss: Set the loss to be measured during sampling, e.g. mean_squared, log_loss, ...
         :param max_steps: Number of steps to run sampleer.
-        :param noise: Amount of noise in [0,1] to use.
         :param optimizer: Choose the optimizer to use for sampling: GradientDescent
         :param output_activation: Activation function to use for output layer: tanh, relu, linear
         :param restore_model: Restore model (weights and biases) from a file.
@@ -61,9 +57,9 @@ class MockFlags:
         :param step_width: step width \Delta t to use, e.g. 0.01
         :param trajectory_file: CSV file name to output trajectories of sampling, i.e. weights and evaluated loss function.
         """
+        self.batch_data_files = batch_data_files
         self.batch_size = batch_size
-        self.data_type = data_type
-        self.dimension = dimension
+        self.dimension = 0 # keeps the input dimension later
         self.dropout = dropout
         self.every_nth = every_nth
         self.fix_parameters = fix_parameters
@@ -76,7 +72,6 @@ class MockFlags:
         self.inverse_temperature = inverse_temperature
         self.loss = loss
         self.max_steps = max_steps
-        self.noise = noise
         self.optimizer = optimizer
         self.output_activation = output_activation
         self.restore_model = restore_model

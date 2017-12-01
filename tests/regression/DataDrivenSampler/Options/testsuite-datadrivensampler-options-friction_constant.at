@@ -20,32 +20,33 @@
 AT_SETUP([Sampler Sampler Options - friction constant])
 AT_KEYWORDS([options ddsampler friction_constant])
 
+# dataset prepared as follows:
+# DatasetWriter --data_type 2 --dimension 10 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+
 # run 1
 AT_CHECK([../../../DDSampler \
-	--batch_size 10 \
-	--run_file run-friction_constant_1.csv \
-	--data_type 2 \
-	--dimension 20 \
+    --batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Options/pre/dataset-twoclusters.csv \
+    --batch_size 10 \
 	--friction_constant 1 \
 	--inverse_temperature 1 \
-	--step_width 1e-2 \
 	--max_steps 20 \
+	--run_file run-friction_constant_1.csv \
 	--sampler GeometricLangevinAlgorithm_1stOrder\
-	--seed 426
+	--seed 426 \
+	--step_width 1e-2
 ], 0, [stdout], [stderr])
 
 # run 2
 AT_CHECK([../../../DDSampler \
-	--batch_size 10 \
-	--run_file run-friction_constant_1e5.csv \
-	--data_type 2 \
-	--dimension 20 \
+    --batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Options/pre/dataset-twoclusters.csv \
+    --batch_size 10 \
 	--friction_constant 1e5 \
 	--inverse_temperature 1 \
-	--step_width 1e-2 \
 	--max_steps 20 \
+	--run_file run-friction_constant_1e5.csv \
 	--sampler GeometricLangevinAlgorithm_1stOrder\
-	--seed 426
+	--seed 426 \
+	--step_width 1e-2
 ], 0, [stdout], [stderr])
 
 # check that both differ, i.e. step_width is used

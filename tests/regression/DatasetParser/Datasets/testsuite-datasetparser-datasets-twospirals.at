@@ -21,7 +21,7 @@ AT_SETUP([DatasetParser - Datasets - two spirals])
 AT_KEYWORDS([twospirals datasetparser])
 
 AT_CHECK([../../../DatasetParser \
-	--batch_data_file ${abs_top_srcdir}/tests/regression/DatasetParser/Datasets/pre/testset-twospirals.csv \
+	--batch_data_files ${abs_top_srcdir}/tests/regression/DatasetParser/Datasets/pre/testset-twospirals.csv \
 	--batch_size 20
 ], 0, [stdout], [stderr])
 #AT_CHECK([diff stdout ${abs_top_srcdir}/tests/regression/DatasetParser/Datasets/post/printed_testset-twospirals.csv], 0, [ignore], [ignore])

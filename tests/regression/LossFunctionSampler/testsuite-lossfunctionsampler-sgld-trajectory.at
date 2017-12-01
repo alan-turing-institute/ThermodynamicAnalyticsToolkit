@@ -21,10 +21,9 @@ AT_SETUP([LossFunctionSampler - input trajectory from SGLD])
 AT_KEYWORDS([lossfunctionsampler SGLD])
 
 AT_CHECK([../../../LossFunctionSampler \
+	--batch_data_files ${abs_top_srcdir}/tests/regression/LossFunctionSampler/pre/dataset-twoclusters.csv \
 	--batch_size 20 \
 	--csv_file LossFunctionSampler-output-SGLD.csv \
-	--data_type 2 \
-	--dimension 20 \
 	--seed 426 \
 	--trajectory_file ${abs_top_srcdir}/tests/regression/LossFunctionSampler/pre/trajectory-SGLD.csv
 ], 0, [stdout], [stderr])

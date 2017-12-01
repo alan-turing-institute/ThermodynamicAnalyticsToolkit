@@ -20,10 +20,13 @@
 AT_SETUP([Optimizer Reproducibility - no seed])
 AT_KEYWORDS([reproducibility seed twoclusters ddsoptimizer])
 
+# dataset prepared as follows:
+# DatasetWriter --data_type 2 --dimension 10 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+
 # run 1
 AT_CHECK([../../../DDSOptimizer \
-	--data_type 2 \
-	--batch_size 10 \
+    --batch_data_files ${abs_top_srcdir}/tests/regression/DataOptimizer/Reproducibility/pre/dataset-twoclusters.csv \
+    --batch_size 10 \
 	--hidden_dimension 2 \
 	--max_steps 20 \
 	--optimizer GradientDescent \
@@ -33,8 +36,8 @@ AT_CHECK([../../../DDSOptimizer \
 
 # run 2
 AT_CHECK([../../../DDSOptimizer \
-	--data_type 2 \
-	--batch_size 10 \
+    --batch_data_files ${abs_top_srcdir}/tests/regression/DataOptimizer/Reproducibility/pre/dataset-twoclusters.csv \
+    --batch_size 10 \
 	--hidden_dimension 2 \
 	--max_steps 20 \
 	--optimizer GradientDescent \

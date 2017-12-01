@@ -21,7 +21,7 @@ AT_SETUP([DatasetParser - Datasets - four squares])
 AT_KEYWORDS([foursquares datasetparser])
 
 AT_CHECK([../../../DatasetParser \
-	--batch_data_file ${abs_top_srcdir}/tests/regression/DatasetParser/Datasets/pre/testset-foursquares.csv \
+	--batch_data_files ${abs_top_srcdir}/tests/regression/DatasetParser/Datasets/pre/testset-foursquares.csv \
 	--batch_size 20 \
 	--seed 426
 ], 0, [stdout], [stderr])

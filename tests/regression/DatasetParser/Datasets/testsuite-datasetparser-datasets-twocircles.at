@@ -21,7 +21,7 @@ AT_SETUP([DatasetParser - Datasets - two circles])
 AT_KEYWORDS([twocircles datasetparser])
 
 AT_CHECK([../../../DatasetParser \
-	--batch_data_file ${abs_top_srcdir}/tests/regression/DatasetParser/Datasets/pre/testset-twocircles.csv \
+	--batch_data_files ${abs_top_srcdir}/tests/regression/DatasetParser/Datasets/pre/testset-twocircles.csv \
 	--batch_size 20 \
 	--seed 426
 ], 0, [stdout], [stderr])

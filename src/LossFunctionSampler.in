@@ -15,8 +15,8 @@ import csv
 from DataDrivenSampler.datasets.classificationdatasets import ClassificationDatasets
 
 from DataDrivenSampler.common import add_common_options_to_parser, add_data_options_to_parser, \
-        add_model_options_to_parser, get_filename_from_fullpath, react_to_common_options, \
-        setup_csv_file
+        add_model_options_to_parser, file_length, get_filename_from_fullpath, \
+        get_list_from_string, react_to_common_options, setup_csv_file
 from DataDrivenSampler.models.model import model
 from DataDrivenSampler.models.neuralnet_parameters import neuralnet_parameters
 from DataDrivenSampler.version import get_package_version, get_build_hash
@@ -57,6 +57,21 @@ def parse_parameters():
     return parser.parse_known_args()
 
 def main(_):
+    # get trajectory length or number of sampled points
+    if FLAGS.trajectory_file is not None:
+        FLAGS.max_steps = file_length(FLAGS.trajectory_file)-1
+    else:
+        hidden_dimension = get_list_from_string(FLAGS.hidden_dimension)
+        full_dimensions = [2]+hidden_dimension+[1]
+        # sum up weight nodes
+        FLAGS.max_steps = sum([full_dimensions[i]*full_dimensions[i+1]
+                                for i in range(len(full_dimensions)-1)])
+        FLAGS.max_steps *= FLAGS.samples_weights
+
+        # sum up bias nodes
+        FLAGS.max_steps += (sum(hidden_dimension)+1) * FLAGS.samples_biases
+    print("There are "+str(FLAGS.max_steps)+" points to sample.")
+
     network_model = model(FLAGS)
 
     network_model.init_network(FLAGS.restore_model, setup=None)
@@ -82,10 +97,21 @@ def main(_):
 
     current_step = 0
 
+    # Start populating the filename queue.
+    coord = tf.train.Coordinator()
+    threads = tf.train.start_queue_runners(coord=coord, sess=network_model.sess)
+
     ## function to evaluate the loss
 
     def evaluate_loss():
-        batch_xs, batch_ys = network_model.ds.next_batch(FLAGS.batch_size)
+        # fetch next batch of data
+        try:
+            batch_xs, batch_ys = sess.run([network_model.batch_features,
+                                           network_model.batch_labels])
+        except tf.errors.OutOfRangeError:
+            print('End of epoch reached too early!')
+            sys.exit(255)
+
         feed_dict = {
             network_model.xinput: batch_xs,
             network_model.nn.placeholder_nodes["y_"]: batch_ys
@@ -199,6 +225,9 @@ def main(_):
                 biases_vals[:biases_vals.size] = row[(weights_vals.size+2):row_length]
                 loss_eval = evaluate_loss()
                 #assert( math.fabs( loss_eval - float(loss_check) ) < 1e-6 )
+
+    coord.request_stop()
+    coord.join(threads)
 
     network_model.finish()
 

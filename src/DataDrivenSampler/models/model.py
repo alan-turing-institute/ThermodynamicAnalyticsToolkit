@@ -5,11 +5,11 @@ import numpy as np
 import sys
 import pandas as pd
 
-from math import sqrt
+from math import sqrt, floor
 
-from DataDrivenSampler.common import create_classification_dataset, \
+from DataDrivenSampler.common import create_input_layer, file_length, \
     get_filename_from_fullpath, get_list_from_string, get_trajectory_header, \
-    initialize_config_map, setup_run_file, setup_trajectory_file
+    initialize_config_map, create_input_pipeline, setup_run_file, setup_trajectory_file
 from DataDrivenSampler.datasets.classificationdatasets import ClassificationDatasets
 from DataDrivenSampler.models.mock_flags import MockFlags
 from DataDrivenSampler.models.neuralnet_parameters import neuralnet_parameters
@@ -26,11 +26,21 @@ class model:
         self.FLAGS = FLAGS
         self.config_map = initialize_config_map()
 
-        # init random: None will use random seed
-        if FLAGS.seed is not None:
-            np.random.seed(FLAGS.seed)
+        # we train only on size batch and need as many epochs as tests
+        print("Parsing "+str(FLAGS.batch_data_files))
+        self.FLAGS.dimension = sum([file_length(filename)
+                                    for filename in FLAGS.batch_data_files]) \
+                               - len(FLAGS.batch_data_files)
+        self.batch_features, self.batch_labels = create_input_pipeline(
+            FLAGS.batch_data_files,
+            batch_size = FLAGS.batch_size,
+            num_epochs = FLAGS.max_steps,
+            seed = FLAGS.seed)
+        input_dimension = 2
+        self.config_map["output_dimension"] = 1
+        input_columns = get_list_from_string(FLAGS.input_columns)
 
-        self.xinput, self.x, self.ds = create_classification_dataset(self.FLAGS, self.config_map)
+        self.xinput, self.x = create_input_layer(input_dimension, input_columns)
 
         self.resources_created = None
 
@@ -75,9 +85,8 @@ class model:
 
     @staticmethod
     def create_mock_flags(
+            batch_data_files=[],
             batch_size=10,
-            data_type=ClassificationDatasets.SPIRAL,
-            dimension=10,
             dropout=None,
             every_nth=1,
             fix_parameters=None,
@@ -90,7 +99,6 @@ class model:
             inverse_temperature=1.,
             loss="mean_squared",
             max_steps=1000,
-            noise=0.,
             optimizer="GradientDescent",
             output_activation="tanh",
             restore_model=None,
@@ -101,9 +109,8 @@ class model:
             step_width=0.03,
             trajectory_file=None):
             return MockFlags(
+                batch_data_files=batch_data_files,
                 batch_size=batch_size,
-                data_type=data_type,
-                dimension=dimension,
                 dropout=dropout,
                 every_nth=every_nth,
                 fix_parameters=fix_parameters,
@@ -116,7 +123,6 @@ class model:
                 inverse_temperature=inverse_temperature,
                 loss=loss,
                 max_steps=max_steps,
-                noise=noise,
                 optimizer=optimizer,
                 output_activation=output_activation,
                 restore_model=restore_model,
@@ -294,11 +300,23 @@ class model:
             })
             print("Sampler parameters: gamma = %lg, beta = %lg, delta t = %lg" % (gamma, beta, deltat))
 
+        # Start populating the filename queue.
+        coord = tf.train.Coordinator()
+        threads = tf.train.start_queue_runners(coord=coord, sess=self.sess)
+
         print("Starting to sample")
         print_intervals = max(1, int(self.FLAGS.max_steps / 100))
         for i in range(self.FLAGS.max_steps):
             # print("Current step is "+str(i))
-            batch_xs, batch_ys = self.ds.next_batch(self.FLAGS.batch_size)
+
+            # fetch next batch of data
+            try:
+                batch_xs, batch_ys = self.sess.run([self.batch_features, self.batch_labels])
+            except tf.errors.OutOfRangeError:
+                print('End of epoch reached too early!')
+                sys.exit(255)
+
+            # place in feed dict
             feed_dict = {
                 self.xinput: batch_xs, placeholder_nodes["y_"]: batch_ys,
                 placeholder_nodes["step_width"]: self.FLAGS.step_width,
@@ -408,6 +426,9 @@ class model:
                 # print('y at step %s: %s' % (i, str(y_eval[0:9].transpose())))
         print("SAMPLED.")
 
+        coord.request_stop()
+        coord.join(threads)
+
         return run_info, trajectory
 
     def train(self, return_run_info = False, return_trajectories = False):
@@ -458,10 +479,22 @@ class model:
                 np.zeros((steps, no_params)),
                 columns=header)
 
+        # Start populating the filename queue.
+        coord = tf.train.Coordinator()
+        threads = tf.train.start_queue_runners(coord=coord, sess=self.sess)
+
         print("Starting to train")
         for i in range(self.FLAGS.max_steps):
-            #print("Current step is " + str(i))
-            batch_xs, batch_ys = self.ds.next_batch(self.FLAGS.batch_size)
+            print("Current step is " + str(i))
+
+            # fetch next batch of data
+            try:
+                batch_xs, batch_ys = self.sess.run([self.batch_features, self.batch_labels])
+            except tf.errors.OutOfRangeError:
+                print('End of epoch reached too early!')
+                sys.exit(255)
+
+            # place in feed dict
             feed_dict = {
                 self.xinput: batch_xs, placeholder_nodes["y_"]: batch_ys,
                 placeholder_nodes["step_width"]: self.FLAGS.step_width
@@ -516,6 +549,8 @@ class model:
             # print('y_ at step %s: %s' % (i, str(y_true_eval[0:9].transpose())))
             # print('y at step %s: %s' % (i, str(y_eval[0:9].transpose())))
         print("TRAINED down to loss %s and accuracy %s." % (loss_eval, acc))
+        coord.request_stop()
+        coord.join(threads)
 
         return run_info, trajectory
 
