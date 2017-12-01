@@ -138,6 +138,8 @@ class NeuralNetwork(object):
         merged = tf.summary.merge_all()  # Merge all the summaries
         self.summary_nodes['merged'] = merged
 
+        return loss
+
     def add_true_labels(self, output_dimension):
         """ Adds the known labels as placeholder nodes to the graph.
 
@@ -451,3 +453,23 @@ class NeuralNetwork(object):
                 activations = act(preactivate, name='activation')
                 tf.summary.histogram('activations', activations)
                 return activations
+
+    @staticmethod
+    def get_activations():
+        """ Returns a dictionary with all known activation functions
+
+        :return: dictionary with activations
+        """
+        activations = {
+            "tanh": tf.nn.tanh,
+            "sigmoid": tf.nn.sigmoid,
+            "softplus": tf.nn.softplus,
+            "softsign": tf.nn.softsign,
+            "elu": tf.nn.elu,
+            "relu6": tf.nn.relu6,
+            "relu": tf.nn.relu,
+            "linear": tf.identity
+        }
+        return activations
+
+

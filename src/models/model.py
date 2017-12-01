@@ -4,13 +4,13 @@ import sys
 import pandas as pd
 
 from math import sqrt
+
 from DataDrivenSampler.common import create_classification_dataset, \
-    construct_network_model, get_activations, get_filename_from_fullpath, \
-    get_trajectory_header, initialize_config_map, setup_run_file, setup_trajectory_file
-
+    get_filename_from_fullpath, get_list_from_string, get_trajectory_header, \
+    initialize_config_map, setup_run_file, setup_trajectory_file
 from DataDrivenSampler.datasets.classificationdatasets import ClassificationDatasets
-
 from DataDrivenSampler.models.mock_flags import MockFlags
+from DataDrivenSampler.models.neuralnetwork import NeuralNetwork
 
 
 class model:
@@ -126,14 +126,20 @@ class model:
         #if setup == "sample":
         self.create_resource_variables()
 
-        activations = get_activations()
         if self.nn is None:
-            self.nn = construct_network_model(self.FLAGS, self.config_map, self.x,
-                                              hidden_activation=activations[self.FLAGS.hidden_activation],
-                                              output_activation=activations[self.FLAGS.output_activation],
-                                              loss_name=self.FLAGS.loss,
-                                              setup=setup)
-        loss = self.nn.get_list_of_nodes(["loss"])[0]
+            self.nn = NeuralNetwork()
+            hidden_dimension = get_list_from_string(self.FLAGS.hidden_dimension)
+            activations = NeuralNetwork.get_activations()
+            loss = self.nn.create(
+                self.x, hidden_dimension, self.config_map["output_dimension"],
+                seed=self.FLAGS.seed,
+                add_dropped_layer=(self.FLAGS.dropout is not None),
+                hidden_activation=activations[self.FLAGS.hidden_activation],
+                output_activation=activations[self.FLAGS.output_activation],
+                loss_name=self.FLAGS.loss
+            )
+        else:
+            loss = self.nn.get_list_of_nodes(["loss"])[0]
         if setup == "train":
             self.nn.add_train_method(loss, optimizer_method=self.FLAGS.optimizer)
         elif setup == "sample":

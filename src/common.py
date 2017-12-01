@@ -4,7 +4,6 @@ import sys
 import tensorflow as tf
 
 from DataDrivenSampler.datasets.classificationdatasets import ClassificationDatasets as DatasetGenerator
-from DataDrivenSampler.models.neuralnetwork import NeuralNetwork
 from DataDrivenSampler.version import get_package_version, get_build_hash
 
 
@@ -126,51 +125,6 @@ def create_classification_dataset(FLAGS, config_map):
     input_columns = get_list_from_string(FLAGS.input_columns)
     xinput, x = dsgen.create_input_layer(config_map["input_dimension"], input_columns)
     return xinput, x, ds
-
-
-def construct_network_model(FLAGS, config_map, x,
-                            hidden_activation=tf.nn.relu, output_activation=tf.nn.tanh,
-                            loss_name="mean_squared", setup="train"):
-    """ Constructs the neural network
-
-    :param FLAGS: FLAGS dictionary with command-line parameters
-    :param config_map: configuration dictionary
-    :param x: input layer
-    :param hidden_activation: activation function for the hidden layer
-    :param output_activation: activation function for the output layer
-    :param loss_name: name of global loss to use
-    :return: neural network
-    """
-    print("Constructing neural network")
-    hidden_dimension=get_list_from_string(FLAGS.hidden_dimension)
-    nn=NeuralNetwork()
-    loss = nn.create(
-        x, hidden_dimension, config_map["output_dimension"],
-        seed=FLAGS.seed,
-        add_dropped_layer=(FLAGS.dropout is not None),
-        hidden_activation=hidden_activation,
-        output_activation=output_activation,
-        loss_name=loss_name
-    )
-    return nn
-
-
-def get_activations():
-    """ Returns a dictionary with all known activation functions
-
-    :return: dictionary with activations
-    """
-    activations = {
-        "tanh": tf.nn.tanh,
-        "sigmoid": tf.nn.sigmoid,
-        "softplus": tf.nn.softplus,
-        "softsign": tf.nn.softsign,
-        "elu": tf.nn.elu,
-        "relu6": tf.nn.relu6,
-        "relu": tf.nn.relu,
-        "linear": tf.identity
-    }
-    return activations
 
 
 def add_data_options_to_parser(parser):
