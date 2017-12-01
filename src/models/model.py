@@ -81,6 +81,8 @@ class model:
             hidden_activation="relu",
             hidden_dimension="",
             input_columns="1 2",
+            inter_ops_threads=1,
+            intra_ops_threads=None,
             inverse_temperature=1.,
             loss="mean_squared",
             max_steps=1000,
@@ -104,6 +106,8 @@ class model:
                 hidden_activation=hidden_activation,
                 hidden_dimension=hidden_dimension,
                 input_columns=input_columns,
+                inter_ops_threads=inter_ops_threads,
+                intra_ops_threads=intra_ops_threads,
                 inverse_temperature=inverse_temperature,
                 loss=loss,
                 max_steps=max_steps,
@@ -154,8 +158,8 @@ class model:
         if self.sess is None:
             self.sess = tf.Session(
                 config=tf.ConfigProto(
-                    intra_op_parallelism_threads=None,
-                    inter_op_parallelism_threads=1))
+                    intra_op_parallelism_threads=self.FLAGS.intra_ops_threads,
+                    inter_op_parallelism_threads=self.FLAGS.inter_ops_threads))
 
         self.nn.init_graph(self.sess)
 
