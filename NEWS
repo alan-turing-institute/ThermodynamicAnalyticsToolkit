@@ -1,3 +1,26 @@
+v0.2
+====
+
+- enhanced userguide with fully tested python examples
+- using double floating point precision by default
+- allowed external setting of inter and intra ops thread number for 
+  parallelizaton
+- distributable tarball is working (make dist), target distcheck not yet
+- added measuring of execution times (init, train, overall)
+- FIX: batch_size went missing
+- FIX: Dataset was not shuffled properly and split into test/train inconsistent
+- added loss manifold sampler
+- added Python interface
+- added userguide
+- added saving and restoring of neural network model to and from file.
+- added trajectory analyser for average parameters and diffusion map analysis
+  based on the contributed code by Zofia Trstanova
+- added sampling of average kinetic energy and configurational temperature,
+  accurate by accumulating in every step (not just "every_nth" step)
+- added autotools testsuite
+- added SGLD, Geometric Langevin Algorithm 1st and 2nd order sampling
+
+
 v0.1
 ====
 

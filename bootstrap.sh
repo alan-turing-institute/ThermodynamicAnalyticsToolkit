@@ -8,9 +8,9 @@ if test ! -e ChangeLog; then
 else
         if git log --pretty=format:'%h - %an: %s' > ChangeLog.t \
            && diff ChangeLog.t ChangeLog >/dev/null 2>&1; then
-                mv -f ChangeLog.t ChangeLog
-        else
                 rm -f ChangeLog.t
+        else
+                mv -f ChangeLog.t ChangeLog
         fi
 fi
 
