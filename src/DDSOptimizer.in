@@ -6,15 +6,37 @@ sys.path.insert(1, '@pythondir@')
 import tensorflow as tf
 import numpy as np
 
+import argparse
 import time
 
-from DataDrivenSampler.common import get_filename_from_fullpath
-from DataDrivenSampler.DataOptimizer import parse_parameters
+from DataDrivenSampler.common import add_common_options_to_parser, add_data_options_to_parser, \
+        add_model_options_to_parser, get_filename_from_fullpath, react_to_common_options
 from DataDrivenSampler.models.model import model
-from DataDrivenSampler.version import get_package_version, get_build_hash
 from DataDrivenSampler.runtime.runtime import runtime
 
 FLAGS = None
+
+
+def parse_parameters():
+    """ Sets up the argument parser for parsing command line parameters into dictionary
+
+    :return: dictionary with parameter names as keys, unrecognized parameters
+    """
+    parser = argparse.ArgumentParser()
+
+    add_common_options_to_parser(parser)
+    add_data_options_to_parser(parser)
+    add_model_options_to_parser(parser)
+
+    # please adhere to alphabetical ordering
+    parser.add_argument('--max_steps', type=int, default=1000,
+        help='Number of steps to run trainer.')
+    parser.add_argument('--optimizer', type=str, default="GradientDescent",
+        help='Choose the optimizer to use for sampling: GradientDescent')
+    parser.add_argument('--step_width', type=float, default=0.03,
+        help='step width \Delta t to use, e.g. 0.01')
+    return parser.parse_known_args()
+
 
 def main(_):
     rt = runtime(FLAGS)
@@ -40,20 +62,7 @@ def main(_):
 if __name__ == '__main__':
     FLAGS, unparsed = parse_parameters()
 
-    if FLAGS.version:
-        # give version and exit
-        print(get_filename_from_fullpath(sys.argv[0])+" "+get_package_version()+" -- version "+get_build_hash())
-        sys.exit(0)
-
-    print("Using parameters: "+str(FLAGS))
-
-    if FLAGS.batch_size is None:
-        print("No batch_size was specified, using true gradients.")
-        FLAGS.batch_size = FLAGS.dimension
-
-    if len(unparsed) != 0:
-        print("There are unparsed parameters '"+str(unparsed)+"', have you misspelled some?")
-        sys.exit(255)
+    react_to_common_options(FLAGS, unparsed)
 
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
 

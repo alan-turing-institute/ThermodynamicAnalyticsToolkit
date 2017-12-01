@@ -2,8 +2,6 @@ SUBDIRS = datasets diffusion_maps models runtime samplers
 
 DataDrivenSampler_PYTHON = \
 	common.py \
-	DataDrivenSampler.py \
-	DataOptimizer.py \
 	TrajectoryAnalyser.py \
 	$(srcdir)/version.py \
 	__init__.py
