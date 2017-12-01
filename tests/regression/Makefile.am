@@ -39,6 +39,20 @@ TESTSCRIPTS += \
 	$(srcdir)/DataOptimizer/Reproducibility/testsuite-dataoptimizer-reproducibility-given_seeds.at \
 	$(srcdir)/DataOptimizer/Reproducibility/testsuite-dataoptimizer-reproducibility-no_seeds.at \
 	$(srcdir)/DataOptimizer/SavingRestoring/testsuite-dataoptimizer-saving_restoring.at \
+	$(srcdir)/DatasetParser/testsuite-datasetparser.at \
+	$(srcdir)/DatasetParser/testsuite-datasetparser-simple.at \
+	$(srcdir)/DatasetParser/Datasets/testsuite-datasetparser-datasets.at \
+	$(srcdir)/DatasetParser/Datasets/testsuite-datasetparser-datasets-foursquares.at \
+	$(srcdir)/DatasetParser/Datasets/testsuite-datasetparser-datasets-twocircles.at \
+	$(srcdir)/DatasetParser/Datasets/testsuite-datasetparser-datasets-twoclusters.at \
+	$(srcdir)/DatasetParser/Datasets/testsuite-datasetparser-datasets-twospirals.at \
+	$(srcdir)/DatasetWriter/testsuite-datasetwriter.at \
+	$(srcdir)/DatasetWriter/testsuite-datasetwriter-simple.at \
+	$(srcdir)/DatasetWriter/Datasets/testsuite-datasetwriter-datasets.at \
+	$(srcdir)/DatasetWriter/Datasets/testsuite-datasetwriter-datasets-foursquares.at \
+	$(srcdir)/DatasetWriter/Datasets/testsuite-datasetwriter-datasets-twocircles.at \
+	$(srcdir)/DatasetWriter/Datasets/testsuite-datasetwriter-datasets-twoclusters.at \
+	$(srcdir)/DatasetWriter/Datasets/testsuite-datasetwriter-datasets-twospirals.at \
 	$(srcdir)/LossFunctionSampler/testsuite-lossfunctionsampler.at \
 	$(srcdir)/LossFunctionSampler/testsuite-lossfunctionsampler-sgld-trajectory.at \
 	$(srcdir)/LossFunctionSampler/testsuite-lossfunctionsampler-simple.at \

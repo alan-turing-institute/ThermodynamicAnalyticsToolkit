@@ -26,6 +26,12 @@ AT_INIT([Regression tests])
 # Use colored output with new-enough Autotest.
 m4_ifdef([AT_COLOR_TESTS], [AT_COLOR_TESTS])
 
+# tests for DatasetWriter
+m4_include(DatasetWriter/testsuite-datasetwriter.at)
+
+# tests for DatasetParser
+m4_include(DatasetParser/testsuite-datasetparser.at)
+
 # tests for DataDrivenSampler or DDSampler
 m4_include(DataDrivenSampler/testsuite-datadrivensampler.at)
 

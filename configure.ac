@@ -41,6 +41,8 @@ AC_CONFIG_TESTDIR([tests/python])
 AC_CONFIG_FILES(
 	tests/regression/atlocal
 	tests/regression/Makefile)
+AC_CONFIG_FILES([tests/DatasetParser], [chmod +x tests/DatasetParser])
+AC_CONFIG_FILES([tests/DatasetWriter], [chmod +x tests/DatasetWriter])
 AC_CONFIG_FILES([tests/DDSampler], [chmod +x tests/DDSampler])
 AC_CONFIG_FILES([tests/DDSOptimizer], [chmod +x tests/DDSOptimizer])
 AC_CONFIG_FILES([tests/DDSAnalyser], [chmod +x tests/DDSAnalyser])
