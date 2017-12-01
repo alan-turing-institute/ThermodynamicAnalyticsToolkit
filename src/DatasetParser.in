@@ -1,0 +1,63 @@
+#!/usr/bin/env @PYTHON@
+#
+# This is a command-line parser for CSV data from the dataset. It prints
+# all input features
+# It is very much based on
+# https://stackoverflow.com/questions/40143019/how-to-correctly-read-data-from-csvs-into-tensorflow?noredirect=1&lq=1
+#
+# (C) Frederik Heber 2017-12-01
+
+import sys, getopt
+sys.path.insert(1, '@pythondir@')
+
+import argparse
+import tensorflow as tf
+
+from DataDrivenSampler.common import file_length, create_input_pipeline, \
+    react_to_common_options
+
+
+def main(_):
+    batch_file_length = sum([file_length(filename) for filename in FLAGS.batch_data_files]) \
+                            - len(FLAGS.batch_data_files)
+    batch_examples, batch_labels = create_input_pipeline(
+        FLAGS.batch_data_files,
+        batch_size=batch_file_length,
+        num_epochs=1, seed=FLAGS.seed)
+
+    sess = tf.Session()
+    init_op = tf.group(tf.local_variables_initializer(), tf.global_variables_initializer())
+    sess.run(init_op)
+
+    # Start populating the filename queue.
+    coord = tf.train.Coordinator()
+    threads = tf.train.start_queue_runners(coord=coord, sess=sess)
+
+    try:
+        while not coord.should_stop():
+            batch_batch_examples, batch_batch_labels = sess.run([batch_examples, batch_labels])
+            print(batch_batch_examples)
+    except tf.errors.OutOfRangeError:
+        print('Done training, epoch reached')
+    finally:
+        coord.request_stop()
+
+    coord.join(threads)
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    # please adhere to alphabetical ordering
+    parser.add_argument('--batch_data_files', type=str, nargs='+', default=[],
+        help='filenames of dataset for training formatted as CSV.')
+    parser.add_argument('--batch_size', type=int, default=None,
+        help='The number of samples used to divide sample set into batches in one training step.')
+    parser.add_argument('--seed', type=int, default=None,
+        help='Seed to use for random number generators.')
+    parser.add_argument('--version', action="store_true",
+        help='Gives version information')
+    FLAGS, unparsed = parser.parse_known_args()
+
+    react_to_common_options(FLAGS, unparsed)
+
+    tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
+

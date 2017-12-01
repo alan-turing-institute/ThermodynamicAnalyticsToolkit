@@ -210,11 +210,102 @@ def react_to_common_options(FLAGS, unparsed):
 
     print("Using parameters: "+str(FLAGS))
 
-    if FLAGS.batch_size is None:
-        print("No batch_size was specified, using true gradients.")
-        FLAGS.batch_size = FLAGS.dimension
+    try:
+        if FLAGS.batch_size is None:
+            print("No batch_size was specified, using true gradients.")
+            FLAGS.batch_size = FLAGS.dimension
+    except AttributeError:
+        pass
 
     if len(unparsed) != 0:
         print("There are unparsed parameters '"+str(unparsed)+"', have you misspelled some?")
         sys.exit(255)
+
+
+def file_length(filename):
+    """ Determines the length of the file designated by `filename`.
+
+    :param filename: name of file
+    :return: length
+    """
+    with open(filename) as f:
+        for i, l in enumerate(f):
+            pass
+    return i + 1
+
+
+def read_from_csv(filename_queue):
+    """ Reads a set of records/data from a CSV file into a tensorflow tensor.
+
+    :param filename_queue: filename
+    :return: features and labels (i.e. x,y)
+    """
+    reader = tf.TextLineReader(skip_header_lines=1)
+    _, csv_row = reader.read(filename_queue)
+    # Default values, in case of empty columns. Also specifies the type of the
+    # decoded result.
+    record_defaults = [[0.], [0.], [0]]
+    col_x1, col_x2, col_label = tf.decode_csv(
+        csv_row, record_defaults=record_defaults)
+    features = tf.stack([col_x1, col_x2])
+    label = tf.stack([col_label])
+    return features, label
+
+
+def create_input_pipeline(filenames, batch_size, num_epochs=None, seed=None):
+    """ creates a Tensorflow input pipeline given some files and
+    a batch_size
+
+    :param filenames: name of file
+    :param batch_size: size of each batch to be delivered
+    :param num_epochs: number of maximum epochs, None means no limit
+    :param seed: random number seed used for reshuffling
+    :return: Tensorflow nodes to receive features and labels
+    """
+    filename_queue = tf.train.string_input_producer(filenames, num_epochs=num_epochs, shuffle=True, seed=seed)
+    feature, label = read_from_csv(filename_queue)
+    min_after_dequeue = 10000
+    capacity = min_after_dequeue + 30 * batch_size
+    feature_batch, label_batch = tf.train.shuffle_batch(
+        [feature, label], batch_size=batch_size, capacity=capacity,
+        min_after_dequeue=min_after_dequeue, seed=seed)
+    return feature_batch, label_batch
+
+
+def create_input_layer(input_dimension, input_list):
+    """ Creates the input layer of TensorFlow's neural network.
+
+     As the input nodes are directly connected to the type of data we feed
+     into the network, the function is associated with the dataset generator
+     class.
+
+     As the datasets all have two-dimensional input, several expression may
+     be derived from this: first coordinate, second coordinate, squared first,
+     squared second, sine of first, sine of second.
+
+     All data resides in the domain [-r,r]^2.
+
+    :param input_dimension: number of nodes for the input layer
+    :param input_list: Pick of derived arguments to
+            actually feed into the net
+    :returns: generated nodes for direct input and derived input
+    """
+    # Input placeholders
+    with tf.name_scope('input'):
+        xinput = tf.placeholder(tf.float32, [None, input_dimension], name='x-input')
+        # print("xinput is "+str(xinput.get_shape()))
+
+        # pick from the various available input columns
+        arg_list_names = ["x1", "x2", "x1^2", "x2^2", "sin(x1)", "sin(x2)"]
+        picked_list_names = list(map(lambda i: arg_list_names[i - 1], input_list))
+        print("Picking as input columns: " + str(picked_list_names))
+        arg_list = [xinput[:, 0], xinput[:, 1]]
+        arg_list += [arg_list[0] * arg_list[0],
+                     arg_list[1] * arg_list[1],
+                     tf.sin(arg_list[0]),
+                     tf.sin(arg_list[1])]
+        picked_list = list(map(lambda i: arg_list[i - 1], input_list))
+        x = tf.transpose(tf.stack(picked_list))
+        print("x is " + str(x.get_shape()))
+    return xinput, x
 
