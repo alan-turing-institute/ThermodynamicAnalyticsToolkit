@@ -56,7 +56,8 @@ AT_CHECK([../../../DDSampler \
 	--seed 426
 ], 0, [stdout], [stderr])
 
-AT_CHECK([sqlite3 sqlite.db -csv -header "SELECT * from run_time;"], 0, [ignore], [ignore])
+AT_CHECK([sqlite3 sqlite.db -csv -header "SELECT * from run_time;"], 0, [stdout], [ignore])
+AT_CHECK([grep "1," stdout], 0, [ignore], [ignore]) 
 
 AT_CLEANUP
 
