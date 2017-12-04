@@ -21,3 +21,6 @@ AT_BANNER([LossFunctionSampler - LossFunctionSampler])
 
 # tests on simple behavior
 m4_include([LossFunctionSampler/testsuite-lossfunctionsampler-simple.at])
+
+# tests on trajectory
+m4_include([LossFunctionSampler/testsuite-lossfunctionsampler-sgld-trajectory.at])

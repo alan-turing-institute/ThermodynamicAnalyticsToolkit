@@ -151,8 +151,8 @@ def main(_):
         biases_index_grid = np.zeros(length_biases, dtype=int)
         biases_len_grid = FLAGS.samples_biases+1
 
-        ### functions to iterate over weights and biases
-    
+	### functions to iterate over weights and biases
+
         def check_end():
             isend = True
             for i in range(length_weights):
@@ -163,27 +163,26 @@ def main(_):
                 if biases_index_grid[i] != biases_len_grid-1:
                     isend = False
                     break
-        return isend
-
-        def next_index():
-            incremented = False
-            for i in range(length_weights):
-                if weights_index_grid[i] != weights_len_grid-1:
-                    weights_index_grid[i] += 1
-                    incremented = True
-                    for j in range(i):
-                        weights_index_grid[j]=0
-                    break
-            if not incremented:
-                for i in range(length_biases):
-                    if biases_index_grid[i] != biases_len_grid-1:
-                        biases_index_grid[i] += 1
+            return isend
+        
+            def next_index():
+                incremented = False
+                for i in range(length_weights):
+                    if weights_index_grid[i] != weights_len_grid-1:
+                        weights_index_grid[i] += 1
+                        incremented = True
                         for j in range(i):
-                            biases_index_grid[j]=0
-                        for j in range(length_weights):
                             weights_index_grid[j]=0
                         break
-
+                if not incremented:
+                    for i in range(length_biases):
+                        if biases_index_grid[i] != biases_len_grid-1:
+                            biases_index_grid[i] += 1
+                            for j in range(i):
+                                biases_index_grid[j]=0
+                            for j in range(length_weights):
+                                weights_index_grid[j]=0
+                            break
         is_at_end = False
         while not is_at_end:
             # set the parameters
