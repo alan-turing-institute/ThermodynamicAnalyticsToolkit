@@ -79,7 +79,7 @@ class ClassificationDatasets:
             # pick from the various available input columns
             arg_list_names = ["x1", "x2", "x1^2", "x2^2", "sin(x1)", "sin(x2)"]
             picked_list_names = list(map(lambda i: arg_list_names[i - 1], input_list))
-            print("Picking as input columns: " + str(picked_list_names))
+            print("Picking as input columns (up to first ten shown only): " + str(picked_list_names[0:10]))
             arg_list = [xinput[:, 0], xinput[:, 1]]
             arg_list += [arg_list[0] * arg_list[0],
                          arg_list[1] * arg_list[1],
