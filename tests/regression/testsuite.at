@@ -32,6 +32,9 @@ m4_include(DataDrivenSampler/testsuite-datadrivensampler.at)
 # tests for DataOptimizer or DDSOptimizer
 m4_include(DataOptimizer/testsuite-dataoptimizer.at)
 
+# tests for LossFunctionSampler
+m4_include(LossFunctionSampler/testsuite-lossfunctionsampler.at)
+
 # tests for TrajectoryAnalyser or DDSAnalyser
 m4_include(TrajectoryAnalyser/testsuite-trajectoryanalyser.at)
 

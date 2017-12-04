@@ -10,9 +10,13 @@ import numpy as np
 import argparse
 import math
 
+import csv
+
 from DataDrivenSampler.datasets.classificationdatasets import ClassificationDatasets
 
-from DataDrivenSampler.common import get_filename_from_fullpath, setup_csv_file
+from DataDrivenSampler.common import add_common_options_to_parser, add_data_options_to_parser, \
+        add_model_options_to_parser, get_filename_from_fullpath, react_to_common_options, \
+        setup_csv_file
 from DataDrivenSampler.models.model import model
 from DataDrivenSampler.version import get_package_version, get_build_hash
 
@@ -25,38 +29,28 @@ def parse_parameters():
     """
     parser = argparse.ArgumentParser()
     # please adhere to alphabetical ordering
-    parser.add_argument('--batch_size', type=int, default=10,
-        help='The number of samples used to divide sample set into batches in one training step.')
+
+    add_data_options_to_parser(parser)
+    add_model_options_to_parser(parser)
+
     parser.add_argument('--csv_file', type=str, default=None,
         help='CSV file name to output sampled values to.')
-    parser.add_argument('--data_type', type=int, default=ClassificationDatasets.SPIRAL,
-        help='Which data set to use: (0) two circles, (1) squares, (2) two clusters, (3) spiral.')
-    parser.add_argument('--dimension', type=int, default=10,
-        help='Number P of samples (Y^i,X^i)^P_{i=1} to generate for the desired dataset type.')
-    parser.add_argument('--hidden_activation', type=str, default="relu",
-        help='Activation function to use for hidden layer: tanh, relu, linear')
-    parser.add_argument('--hidden_dimension', type=str, nargs='+', default=[],
-        help='Dimension of each hidden layer, e.g. 8 8 for two hidden layers each with 8 nodes fully connected')
-    parser.add_argument('--input_columns', type=str, nargs='+', default="1 2",
-        help='Pick a list of the following: (1) x1, (2) x2, (3) x1^2, (4) x2^2, (5) sin(x1), (6) sin(x2).')
     parser.add_argument('--interval_biases', type=str, nargs='+', default=[],
         help='Min and max value for each bias.')
+    parser.add_argument('--inter_ops_threads', type=int, default=1,
+        help='Sets the number of threads to split up ops in between. NOTE: This hurts reproducibility to some extent because of parallelism.')
     parser.add_argument('--interval_weights', type=str, nargs='+', default=[],
         help='Min and max value for each weight.')
-    parser.add_argument('--loss', type=str, default="mean_squared",
-        help='Set the loss to be measured during sampling, e.g. mean_squared, log_loss, ...')
-    parser.add_argument('--noise', type=float, default=0.,
-        help='Amount of noise in [0,1] to use.')
-    parser.add_argument('--output_activation', type=str, default="tanh",
-        help='Activation function to use for output layer: tanh, relu, linear')
+    parser.add_argument('--intra_ops_threads', type=int, default=None,
+        help='Sets the number of threads to use within an op, i.e. Eigen threads for linear algebra routines.')
     parser.add_argument('--restore_model', type=str, default=None,
         help='Restore model (weights and biases) from a file.')
     parser.add_argument('--samples_biases', type=int, default=None,
         help='Number of samples to take per bias interval')
     parser.add_argument('--samples_weights', type=int, default=None,
         help='Number of samples to take per weight interval')
-    parser.add_argument('--seed', type=int, default=None,
-        help='Seed to use for random number generators.')
+    parser.add_argument('--trajectory_file', type=str,default=None,
+        help='Input trajectory file')
     parser.add_argument('--version', '-V', action="store_true",
         help='Gives version information')
     return parser.parse_known_args()
@@ -80,7 +74,7 @@ def main(_):
     weights_vals = np.zeros([length_weights, 1])
     biases_vals = np.zeros([length_biases])
 
-    # set up output csv file
+    ## set up output csv file
     header = []
     for i in range(length_weights):
         header.append("w"+str(i))
@@ -91,6 +85,7 @@ def main(_):
     if FLAGS.csv_file is not None:
         csv_writer, csv_file = setup_csv_file(FLAGS.csv_file, header)
 
+    ## function to evaluate the loss
 
     def evaluate_loss():
         batch_xs, batch_ys = network_model.ds.next_batch(FLAGS.batch_size)
@@ -108,7 +103,7 @@ def main(_):
         loss_eval = sess.run(loss, feed_dict=feed_dict)
         #print("Loss at the given parameters w("+str(w1)+","+str(w2)+"), b("
         #      +str(b)+") is "+str(loss_eval[0]))
-
+	
         # get the weights and biases to check against what we set
         weights_eval, biases_eval = sess.run(
             [network_model.nn.get("weights"), network_model.nn.get("biases")],
@@ -146,6 +141,8 @@ def main(_):
         biases_index_grid = np.zeros(length_biases, dtype=int)
         biases_len_grid = FLAGS.samples_biases+1
 
+	### functions to iterate over weights and biases
+
         def check_end():
             isend = True
             for i in range(length_weights):
@@ -157,26 +154,25 @@ def main(_):
                     isend = False
                     break
             return isend
-
-        def next_index():
-            incremented = False
-            for i in range(length_weights):
-                if weights_index_grid[i] != weights_len_grid-1:
-                    weights_index_grid[i] += 1
-                    incremented = True
-                    for j in range(i):
-                        weights_index_grid[j]=0
-                    break
-            if not incremented:
-                for i in range(length_biases):
-                    if biases_index_grid[i] != biases_len_grid-1:
-                        biases_index_grid[i] += 1
+        
+            def next_index():
+                incremented = False
+                for i in range(length_weights):
+                    if weights_index_grid[i] != weights_len_grid-1:
+                        weights_index_grid[i] += 1
+                        incremented = True
                         for j in range(i):
-                            biases_index_grid[j]=0
-                        for j in range(length_weights):
                             weights_index_grid[j]=0
                         break
-
+                if not incremented:
+                    for i in range(length_biases):
+                        if biases_index_grid[i] != biases_len_grid-1:
+                            biases_index_grid[i] += 1
+                            for j in range(i):
+                                biases_index_grid[j]=0
+                            for j in range(length_weights):
+                                weights_index_grid[j]=0
+                            break
         is_at_end = False
         while not is_at_end:
             # set the parameters
@@ -212,17 +208,7 @@ def main(_):
 if __name__ == '__main__':
     FLAGS, unparsed = parse_parameters()
 
-    if FLAGS.version:
-        # give version and exit
-        print(get_filename_from_fullpath(sys.argv[0])+" "+get_package_version()+" -- version "+get_build_hash())
-        sys.exit(0)
-
-    print("Using parameters: "+str(FLAGS))
-
-    if len(unparsed) != 0:
-        print("There are unparsed parameters '"+str(unparsed)+"', have you misspelled some?")
-        sys.exit(255)
+    react_to_common_options(FLAGS, unparsed)
 
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
-
 

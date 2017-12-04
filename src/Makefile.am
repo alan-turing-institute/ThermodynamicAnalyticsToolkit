@@ -54,6 +54,9 @@ LossFunctionSampler: LossFunctionSampler.in Makefile
 	chmod +x LossFunctionSampler
 
 $(srcdir)/version.py: $(srcdir)/.git-version
-	echo -e "def get_package_name():\n\t return \"$(PACKAGE_NAME)\"" >$@
-	echo -e "def get_package_version():\n\t return \"$(PACKAGE_VERSION)\"" >>$@
-	echo -e "def get_build_hash():\n\t return \""`cat $(srcdir)/.git-version`"\"" >>$@
+	echo "def get_package_name():" >$@
+	echo "   return \"$(PACKAGE_NAME)\"" >>$@
+	echo "def get_package_version():" >>$@
+	echo "   return \"$(PACKAGE_VERSION)\"" >>$@
+	echo "def get_build_hash():" >>$@
+	echo "   return \""`cat $(srcdir)/.git-version`"\"" >>$@

@@ -1,0 +1,42 @@
+#
+#    LossFunctionSampler - explore high-dimensional manifold of neural networks
+#    Copyright (C) 2017 The University of Edinburgh
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### test on different samplers
+
+AT_SETUP([LossFunctionSampler - input trajectory from SGLD])
+AT_KEYWORDS([lossfunctionsampler SGLD])
+
+
+AT_CHECK([../../../LossFunctionSampler \
+	--batch_size 20 \
+	--csv_file LossFunctionSampler-output-SGLD.csv \
+	--data_type 2 \
+	--dimension 20 \
+	--seed 426 \
+	--trajectory_file ${abs_top_srcdir}/tests/regression/LossFunctionSampler/pre/trajectory-SGLD.csv
+], 0, [stdout], [stderr])
+
+
+# select only the "loss" column 
+cat LossFunctionSampler-output-SGLD.csv | awk -F"," 'BEGIN { column_nr=-1 } { if (NR==1) { for(i=1;i<=NF;++i) { if (match($i,"loss") != 0) { column_nr=i } } } else { print $column_nr+0 }  }' > LFS-losses.txt
+
+# now compare
+AT_CHECK([diff LFS-losses.txt ${abs_top_srcdir}/tests/regression/LossFunctionSampler/post/trajectory-losses-SGLD.csv], 0, [ignore], [ignore])
+
+
+AT_CLEANUP
+
