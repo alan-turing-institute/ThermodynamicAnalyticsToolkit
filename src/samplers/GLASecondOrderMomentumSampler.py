@@ -57,7 +57,7 @@ class GLASecondOrderMomentumSampler(GLAFirstOrderMomentumSampler):
 
         scaled_noise = tf.sqrt((1.-tf.pow(alpha_t, 2))/inverse_temperature_t) * random_noise_t
         with tf.variable_scope("accumulate", reuse=True):
-            noise_global = tf.get_variable("noise")
+            noise_global = tf.get_variable("noise", dtype=tf.float64)
             noise_global_t = tf.assign_add(noise_global, tf.pow(alpha_t, -2)*tf.reduce_sum(tf.multiply(scaled_noise, scaled_noise)))
         momentum_noise_step_t = alpha_t * momentum_half_step_t + scaled_noise
 
@@ -65,10 +65,10 @@ class GLASecondOrderMomentumSampler(GLAFirstOrderMomentumSampler):
         momentum_sq = 0.5 * tf.reduce_sum(tf.multiply(momentum_noise_step_t, momentum_noise_step_t))
 
         with tf.variable_scope("accumulate", reuse=True):
-            gradient_global = tf.get_variable("gradients")
+            gradient_global = tf.get_variable("gradients", dtype=tf.float64)
             gradient_global_t = tf.assign_add(gradient_global, tf.reduce_sum(tf.multiply(scaled_gradient, scaled_gradient)))
             # configurational temperature
-            virial_global = tf.get_variable("virials")
+            virial_global = tf.get_variable("virials", dtype=tf.float64)
             virial_global_t = tf.assign_add(virial_global, tf.reduce_sum(tf.multiply(grad, var)))
 
         # p^{n+1} = p^{n+1/2} − \nabla V (q^{n+1} ) \Delta t/2
@@ -79,13 +79,13 @@ class GLASecondOrderMomentumSampler(GLAFirstOrderMomentumSampler):
 
         # p^{n+1} = \alpha_{\Delta t} p^{n+1} + \sqrt{ \frac{1-\alpha^2_{\Delta t}}{\beta} M } G^n
         with tf.variable_scope("accumulate", reuse=True):
-            momentum_global = tf.get_variable("momenta")
+            momentum_global = tf.get_variable("momenta", dtype=tf.float64)
             momentum_global_t = tf.assign_add(momentum_global, tf.reduce_sum(tf.multiply(momentum_t, momentum_t)))
 
         # as the loss evaluated with train_step is the "old" (not updated) loss, we
         # therefore also need to the use the old momentum for the kinetic energy
         with tf.variable_scope("accumulate", reuse=True):
-            kinetic_energy = tf.get_variable("kinetic")
+            kinetic_energy = tf.get_variable("kinetic", dtype=tf.float64)
             kinetic_energy_t = tf.assign_add(kinetic_energy, momentum_sq)
 
         return control_flow_ops.group(*[gradient_global_t, virial_global_t, var_update,

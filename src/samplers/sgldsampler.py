@@ -60,11 +60,11 @@ class SGLDSampler(optimizer.Optimizer):
         inverse_temperature_t = math_ops.cast(self._inverse_temperature_t, var.dtype.base_dtype)
         #print("lr_t is "+str(self._lr))
         if self._seed is None:
-            random_noise_t = tf.random_normal(grad.get_shape(), mean=0.,stddev=1.)
+            random_noise_t = tf.random_normal(grad.get_shape(), mean=0.,stddev=1., dtype=tf.float64)
         else:
             # increment such that we use different seed for each random tensor
             self._seed += 1
-            random_noise_t = tf.random_normal(grad.get_shape(), mean=0., stddev=1., seed=self._seed)
+            random_noise_t = tf.random_normal(grad.get_shape(), mean=0., stddev=1., dtype=tf.float64, seed=self._seed)
         #print("random_noise_t has shape "+str(random_noise_t.get_shape())+" with seed "+str(self._seed))
         return step_width_t, inverse_temperature_t, random_noise_t
 
@@ -86,15 +86,15 @@ class SGLDSampler(optimizer.Optimizer):
         scaled_gradient = step_width_t * grad
 
         with tf.variable_scope("accumulate", reuse=True):
-            gradient_global = tf.get_variable("gradients")
+            gradient_global = tf.get_variable("gradients", dtype=tf.float64)
             gradient_global_t = tf.assign_add(gradient_global, tf.reduce_sum(tf.multiply(scaled_gradient, scaled_gradient)))
             # configurational temperature
-            virial_global = tf.get_variable("virials")
+            virial_global = tf.get_variable("virials", dtype=tf.float64)
             virial_global_t = tf.assign_add(virial_global, tf.reduce_sum(tf.multiply(grad, var)))
 
         scaled_noise = tf.sqrt(2.*step_width_t/inverse_temperature_t) * random_noise_t
         with tf.variable_scope("accumulate", reuse=True):
-            noise_global = tf.get_variable("noise")
+            noise_global = tf.get_variable("noise", dtype=tf.float64)
             noise_global_t = tf.assign_add(noise_global, tf.reduce_sum(tf.multiply(scaled_noise, scaled_noise)))
 
         var_update = state_ops.assign_sub(var, scaled_gradient + scaled_noise)

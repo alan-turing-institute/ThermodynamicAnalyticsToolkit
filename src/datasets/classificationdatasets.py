@@ -73,7 +73,7 @@ class ClassificationDatasets:
         """
         # Input placeholders
         with tf.name_scope('input'):
-            xinput = tf.placeholder(tf.float32, [None, input_dimension], name='x-input')
+            xinput = tf.placeholder(tf.float64, [None, input_dimension], name='x-input')
             # print("xinput is "+str(xinput.get_shape()))
 
             # pick from the various available input columns

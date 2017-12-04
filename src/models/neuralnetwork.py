@@ -146,7 +146,7 @@ class NeuralNetwork(object):
         :param output_dimension: number of output nodes
         :return: reference to created output layer
         """
-        y_ = tf.placeholder(tf.float32, [None, output_dimension], name='y-input')
+        y_ = tf.placeholder(tf.float64, [None, output_dimension], name='y-input')
         # print("y_ is "+str(y_.get_shape()))
         self.placeholder_nodes['y_'] = y_
         return y_
@@ -170,7 +170,7 @@ class NeuralNetwork(object):
                 correct_prediction = tf.equal(tf.sign(y), tf.sign(y_))
                 self.summary_nodes['correct_prediction'] = correct_prediction
             with tf.name_scope('accuracy'):
-                accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+                accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float64))
                 self.summary_nodes['accuracy'] = accuracy
         tf.summary.scalar('accuracy', accuracy)
 
@@ -184,13 +184,13 @@ class NeuralNetwork(object):
         with tf.name_scope('train'):
             # DON'T add placeholders only sometimes, e.g. when only a specific sampler
             # requires it. Always add them and only sometimes use them!
-            step_width = tf.placeholder(tf.float32)
+            step_width = tf.placeholder(tf.float64)
             tf.summary.scalar('step_width', step_width)
             self.placeholder_nodes['step_width'] = step_width
-            inverse_temperature = tf.placeholder(tf.float32)
+            inverse_temperature = tf.placeholder(tf.float64)
             tf.summary.scalar('inverse_temperature', inverse_temperature)
             self.placeholder_nodes['inverse_temperature'] = inverse_temperature
-            friction_constant = tf.placeholder(tf.float32)
+            friction_constant = tf.placeholder(tf.float64)
             tf.summary.scalar('friction_constant', friction_constant)
             self.placeholder_nodes['friction_constant'] = friction_constant
 
@@ -220,7 +220,7 @@ class NeuralNetwork(object):
         with tf.name_scope('train'):
             # DON'T add placeholders only sometimes, e.g. when only a specific optimizer
             # requires it. Always add them and only sometimes use them!
-            step_width = tf.placeholder(tf.float32)
+            step_width = tf.placeholder(tf.float64)
             tf.summary.scalar('step_width', step_width)
             self.placeholder_nodes['step_width'] = step_width
 
@@ -345,7 +345,7 @@ class NeuralNetwork(object):
 
         :return: reference to created node
         """
-        keep_prob = tf.placeholder(tf.float32)
+        keep_prob = tf.placeholder(tf.float64)
         self.placeholder_nodes['keep_prob'] = keep_prob
         with tf.name_scope('dropout'):
             tf.summary.scalar('dropout_keep_probability', keep_prob)
@@ -383,8 +383,8 @@ class NeuralNetwork(object):
 
         :param shape: shape of the weight tensor to create
         """
-        initial = tf.random_uniform(shape, minval=-0.5, maxval=0.5, seed=seed)
-        return tf.Variable(initial)
+        initial = tf.random_uniform(shape, minval=-0.5, maxval=0.5, seed=seed, dtype=tf.float64)
+        return tf.Variable(initial, dtype=tf.float64)
 
     @staticmethod
     def bias_variable(shape):
@@ -392,8 +392,8 @@ class NeuralNetwork(object):
 
         :param shape: shape of the weight tensor to create
         """
-        initial = tf.constant(0.1, shape=shape)
-        return tf.Variable(initial)
+        initial = tf.constant(0.1, shape=shape, dtype=tf.float64)
+        return tf.Variable(initial, dtype=tf.float64)
 
     @staticmethod
     def variable_summaries(var):

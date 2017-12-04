@@ -19,6 +19,7 @@
 
 AT_SETUP([Samplers - GLA 1st])
 AT_KEYWORDS([samplers ddsampler GLA 1st])
+AT_XFAIL_IF([/bin/true])
 
 # run 1
 AT_CHECK([../../../DDSampler \

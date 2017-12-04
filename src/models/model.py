@@ -55,19 +55,19 @@ class model:
         with tf.variable_scope("accumulate", reuse=self.resources_created):
             kinetic_energy_t = tf.get_variable("kinetic", shape=[], trainable=False,
                                                initializer=tf.zeros_initializer,
-                                               use_resource=True)
+                                               use_resource=True, dtype=tf.float64)
             momenta_t = tf.get_variable("momenta", shape=[], trainable=False,
                                         initializer=tf.zeros_initializer,
-                                        use_resource=True)
+                                        use_resource=True, dtype=tf.float64)
             gradients_t = tf.get_variable("gradients", shape=[], trainable=False,
                                           initializer=tf.zeros_initializer,
-                                          use_resource=True)
+                                          use_resource=True, dtype=tf.float64)
             virials_t = tf.get_variable("virials", shape=[], trainable=False,
                                         initializer=tf.zeros_initializer,
-                                        use_resource=True)
+                                        use_resource=True, dtype=tf.float64)
             noise_t = tf.get_variable("noise", shape=[], trainable=False,
                                       initializer=tf.zeros_initializer,
-                                      use_resource=True)
+                                      use_resource=True, dtype=tf.float64)
         self.resources_created = True
 
     @staticmethod
@@ -222,15 +222,15 @@ class model:
         """
         # create global variable to hold kinetic energy
         with tf.variable_scope("accumulate", reuse=True):
-            kinetic_energy_t = tf.get_variable("kinetic")
+            kinetic_energy_t = tf.get_variable("kinetic", dtype=tf.float64)
             zero_kinetic_energy = kinetic_energy_t.assign(0.)
-            momenta_t = tf.get_variable("momenta")
+            momenta_t = tf.get_variable("momenta", dtype=tf.float64)
             zero_momenta = momenta_t.assign(0.)
-            gradients_t = tf.get_variable("gradients")
+            gradients_t = tf.get_variable("gradients", dtype=tf.float64)
             zero_gradients = gradients_t.assign(0.)
-            virials_t = tf.get_variable("virials")
+            virials_t = tf.get_variable("virials", dtype=tf.float64)
             zero_virials = virials_t.assign(0.)
-            noise_t = tf.get_variable("noise")
+            noise_t = tf.get_variable("noise", dtype=tf.float64)
             zero_noise = noise_t.assign(0.)
 
         placeholder_nodes = self.nn.get_dict_of_nodes(
@@ -334,7 +334,9 @@ class model:
                     accumulated_virials += virials
             if i % self.FLAGS.every_nth == 0:
                 if self.config_map["do_write_trajectory_file"] or return_trajectories:
-                    trajectory_line = [global_step, loss_eval]\
+                    trajectory_line = [global_step] \
+                                      + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
+                                                                          precision=output_precision)] \
                                       + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
                                          for sublist in weights_eval for item in sublist]\
                                       + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
@@ -351,12 +353,16 @@ class model:
                                               "GeometricLangevinAlgorithm_1stOrder",
                                               "GeometricLangevinAlgorithm_2ndOrder"]:
                         if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
-                            run_line = [global_step, i, acc, loss_eval]\
+                            run_line = [global_step, i] + ['{:1.3f}'.format(acc)] \
+                                       + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
+                                                                           precision=output_precision)] \
                                        + ['{:{width}.{precision}e}'.format(x, width=output_width,
                                                                            precision=output_precision)
                                           for x in [sqrt(gradients), abs(0.5*virials), sqrt(noise), abs(0.5*accumulated_virials)/float(i+1.)]]
                         else:
-                            run_line = [global_step, i, acc, loss_eval] \
+                            run_line = [global_step, i] + ['{:1.3f}'.format(acc)] \
+                                       + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
+                                                                           precision=output_precision)] \
                                        + ['{:{width}.{precision}e}'.format(loss_eval + kinetic_energy,
                                                                            width=output_width,
                                                                            precision=output_precision)]\
@@ -365,7 +371,9 @@ class model:
                                           for x in [kinetic_energy, sqrt(momenta), sqrt(gradients), abs(0.5*virials), sqrt(noise),
                                                     accumulated_kinetic_energy/float(i+1.), abs(0.5*accumulated_virials)/float(i+1.)]]
                     else:
-                        run_line = [global_step, i, acc, loss_eval]
+                        run_line = [global_step, i] + ['{:1.3f}'.format(acc)] \
+                                   + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
+                                                                       precision=output_precision)]
 
                     if self.config_map["do_write_run_file"]:
                         self.run_writer.writerow(run_line)
@@ -392,9 +400,9 @@ class model:
                 parameter has evaluated to True
         """
         with tf.variable_scope("accumulate", reuse=True):
-            gradients_t = tf.get_variable("gradients")
+            gradients_t = tf.get_variable("gradients", dtype=tf.float64)
             zero_gradients = gradients_t.assign(0.)
-            virials_t = tf.get_variable("virials")
+            virials_t = tf.get_variable("virials", dtype=tf.float64)
             zero_virials = gradients_t.assign(0.)
 
         placeholder_nodes = self.nn.get_dict_of_nodes(["step_width", "y_"])
@@ -449,16 +457,16 @@ class model:
             accumulated_virials += virials
 
             if i % self.FLAGS.every_nth == 0:
-                run_line = [global_step, i, acc, loss_eval] \
-                    + ['{:{width}.{precision}e}'.format(sqrt(gradients),
-                                                    width=output_width,
-                                                    precision=output_precision)] \
-                    + ['{:{width}.{precision}e}'.format(abs(0.5*virials),
-                                                        width=output_width,
-                                                        precision=output_precision)] \
-                    + ['{:{width}.{precision}e}'.format(abs(0.5*accumulated_virials)/float(i+1.),
-                                                        width=output_width,
-                                                        precision=output_precision)]
+                run_line = [global_step, i] + ['{:1.3f}'.format(acc)] \
+                           + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
+                                                               precision=output_precision)] \
+                           + ['{:{width}.{precision}e}'.format(sqrt(gradients), width=output_width,
+                                                               precision=output_precision)] \
+                           + ['{:{width}.{precision}e}'.format(abs(0.5*virials),width=output_width,
+                                                               precision=output_precision)] \
+                           + ['{:{width}.{precision}e}'.format(abs(0.5*accumulated_virials)/float(i+1.),
+                                                               width=output_width,
+                                                               precision=output_precision)]
                 if self.config_map["do_write_run_file"]:
                     self.run_writer.writerow(run_line)
                 if return_run_info:
@@ -466,7 +474,9 @@ class model:
                 if return_trajectories or self.config_map["do_write_trajectory_file"]:
                     weights_eval, biases_eval = \
                         self.sess.run([self.nn.get("weights"), self.nn.get("biases")], feed_dict=feed_dict)
-                    trajectory_line = [global_step, loss_eval] \
+                    trajectory_line = [global_step] \
+                                      + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
+                                                                          precision=output_precision)] \
                                       + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
                                          for sublist in weights_eval for item in sublist] \
                                       + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)

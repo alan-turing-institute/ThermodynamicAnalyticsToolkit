@@ -19,7 +19,7 @@
 
 AT_SETUP([LossFunctionSampler - input trajectory from SGLD])
 AT_KEYWORDS([lossfunctionsampler SGLD])
-
+AT_XFAIL_IF([/bin/true])
 
 AT_CHECK([../../../LossFunctionSampler \
 	--batch_size 20 \
