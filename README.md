@@ -10,9 +10,19 @@ samplers create trajectories with certain statistical properties
 that are used to extract quantities such as slow reaction coordinates
 and free energy.
 
+In total, we depend on the following python packages:
+
+ * tensorflow
+ * numpy
+ * pandas
+ * scipy
+ * scikit-learn
+
 It has received financial support from a seed funding grant from the Alan
 Turing Institute in London (R-SIS-003) and a british EPSRC grant (Data Driven
 Sampling).
 
-Please refer to INSTALL for installation instructions. After installation
-there is a userguide "datadrivensampler.pdf" for full reference.
+Please refer to INSTALL for installation instructions. When cloning from
+github please call the bootstrap.sh script (requiring installed autotools and
+automake packages). After installation (configure, make, make install) there 
+is a userguide "datadrivensampler.pdf" for full reference.
