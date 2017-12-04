@@ -19,7 +19,6 @@
 
 AT_SETUP([Optimizer Datasets - two circles])
 AT_KEYWORDS([twocircles ddsoptimizer])
-AT_XFAIL_IF([/bin/true])
 
 AT_CHECK([../../../DDSOptimizer \
 	--data_type 0 \
