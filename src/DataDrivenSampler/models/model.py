@@ -382,8 +382,8 @@ class model:
                         run_info.loc[written_row] = run_line
                 written_row+=1
 
-            if (i % print_intervals) == 0:
-                print('Accuracy at step %s (%s): %s' % (i, global_step, acc))
+            #if (i % print_intervals) == 0:
+                #print('Accuracy at step %s (%s): %s' % (i, global_step, acc))
                 # print('Loss at step %s: %s' % (i, loss_eval))
                 # print('y_ at step %s: %s' % (i, str(y_true_eval[0:9].transpose())))
                 # print('y at step %s: %s' % (i, str(y_eval[0:9].transpose())))
@@ -441,7 +441,7 @@ class model:
 
         print("Starting to train")
         for i in range(self.FLAGS.max_steps):
-            print("Current step is " + str(i))
+            #print("Current step is " + str(i))
             batch_xs, batch_ys = self.ds.next_batch(self.FLAGS.batch_size)
             feed_dict = {
                 self.xinput: batch_xs, placeholder_nodes["y_"]: batch_ys,
@@ -492,11 +492,11 @@ class model:
                         trajectory.loc[written_row] = trajectory_line
                 written_row+=1
 
-            print('Accuracy at step %s (%s): %s' % (i, global_step, acc))
+            #print('Accuracy at step %s (%s): %s' % (i, global_step, acc))
             # print('Loss at step %s: %s' % (i, loss_eval))
             # print('y_ at step %s: %s' % (i, str(y_true_eval[0:9].transpose())))
             # print('y at step %s: %s' % (i, str(y_eval[0:9].transpose())))
-        print("TRAINED.")
+        print("TRAINED down to loss %s and accuracy %s." % (loss_eval, acc))
 
         return run_info, trajectory
 
