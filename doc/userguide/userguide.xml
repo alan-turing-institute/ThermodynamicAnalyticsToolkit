@@ -1,53 +1,103 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN" "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" [
+﻿<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd" [
   <!ENTITY dataset_two_clusters SYSTEM "pictures/dataset_two_clusters.png" NDATA PNG>
   <!ENTITY simple_single_layer_perceptron SYSTEM "pictures/simple_single_layer_perceptron.png" NDATA PNG>
 ]>
-<book xmlns:xlink="http://www.w3.org/1999/xlink">
-  <title>DataDrivenSampler - Manual</title>
+<book xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:svg="http://www.w3.org/2000/svg" xmlns:mml="http://www.w3.org/1998/Math/MathML" xmlns:html="http://www.w3.org/1999/xhtml" xmlns:db="http://docbook.org/ns/docbook" version="5.0">
+<info>
+  <title>DataDrivenSampler</title>
+  <subtitle>Manual</subtitle>
   <author>
-      <firstname>Frederik</firstname>
-      <surname>Heber</surname>
+      <personname>
+        <firstname>Frederik</firstname>
+        <surname>Heber</surname>
+      </personname>
       <email>frederik.heber@gmail.com</email>
       <affiliation>
         <orgname>The University of Edinburgh</orgname>
         <address>School of Mathematics, 5613, JCMB, Peter Guthrie Tait Road, Edinburgh, EH9 3FD </address>
       </affiliation>
   </author>
+  <copyright>
+    <holder>The University of Edinburgh, all rights reserved</holder>
+    <year>2017</year>
+  </copyright>
+   <cover>
+        <para role="tagline">The Official Documentation for DataDrivenSampler</para>
+        <mediaobject>
+          <imageobject>
+            <imagedata width="30%" scalefit="1." entityref="dataset_two_clusters"/>
+          </imageobject>
+        </mediaobject>
+  </cover>
+      <cover>
+        <mediaobject>
+          <imageobject>
+            <imagedata width="30%" scalefit="1." entityref="dataset_two_clusters"/>
+          </imageobject>
+        </mediaobject>
+        <para>DataDrivenSampler is a sampling-based approach to training 
+        neural networks using TensorFlow </para>
+        <para><citetitle>DataDrivenSampler: Manual</citetitle> is the…</para>
+        <itemizedlist>
+          <listitem>
+    	      <para>A brief introduction to data-driven sampling in machine learning</para>
+          </listitem>
+          <listitem>
+            <para>A guide to using DataDrivenSampler to perform sampling experiments</para>
+          </listitem>
+        </itemizedlist>
+      </cover>
+</info>
+
   <chapter xml:id="introduction">
     <title xml:id="introduction.title">Introduction</title>
     <section xml:id="introduction.whatis">
       <title xml:id="introduction.whatis.title">What is DataDrivenSampler?</title>
-      <para>Typical optimzation in neural network training using methods such
-      as Gradient Descent, Stochastic Gradient Descent or derived methods
-      using momentum will only find local minima. Neural networks, given enough
-      data and  processing power, work marvelously and one may wonder why.
+      <para>Typically, optimzation in neural network training employs methods 
+      such as Gradient Descent, Stochastic Gradient Descent or derived methods
+      using momentum such as ADAM and so on. The loss function itself may be
+      convex, however, the loss manifold given a large dataset is not convex 
+      in general. Hence, these methods will only find local minima. Therefore, 
+      the eventual set of trained parameters of the neural network is not 
+      optimal. Nonetheless, Neural networks, given enough data and processing 
+      power, work marvelously and one may wonder why.
       </para>
       <para>The essential idea behind this program package is that we use
       sampling instead of optimization: we are not interested in the local 
       minimum closest to some random initial configuration and be done. 
-      Instead we aiming at finding all of the minima and all possible barriers 
+      Instead we aim at finding all of the minima and all possible barriers 
       in between by treating the loss function as a high-dimensional potential
       and the weights and biases of the neural network as particles in a 
       stochastic differential equation, namely Langevin Dynamics.</para>
+      <para>There is not need to panic: You do not need to know anything about 
+      these kinds of equations when using the program. However, rest assured 
+      that all statistical properties derived using trajectories obtained 
+      through these equations are meaningful.</para>
       <para>The hope is to elucidate the marvel behind the wondrous 
-      performance of neural networks and also to gather means of optimizing
-      its topologies given a specific dataset to train.</para>
+      performance of neural networks, maybe to obtain even better 
+      parametrizations or obtain the same in cheaper ways, and also to gather 
+      means of optimizing the neural network's topology given a specific 
+      dataset to train.</para>
       <para>In essence, this program suite provides samplers using 
       <link xlink:href="https://www.tensorflow.org/">TensorFlow</link> and
       analysis tools to extract specific statistical quantities from the 
       computed particle trajectories.</para>
-      <para>It can be used both inside python and as stand-alone command-line
-      tools.</para>
+      <para>It can be used both as python module and as stand-alone 
+      command-line tools.</para>
     </section>
     <section xml:id="introduction.installation">
-      <title xml:id="introduction.installation.title">Installation requirements</title>
-      <para>This program suite is implemented using python3 and the development
-      mainly focused on Linux (development machine uses Ubuntu 16.04). At the
-      moment other operation systems are not supported but may still work.</para>
-      <para>It has the following non-trivial dependencies:
+      <title xml:id="introduction.installation.title">Installation</title>
+      <para>In the following we explain the installation procedure to get
+      DataDrivenSampler up and running.</para>
+      <section xml:id="introduction.installation.requirements">
+        <title xml:id="introduction.installation.requirements.title">Installation requirements</title>
+        <para>This program suite is implemented using python3 and the development
+        mainly focused on Linux (development machine uses Ubuntu 16.04). At the
+        moment other operation systems are not supported but may still work.</para>
+        <para>It has the following non-trivial dependencies:</para>
         <itemizedlist>
-          <listitem>TensorFlow: see below</listitem>
+          <listitem>TensorFlow: see below<uri>www.tensorflow.org</uri></listitem>
           <listitem>Numpy: see <uri>www.numpy.org</uri></listitem>
           <listitem>Pandas: see <uri>pandas.pydata.org</uri></listitem>
           <listitem>sklearn: see <uri>scikit-learn.org</uri></listitem>
@@ -57,43 +107,74 @@
         <programlisting>sudo apt install python3-numpy</programlisting>or via
         <command>pip3</command>, i.e.
         <programlisting>pip3 install numpy</programlisting>
-      </para>
-      <section xml:id="introduction.installation.tensorflow">
-        <title>Tensorflow installation</title>
-        <para>DataDrivenSampler is based on <productname>TensorFlow</productname>
-        which is available at the time of writing from
-        <uri>www.tensorflow.org</uri>. It is not quite as simple to install
-        as the other required packages.
-        Please proceed with the installation instructions there, prior to 
-        installing this package. Henceforth, we assume that there is a working 
-        tensorflow on your system, i.e. inside the python3 shell</para>
+        <para>In our setting what typically worked best was to use 
+        <productname>anaconda</productname> in the following manner:</para>
+        <programlisting>conda create -n tensorflow python=3.5 -y
+  conda install -n tensorflow -y tensorflow numpy scipy pandas scikit-learn
+        </programlisting>
+        <para>In case your machine has GPU hardware for tensorflow, replace
+        <quote>tensorflow</quote> by <quote>tensorflow-gpu</quote>.</para>
+        <note>Note that on systems with typical core i7 architecture 
+        recompiling tensorflow from source provided only very small runtime
+        gains in our tests which in most cases do not support the extra effort.
+        However, by default the provided package did not seem to support
+        multi-threading. Hence, in this scenario compiling from source is 
+        required.</note>
+        <para>Henceforth, we assume that there is a working tensorflow on 
+        your system, i.e. inside the python3 shell</para>
         <programlisting>import tensorflow as tf</programlisting>
         <para>does <emphasis>not</emphasis> throw an error.</para>
+        <para>Moreover,</para>
+        <programlisting>a=tf.constant("Hello world")
+  sess=tf.Session()
+  sess.run(a)</programlisting>
+        <para>should print <quote>Hello world</quote> or something similar.
+        </para>
       </section>
-      <para>This package is distributed via autotools, "compiled" and installed 
-      via automake. If you are familiar with this set of tools, there should be
-      no problem. If not, please refer to the text INSTALL file that is included
-      in this distributable archive. The installation, very briefly, goes like this:
-      <programlisting>
-      ./bootstrap.sh
-      mkdir build64
-      cd build64
-      ../configure --prefix="somepath" -C PYTHON="path to python3"
-      make
-      make install
-      </programlisting>
-      Here, "compilation" is done in an extra folder, i.e. it is an 
-      out-of-source build, that prevents cluttering of the sourc folder.</para>
-      <para>Please replace <quote>somepath</quote> and <quote>path to python3
-      </quote> by the desired installation path and the full path to the 
-      <command>python3</command> executable on your system.</para>
-      <note>We recommend executing
-        <programlisting>make check</programlisting>
-        additionally. This will execute every test on the extensive testsuite
-        and report any errors. None should fail. If all fail, a possible cause 
-        might be a not working tensorflow installation. If some fail, please
-        contact the author, see <xref linkend="introduction.feedback"/>.
-      </note>
+      <section xml:id="introduction.installation.procedure">
+        <title xml:id="introduction.installation.procedure.title">Installation procedure</title>
+        <para>This package is distributed via autotools, "compiled" and installed 
+        via automake. If you are familiar with this set of tools, there should be
+        no problem. If not, please refer to the text INSTALL file that is included
+        in this distributable archive. The installation, very briefly, goes like this:</para>
+        <programlisting>
+        ./bootstrap.sh
+        mkdir build64
+        cd build64
+        ../configure --prefix="somepath" -C PYTHON="path to python3"
+        make
+        make install
+        </programlisting>
+        <para>where the first step is only required if you have obtained the 
+        package through cloning the github repository. If you extracted it from
+        a distributable tarball, then this is not necssary.</para>
+        <para>Here, "compilation" is done in an extra folder 
+        <quote>build64</quote>, i.e. it is an out-of-source build, that 
+        prevents cluttering of the source folder. Naturally, you may pick any
+        name (and actually any location on your computer) as you see fit.
+        </para>
+        <para>More importantly, please replace <quote>somepath</quote> and 
+        <quote>path to python3 </quote> by the desired installation path and 
+        the full path to the <command>python3</command> executable on your 
+        system.</para>
+        <note>In case of having used <productname>anaconda</productname>
+        for the installation of required packages, then you need to look in
+        <programlisting>$HOME/.conda/envs/tensorflow/bin/python3</programlisting>
+        for the respective command, where <quote>$HOME</quote> is your home
+        folder. This assumes that your anaconda environment is named
+        <quote>tensorflow</quote> as in the example installation steps above.
+        </note>
+        <note>We recommend executing
+          <programlisting>make check</programlisting>
+          additionally. This will execute every test on the extensive testsuite
+          and report any errors. None should fail. If all fail, a possible cause 
+          might be a not working tensorflow installation. If some fail, please
+          contact the author, see <xref linkend="introduction.feedback"/>.
+          As always with GNU make you may use <command>make -j4 check</command>
+          to execute four processes in parallel performing the checks which
+          should give a significant speed up.
+        </note>
+      </section>
     </section>
     <section xml:id="introduction.license">
       <title xml:id="introduction.license.title">License</title>
@@ -124,6 +205,7 @@ cost of all necessary servicing, repair, or correction.</remark>
       Please mind sensible space restrictions of email attachments.</para>
     </section>
   </chapter>
+  
   <chapter xml.id="quickstart">
     <title  xml.id="quickstart.title">Quickstart</title>
     <section xml.id="quickstart.introduction">
