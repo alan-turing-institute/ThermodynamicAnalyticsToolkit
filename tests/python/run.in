@@ -10,17 +10,17 @@ modpath='../.libs:@abs_top_builddir@/python/.libs'
 # rely on a module called ltihooks.py to teach the import function how
 # to load a Libtool library, but it started to cause issues with
 # Python 2.6.
-pypath='@abs_srcdir@/src:$PYTHONPATH'
+pypath="@abs_top_srcdir@/src:$PYTHONPATH"
 
 test -z "$1" &&
-  PYTHONPATH=$modpath DYLD_LIBRARY_PATH=$modpath LD_LIBRARY_PATH=$modpath exec @PYTHON@
+  PYTHONPATH=$pypath DYLD_LIBRARY_PATH=$modpath LD_LIBRARY_PATH=$modpath exec @PYTHON@
 
 case $1 in
   *.py|*.in)
-    PYTHONPATH=$modpath DYLD_LIBRARY_PATH=$modpath LD_LIBRARY_PATH=$modpath exec @PYTHON@ "$@";;
+    PYTHONPATH=$pypath DYLD_LIBRARY_PATH=$modpath LD_LIBRARY_PATH=$modpath exec @PYTHON@ "$@";;
   *.test)
     exec sh -x "$@";;
   *)
     # executable script with python
-    PYTHONPATH=$modpath DYLD_LIBRARY_PATH=$modpath LD_LIBRARY_PATH=$modpath "$@";;
+    PYTHONPATH=$pypath DYLD_LIBRARY_PATH=$modpath LD_LIBRARY_PATH=$modpath "$@";;
 esac

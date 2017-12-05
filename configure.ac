@@ -35,13 +35,17 @@ AC_CONFIG_FILES(
 	tests/integration/Makefile)
 AC_CONFIG_TESTDIR([tests/regression])
 AC_CONFIG_FILES(
+	tests/python/atlocal
+	tests/python/Makefile)
+AC_CONFIG_TESTDIR([tests/python])
+AC_CONFIG_FILES(
 	tests/regression/atlocal
 	tests/regression/Makefile)
 AC_CONFIG_FILES([tests/DDSampler], [chmod +x tests/DDSampler])
 AC_CONFIG_FILES([tests/DDSOptimizer], [chmod +x tests/DDSOptimizer])
 AC_CONFIG_FILES([tests/DDSAnalyser], [chmod +x tests/DDSAnalyser])
 AC_CONFIG_FILES([tests/LossFunctionSampler], [chmod +x tests/LossFunctionSampler])
-AC_CONFIG_FILES([tests/run], [chmod +x tests/run])
+AC_CONFIG_FILES([tests/python/run], [chmod +x tests/python/run])
 AC_CONFIG_FILES([
         doc/Makefile
         doc/userguide/Makefile

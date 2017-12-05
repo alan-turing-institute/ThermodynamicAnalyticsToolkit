@@ -1,6 +1,3 @@
-import os
-print(os.environ["PYTHONPATH"])
-
 from DataDrivenSampler.models.model import model
 
 import numpy as np
