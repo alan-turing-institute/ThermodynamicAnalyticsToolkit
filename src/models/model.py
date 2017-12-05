@@ -388,6 +388,8 @@ class model:
                 # print('y at step %s: %s' % (i, str(y_eval[0:9].transpose())))
         print("SAMPLED.")
 
+        return run_info, trajectory
+
     def train(self, return_run_info = False, return_trajectories = False):
         """ Performs the actual training of the neural network `nn` given a dataset `ds` and a
         Session `session`.
