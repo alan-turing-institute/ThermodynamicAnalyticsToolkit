@@ -184,17 +184,17 @@ class NeuralNetwork(object):
         with tf.name_scope('train'):
             # DON'T add placeholders only sometimes, e.g. when only a specific sampler
             # requires it. Always add them and only sometimes use them!
-            step_width = tf.placeholder(tf.float64)
+            step_width = tf.placeholder(tf.float64, name="step_width")
             tf.summary.scalar('step_width', step_width)
             self.placeholder_nodes['step_width'] = step_width
-            inverse_temperature = tf.placeholder(tf.float64)
+            inverse_temperature = tf.placeholder(tf.float64, name="inverse_temperature")
             tf.summary.scalar('inverse_temperature', inverse_temperature)
             self.placeholder_nodes['inverse_temperature'] = inverse_temperature
-            friction_constant = tf.placeholder(tf.float64)
+            friction_constant = tf.placeholder(tf.float64, name="friction_constant")
             tf.summary.scalar('friction_constant', friction_constant)
             self.placeholder_nodes['friction_constant'] = friction_constant
 
-            global_step = tf.Variable(0, trainable=False)
+            global_step = tf.Variable(0, trainable=False, name="global_step")
             tf.add_to_collection("Variables_to_Save", global_step)
             self.summary_nodes['global_step'] = global_step
             if sampling_method == "StochasticGradientLangevinDynamics":
@@ -220,11 +220,11 @@ class NeuralNetwork(object):
         with tf.name_scope('train'):
             # DON'T add placeholders only sometimes, e.g. when only a specific optimizer
             # requires it. Always add them and only sometimes use them!
-            step_width = tf.placeholder(tf.float64)
+            step_width = tf.placeholder(tf.float64, name="step_width")
             tf.summary.scalar('step_width', step_width)
             self.placeholder_nodes['step_width'] = step_width
 
-            global_step = tf.Variable(0, trainable=False)
+            global_step = tf.Variable(0, trainable=False, name="global_step")
             tf.add_to_collection("Variables_to_Save", global_step)
             self.summary_nodes['global_step'] = global_step
             if optimizer_method == "GradientDescent":
