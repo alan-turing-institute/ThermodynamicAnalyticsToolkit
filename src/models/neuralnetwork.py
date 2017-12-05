@@ -345,7 +345,7 @@ class NeuralNetwork(object):
 
         :return: reference to created node
         """
-        keep_prob = tf.placeholder(tf.float64)
+        keep_prob = tf.placeholder(tf.float64, name="keep_probability")
         self.placeholder_nodes['keep_prob'] = keep_prob
         with tf.name_scope('dropout'):
             tf.summary.scalar('dropout_keep_probability', keep_prob)

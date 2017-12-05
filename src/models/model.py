@@ -444,6 +444,8 @@ class model:
                 self.xinput: batch_xs, placeholder_nodes["y_"]: batch_ys,
                 placeholder_nodes["step_width"]: self.FLAGS.step_width
             }
+            if self.FLAGS.dropout is not None:
+                feed_dict.update({placeholder_nodes["keep_prob"] : self.FLAGS.dropout})
 
             # zero accumulated gradient
             check_gradients, check_virials = self.sess.run([zero_gradients, zero_virials])
