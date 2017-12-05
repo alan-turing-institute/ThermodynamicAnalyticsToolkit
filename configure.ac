@@ -3,7 +3,7 @@ dnl Process this file with autoconf to produce a configure script.
 AC_PREREQ(2.59)
 AC_INIT(DataDrivenSampler, 0.1, frederik.heber@gmail.com)
 AC_CONFIG_AUX_DIR([build-aux])
-AC_CONFIG_SRCDIR([src/common.py])
+AC_CONFIG_SRCDIR([src/DataDrivenSampler/common.py])
 AC_CONFIG_MACRO_DIR([m4])
 
 AC_CANONICAL_SYSTEM
@@ -22,11 +22,12 @@ AX_CHECK_DOCBOOK
 AC_CONFIG_FILES(
 	Makefile
 	src/Makefile
-	src/datasets/Makefile
-	src/diffusion_maps/Makefile
-	src/models/Makefile
-	src/runtime/Makefile
-	src/samplers/Makefile
+	src/DataDrivenSampler/Makefile
+	src/DataDrivenSampler/datasets/Makefile
+	src/DataDrivenSampler/diffusion_maps/Makefile
+	src/DataDrivenSampler/models/Makefile
+	src/DataDrivenSampler/runtime/Makefile
+	src/DataDrivenSampler/samplers/Makefile
 	tests/Makefile)
 AC_CONFIG_TESTDIR([tests/integration])
 AC_CONFIG_FILES(

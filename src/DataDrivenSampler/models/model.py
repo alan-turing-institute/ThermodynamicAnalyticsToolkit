@@ -75,7 +75,7 @@ class model:
             batch_size=10,
             data_type=ClassificationDatasets.SPIRAL,
             dimension=10,
-            dropout=0.9,
+            dropout=None,
             every_nth=1,
             friction_constant=0.,
             hidden_activation="relu",
@@ -156,6 +156,7 @@ class model:
                                    tf.get_collection(tf.GraphKeys.BIASES) + \
                                    tf.get_collection("Variables_to_Save"))
         if self.sess is None:
+            #print("Using %s, %s threads " % (str(self.FLAGS.intra_ops_threads), str(self.FLAGS.inter_ops_threads)))
             self.sess = tf.Session(
                 config=tf.ConfigProto(
                     intra_op_parallelism_threads=self.FLAGS.intra_ops_threads,

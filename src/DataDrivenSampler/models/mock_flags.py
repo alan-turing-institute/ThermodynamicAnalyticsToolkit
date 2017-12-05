@@ -16,6 +16,8 @@ class MockFlags:
                  hidden_activation="relu",
                  hidden_dimension="",
                  input_columns="1 2",
+                 inter_ops_threads=1,
+                 intra_ops_threads=None,
                  inverse_temperature=1.,
                  loss="mean_squared",
                  max_steps=1000,
@@ -41,6 +43,8 @@ class MockFlags:
         :param hidden_activation: Activation function to use for hidden layer: tanh, relu, linear
         :param hidden_dimension: Dimension of each hidden layer, e.g. 8 8 for two hidden layers each with 8 nodes fully connected
         :param input_columns: Pick a list of the following: (1) x1, (2) x2, (3) x1^2, (4) x2^2, (5) sin(x1), (6) sin(x2).
+        :param inter_ops_threads: size of thread pool used for independent ops
+        :param intra_ops_threads: size of thread pool used for parallelizing an op
         :param inverse_temperature: Inverse temperature that scales the gradients
         :param loss: Set the loss to be measured during sampling, e.g. mean_squared, log_loss, ...
         :param max_steps: Number of steps to run sampleer.
@@ -64,6 +68,8 @@ class MockFlags:
         self.hidden_activation = hidden_activation
         self.hidden_dimension = hidden_dimension
         self.input_columns = input_columns
+        self.inter_ops_threads = inter_ops_threads
+        self.intra_ops_threads = intra_ops_threads
         self.inverse_temperature = inverse_temperature
         self.loss = loss
         self.max_steps = max_steps

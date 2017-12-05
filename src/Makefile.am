@@ -1,12 +1,4 @@
-SUBDIRS = datasets diffusion_maps models runtime samplers
-
-DataDrivenSampler_PYTHON = \
-	common.py \
-	TrajectoryAnalyser.py \
-	$(srcdir)/version.py \
-	__init__.py
-
-DataDrivenSamplerdir = $(pythondir)/DataDrivenSampler
+SUBDIRS = DataDrivenSampler
 
 FORCE:
 $(srcdir)/.git-version: FORCE
@@ -53,7 +45,7 @@ LossFunctionSampler: LossFunctionSampler.in Makefile
 	$(do_substitution) < $(srcdir)/LossFunctionSampler.in > LossFunctionSampler
 	chmod +x LossFunctionSampler
 
-$(srcdir)/version.py: $(srcdir)/.git-version
+$(srcdir)/DataDrivenSampler/version.py: $(srcdir)/.git-version
 	echo "def get_package_name():" >$@
 	echo "   return \"$(PACKAGE_NAME)\"" >>$@
 	echo "def get_package_version():" >>$@
