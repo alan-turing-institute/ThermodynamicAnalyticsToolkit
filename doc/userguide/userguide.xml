@@ -110,7 +110,8 @@
         <para>In our setting what typically worked best was to use 
         <productname>anaconda</productname> in the following manner:</para>
         <programlisting>conda create -n tensorflow python=3.5 -y
-  conda install -n tensorflow -y tensorflow numpy scipy pandas scikit-learn
+  conda install -n tensorflow -y \
+     tensorflow numpy scipy pandas scikit-learn
         </programlisting>
         <para>In case your machine has GPU hardware for tensorflow, replace
         <quote>tensorflow</quote> by <quote>tensorflow-gpu</quote>.</para>
@@ -138,10 +139,10 @@
         no problem. If not, please refer to the text INSTALL file that is included
         in this distributable archive. The installation, very briefly, goes like this:</para>
         <programlisting>
-        ./bootstrap.sh
-        mkdir build64
-        cd build64
-        ../configure --prefix="somepath" -C PYTHON="path to python3"
+./bootstrap.sh
+mkdir build64
+cd build64
+../configure --prefix="somepath" -C PYTHON="path to python3"
         make
         make install
         </programlisting>
@@ -210,7 +211,8 @@ cost of all necessary servicing, repair, or correction.</remark>
     <title  xml.id="quickstart.title">Quickstart</title>
     <section xml.id="quickstart.introduction">
       <title  xml.id="quickstart.introduction.title">Sampling in neural networks</title>
-      <para>Assume we are given a very simple data set as depicted in <xref linkend="quickstart.introduction.dataset"/>. 
+      <para>Assume we are given a very simple data set as depicted in 
+      <xref xrefstyle="template:Figure %n" linkend="quickstart.introduction.dataset"/>. 
       <figure xml:id="quickstart.introduction.dataset">
         <title>Dataset: two gaussian distributed point clouds</title>
         <mediaobject>
@@ -223,9 +225,41 @@ cost of all necessary servicing, repair, or correction.</remark>
       problem  is quite simple to solve: a line in the two-dimensional space can 
       easily separate the two classes.</para>
       <para>A very simple neural network, a perceptron, is all we need:  it uses 
-      two inputs nodes, namely each coordinate component, and a single output 
-      node, whose sign gives the class the input item belongs to. The network
-      is given in <xref linkend="quickstart.introduction.perceptron"/>.</para>
+      two inputs nodes, namely each coordinate component, 
+      <inlineequation>
+        <mml:math display="inline">
+          <mml:mrow>
+            <mml:msub>
+              <mml:mi>x</mml:mi>
+              <mml:mn>1</mml:mn>
+            </mml:msub>
+          </mml:mrow>
+        </mml:math>
+      </inlineequation>
+      and
+      <inlineequation>
+        <mml:math display="inline">
+          <mml:mrow>
+            <mml:msub>
+              <mml:mi>x</mml:mi>
+              <mml:mn>2</mml:mn>
+            </mml:msub>
+          </mml:mrow>
+        </mml:math>
+      </inlineequation>,
+      and a single output 
+      node with an activation function
+      <inlineequation>
+        <mml:math display="inline">
+          <mml:mrow>
+              <mml:mi>f</mml:mi>
+          </mml:mrow>
+        </mml:math>
+      </inlineequation>
+      whose sign gives the class the input item belongs to. The network is 
+      given in 
+      <xref xrefstyle="template:Figure %n" linkend="quickstart.introduction.perceptron"/>.
+      </para>
     <figure xml:id="quickstart.introduction.perceptron">
         <title>Simple single-layer perceptron with weights and biases</title>
         <mediaobject>
@@ -239,11 +273,41 @@ cost of all necessary servicing, repair, or correction.</remark>
       values per item, as the network's loss function. The loss depends 
       implicitly on the dataset and explicitly on the weights and biases 
       associated with the network. In our case, we have two weights for the two
-      edges between input nodes and the output node and a single bias attached
-      to the output node.</para>
+      edges between input nodes, 
+      <inlineequation>
+        <mml:math display="inline">
+          <mml:mrow>
+            <mml:msub>
+              <mml:mi>w</mml:mi>
+              <mml:mn>1</mml:mn>
+            </mml:msub>
+          </mml:mrow>
+        </mml:math>
+      </inlineequation>
+      and
+      <inlineequation>
+        <mml:math display="inline">
+          <mml:mrow>
+            <mml:msub>
+              <mml:mi>w</mml:mi>
+              <mml:mn>2</mml:mn>
+            </mml:msub>
+          </mml:mrow>
+        </mml:math>
+      </inlineequation>,
+      and the output node and a single bias attached
+      to the output node
+      <inlineequation>
+        <mml:math display="inline">
+          <mml:mrow>
+              <mml:mi>b</mml:mi>
+          </mml:mrow>
+        </mml:math>
+      </inlineequation>.
+      </para>
       <para>In sampling we look at a system of particles that have two internal
       properties: location and momentum. The location is simply their current 
-      value, that changes through its velocity over time. The velocity again 
+      value, that changes through its momentum over time. The momentum again 
       changes because the particle is inside a potential that drives it towards
       the minimum. The system is described by a so-called Hamilton operator
       that gives rise to its Dynamics. If noise is additionally taken into 
@@ -255,80 +319,154 @@ cost of all necessary servicing, repair, or correction.</remark>
       squared momenta. Adding Momentum to Optimizers in neural networks is a
       concept known already and inspired by physics. The momentum helps in
       overcoming areas of the loss function where it is essentially flat.</para>
+      <para>Sampling produces trajectories of particles moving along the
+      manifold. Integrals along these trajectories, if they are long enough, 
+      are equivalent to integrating over the whole manifold, the system is
+      ergodic.</para>
+      <para>By using sampling we mean to discover more of the loss manifold
+      than just the closest local minimum. To this end, barriers need to be
+      overcome of which there two kind,</para>
+      <itemizedlist>
+        <listitem>entropic barriers,</listitem>
+        <listitem>enthalpic barriers.</listitem>
+      </itemizedlist>
+      <para>Both of which are conceptually very simple. The enthalpic barrier
+      is simply a ridge that is very high where the particles need a large 
+      momentum to overcome it. Entropic barriers on the other hand are passages
+      very small in volume that are simply very difficult to find. In order to
+      overcome barriers of the first kind, higher temperatures suffice.
+      For the second type of barrer, this is not so easy.</para>
+      <para>This quick description of the problem of sampling in the context
+      of neural networks in data science should have prepare you now for the
+      following quickstart tutorial on how to actually use DataDrivenSampler 
+      to perform sampling.</para>
     </section>
     <section xml:id="quickstart.python">
       <title  xml:id="quickstart.python.title">Using Python</title>
       <para>
       The package can be readily used inside any python3 shell or script.
       However, this interface rather lends itself to quick testing than rigorous
-      experiments except you perform all your scientific experiments inside
-      python scripts kept safely inside a code versioning system such as 
-      <command>git</command>.
-      </para>
+      experiments. You are still fine if you perform all your scientific 
+      experiments inside python scripts kept safely inside a code versioning 
+      system such as <command>git</command>.</para>
       <para>
-      If you have installed the package in the folder "/foo", i.e.  there is 
-      a folder "DataDrivenSampler" with a file <command>DataDrivenSampler.py
-      </command> residing in there, then you probably need to add it to the 
+      If you have installed the package in the folder "/foo", i.e. we have a 
+      folder "DataDrivenSampler" with a file 
+      <command>DataDrivenSampler.py</command> residing in there, then you 
+      probably need to add it to the 
       <command>PYTHONPATH</command> as follows</para>
       <programlisting>PYTHONPATH=/foo python3</programlisting>
       <para>In this shell, you may import the sampling part of the package as 
       follows 
       <programlisting>from DataDrivenSampler.models.model import model</programlisting>
       This will import the abstract <command>model</command> class from the
-      file mentioned before.</para>
+      file mentioned before. This class contains wrapper functions to setup 
+      the network with either training and sampling in a few keystrokes.</para>
       <section xml:id="quickstart.python.optimizing">
         <title  xml:id="quickstart.python.optimizing.title">Optimizing the network</title>
         <para>Let us first start with optimizing the network.</para>
-        <programlisting>from DataDrivenSampler.models.model import model
-
-FLAGS = model.create_mock_flags(
-    batch_size=500,
-    data_type=2,
-    dimension=500,
-    max_steps=100,
-    noise=0.1,
-    optimizer="GradientDescent",
-    output_activation="linear",
-    sampler="GeometricLangevinAlgorithm_2ndOrder",
-    seed=426,
-    step_width=1e-2
-)
-nn = model(FLAGS)
-nn.init_network(None, setup="train")
-run_info, trajectory = nn.train(return_run_info=True, return_trajectories=True)
-nn.finish()
-
-print("Train results")
-print(run_info[0:10])
-print(trajectory[0:10])
-        </programlisting>
+        <example xml:id="quickstart.python.optimizing.example">
+          <title>Optimizing network for two clusters dataset</title>
+          <programlisting><xi:include  href="python/optimize.py"  parse="text"  
+      xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
+          <programlisting>
+          </programlisting>
+        </example>
         <para>
         As you see, all options are set in a struct called <command>FLAGS</command> 
-        that control how the optimization is performed. There is a helper function
-        that creates the FLAGS for you with some default parameters. 
-        Afterwards, the network is initialized, then we call <command>train()</command>
+        that control how the optimization is performed. 
+        There is a helper function in <command>model</command> called 
+        <command>create_mock_flags</command>
+        that creates the FLAGS for you with some default parameters. </para>
+        <para>Let us quickly go through each of the parameters: 
+        <itemizedlist>
+          <listitem>
+          <emphasis>data_type</emphasis> is a number between 0 and 3 that defines
+          one of four hard-coded datasets. See the classification problems at
+          <uri>playground.tensorflow.org</uri> to have an idea.
+          </listitem><listitem>
+          <emphasis>dimension</emphasis> defines the number of data points.
+          </listitem><listitem>
+          <emphasis>batch_size</emphasis> sets the subset size of the data set
+          looked at per training step, if smaller than dimension, then we add
+          stochasticity/noise to the training but for the advantage of smaller
+          runtime.
+          </listitem><listitem>
+          <emphasis>max_steps</emphasis> gives the amount of training steps to
+          be performed.
+          </listitem><listitem>
+          <emphasis>noise</emphasis> gives the relative perturbation for each
+          of the dataset items. This is specific to the type of dataset.
+          </listitem><listitem>
+          <emphasis>optimizer</emphasis> defines the method to use for training.
+          Here, we use Gradient Descent (in case batch_size is smaller than 
+          dimension, then we actually have Stochastic Gradient Descent).
+          </listitem><listitem>
+          <emphasis>output_activation</emphasis> defines the activation function
+          of all output nodes, here it is linear. Other choices are: tanh, relu, relu6.
+          </listitem><listitem>
+          <emphasis>seed</emphasis> sets the seed of the random number generator.
+          We will still have full randomness but in a deterministic manner, i.e. 
+          calling the same procedure again will bring up the exactly same values.
+          </listitem><listitem>
+          <emphasis>step_width</emphasis> defines the scaling of the gradients
+          in each training step, i.e. the learning rate. Values too large may miss the
+          minimum, values too small need longer to reach it.
+          </listitem>
+        </itemizedlist>
+         </para>
+         <para>We did not say anything about <emphasis>sampler</emphasis>
+         as this is convered in the next section.</para>
+        <para>Afterwards, the network is initialized, then we call <command>train()</command>
         which performs the training and returns runtime info and trajectory
         as a pandas DataFrame.</para>
+        <para>At the end of this section on training, let us have a quick 
+        glance at the decrease of the loss function over the steps by using
+        <command>matplotlib</command>.</para>
+        <example xml:id="quickstart.python.optimizing.example2">
+          <title>Plotting the loss and other properties over steps</title>
+          <programlisting><xi:include  href="python/plot_optimize.py"  parse="text"  
+      xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
+          <programlisting>
+          </programlisting>
+        </example>
+      <para>Go and have a look athe other columns. Or try to visualize the 
+      change in the parameters (weights and biases) in the trajectories
+      dataframe.</para>
       </section>
       <section xml:id="quickstart.python.sampling">
         <title  xml:id="quickstart.python.sampling.title">Sampling the network</title>
         <para>After optimization we may continue sampling the network.</para>
-        <programlisting>...
+        <example xml:id="quickstart.python.sampling.example">
+          <title>Plotting the loss and other properties over steps</title>
+          <programlisting><xi:include  href="python/sample.py"  parse="text"  
+      xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
+          <programlisting>
+          </programlisting>
+        </example>
+        <para>Here, the <emphasis>sampler</emphasis> setting mentioned before
+        becomes important as it states which sampling scheme to use. At the
+        moment the following are available: sgld, 
+        GeometricLangevinAlgorithm_1st, GeometricLangevinAlgorithm_2nd, where
+        the firstrtefers to StochasticGradientLangevinDynamics
+         [Welling, Teh, 2011]. GLA 2nd is currently recommended to use.</para>
+        <para>We might also concatenate optimize and sample if in between the
+        two we adjust FLAGS as follows:
+        <programlisting>
+...
 FLAGS.max_steps = 10000
+FLAGS.sampler = "GeometricLangevinAlgorithm_2ndOrder"
 nn.reset_flags(FLAGS)
 nn.init_network(None, setup="sample")
-run_info, trajectory = nn.sample(return_run_info=True, return_trajectories=True)
-nn.finish()
-
-print("Sample results")
-print(run_info[0:10])
-print(trajectory[0:10])
+...
         </programlisting>
-        <para>
-        The only thing we do is change the number of steps, we need to reset
-        the FLAGS structure internal to model. Afterwards, we again initialize
-        the network which will add only the sampling nodes and prepare output
-        files differently.
+        The only thing we change in FLAGS is the number of steps and adding the
+        sampler. However, as the model simply stores a copy of the FLAGS, in 
+        order to update the FLAGS in the model class as well, we need to reset 
+        it. Afterwards, we again  initialize the network which will add only the 
+        sampling nodes and prepare output files differently.
+        We have skipped the following steps that are equivalent to
+        <xref xrefstyle="template:Example %n" linkend="quickstart.python.sampling.example"/>.
         Again, at the very end we obtain pandas DataFrame containing runtime 
         information and trajectory.
         </para>
@@ -341,28 +479,14 @@ print(trajectory[0:10])
         <command>FLAGS.trajectory_file</command> with some valid file names.</para>
         <para>Subsequently, these may be easily parsed as follows, see also
          "DDSAnalyser.in".</para>
-        <programlisting>import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-
-df_trajectory = pd.read_csv(FLAGS.trajectory_file, sep=',', /
-    header=0)
-trajectory=np.asarray(df_trajectory)
-
-conv=np.zeros(traj.shape)
-
-# then we plot the running averages of the parameters
-# inside weights
-for i in range(1,traj.shape[0]):
-    for d in range(traj.shape[1]):
-        
-        conv[i,d]=np.mean(traj[:i,d])
-
-[plt.scatter(range(len(traj)), conv[:,i]) /
-    for i in range(traj.shape[1])]
-plt.show()
-
-print(conv[-1,:])
+        <example xml:id="quickstart.python.analysis.example">
+          <title>Plotting the averages of the parameters over steps</title>
+          <programlisting><xi:include  href="python/sample.py"  parse="text"  
+      xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
+          <programlisting>
+          </programlisting>
+        </example>
+        <programlisting>
         </programlisting>
         <para>This would give a plot of the running average for each parameter
         in the trajectory file. In a similar, the run file can be loaded and its
@@ -389,17 +513,22 @@ print(conv[-1,:])
     --max_steps 1000 \
     --noise 0.1 \
     --optimizer GradientDescent \
-    --save_model model.ckpt \
+    --save_model model.ckpt.meta \
     --seed 426 \
     --step_width 1e-2
         </programlisting>
         <para>This call will create an internal dataset called "two clusters" with 500 
-        points using random number see 426 (to generate the dataset in a 
+        points using random number seed 426 (to generate the dataset in a 
         deterministic fashion) using 10% of noise. 
         It will then perform a (Stochastic) Gradient  Descent optimization of the 
         parameters of the network using a step width/learning rate of 0.01 and
         do this for 1000 steps after which it stops and writes the resulting neural
-        network in a TensorFlow-specific format.</para>
+        network in a TensorFlow-specific format to a set of files, one of which
+        is called <command>model.cpkt.meta</command> (and the other filenames
+        are derived from this).</para>
+        <para>In case you have read the quickstart tutorial on the Python
+        interface before, then the names of the command-line option will
+        probably remind you of the variables in the FLAGS structure.</para>
       </section>  
       <section xml:id="quickstart.cmdline.sampling">
         <title  xml:id="quickstart.cmdline.sampling.title">Sampling trajectories on the loss manifold</title>
@@ -425,19 +554,21 @@ print(conv[-1,:])
     --step_width 1e-2 \
     --trajectory_file trajectory.csv
         </programlisting>
-        <para>This will cause the sampler to prepare the same dataset as before as
-        we used the same seed, data_type, dimension, and noise.
+        <para>This will cause the sampler to prepare the same dataset as before, as
+        we still are using the same seed, data_type, dimension, and noise.
         Moreover, the sampler will load the neural network from the model, i.e.
         using the optimized parameters right from the start.
         Afterwards it will use the Geometric Langevin Algorithm (GLA) in 2nd order
         discetization using again step_width of 0.01 and running for 100,000 steps
         in total. The GLA is a descretized variant of Langevin Dynamics whose 
         accuracy scales with the inverse square of the step_width (hence, 2nd 
-        order).
-        After it is finished, it will create two files; a run file containing run 
-        time information such as the step, the potential, kinetic and total energy
-        at each step, and a trajectory file with each parameter of the neural
-        network at each step. These two files we need in the next stage.</para>
+        order).</para>
+        <para>After it is finished, it will create two files; a run file 
+        <command>run.csv</command>containing run time information such as the 
+        step, the potential, kinetic and total energy at each step, and a 
+        trajectory file <command>trajectory.csv</command>with each parameter 
+        of the neural network at each step. These two files we need in the 
+        next stage.</para>
       </section>
       <section xml:id="quickstart.cmdline.analysing">
         <title  xml:id="quickstart.cmdline.analysing.title">Analysing trajectories</title>
@@ -451,7 +582,7 @@ print(conv[-1,:])
         <para>The analysis can perform three different tasks:</para>
         <itemizedlist>
           <listitem>Calculating averages.</listitem>
-          <listitem>Calculating the diffusion map'slargest  eigenvalues and 
+          <listitem>Calculating the diffusion map's largest  eigenvalues and 
           eigenvectors.</listitem>
           <listitem>Calculating landmarks and level sets to obtain an approximation
           to the free energy.</listitem>
@@ -468,13 +599,21 @@ print(conv[-1,:])
     --steps 10 \
     --trajectory_file trajectory.csv
           </programlisting>
-        <para>This will load both the run and the trajectory file and average
-         over them using only every 10th data point (every_nth) and also 
-         dropping the first steps below 100 (drop_burnin). It will produce then
-         ten average for each of energies in the run file and each of the 
-         parameters in the trajectories file (along with the variance) from the
-         first non-dropped step till one of the ten end steps. These end steps
-         are obtained by equidistantly splitting up the whole step interval.</para>
+        <para>This will load both the run file <command>run.csv</command>
+        and the trajectory file <command>trajectory.csv</command>and average
+         over them using only every 10th data point 
+         (<emphasis>every_nth</emphasis>) and also dropping the first steps 
+         below 100 (<emphasis>drop_burnin</emphasis>). It will produce then
+         ten averages (<emphasis>steps</emphasis>) for each of energies in the 
+         run file and each of the parameters in the trajectories file (along 
+         with the variance) from the first non-dropped step till one of the 
+         ten end steps. These end steps are obtained by equidistantly 
+         splitting up the whole step interval.</para>
+         <para>Eventually, we have two output file. The averages over the run
+         information such as total, kinetic, and potential energy in
+         <command>average_run.csv</command>. Also, we have the averages
+         over the degrees of freedom in 
+         <command>average_trajectories.csv</command>.</para>
         </section>
         <section  xml:id="quickstart.cmdline.analysing.diffusion_map">
           <title  xml:id="quickstart.cmdline.analysing.diffusion_map.title">Diffusion map</title>
@@ -489,17 +628,19 @@ print(conv[-1,:])
     --steps 10 \
     --trajectory_file trajectory.csv
             </programlisting>
-          <para>The files ending in <quote>..values.csv</quote> contains the
-          eigenvalues in two columns, the first is the eigenvalue index,the 
-          second is the eigenvalue.</para>
-          <para>The other file is simply a matrix of the eigenvector components
-          in one direction and the trajectory steps in the other. Additionally,
-          it contains the parameters at the steps and also the loss and the
-          kernel matrix entry.</para>
+          <para>The files ending in <command>..values.csv</command> contains 
+          the eigenvalues in two columns, the first is the eigenvalue index,
+          the second is the eigenvalue.</para>
+          <para>The other file ending in <command>..vectors.csv</command> is 
+          simply a matrix of the eigenvector components in one direction and 
+          the trajectory steps in the other. Additionally, it contains the 
+          parameters at the steps and also the loss and the kernel matrix 
+          entry.</para>
           <para>Note that again the all values up till step 100 are dropped 
           and only every 10th trajectory point is considered afterwards.</para>
           <para>There are two methods available. Here, we have used the
-          simpler (and less accurate) (plain old) vanilla method.</para>
+          simpler (and less accurate) (plain old) vanilla method. The other is
+          called TMDMap.</para>
         </section>
         <section xml:id="quickstart.cmdline.analysing.free_energy">
           <title  xml:id="quickstart.cmdline.analysing.free_energy.title">Free energy</title>
@@ -526,8 +667,8 @@ print(conv[-1,:])
           insightful to look at the free energy over the course of the
           trajectory represented by the first eigenvalue. If in this graph
           clear minima with maxima in between can be seen, then there
-          are energetic barriers between two local minima. If on the other
-          hand there are flat areas, then we found enthalpic barriers.</para>
+          are enthalpic barriers between two local minima. If on the other
+          hand there are flat areas, then we found entropic barriers.</para>
           <para>Both these types of barriers obstruct trajectories and keep
           the optimization trapped in so-called meta-stable states. Each type
           of barrier requires a different type of remedy to overcome.</para>

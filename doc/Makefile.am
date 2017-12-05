@@ -5,9 +5,14 @@ EXTRA_DIST =
 EXTRA_DIST += \
 	$(top_builddir)/doc/datadrivensampler.pdf
 
+# mind: https://stackoverflow.com/questions/39786947/how-to-convert-to-pdf-from-xsl-fo-with-mathml
+#
+# for MathML to work this need JEuclid and some tricks pulled on Ubuntu 14.04
+
 XSLTPROC=xsltproc
 XSLTPROC_FLAGS=@XSLTPROC_FLAGS@ \
-	--stringparam paper.type A4
+	--stringparam paper.type A4 \
+	--xinclude
 PDF_STYLESHEET=@DOCBOOK_ROOT@/fo/docbook.xsl
 XML_CATALOG_FILES=$(top_builddir)/doc/userguide/catalog.xml
 FOP=fop

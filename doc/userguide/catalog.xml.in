@@ -12,8 +12,10 @@
 
 	<rewriteURI
 		uriStartString="pictures/"
-		rewritePrefix="@top_srcdir@/doc/userguide/pictures/" />
+		rewritePrefix="file://@top_srcdir@/doc/userguide/pictures/" />
+	<!--	
+	-->
 
-        <uri name="pictures/small_single_layer_perceptron.png" uri="@top_srcdir@/doc/userguide/pictures/small_single_layer_perceptron.png"/>
-        <uri name="pictures/dataset_two_clusters.png" uri="@top_srcdir@/doc/userguide/pictures/dataset_two_clusters.png"/>
+        <uri name="pictures/small_single_layer_perceptron.png" uri="pictures/small_single_layer_perceptron.png"/>
+        <uri name="pictures/dataset_two_clusters.png" uri="pictures/dataset_two_clusters.png"/>
 </catalog>
