@@ -19,7 +19,6 @@
 
 AT_SETUP([Equilibration - Create data, optimize, then sample])
 AT_KEYWORDS([datasetwriter ddsoptimizer ddsampler save_model restore_model])
-AT_XFAIL_IF([/bin/true])
 
 # run 1: Create dataset
 AT_CHECK([../../../DatasetWriter \

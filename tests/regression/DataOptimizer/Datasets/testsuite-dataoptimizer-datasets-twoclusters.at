@@ -19,7 +19,6 @@
 
 AT_SETUP([Optimizer Datasets - two clusters])
 AT_KEYWORDS([twoclusters ddsoptimizer])
-AT_XFAIL_IF([/bin/true])
 
 # dataset prepared as follows:
 # DatasetWriter --data_type 2 --dimension 10 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
