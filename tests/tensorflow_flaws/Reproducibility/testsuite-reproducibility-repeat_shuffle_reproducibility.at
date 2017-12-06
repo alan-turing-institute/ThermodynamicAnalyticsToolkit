@@ -1,0 +1,42 @@
+#
+#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    Copyright (C) 2018 The University of Edinburgh
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### test on reshuffling the dataset (after duplicating for steps)
+
+# PROBLEM:
+# A dataset is multiplicated (one copy for every step) and subsequently
+# shuffled. If the dataset is small and the batch size equal to the dataset
+# size, then non-unique values may arise per batch.
+#
+# This happens because the shuffling is not limited to each copy but extends
+# over the whole multiplied dataset range.
+#
+# NOTE:
+# This can be alleviated since introduction of tf.Dataset in TF1.4, where
+# tf.Dataset.shuffle() and ..batch() replace tf.train.shuffle_batch().
+# We modified the test to still illustrate the behavior.
+
+AT_SETUP([Tensorflow - repeat, shuffle non-unique values])
+AT_KEYWORDS([tensorflaw reproducibility repeat shuffle])
+
+AT_CHECK([../../run \
+	${abs_top_srcdir}/tests/tensorflow_flaws/Reproducibility/pre/repeat_shuffle_reproducibility.py \
+	${abs_top_srcdir}/tests/tensorflow_flaws/Reproducibility/pre/dataset-twoclusters.csv
+], 255, [stdout], [stderr])
+
+AT_CLEANUP
+
