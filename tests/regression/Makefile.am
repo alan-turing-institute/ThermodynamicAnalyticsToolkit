@@ -19,6 +19,7 @@ TESTSCRIPTS += \
 	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-step_width.at \
 	$(srcdir)/DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-given_seeds.at \
 	$(srcdir)/DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-no_seeds.at \
+	$(srcdir)/DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-baoab.at \
 	$(srcdir)/DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-gla_1st.at \
 	$(srcdir)/DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-gla_2nd.at \
 	$(srcdir)/DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-sgld.at \

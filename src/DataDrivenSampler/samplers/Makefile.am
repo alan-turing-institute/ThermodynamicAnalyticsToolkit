@@ -1,4 +1,5 @@
 DataDrivenSampler_samplers_PYTHON = \
+    BAOAB.py \
 	GradientDescent.py \
 	GLAFirstOrderMomentumSampler.py \
 	GLASecondOrderMomentumSampler.py \

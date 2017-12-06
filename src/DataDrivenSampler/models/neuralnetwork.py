@@ -1,8 +1,9 @@
 import tensorflow as tf
-from DataDrivenSampler.samplers.GradientDescent import GradientDescent
-from DataDrivenSampler.samplers.sgldsampler import SGLDSampler
+from DataDrivenSampler.samplers.BAOAB import BAOABSampler
 from DataDrivenSampler.samplers.GLAFirstOrderMomentumSampler import GLAFirstOrderMomentumSampler
 from DataDrivenSampler.samplers.GLASecondOrderMomentumSampler import GLASecondOrderMomentumSampler
+from DataDrivenSampler.samplers.GradientDescent import GradientDescent
+from DataDrivenSampler.samplers.sgldsampler import SGLDSampler
 
 class NeuralNetwork(object):
     """ This class encapsulates the construction of the neural network.
@@ -203,6 +204,8 @@ class NeuralNetwork(object):
                 sampler = GLAFirstOrderMomentumSampler(step_width, inverse_temperature, friction_constant, seed=seed)
             elif sampling_method == "GeometricLangevinAlgorithm_2ndOrder":
                 sampler = GLASecondOrderMomentumSampler(step_width, inverse_temperature, friction_constant, seed=seed)
+            elif sampling_method == "BAOAB":
+                sampler = BAOABSampler(step_width, inverse_temperature, friction_constant, seed=seed)
             else:
                 raise NotImplementedError("Unknown sampler")
             train_step = sampler.minimize(loss, global_step=global_step)

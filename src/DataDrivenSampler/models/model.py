@@ -197,7 +197,9 @@ class model:
         if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
             header = ['step', 'epoch', 'accuracy', 'loss', 'scaled_gradient', 'virial', 'scaled_noise',
                       'average_virials']
-        elif self.FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder", "GeometricLangevinAlgorithm_2ndOrder"]:
+        elif self.FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder",
+                                    "GeometricLangevinAlgorithm_2ndOrder",
+                                    "BAOAB"]:
             header = ['step', 'epoch', 'accuracy', 'loss', 'total_energy', 'kinetic_energy', 'scaled_momentum',
                       'scaled_gradient', 'virial', 'scaled_noise',
                       'average_kinetic_energy', 'average_virials']
@@ -267,7 +269,9 @@ class model:
                 columns=header)
 
         # check that sampler's parameters are actually used
-        if self.FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder", "GeometricLangevinAlgorithm_2ndOrder"]:
+        if self.FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder",
+                                  "GeometricLangevinAlgorithm_2ndOrder",
+                                  "BAOAB"]:
             gamma, beta, deltat = self.sess.run(self.nn.get_list_of_nodes(
                 ["friction_constant", "inverse_temperature", "step_width"]), feed_dict={
                 placeholder_nodes["step_width"]: self.FLAGS.step_width,
@@ -293,7 +297,9 @@ class model:
             # print("Testset is x: "+str(test_xs[:])+", y: "+str(test_ys[:]))
 
             # zero kinetic energy
-            if self.FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder", "GeometricLangevinAlgorithm_2ndOrder"]:
+            if self.FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder",
+                                      "GeometricLangevinAlgorithm_2ndOrder",
+                                      "BAOAB"]:
                 check_kinetic, check_momenta, check_gradients, check_virials, check_noise = \
                     self.sess.run([zero_kinetic_energy, zero_momenta, zero_gradients, zero_virials, zero_noise])
                 assert (abs(check_kinetic) < 1e-10)
@@ -323,7 +329,8 @@ class model:
                 self.sess.run(test_nodes, feed_dict=feed_dict)
             if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics",
                                       "GeometricLangevinAlgorithm_1stOrder",
-                                      "GeometricLangevinAlgorithm_2ndOrder"]:
+                                      "GeometricLangevinAlgorithm_2ndOrder",
+                                      "BAOAB"]:
                 if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
                     gradients, virials, noise = \
                         self.sess.run([gradients_t, virials_t, noise_t])
@@ -352,7 +359,8 @@ class model:
                     run_line  = []
                     if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics",
                                               "GeometricLangevinAlgorithm_1stOrder",
-                                              "GeometricLangevinAlgorithm_2ndOrder"]:
+                                              "GeometricLangevinAlgorithm_2ndOrder",
+                                              "BAOAB"]:
                         if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
                             run_line = [global_step, i] + ['{:1.3f}'.format(acc)] \
                                        + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,

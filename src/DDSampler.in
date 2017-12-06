@@ -68,7 +68,7 @@ if __name__ == '__main__':
 
     react_to_common_options(FLAGS, unparsed)
 
-    if FLAGS.sampler not in ["GeometricLangevinAlgorithm_1stOrder", "GeometricLangevinAlgorithm_2ndOrder"] \
+    if FLAGS.sampler == "StochasticGradientLangevinDynamics" \
         and FLAGS.friction_constant != 0.:
         print("You set friction_constant but only GLA 1st and 2nd order use it.")
         sys.exit(1)
