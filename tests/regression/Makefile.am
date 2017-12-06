@@ -39,6 +39,7 @@ TESTSCRIPTS += \
 	$(srcdir)/DataOptimizer/Reproducibility/testsuite-dataoptimizer-reproducibility-no_seeds.at \
 	$(srcdir)/DataOptimizer/SavingRestoring/testsuite-dataoptimizer-saving_restoring.at \
 	$(srcdir)/LossFunctionSampler/testsuite-lossfunctionsampler.at \
+	$(srcdir)/LossFunctionSampler/testsuite-lossfunctionsampler-sgld-trajectory.at \
 	$(srcdir)/LossFunctionSampler/testsuite-lossfunctionsampler-simple.at \
 	$(srcdir)/TrajectoryAnalyser/testsuite-trajectoryanalyser.at \
 	$(srcdir)/TrajectoryAnalyser/testsuite-trajectoryanalyser-simple.at \
