@@ -10,6 +10,7 @@ from DataDrivenSampler.common import create_classification_dataset, \
     initialize_config_map, setup_run_file, setup_trajectory_file
 from DataDrivenSampler.datasets.classificationdatasets import ClassificationDatasets
 from DataDrivenSampler.models.mock_flags import MockFlags
+from DataDrivenSampler.models.neuralnet_parameters import neuralnet_parameters
 from DataDrivenSampler.models.neuralnetwork import NeuralNetwork
 
 
@@ -35,8 +36,8 @@ class model:
         self.saver = None
         self.sess = None
 
-        #print("weight vars: " + str(tf.get_collection(tf.GraphKeys.WEIGHTS)))
-        #print("bias vars: " + str(tf.get_collection(tf.GraphKeys.BIASES)))
+        print("weight vars: " + str(tf.get_collection(tf.GraphKeys.WEIGHTS)))
+        print("bias vars: " + str(tf.get_collection(tf.GraphKeys.BIASES)))
 
         self.run_writer = None
         self.trajectory_writer = None
@@ -180,13 +181,18 @@ class model:
         elif setup == "train":
             header = self.get_train_header()
 
+        self.weights = neuralnet_parameters(tf.get_collection(tf.GraphKeys.WEIGHTS))
+        self.biases = neuralnet_parameters(tf.get_collection(tf.GraphKeys.BIASES))
+        #print("There are %d weights and %d biases in the network"
+        #      % (self.length_weights, self.length_biases))
+
         try:
             if self.run_writer is None:
                 self.run_writer = setup_run_file(self.FLAGS.run_file, header, self.config_map)
             if self.trajectory_writer is None:
                 self.trajectory_writer = setup_trajectory_file(self.FLAGS.trajectory_file,
-                                                               self.nn.get("weights").get_shape()[0],
-                                                               self.nn.get("biases").get_shape()[0],
+                                                               self.weights.get_total_dof(),
+                                                               self.biases.get_total_dof(),
                                                                self.config_map)
         except AttributeError:
             pass
@@ -259,9 +265,9 @@ class model:
         if return_trajectories:
             steps = (self.FLAGS.max_steps % self.FLAGS.every_nth)+1
             header = get_trajectory_header(
-                self.nn.get("weights").get_shape()[0],
-                self.nn.get("biases").get_shape()[0])
-            no_params = len(header)
+                self.weights.get_total_dof(),
+                self.biases.get_total_dof())
+            no_params = self.weights.get_total_dof()+self.biases.get_total_dof()+2
             trajectory = pd.DataFrame(
                 np.zeros((steps, no_params)),
                 columns=header)
@@ -307,9 +313,10 @@ class model:
             # hence, after the sample step, we would have updated variables but old loss
             if i % self.FLAGS.every_nth == 0:
                 if self.config_map["do_write_trajectory_file"] or return_trajectories:
-                    weights_eval, biases_eval = self.sess.run(
-                        [self.nn.get("weights"), self.nn.get("biases")],
-                        feed_dict=feed_dict)
+                    weights_eval = self.weights.evaluate(self.sess)
+                    biases_eval = self.biases.evaluate(self.sess)
+                    #[print(str(item)) for item in weights_eval]
+                    #[print(str(item)) for item in biases_eval]
 
             # NOTE: All values from nodes contained in the same call to tf.run() with train_step
             # will be evaluated as if before train_step. Nodes that are changed in the update due to
@@ -339,7 +346,7 @@ class model:
                                       + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
                                                                           precision=output_precision)] \
                                       + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
-                                         for sublist in weights_eval for item in sublist]\
+                                         for item in weights_eval] \
                                       + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
                                          for item in biases_eval]
 
@@ -432,9 +439,9 @@ class model:
         if return_trajectories:
             steps = (self.FLAGS.max_steps % self.FLAGS.every_nth)+1
             header = get_trajectory_header(
-                self.nn.get("weights").get_shape()[0],
-                self.nn.get("biases").get_shape()[0])
-            no_params = len(header)
+                self.weights.get_total_dof(),
+                self.biases.get_total_dof())
+            no_params = self.weights.get_total_dof()+self.biases.get_total_dof()+2
             trajectory = pd.DataFrame(
                 np.zeros((steps, no_params)),
                 columns=header)
@@ -477,13 +484,13 @@ class model:
                 if return_run_info:
                     run_info.loc[written_row] = run_line
                 if return_trajectories or self.config_map["do_write_trajectory_file"]:
-                    weights_eval, biases_eval = \
-                        self.sess.run([self.nn.get("weights"), self.nn.get("biases")], feed_dict=feed_dict)
+                    weights_eval = self.weights.evaluate(self.sess)
+                    biases_eval = self.biases.evaluate(self.sess)
                     trajectory_line = [global_step] \
                                       + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
                                                                           precision=output_precision)] \
                                       + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
-                                         for sublist in weights_eval for item in sublist] \
+                                         for item in weights_eval] \
                                       + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
                                          for item in biases_eval]
                     if self.config_map["do_write_trajectory_file"]:

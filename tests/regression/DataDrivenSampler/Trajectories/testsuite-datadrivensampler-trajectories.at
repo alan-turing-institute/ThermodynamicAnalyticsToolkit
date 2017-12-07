@@ -41,7 +41,6 @@ AT_CLEANUP
 
 AT_SETUP([Trajectories - Single hidden layer])
 AT_KEYWORDS([trajectory hidden_dimension])
-AT_XFAIL_IF([/bin/true])
 
 # run 1
 AT_CHECK([../../../DDSampler \
@@ -66,7 +65,6 @@ AT_CLEANUP
 
 AT_SETUP([Trajectories - Few hidden layers])
 AT_KEYWORDS([trajectory hidden_dimension])
-AT_XFAIL_IF([/bin/true])
 
 # run 1
 AT_CHECK([../../../DDSampler \

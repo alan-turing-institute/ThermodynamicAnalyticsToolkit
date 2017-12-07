@@ -43,6 +43,11 @@ class NeuralNetwork(object):
     """Lookup dictionary for summary nodes, specific to TensorFlow. """
     loss_nodes = {}
     """ Lookup dictionary for the loss nodes, to tell TensorFlow which to train on"""
+    collection_weights_name = "nn_parameters_w"
+    """ Name for the tensorflow collection containing all weights flattened ."""
+    collection_biases_name = "nn_parameters_b"
+    """ Name for the tensorflow collection containing all biases flattened ."""
+
 
     def get(self, keyname):
         """ Retrieve a node by name from the TensorFlow computational graph.
@@ -436,14 +441,9 @@ class NeuralNetwork(object):
             with tf.name_scope('weights'):
                 weights = self.weight_variable([input_dim, output_dim], seed)
                 tf.add_to_collection(tf.GraphKeys.WEIGHTS, weights)
-                self.variable_summaries(weights)
-                weights_flat = tf.contrib.layers.flatten(weights)
-                self.summary_nodes["weights"] = weights_flat
             with tf.name_scope('biases'):
                 biases = self.bias_variable([output_dim])
                 tf.add_to_collection(tf.GraphKeys.BIASES, biases)
-                self.variable_summaries(biases)
-                self.summary_nodes["biases"] = biases
             with tf.name_scope('Wx_plus_b'):
                 preactivate = tf.matmul(input_tensor, weights) + biases
                 tf.summary.histogram('pre_activations', preactivate)
