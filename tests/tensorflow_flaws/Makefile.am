@@ -9,6 +9,8 @@ TESTSCRIPTS =
 # PLEASE adhere to alphabetical ordering of TESTSCRIPTS
 TESTSCRIPTS += \
 	$(srcdir)/testsuite.at \
+	$(srcdir)/NonVariables/testsuite-nonvariables.at \
+	$(srcdir)/NonVariables/testsuite-nonvariables-concat_not_variable.at \
 	$(srcdir)/Reproducibility/testsuite-reproducibility.at \
 	$(srcdir)/Reproducibility/testsuite-reproducibility-global_seed.at \
 	$(srcdir)/Reproducibility/testsuite-reproducibility-repeat_shuffle_reproducibility.at
@@ -19,6 +21,7 @@ EXTRA_DIST = \
 	atlocal.in \
 	package.m4 \
 	$(TESTSCRIPTS) \
+	NonVariables \
 	Reproducibility
 
 max_jobs = 4

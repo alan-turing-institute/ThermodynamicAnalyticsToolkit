@@ -15,16 +15,6 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-### all tests on flaws (IMHO) on the tensorflow module
+### all tests on variable flaws on the tensorflow module
 
-AT_INIT([Tensorflaw tests])
-#AT_TESTED(gawk)
-
-# Use colored output with new-enough Autotest.
-m4_ifdef([AT_COLOR_TESTS], [AT_COLOR_TESTS])
-
-# tests on reproducibility flaws
-m4_include(Reproducibility/testsuite-reproducibility.at)
-
-# tests on flaws were variables aren't actually variables anymore
-m4_include(NonVariables/testsuite-nonvariables.at)
+m4_include(NonVariables/testsuite-nonvariables-concat_not_variable.at)
