@@ -1,0 +1,90 @@
+#
+#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    Copyright (C) 2017 The University of Edinburgh
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### test on saved trajectories
+
+AT_SETUP([Trajectories - Simple])
+AT_KEYWORDS([trajectory])
+
+# run 1
+AT_CHECK([../../../DDSampler \
+	--batch_size 20 \
+	--data_type 2 \
+	--dimension 20 \
+	--friction_constant 1 \
+	--inverse_temperature 1 \
+	--max_steps 1 \
+	--sampler GeometricLangevinAlgorithm_1stOrder \
+	--seed 426 \
+	--step_width 1e-1 \
+	--trajectory_file trajectory-simple.csv
+], 0, [stdout], [stderr])
+AT_CHECK([grep "weight0" trajectory-simple.csv], 0, [ignore], [ignore])
+AT_CHECK([grep "bias0" trajectory-simple.csv], 0, [ignore], [ignore])
+
+AT_CLEANUP
+
+
+AT_SETUP([Trajectories - Single hidden layer])
+AT_KEYWORDS([trajectory hidden_dimension])
+AT_XFAIL_IF([/bin/true])
+
+# run 1
+AT_CHECK([../../../DDSampler \
+	--batch_size 20 \
+	--data_type 2 \
+	--dimension 20 \
+	--hidden_dimension 2 \
+	--friction_constant 1 \
+	--inverse_temperature 1 \
+	--max_steps 1 \
+	--sampler GeometricLangevinAlgorithm_1stOrder \
+	--seed 426 \
+	--step_width 1e-1 \
+	--trajectory_file trajectory-hidden.csv
+], 0, [stdout], [stderr])
+# check that all d.o.f. are present: 4+2 weights, 2+1 biases
+AT_CHECK([grep "weight5" trajectory-hidden.csv], 0, [ignore], [ignore])
+AT_CHECK([grep "bias2" trajectory-hidden.csv], 0, [ignore], [ignore])
+
+AT_CLEANUP
+
+
+AT_SETUP([Trajectories - Few hidden layers])
+AT_KEYWORDS([trajectory hidden_dimension])
+AT_XFAIL_IF([/bin/true])
+
+# run 1
+AT_CHECK([../../../DDSampler \
+	--batch_size 20 \
+	--data_type 2 \
+	--dimension 20 \
+	--hidden_dimension 2 2 2 \
+	--friction_constant 1 \
+	--inverse_temperature 1 \
+	--max_steps 1 \
+	--sampler GeometricLangevinAlgorithm_1stOrder \
+	--seed 426 \
+	--step_width 1e-1 \
+	--trajectory_file trajectory-hidden.csv
+], 0, [stdout], [stderr])
+# check that all d.o.f. are present: 4+4+4+2 weights, 2+2+2+1 biases
+AT_CHECK([grep "weight13" trajectory-hidden.csv], 0, [ignore], [ignore])
+AT_CHECK([grep "bias6" trajectory-hidden.csv], 0, [ignore], [ignore])
+
+AT_CLEANUP
+

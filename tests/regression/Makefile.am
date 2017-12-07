@@ -23,7 +23,8 @@ TESTSCRIPTS += \
 	$(srcdir)/DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-gla_2nd.at \
 	$(srcdir)/DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-sgld.at \
 	$(srcdir)/DataDrivenSampler/SavingRestoring/testsuite-datadrivensampler-saving_restoring.at \
-	$(srcdir)/DataOptimizer/testsuite-dataoptimizer.at \
+	$(srcdir)/DataDrivenSampler/Trajectories/testsuite-datadrivensampler-trajectories.at \
+ 	$(srcdir)/DataOptimizer/testsuite-dataoptimizer.at \
 	$(srcdir)/DataOptimizer/testsuite-dataoptimizer-simple.at \
 	$(srcdir)/DataOptimizer/Datasets/testsuite-dataoptimizer-datasets.at \
 	$(srcdir)/DataOptimizer/Datasets/testsuite-dataoptimizer-datasets-foursquares.at \

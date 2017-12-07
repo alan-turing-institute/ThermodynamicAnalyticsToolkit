@@ -42,3 +42,6 @@ m4_include([DataDrivenSampler/Options/testsuite-datadrivensampler-options-step_w
 
 # tests on saving and restoring
 m4_include([DataDrivenSampler/SavingRestoring/testsuite-datadrivensampler-saving_restoring.at])
+
+# tests on trajectories
+m4_include([DataDrivenSampler/Trajectories/testsuite-datadrivensampler-trajectories.at])
