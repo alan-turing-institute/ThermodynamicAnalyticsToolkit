@@ -133,7 +133,7 @@ def main(_):
             except scipy.sparse.linalg.eigen.arpack.ArpackNoConvergence:
                 print("ERROR: Vectors were non-convergent.")
                 vectors = np.zeros( (np.shape(trajectory)[1], number_dof+1) )
-                values = np.zeros( (1, number_dof+1) )
+                values = np.zeros( (number_dof+1) )
                 q = np.zeros( (np.shape(trajectory)[1], np.shape(trajectory)[1]) )
                 # override landmarks to skip computation
                 FLAGS.landmarks = 1
