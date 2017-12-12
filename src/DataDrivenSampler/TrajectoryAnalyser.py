@@ -73,11 +73,10 @@ def compute_diffusion_maps(traj, beta, loss, nrOfFirstEigenVectors, method='vani
         print("Unknown diffusion map method "+method)
         sys.exit(255)
     lambdas, eigenvectors = sps.linalg.eigs(P, k=nrOfFirstEigenVectors)  # , which='LM' )
-    lambdas = np.real(lambdas)
 
     ix = lambdas.argsort()[::-1]
-    X_se = eigenvectors[:, ix]
-    lambdas = lambdas[ix]
+    X_se = np.real(eigenvectors[:, ix])
+    lambdas = np.real(lambdas[ix])
 
     return X_se, lambdas, qEstimated, qTargetDistribution
 
