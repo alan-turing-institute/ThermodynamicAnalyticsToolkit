@@ -71,15 +71,16 @@ def main(_):
     biases_vals = nn_biases.create_flat_vector()
 
     ## set up output csv file
-    header = []
+    header = ["step", "loss"]
     for i in range(weights_vals.size):
         header.append("w"+str(i))
     for i in range(biases_vals.size):
         header.append("b"+str(i))
-    header.append("loss")
 
     if FLAGS.csv_file is not None:
         csv_writer, csv_file = setup_csv_file(FLAGS.csv_file, header)
+
+    current_step = 0
 
     ## function to evaluate the loss
 
@@ -110,9 +111,10 @@ def main(_):
 
         if FLAGS.csv_file is not None:
             print_row = []
+            print_row.append(current_step)
+            print_row.append(loss_eval[0])
             print_row.extend(weights_vals[:])
             print_row.extend(biases_vals[:])
-            print_row.append(loss_eval[0])
             csv_writer.writerow(print_row)
 
         return loss_eval[0]
@@ -176,6 +178,8 @@ def main(_):
 
             evaluate_loss()
 
+            current_step += 1
+
             is_at_end = check_end()
 
             next_index()
@@ -189,10 +193,12 @@ def main(_):
             for row in csvreader:
                 print("length of row is "+str(len(row))+" and expected length is "+str(row_length))
                 assert( len(row) >= row_length)
+                step = row[0]
+                loss_check = row[0]
                 weights_vals[:weights_vals.size] = row[2:(weights_vals.size+2)]
                 biases_vals[:biases_vals.size] = row[(weights_vals.size+2):row_length]
                 loss_eval = evaluate_loss()
-                #assert( math.fabs( loss_eval - float(row[1]) ) < 1e-6 )
+                #assert( math.fabs( loss_eval - float(loss_check) ) < 1e-6 )
 
     network_model.finish()
 
