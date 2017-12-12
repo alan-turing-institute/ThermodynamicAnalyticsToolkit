@@ -129,49 +129,50 @@ def main(_):
                 FLAGS.samples_weights+1)+weights_interval_start
         biases_linspace = np.arange(0,FLAGS.samples_biases+1)*biases_interval_length/float(
                 FLAGS.samples_biases+1)+biases_interval_start
-        weights_index_grid = np.zeros(length_weights, dtype=int)
+        weights_index_grid = np.zeros(weights_vals.size, dtype=int)
         weights_len_grid = FLAGS.samples_weights+1
-        biases_index_grid = np.zeros(length_biases, dtype=int)
+        biases_index_grid = np.zeros(biases_vals.size, dtype=int)
         biases_len_grid = FLAGS.samples_biases+1
 
 	### functions to iterate over weights and biases
 
         def check_end():
             isend = True
-            for i in range(length_weights):
+            for i in range(weights_vals.size):
                 if weights_index_grid[i] != weights_len_grid-1:
                     isend = False
                     break
-            for i in range(length_biases):
+            for i in range(biases_vals.size):
                 if biases_index_grid[i] != biases_len_grid-1:
                     isend = False
                     break
             return isend
         
-            def next_index():
-                incremented = False
-                for i in range(length_weights):
-                    if weights_index_grid[i] != weights_len_grid-1:
-                        weights_index_grid[i] += 1
-                        incremented = True
+        def next_index():
+            incremented = False
+            for i in range(weights_vals.size):
+                if weights_index_grid[i] != weights_len_grid-1:
+                    weights_index_grid[i] += 1
+                    incremented = True
+                    for j in range(i):
+                        weights_index_grid[j]=0
+                    break
+            if not incremented:
+                for i in range(biases_vals.size):
+                    if biases_index_grid[i] != biases_len_grid-1:
+                        biases_index_grid[i] += 1
                         for j in range(i):
+                            biases_index_grid[j]=0
+                        for j in range(weights_vals.size):
                             weights_index_grid[j]=0
                         break
-                if not incremented:
-                    for i in range(length_biases):
-                        if biases_index_grid[i] != biases_len_grid-1:
-                            biases_index_grid[i] += 1
-                            for j in range(i):
-                                biases_index_grid[j]=0
-                            for j in range(length_weights):
-                                weights_index_grid[j]=0
-                            break
+
         is_at_end = False
         while not is_at_end:
             # set the parameters
 
-            weights_vals[:] = [weights_linspace[ weights_index_grid[i] ] for i in range(length_weights)]
-            biases_vals[:] = [biases_linspace[ biases_index_grid[i] ] for i in range(length_biases)]
+            weights_vals[:] = [weights_linspace[ weights_index_grid[i] ] for i in range(weights_vals.size)]
+            biases_vals[:] = [biases_linspace[ biases_index_grid[i] ] for i in range(biases_vals.size)]
 
             evaluate_loss()
 
