@@ -62,12 +62,12 @@ def moving_average(a, n=3) :
 def compute_diffusion_maps(traj, beta, loss, nrOfFirstEigenVectors, method='vanilla'):
     epsilon=0.1 # try 1 (i.e. make it bigger, then reduce to average distance)
 
-    qTargetDistribution = dm.compute_target_distribution(len(traj), beta, loss)
     if method == 'vanilla':
         kernel = dm.compute_kernel(traj, epsilon=epsilon)
         qEstimated = kernel.sum(axis=1)
         P = dm.compute_VanillaDiffusionMap(kernel, traj)
     elif method == 'TMDMap':
+        qTargetDistribution = dm.compute_target_distribution(len(traj), beta, loss)
         P, qEstimated = dm.compute_TMDMap(traj, epsilon, qTargetDistribution)
     else:
         print("Unknown diffusion map method "+method)
@@ -78,7 +78,7 @@ def compute_diffusion_maps(traj, beta, loss, nrOfFirstEigenVectors, method='vani
     X_se = np.real(eigenvectors[:, ix])
     lambdas = np.real(lambdas[ix])
 
-    return X_se, lambdas, qEstimated, qTargetDistribution
+    return X_se, lambdas, qEstimated
 
 
 def write_values_as_csv(values, csv_filename, output_width, output_precision):

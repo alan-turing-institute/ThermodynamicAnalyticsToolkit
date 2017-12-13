@@ -124,7 +124,7 @@ def main(_):
 
             print("Computing diffusion map")
             try:
-                vectors, values, q, q_target = compute_diffusion_maps( \
+                vectors, values, q = compute_diffusion_maps( \
                     traj=trajectory, \
                     beta=FLAGS.inverse_temperature, \
                     loss=loss, \
