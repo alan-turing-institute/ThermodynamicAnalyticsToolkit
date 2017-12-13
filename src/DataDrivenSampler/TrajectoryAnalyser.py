@@ -7,8 +7,17 @@
 import argparse
 import numpy as np
 import scipy.sparse as sps
+import sys
 
 import DataDrivenSampler.diffusion_maps.diffusionmap as dm
+
+try:
+    import pydiffmap.diffusion_map as pydiffmap_dm
+    can_use_pydiffmap = True
+except ImportError:
+    can_use_pydiffmap = False
+
+
 
 from DataDrivenSampler.common import setup_csv_file
 
@@ -25,7 +34,7 @@ def parse_parameters():
     parser.add_argument('--average_trajectory_file', type=str, default=None,
         help='CSV file name to output averages and variances of all degrees of freedom.')
     parser.add_argument('--diffusion_map_method', type=str, default='vanilla',
-        help='Method to use for computing the diffusion map: vanilla or TMDMap')
+        help='Method to use for computing the diffusion map: pydiffmap, vanilla or TMDMap')
     parser.add_argument('--diffusion_map_file', type=str, default=None,
         help='Give file name to write eigenvalues of diffusion map to')
     parser.add_argument('--diffusion_matrix_file', type=str, default=None,
@@ -60,23 +69,36 @@ def moving_average(a, n=3) :
 
 
 def compute_diffusion_maps(traj, beta, loss, nrOfFirstEigenVectors, method='vanilla'):
-    epsilon=0.1 # try 1 (i.e. make it bigger, then reduce to average distance)
+    epsilon = 0.1  # try 1 (i.e. make it bigger, then reduce to average distance)
 
-    if method == 'vanilla':
-        kernel = dm.compute_kernel(traj, epsilon=epsilon)
-        qEstimated = kernel.sum(axis=1)
-        P = dm.compute_VanillaDiffusionMap(kernel, traj)
-    elif method == 'TMDMap':
-        qTargetDistribution = dm.compute_target_distribution(len(traj), beta, loss)
-        P, qEstimated = dm.compute_TMDMap(traj, epsilon, qTargetDistribution)
+    if method == 'pydiffmap':
+        if can_use_pydiffmap:
+            mydmap = pydiffmap_dm.DiffusionMap(n_evecs=nrOfFirstEigenVectors, epsilon=epsilon, alpha=1.0, k=400)
+            mydmap.fit_transform(traj)
+            kernel = mydmap.kernel_matrix
+            qEstimated = kernel.sum(axis=1)
+            X_se = mydmap.evecs
+            lambdas = mydmap.evals
+        else:
+            print("Cannot use " + method + " as package not found on import.")
+            sys.exit(255)
+    elif method == 'vanilla' or method == 'TMDMap':
+        if method == "vanilla":
+            kernel = dm.compute_kernel(traj, epsilon=epsilon)
+            qEstimated = kernel.sum(axis=1)
+            P = dm.compute_VanillaDiffusionMap(kernel, traj)
+        elif method == 'TMDMap':
+            qTargetDistribution = dm.compute_target_distribution(len(traj), beta, loss)
+            P, qEstimated = dm.compute_TMDMap(traj, epsilon, qTargetDistribution)
+
+        lambdas, eigenvectors = sps.linalg.eigs(P, k=nrOfFirstEigenVectors)  # , which='LM' )
+
+        ix = lambdas.argsort()[::-1]
+        X_se = np.real(eigenvectors[:, ix])
+        lambdas = np.real(lambdas[ix])
     else:
         print("Unknown diffusion map method "+method)
         sys.exit(255)
-    lambdas, eigenvectors = sps.linalg.eigs(P, k=nrOfFirstEigenVectors)  # , which='LM' )
-
-    ix = lambdas.argsort()[::-1]
-    X_se = np.real(eigenvectors[:, ix])
-    lambdas = np.real(lambdas[ix])
 
     return X_se, lambdas, qEstimated
 
