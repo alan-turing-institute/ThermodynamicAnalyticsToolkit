@@ -132,9 +132,9 @@ def main(_):
                     method=FLAGS.diffusion_map_method)
             except scipy.sparse.linalg.eigen.arpack.ArpackNoConvergence:
                 print("ERROR: Vectors were non-convergent.")
-                vectors = np.zeros( (np.shape(trajectory)[1], number_dof+1) )
-                values = np.zeros( (number_dof+1) )
-                q = np.zeros( (np.shape(trajectory)[1], np.shape(trajectory)[1]) )
+                vectors = np.zeros( (np.shape(trajectory)[0], FLAGS.number_of_eigenvalues) )
+                values = np.zeros( (FLAGS.number_of_eigenvalues) )
+                q = np.zeros( (np.shape(trajectory)[0], np.shape(trajectory)[0]) )
                 # override landmarks to skip computation
                 FLAGS.landmarks = 0
             kernel_diff = np.asarray(q)
