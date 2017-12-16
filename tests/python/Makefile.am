@@ -10,6 +10,7 @@ TESTSCRIPTS =
 TESTSCRIPTS += \
 	$(srcdir)/userguide/testsuite-userguide.at \
 	$(srcdir)/userguide/testsuite-userguide-analyse.at \
+	$(srcdir)/userguide/testsuite-userguide-fix_parameter.at \
 	$(srcdir)/userguide/testsuite-userguide-optimize.at \
 	$(srcdir)/userguide/testsuite-userguide-plot_optimize.at \
 	$(srcdir)/userguide/testsuite-userguide-sample.at

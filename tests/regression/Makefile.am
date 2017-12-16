@@ -10,6 +10,7 @@ TESTSCRIPTS =
 TESTSCRIPTS += \
 	$(srcdir)/DataDrivenSampler/testsuite-datadrivensampler.at \
 	$(srcdir)/DataDrivenSampler/testsuite-datadrivensampler-simple.at \
+	$(srcdir)/DataDrivenSampler/FixParameter/testsuite-datadrivensampler-fix_parameter.at \
 	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-batch_size.at \
 	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-every_nth.at \
 	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-every_nth-misspelled.at \

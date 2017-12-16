@@ -724,6 +724,28 @@ nn.init_network(None, setup="sample")
     <title xml:id="reference.exploring.title">Exploring the manifold</title>
     <para>still empty</para>
   </section>
+  <section xml:id="reference.miscellaneous">
+    <title xml:id="reference.miscellaneous.title">Miscellaneous</title>
+    <section xml:id="reference.miscellaneous.parameter_freeze">
+      <title>Freezing parameters</title>
+      <para>Sometimes it might be desirable to freeze parameters during
+      training or sampling. This can be done as follows:</para>
+        <example xml:id="reference.miscellaneous.parameter_freeze.example">
+          <title>Fix a parameter using the python interface</title>
+          <programlisting><xi:include  href="python/fix_parameter.py"  parse="text"  
+      xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
+          <programlisting>
+          </programlisting>
+        </example>
+      <para>Note that you need to initialize the network without adding training
+      or sampling methods, i.e. <quote>setup</quote> is None. Then, we fix the
+      parameter where we give its name in full tensorflow parlance. Afterwards,
+      we may add sample or training nodes and start training/sampling.</para>
+      <note>Single values cannot be frozen but only entire weight matrices or 
+      bias vectors per layer at the moment.</note>
+    </section>
+    <para>still empty</para>
+  </section>
 </chapter>
   <chapter>
     <title>Acknowledgements</title>

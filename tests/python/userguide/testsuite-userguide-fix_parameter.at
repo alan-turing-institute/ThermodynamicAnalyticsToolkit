@@ -15,13 +15,17 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-### all tests on userguide
+### test on examples in the userguide
 
-# tests on simple behavior
-m4_include([userguide/testsuite-userguide-optimize.at])
-m4_include([userguide/testsuite-userguide-plot_optimize.at])
-m4_include([userguide/testsuite-userguide-sample.at])
-m4_include([userguide/testsuite-userguide-analyse.at])
+AT_SETUP([Examples - fix parameter])
+AT_KEYWORDS([fix_parameter])
 
-# tests on specific examples
-m4_include([userguide/testsuite-userguide-fix_parameter.at])
+# run 1
+AT_CHECK([../../run \
+	${abs_top_srcdir}/doc/userguide/python/fix_parameter.py
+], 0, [stdout], [stderr])
+AT_CHECK([grep -c "2.00000000e+00" stdout], 0, [stdout], [ignore])
+AT_CHECK([grep "5" stdout], 0, [ignore], [ignore])
+
+AT_CLEANUP
+

@@ -210,7 +210,8 @@ class NeuralNetwork(object):
                 sampler = GLASecondOrderMomentumSampler(step_width, inverse_temperature, friction_constant, seed=seed)
             else:
                 raise NotImplementedError("Unknown sampler")
-            train_step = sampler.minimize(loss, global_step=global_step)
+            trainables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
+            train_step = sampler.minimize(loss, global_step=global_step, var_list=trainables)
 
             # DON'T put the nodes in there before the minimize call!
             # only after minimize was .._apply_dense() called and the nodes are ready
@@ -236,7 +237,8 @@ class NeuralNetwork(object):
                 optimizer = GradientDescent(step_width)
             else:
                 raise NotImplementedError("Unknown optimizer_method")
-            train_step = optimizer.minimize(loss, global_step=global_step)
+            trainables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
+            train_step = optimizer.minimize(loss, global_step=global_step, var_list=trainables)
 
             # DON'T put the nodes in there before the minimize call!
             # only after minimize was .._apply_dense() called and the nodes are ready

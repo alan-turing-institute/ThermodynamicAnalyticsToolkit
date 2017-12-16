@@ -12,6 +12,7 @@ class MockFlags:
                  dimension=10,
                  dropout=0.9,
                  every_nth=1,
+                 fix_parameters=None,
                  friction_constant=0.,
                  hidden_activation="relu",
                  hidden_dimension="",
@@ -39,6 +40,7 @@ class MockFlags:
         :param dimension: Number P of samples (Y^i,X^i)^P_{i=1} to generate for the desired dataset type.
         :param dropout: Keep probability for sampleing dropout, e.g. 0.9
         :param every_nth: Store only every nth trajectory (and run) point to files, e.g. 10
+        :param fix_parameters: string formatted as "name=value;..." with name of parameter fixed to value
         :param friction_constant: friction to scale the influence of momenta
         :param hidden_activation: Activation function to use for hidden layer: tanh, relu, linear
         :param hidden_dimension: Dimension of each hidden layer, e.g. 8 8 for two hidden layers each with 8 nodes fully connected
@@ -64,6 +66,7 @@ class MockFlags:
         self.dimension = dimension
         self.dropout = dropout
         self.every_nth = every_nth
+        self.fix_parameters = fix_parameters
         self.friction_constant = friction_constant
         self.hidden_activation = hidden_activation
         self.hidden_dimension = hidden_dimension

@@ -1,0 +1,63 @@
+#
+#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    Copyright (C) 2017 The University of Edinburgh
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### test on fixing a parameter
+
+AT_SETUP([Sampler - Fix biases])
+AT_KEYWORDS([ddsampler fix_parameter biases])
+
+AT_CHECK([../../../DDSampler \
+	--batch_size 20 \
+	--data_type 2 \
+	--dimension 20 \
+	--fix_parameter "output/biases/Variable:0=1." \
+	--friction_constant 1 \
+	--inverse_temperature 1 \
+	--max_steps 10 \
+	--sampler GeometricLangevinAlgorithm_1stOrder \
+	--seed 426 \
+	--step_width 1e-1 \
+	--trajectory_file trajectory.csv
+], 0, [stdout], [stderr])
+
+AT_CHECK([grep -c "1.00000000e+00" trajectory.csv], 0, [stdout], [ignore])
+AT_CHECK([grep "10" stdout], 0, [ignore], [ignore])
+
+AT_CLEANUP
+
+AT_SETUP([Sampler - Fix weights])
+AT_KEYWORDS([ddsampler fix_parameter weights])
+
+AT_CHECK([../../../DDSampler \
+	--batch_size 20 \
+	--data_type 2 \
+	--dimension 20 \
+	--fix_parameter "output/weights/Variable:0=1.,-1." \
+	--friction_constant 1 \
+	--inverse_temperature 1 \
+	--max_steps 10 \
+	--sampler GeometricLangevinAlgorithm_1stOrder \
+	--seed 426 \
+	--step_width 1e-1 \
+	--trajectory_file trajectory.csv
+], 0, [stdout], [stderr])
+
+AT_CHECK([grep -c "1.00000000e+00,-1.00000000e+00" trajectory.csv], 0, [stdout], [ignore])
+AT_CHECK([grep "10" stdout], 0, [ignore], [ignore])
+
+AT_CLEANUP
+

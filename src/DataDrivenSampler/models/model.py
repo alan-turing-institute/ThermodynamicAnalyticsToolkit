@@ -1,3 +1,5 @@
+from builtins import staticmethod
+
 import tensorflow as tf
 import numpy as np
 import sys
@@ -78,6 +80,7 @@ class model:
             dimension=10,
             dropout=None,
             every_nth=1,
+            fix_parameters=None,
             friction_constant=0.,
             hidden_activation="relu",
             hidden_dimension="",
@@ -103,6 +106,7 @@ class model:
                 dimension=dimension,
                 dropout=dropout,
                 every_nth=every_nth,
+                fix_parameters=fix_parameters,
                 friction_constant=friction_constant,
                 hidden_activation=hidden_activation,
                 hidden_dimension=hidden_dimension,
@@ -145,6 +149,11 @@ class model:
             )
         else:
             loss = self.nn.get_list_of_nodes(["loss"])[0]
+
+        if self.FLAGS.fix_parameters is not None:
+            names, values = self.split_parameters_as_names_values(self.FLAGS.fix_parameters)
+            fixed_variables = self.fix_parameters(names)
+
         if setup == "train":
             self.nn.add_train_method(loss, optimizer_method=self.FLAGS.optimizer)
         elif setup == "sample":
@@ -164,6 +173,9 @@ class model:
                     inter_op_parallelism_threads=self.FLAGS.inter_ops_threads))
 
         self.nn.init_graph(self.sess)
+
+        if self.FLAGS.fix_parameters is not None:
+            self.assign_parameters(fixed_variables, values)
 
         if filename is not None:
             # Tensorflow DOCU says: initializing is not needed when restoring
@@ -532,3 +544,71 @@ class model:
                 print("Model saved in file: %s" % save_path)
         except AttributeError:
             pass
+
+    @staticmethod
+    def _fix_parameter(_name):
+        """ Allows to fix a parameter (not modified during optimization
+        or sampling) by removing the first instance named _name from trainables.
+
+        :param _name: name of parameter to fix
+        :return: None or Variable ref that was fixed
+        """
+        variable = None
+        collection = tf.get_collection_ref(tf.GraphKeys.TRAINABLE_VARIABLES)
+        for i in range(len(collection)):
+            if collection[i].name == _name:
+                variable = collection[i]
+                del collection[i]
+                break
+        return variable
+
+    @staticmethod
+    def _assign_parameter(_var, _value):
+        """ Creates an assignment node, adding it to the graph.
+
+        :param _var: tensorflow variable ref
+        :param _value: value to assign to it, must have same shape
+        :return: constant value node and assignment node
+        """
+        value_t = tf.constant(_value, dtype=_var.dtype)
+        assign_t = _var.assign(value_t)
+        return value_t, assign_t
+
+    def fix_parameters(self, names):
+        """ Fixes the parameters given by their names
+
+        :param names: list of names
+        :return: list of tensorflow variables that are fixed
+        """
+        return [self._fix_parameter(name) for name in names]
+
+    def assign_parameters(self, variables, values):
+        """ Allows to assign multiple parameters at once.
+
+        :param variables: list of tensorflow variables
+        :param values: list of values to assign to
+        """
+        assert( len(variables) == len(values) )
+        assigns=[]
+        for i in range(len(variables)):
+            value_t, assign_t = self._assign_parameter(variables[i],
+                                                       np.reshape(values[i],
+                                                           newshape=variables[i].shape,
+                                                           ))
+            assigns.append(assign_t)
+        self.sess.run(assigns)
+
+    @staticmethod
+    def split_parameters_as_names_values(_string):
+        """ Extracts parameter names and values from the given string in the form:
+         name=value;name=value;...
+
+        :param _string: string to tokenize
+        """
+        names=[]
+        values=[]
+        for a in _string.split(";"):
+            b=a.split("=", 2)
+            names.append(b[0])
+            values.append(np.fromstring(b[1], dtype=float, sep=","))
+        return names, values

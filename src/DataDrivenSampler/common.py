@@ -155,6 +155,8 @@ def add_model_options_to_parser(parser):
         help='The number of samples used to divide sample set into batches in one training step.')
     parser.add_argument('--dropout', type=float, default=None,
         help='Keep probability for training dropout, e.g. 0.9')
+    parser.add_argument('--fix_parameters', type=str, default=None,
+        help='Fix parameters for sampling/training by stating "name=value;..."')
     parser.add_argument('--hidden_activation', type=str, default="relu",
         help='Activation function to use for hidden layer: tanh, relu, linear')
     parser.add_argument('--hidden_dimension', type=str, nargs='+', default=[],
