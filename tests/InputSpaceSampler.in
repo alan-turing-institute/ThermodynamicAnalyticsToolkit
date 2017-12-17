@@ -1,0 +1,12 @@
+#!/bin/sh
+#
+# wrapper for testing InputSpaceSampler
+
+. ../../atlocal
+
+"${AUTOTEST_PATH}/InputSpaceSampler" \
+${1+"$@"}
+
+status=$?
+
+exit $status

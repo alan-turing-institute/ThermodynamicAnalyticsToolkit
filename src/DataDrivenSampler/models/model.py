@@ -31,10 +31,19 @@ class model:
         self.FLAGS.dimension = sum([file_length(filename)
                                     for filename in FLAGS.batch_data_files]) \
                                - len(FLAGS.batch_data_files)
+        try:
+            max_steps = FLAGS.max_steps
+        except AttributeError:
+            max_steps = 1
+        if FLAGS.batch_size is not None:
+            batch_size = FLAGS.batch_size
+        else:
+            batch_size = 1
         self.batch_features, self.batch_labels = create_input_pipeline(
             FLAGS.batch_data_files,
-            batch_size = FLAGS.batch_size,
-            num_epochs = FLAGS.max_steps,
+            batch_size = batch_size,
+            shuffle=False,
+            num_epochs = max_steps,
             seed = FLAGS.seed)
         input_dimension = 2
         self.config_map["output_dimension"] = 1
@@ -47,9 +56,6 @@ class model:
         self.nn = None
         self.saver = None
         self.sess = None
-
-        print("weight vars: " + str(tf.get_collection(tf.GraphKeys.WEIGHTS)))
-        print("bias vars: " + str(tf.get_collection(tf.GraphKeys.BIASES)))
 
         self.run_writer = None
         self.trajectory_writer = None

@@ -134,6 +134,7 @@ class NeuralNetwork(object):
             y = self.add_output_layer(input_layer, input_dimension,
                                       output_dimension, output_activation,
                                       seed=output_seed)
+        self.placeholder_nodes["y"] = y
 
         # print ("Creating summaries")
         self.add_losses(y, y_)

@@ -1,0 +1,219 @@
+#!/usr/bin/env @PYTHON@
+
+import sys, getopt
+sys.path.insert(1, '@pythondir@')
+
+import tensorflow as tf
+
+import numpy as np
+
+import argparse
+import math
+
+import csv
+
+from DataDrivenSampler.datasets.classificationdatasets import ClassificationDatasets
+
+from DataDrivenSampler.common import add_common_options_to_parser, add_data_options_to_parser, \
+        add_model_options_to_parser, get_filename_from_fullpath, get_list_from_string, \
+        react_to_common_options, setup_csv_file
+from DataDrivenSampler.models.model import model
+from DataDrivenSampler.models.neuralnet_parameters import neuralnet_parameters
+from DataDrivenSampler.version import get_package_version, get_build_hash
+
+FLAGS = None
+
+def parse_parameters():
+    """ Sets up the argument parser for parsing command line parameters into dictionary
+
+    :return: dictionary with parameter names as keys, unrecognized parameters
+    """
+    parser = argparse.ArgumentParser()
+    # please adhere to alphabetical ordering
+
+    add_data_options_to_parser(parser)
+    add_model_options_to_parser(parser)
+
+    parser.add_argument('--csv_file', type=str, default=None,
+        help='CSV file name to output sampled values to.')
+    parser.add_argument('--inter_ops_threads', type=int, default=1,
+        help='Sets the number of threads to split up ops in between. NOTE: This hurts reproducibility to some extent because of parallelism.')
+    parser.add_argument('--interval_input', type=str, nargs='+', default=[],
+        help='Min and max value for each weight.')
+    parser.add_argument('--intra_ops_threads', type=int, default=None,
+        help='Sets the number of threads to use within an op, i.e. Eigen threads for linear algebra routines.')
+    parser.add_argument('--restore_model', type=str, default=None,
+        help='Restore model (input and biases) from a file.')
+    parser.add_argument('--samples_input', type=int, default=None,
+        help='Number of samples to take per weight interval')
+    parser.add_argument('--steps', type=int, nargs='+', default=[],
+        help='At which steps of the loaded trajectory to sample the input space.')
+    parser.add_argument('--trajectory_file', type=str, default=None,
+        help='Input trajectory file')
+    parser.add_argument('--version', '-V', action="store_true",
+        help='Gives version information')
+    return parser.parse_known_args()
+
+def main(_):
+
+    # create the data set
+    input_dimension = len(get_list_from_string(FLAGS.input_columns))
+
+    # sample space
+    input_interval_start = float(FLAGS.interval_input[0])
+    input_interval_end = float(FLAGS.interval_input[1])
+    input_interval_length = input_interval_end - input_interval_start
+
+    input_linspace = np.arange(0,FLAGS.samples_input+1)*input_interval_length/float(
+            FLAGS.samples_input)+input_interval_start
+    input_index_grid = np.zeros(input_dimension, dtype=int)
+    input_len_grid = FLAGS.samples_input+1
+
+    input_vals = np.zeros(input_dimension, dtype=float)
+
+### functions to iterate over input and biases
+
+    def check_end():
+        isend = True
+        for i in range(input_dimension):
+            if input_index_grid[i] != input_len_grid-1:
+                isend = False
+                break
+        return isend
+
+    def next_index():
+        for i in range(input_dimension):
+            if input_index_grid[i] != input_len_grid-1:
+                input_index_grid[i] += 1
+                for j in range(i):
+                    input_index_grid[j]=0
+                break
+
+
+    ## set up output csv file
+    header = [] #["i"]
+    for i in range(input_dimension):
+        header.append("x"+str(i+1))
+    header.append("label")
+
+    csv_writer, csv_file = setup_csv_file(FLAGS.batch_data_files[0], header)
+    current_step = 0
+    is_at_end = False
+    while not is_at_end:
+        # set the parameters
+
+        input_vals[:] = [input_linspace[ input_index_grid[i] ] for i in range(input_dimension)]
+
+        print_row=[] # [current_step]
+        print_row.extend(np.asarray(input_vals))
+        print_row.append(0)
+        csv_writer.writerow(print_row)
+
+        current_step += 1
+
+        is_at_end = check_end()
+
+        next_index()
+
+    csv_file.flush()
+    csv_file.close()
+
+    FLAGS.batch_size=1
+    network_model = model(FLAGS)
+    network_model.init_network(FLAGS.restore_model, setup=None)
+
+    y = network_model.nn.get_list_of_nodes(["y"])
+    sess = network_model.sess
+
+    nn_input = neuralnet_parameters(tf.get_collection(tf.GraphKeys.WEIGHTS))
+    nn_biases = neuralnet_parameters(tf.get_collection(tf.GraphKeys.BIASES))
+
+    weights_vals = nn_input.create_flat_vector()
+    biases_vals = nn_biases.create_flat_vector()
+
+    if FLAGS.csv_file is not None:
+        header = ["i"]
+        for i in range(input_dimension):
+            header.append("x"+str(i+1))
+        header.append("label")
+        csv_writer, csv_file = setup_csv_file(FLAGS.csv_file, header)
+
+    def assign_parameters():
+        nn_input.assign(sess, weights_vals)
+        nn_biases.assign(sess, biases_vals)
+
+        # get the input and biases to check against what we set
+        weights_eval = nn_input.evaluate(sess)
+        biases_eval = nn_biases.evaluate(sess)
+
+        print("Evaluating at weights "+str(weights_eval[0:10])+", biases "+str(biases_eval[0:10]))
+
+    ## function to evaluate the loss
+
+    def evaluate_label(current_step):
+        batch_xs = sess.run(network_model.batch_features)
+        #print(batch_xs)
+
+        feed_dict = {
+            network_model.xinput: batch_xs
+        }
+
+        label = network_model.sess.run(
+            network_model.nn.placeholder_nodes["y"],
+            feed_dict=feed_dict)
+
+        if FLAGS.csv_file is not None:
+            print_row = [current_step]
+            print_row.extend(np.asarray(batch_xs[0]))
+            print_row.extend(np.asarray(label[0]))
+            csv_writer.writerow(print_row)
+
+    if FLAGS.trajectory_file is None:
+        print("Need trajectory file that contains weights and biases per step.")
+        sys.exit(255)
+    else:
+        # parse csv file
+        with open(FLAGS.trajectory_file, 'r') as csv_file:
+            csvreader = csv.reader(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            # go through each row and use values
+            next(csvreader) # skip header
+            row_length = weights_vals.size+biases_vals.size+2 # initially, there is step and loss
+            for row in csvreader:
+                print("length of row is "+str(len(row))+" and expected length is "+str(row_length))
+                assert( len(row) >= row_length)
+                step = row[0]
+                if int(step) in FLAGS.steps:
+                    print("Found step %s in trajectory file." % (step))
+                    loss_check = row[0]
+                    weights_vals[:weights_vals.size] = row[2:(weights_vals.size+2)]
+                    biases_vals[:biases_vals.size] = row[(weights_vals.size+2):row_length]
+                    assign_parameters()
+
+                    # Start populating the filename queue.
+                    coord = tf.train.Coordinator()
+                    threads = tf.train.start_queue_runners(coord=coord, sess=sess)
+
+                    current_step = 0
+                    try:
+                        while not coord.should_stop():
+                            evaluate_label(current_step)
+                            current_step += 1
+                    except tf.errors.OutOfRangeError:
+                        print("End of dataset.")
+                    finally:
+                        coord.request_stop()
+
+                    coord.join(threads)
+
+    network_model.finish()
+
+    if FLAGS.csv_file is not None:
+        csv_file.close()
+
+if __name__ == '__main__':
+    FLAGS, unparsed = parse_parameters()
+
+    react_to_common_options(FLAGS, unparsed)
+
+    tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
+

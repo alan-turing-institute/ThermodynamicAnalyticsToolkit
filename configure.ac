@@ -46,6 +46,7 @@ AC_CONFIG_FILES([tests/DatasetWriter], [chmod +x tests/DatasetWriter])
 AC_CONFIG_FILES([tests/DDSampler], [chmod +x tests/DDSampler])
 AC_CONFIG_FILES([tests/DDSOptimizer], [chmod +x tests/DDSOptimizer])
 AC_CONFIG_FILES([tests/DDSAnalyser], [chmod +x tests/DDSAnalyser])
+AC_CONFIG_FILES([tests/InputSpaceSampler], [chmod +x tests/InputSpaceSampler])
 AC_CONFIG_FILES([tests/LossFunctionSampler], [chmod +x tests/LossFunctionSampler])
 AC_CONFIG_FILES([tests/python/run], [chmod +x tests/python/run])
 AC_CONFIG_FILES([

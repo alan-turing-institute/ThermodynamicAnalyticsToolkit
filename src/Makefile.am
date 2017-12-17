@@ -16,6 +16,7 @@ bin_SCRIPTS = \
 	DDSampler \
 	DDSOptimizer \
 	DDSAnalyser \
+	InputSpaceSampler \
 	LossFunctionSampler
 
 CLEANFILES = $(bin_SCRIPTS)
@@ -26,6 +27,7 @@ EXTRA_DIST = \
 	DDSampler.in \
 	DDSOptimizer.in \
 	DDSAnalyser.in \
+	InputSpaceSampler.in \
 	LossFunctionSampler.in
 
 do_substitution = sed -e 's,[@]pythondir[@],$(pythondir),g' \
@@ -52,6 +54,10 @@ DDSOptimizer: DDSOptimizer.in Makefile
 DDSAnalyser: DDSAnalyser.in Makefile
 	$(do_substitution) < $(srcdir)/DDSAnalyser.in > DDSAnalyser
 	chmod +x DDSAnalyser
+
+InputSpaceSampler: InputSpaceSampler.in Makefile
+	$(do_substitution) < $(srcdir)/InputSpaceSampler.in > InputSpaceSampler
+	chmod +x InputSpaceSampler
 
 LossFunctionSampler: LossFunctionSampler.in Makefile
 	$(do_substitution) < $(srcdir)/LossFunctionSampler.in > LossFunctionSampler
