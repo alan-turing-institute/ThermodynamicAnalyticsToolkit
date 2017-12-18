@@ -252,23 +252,34 @@ def read_from_csv(filename_queue):
     return features, label
 
 
-def create_input_pipeline(filenames, batch_size, num_epochs=None, seed=None):
+def create_input_pipeline(filenames, batch_size, shuffle=False, num_epochs=None, seed=None):
     """ creates a Tensorflow input pipeline given some files and
     a batch_size
 
     :param filenames: name of file
     :param batch_size: size of each batch to be delivered
+    :param shuffle: whether to shuffle dataset or not
     :param num_epochs: number of maximum epochs, None means no limit
     :param seed: random number seed used for reshuffling
     :return: Tensorflow nodes to receive features and labels
     """
-    filename_queue = tf.train.string_input_producer(filenames, num_epochs=num_epochs, shuffle=True, seed=seed)
+    filename_queue = tf.train.string_input_producer(filenames,
+                                                    num_epochs=num_epochs,
+                                                    shuffle=shuffle,
+                                                    seed=seed)
     feature, label = read_from_csv(filename_queue)
-    min_after_dequeue = 10000
-    capacity = min_after_dequeue + 30 * batch_size
-    feature_batch, label_batch = tf.train.shuffle_batch(
-        [feature, label], batch_size=batch_size, capacity=capacity,
-        min_after_dequeue=min_after_dequeue, seed=seed)
+    print("Using batch size %d" % (batch_size))
+    if shuffle:
+        min_after_dequeue = 30
+        capacity = min_after_dequeue + 10*batch_size
+        feature_batch, label_batch = tf.train.shuffle_batch(
+            [feature, label], batch_size=batch_size, capacity=capacity,
+            min_after_dequeue=min_after_dequeue, seed=seed)
+    else:
+        min_after_dequeue = 0
+        capacity = min_after_dequeue + batch_size
+        feature_batch, label_batch = tf.train.batch(
+            [feature, label], batch_size=batch_size, capacity=capacity)
     return feature_batch, label_batch
 
 
