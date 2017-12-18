@@ -210,13 +210,6 @@ def react_to_common_options(FLAGS, unparsed):
 
     print("Using parameters: "+str(FLAGS))
 
-    try:
-        if FLAGS.batch_size is None:
-            print("No batch_size was specified, using true gradients.")
-            FLAGS.batch_size = FLAGS.dimension
-    except AttributeError:
-        pass
-
     if len(unparsed) != 0:
         print("There are unparsed parameters '"+str(unparsed)+"', have you misspelled some?")
         sys.exit(255)
