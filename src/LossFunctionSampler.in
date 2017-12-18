@@ -128,9 +128,9 @@ def main(_):
         biases_interval_length = biases_interval_end - biases_interval_start
 
         weights_linspace = np.arange(0,FLAGS.samples_weights+1)*weights_interval_length/float(
-                FLAGS.samples_weights+1)+weights_interval_start
+                FLAGS.samples_weights)+weights_interval_start
         biases_linspace = np.arange(0,FLAGS.samples_biases+1)*biases_interval_length/float(
-                FLAGS.samples_biases+1)+biases_interval_start
+                FLAGS.samples_biases)+biases_interval_start
         weights_index_grid = np.zeros(weights_vals.size, dtype=int)
         weights_len_grid = FLAGS.samples_weights+1
         biases_index_grid = np.zeros(biases_vals.size, dtype=int)
