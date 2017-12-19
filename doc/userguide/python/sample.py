@@ -3,11 +3,9 @@ from DataDrivenSampler.models.model import model
 import numpy as np
 
 FLAGS = model.create_mock_flags(
+    batch_data_files=["dataset-twoclusters.csv"],
     batch_size=500,
-    data_type=2,
-    dimension=500,
     max_steps=1000,
-    noise=0.1,
     output_activation="linear",
     sampler="GeometricLangevinAlgorithm_2ndOrder",
     seed=426,
