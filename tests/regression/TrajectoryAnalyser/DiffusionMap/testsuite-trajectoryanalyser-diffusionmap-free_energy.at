@@ -43,7 +43,7 @@ AT_CHECK([../../../DDSAnalyser \
     --number_of_eigenvalues 4 \
     --trajectory_file ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/pre/trajectory-two_clusters-dim_500-gamma_10-beta_1e4-max_steps_1000-noise_0.1-linear-seed_426.csv
 ], 0, [stdout], [stderr])
-AT_CHECK([diff landmarks-ev_1.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/post/landmarks-ev_1-method_vanilla.csv], 0, [ignore], [ignore])
+AT_CHECK([diff landmarks-ev_0.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/post/landmarks-ev_0-method_vanilla.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
 
@@ -73,7 +73,7 @@ AT_CHECK([../../../DDSAnalyser \
     --number_of_eigenvalues 4 \
     --trajectory_file ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/pre/trajectory-two_clusters-dim_500-gamma_10-beta_1e1-max_steps_1000-noise_0.1-linear-seed_426.csv
 ], 0, [stdout], [stderr])
-AT_CHECK([diff landmarks-ev_1.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/post/landmarks-ev_1-method_TMDMap.csv], 0, [ignore], [ignore])
+AT_CHECK([diff landmarks-ev_0.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/post/landmarks-ev_0-method_TMDMap.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
 
@@ -104,7 +104,7 @@ AT_CHECK([../../../DDSAnalyser \
     --number_of_eigenvalues 4 \
     --trajectory_file ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/pre/trajectory-two_clusters-dim_500-gamma_10-beta_1e1-max_steps_1000-noise_0.1-linear-seed_426.csv
 ], 0, [stdout], [stderr])
-AT_CHECK([diff landmarks-ev_1.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/post/landmarks-ev_1-method_pydiffmap.csv], 0, [ignore], [ignore])
+AT_CHECK([diff landmarks-ev_0.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/post/landmarks-ev_0-method_pydiffmap.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
 

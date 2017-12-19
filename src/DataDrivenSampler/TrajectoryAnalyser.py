@@ -102,11 +102,11 @@ def compute_diffusion_maps(traj, beta, loss, nrOfFirstEigenVectors,
             qTargetDistribution = dm.compute_target_distribution(len(traj), beta, loss)
             P, qEstimated = dm.compute_TMDMap(traj, epsilon, qTargetDistribution)
 
-        lambdas, eigenvectors = sps.linalg.eigs(P, k=nrOfFirstEigenVectors)  # , which='LM' )
+        lambdas, eigenvectors = sps.linalg.eigs(P, k=nrOfFirstEigenVectors+1)  # , which='LM' )
 
         ix = lambdas.argsort()[::-1]
-        X_se = np.real(eigenvectors[:, ix])
-        lambdas = np.real(lambdas[ix])
+        X_se = np.real(eigenvectors[:, ix[1:]])
+        lambdas = np.real(lambdas[ix[1:]])
     else:
         print("Unknown diffusion map method "+method)
         sys.exit(255)
