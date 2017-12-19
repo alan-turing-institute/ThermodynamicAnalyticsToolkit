@@ -72,18 +72,16 @@ def moving_average(a, n=3) :
 
 def compute_diffusion_maps(traj, beta, loss, nrOfFirstEigenVectors,
                            method='vanilla', use_reweighting=False):
-    epsilon = 0.1  # try 1 (i.e. make it bigger, then reduce to average distance)
-
     if method == 'pydiffmap':
         if can_use_pydiffmap:
             if use_reweighting:
                 # pydiffmap calculates one more and leaves out the first
                 qTargetDistribution = dm.compute_target_distribution(len(traj), beta, loss)
-                mydmap = pydiffmap_dm.DiffusionMap(alpha=1, n_evecs=nrOfFirstEigenVectors, epsilon=epsilon, k=400)
+                # optimal choice for epsilon
+                mydmap = pydiffmap_dm.DiffusionMap(alpha=1, n_evecs=nrOfFirstEigenVectors, epsilon='bgh', k=400)
                 mydmap.fit_transform(traj, weights=qTargetDistribution)
             else:
-                mydmap = pydiffmap_dm.DiffusionMap(n_evecs=nrOfFirstEigenVectors, epsilon=epsilon, alpha=1.0,
-                                                   k=400)
+                mydmap = pydiffmap_dm.DiffusionMap(n_evecs=nrOfFirstEigenVectors, epsilon='bgh', k=400)
                 mydmap.fit_transform(traj)
             kernel = mydmap.kernel_matrix
             qEstimated = kernel.sum(axis=1)
