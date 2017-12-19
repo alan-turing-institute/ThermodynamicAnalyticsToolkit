@@ -57,6 +57,8 @@ def parse_parameters():
         help='How many evaluation steps for averages to take')
     parser.add_argument('--trajectory_file', type=str, default=None,
         help='CSV trajectory file name to read trajectories from and compute diffusion maps on.')
+    parser.add_argument('--use_reweighting', type=bool, default=False,
+        help='Use reweighting of the kernel matrix of diffusion maps by the target distribution.')
     parser.add_argument('--version', '-V', action="store_true",
         help='Gives version information')
     return parser.parse_known_args()
@@ -68,13 +70,21 @@ def moving_average(a, n=3) :
     return ret[n - 1:] / n
 
 
-def compute_diffusion_maps(traj, beta, loss, nrOfFirstEigenVectors, method='vanilla'):
+def compute_diffusion_maps(traj, beta, loss, nrOfFirstEigenVectors,
+                           method='vanilla', use_reweighting=False):
     epsilon = 0.1  # try 1 (i.e. make it bigger, then reduce to average distance)
 
     if method == 'pydiffmap':
         if can_use_pydiffmap:
-            mydmap = pydiffmap_dm.DiffusionMap(n_evecs=nrOfFirstEigenVectors, epsilon=epsilon, alpha=1.0, k=400)
-            mydmap.fit_transform(traj)
+            if use_reweighting:
+                # pydiffmap calculates one more and leaves out the first
+                qTargetDistribution = dm.compute_target_distribution(len(traj), beta, loss)
+                mydmap = pydiffmap_dm.DiffusionMap(alpha=1, n_evecs=nrOfFirstEigenVectors, epsilon=epsilon, k=400)
+                mydmap.fit_transform(traj, weights=qTargetDistribution)
+            else:
+                mydmap = pydiffmap_dm.DiffusionMap(n_evecs=nrOfFirstEigenVectors, epsilon=epsilon, alpha=1.0,
+                                                   k=400)
+                mydmap.fit_transform(traj)
             kernel = mydmap.kernel_matrix
             qEstimated = kernel.sum(axis=1)
             X_se = mydmap.evecs
@@ -83,11 +93,12 @@ def compute_diffusion_maps(traj, beta, loss, nrOfFirstEigenVectors, method='vani
             print("Cannot use " + method + " as package not found on import.")
             sys.exit(255)
     elif method == 'vanilla' or method == 'TMDMap':
-        if method == "vanilla":
+        epsilon = 0.1  # try 1 (i.e. make it bigger, then reduce to average distance)
+        if method == "vanilla" and not use_reweighting:
             kernel = dm.compute_kernel(traj, epsilon=epsilon)
             qEstimated = kernel.sum(axis=1)
             P = dm.compute_VanillaDiffusionMap(kernel, traj)
-        elif method == 'TMDMap':
+        elif method == 'TMDMap' or (method == 'vanilla' and use_reweighting):
             qTargetDistribution = dm.compute_target_distribution(len(traj), beta, loss)
             P, qEstimated = dm.compute_TMDMap(traj, epsilon, qTargetDistribution)
 

@@ -129,7 +129,8 @@ def main(_):
                     beta=FLAGS.inverse_temperature, \
                     loss=loss, \
                     nrOfFirstEigenVectors=FLAGS.number_of_eigenvalues, \
-                    method=FLAGS.diffusion_map_method)
+                    method=FLAGS.diffusion_map_method,
+                    use_reweighting=FLAGS.use_reweighting)
             except scipy.sparse.linalg.eigen.arpack.ArpackNoConvergence:
                 print("ERROR: Vectors were non-convergent.")
                 vectors = np.zeros( (np.shape(trajectory)[0], FLAGS.number_of_eigenvalues) )
