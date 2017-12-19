@@ -1,0 +1,183 @@
+# This is heavily inspired by  https://github.com/openai/iaf/blob/master/tf_utils/adamax.py
+from tensorflow.python.ops import control_flow_ops
+from tensorflow.python.ops import math_ops
+from tensorflow.python.ops import state_ops
+from tensorflow.python.framework import ops
+from tensorflow.python.training import optimizer
+import tensorflow as tf
+
+import numpy as np
+
+
+class HamiltonianMonteCarloSampler(optimizer.Optimizer):
+    """ Implements a Hamiltonian Monte Carlo Sampler
+    in the form of a TensorFlow Optimizer, overriding tensorflow.python.training.Optimizer.
+
+    """
+    def __init__(self, step_width, current_step, num_steps, accept_seed, seed=None, use_locking=False, name='HamiltonianMonteCarlo'):
+        """ Init function for this class.
+
+        :param step_width: step width for gradient
+        :param current_step: current step
+        :param num_steps: number of steps in between accept/reject is evaluated
+        :param seed: seed value of the random number generator for generating reproducible runs
+        :param use_locking: whether to lock in the context of multi-threaded operations
+        :param name: internal name of optimizer
+        """
+        super(HamiltonianMonteCarloSampler, self).__init__(use_locking, name)
+        self._step_width = step_width
+        self._seed = seed
+        self.random_noise = None
+        self.scaled_gradient = None
+        self.scaled_noise = None
+        self._accept_seed = accept_seed
+        self._current_step = current_step
+        self._num_steps = num_steps
+    
+    def _prepare(self):
+        """ Converts step width into a tensor, if given as a floating-point
+        number.
+        """
+        self._step_width_t = ops.convert_to_tensor(self._step_width, name="step_width")
+        self._current_step_t = ops.convert_to_tensor(self._current_step, name="current_step")
+        self._num_steps_t = ops.convert_to_tensor(self._num_steps, name="num_steps")
+
+    def _create_slots(self, var_list):
+        """ Slots are internal resources for the Optimizer to store values
+        that are required and modified during each iteration.
+
+        Here, we need a slot to store the parameters for the starting step of
+        the short reject/accept trajectory run.
+
+        :param var_list: list of variables
+        """
+        for v in var_list:
+            self._zeros_slot(v, "initial_parameters", self._name)
+            self._zeros_slot(v, "momentum", self._name)
+
+    def _prepare_dense(self, grad, var):
+        """ Stuff common to all Langevin samplers.
+
+        :param grad: gradient nodes, i.e. they contain the gradient per parameter in `var`
+        :param var: parameters of the neural network
+        :return: step_width, inverse_temperature, and noise tensors
+        """
+        step_width_t = math_ops.cast(self._step_width_t, var.dtype.base_dtype)
+        current_step_t = math_ops.cast(self._current_step_t, tf.int64)
+        num_steps_t = math_ops.cast(self._num_steps_t, tf.int64)
+        #print("lr_t is "+str(self._lr))
+        if self._seed is None:
+            random_noise_t = tf.random_normal(grad.get_shape(), mean=0.,stddev=1., dtype=tf.float64)
+        else:
+            # increment such that we use different seed for each random tensor
+            self._seed += 1
+            random_noise_t = tf.random_normal(grad.get_shape(), mean=0., stddev=1., dtype=tf.float64, seed=self._seed)
+        # all minimize() calls need to have the same random number drawn to get to the
+        # same accept/reject goal
+        uniform_random_t = tf.random_uniform(shape=[], minval=0., maxval=1., dtype=tf.float64, seed=self._accept_seed)
+        #print("random_noise_t has shape "+str(random_noise_t.get_shape())+" with seed "+str(self._seed))
+        return step_width_t, current_step_t, num_steps_t, random_noise_t, uniform_random_t
+
+    def _apply_dense(self, grad, var):
+        """ Adds nodes to TensorFlow's computational graph in the case of densely
+        occupied tensors to perform the actual sampling.
+
+        We perform a leap-frog step on a hamiltonian (loss+kinetic energy)
+        and after num_steps passed we check the acceptance criterion,
+        either resetting back to the initial parameters or resetting the
+        initial parameters to the current ones.
+
+        :param grad: gradient nodes, i.e. they contain the gradient per parameter in `var`
+        :param var: parameters of the neural network
+        :return: a group of operations to be added to the graph
+        """
+        step_width_t, current_step_t, num_steps_t, random_noise_t, uniform_random_t = \
+            self._prepare_dense(grad, var)
+        momentum = self.get_slot(var, "momentum")
+        initial_parameters = self.get_slot(var, "initial_parameters")
+
+        # \nabla V (q^n ) \Delta t
+        scaled_gradient = step_width_t * grad
+
+        with tf.variable_scope("accumulate", reuse=True):
+            old_total_energy_t = tf.get_variable("total_energy", dtype=tf.float64)
+
+        with tf.variable_scope("accumulate", reuse=True):
+            gradient_global = tf.get_variable("gradients", dtype=tf.float64)
+            gradient_global_t = tf.assign_add(
+                gradient_global,
+                tf.reduce_sum(tf.multiply(scaled_gradient, scaled_gradient)))
+            # configurational temperature
+            virial_global = tf.get_variable("virials", dtype=tf.float64)
+            virial_global_t = tf.assign_add(
+                virial_global,
+                tf.reduce_sum(tf.multiply(grad, var)))
+
+        with tf.variable_scope("accumulate", reuse=True):
+            loss = tf.get_variable("loss", dtype=tf.float64)
+            kinetic_energy = tf.get_variable("kinetic", dtype=tf.float64)
+            current_energy = loss + kinetic_energy
+
+        # see https://stackoverflow.com/questions/37063952/confused-by-the-behavior-of-tf-cond
+        # In other words, each branch inside a tf.cond is evaluated. All "side effects"
+        # need to be hidden away inside tf.control_dependencies.
+        # I.E. DONT PLACE INSIDE NODES (confusing indeed)
+        def accept_block():
+            with tf.control_dependencies([old_total_energy_t.assign(current_energy),
+                                          initial_parameters.assign(var)]):
+                return tf.identity(old_total_energy_t)
+
+        def reject_block():
+            with tf.control_dependencies([var.assign(initial_parameters)]):
+                return tf.identity(old_total_energy_t)
+
+        max_value_t = tf.constant(1.0, dtype=tf.float64)
+        p_accept = tf.minimum(max_value_t, tf.exp(old_total_energy_t - current_energy))
+
+        def accept_reject_block():
+            return tf.cond(
+                tf.greater(p_accept, uniform_random_t),
+                accept_block, reject_block)
+
+        momentum_update = state_ops.assign_sub(momentum, scaled_gradient)
+        scaled_momentum = step_width_t * momentum_update
+        var_update = state_ops.assign_add(var, scaled_momentum)
+        # by chance this block has the same number of elements (2) as the accept/reject_blocks
+
+        def update_block():
+            return [momentum_update, var_update]
+
+        def step_block():
+            with tf.control_dependencies([momentum_update, var_update]):
+                return tf.identity(old_total_energy_t)
+
+        with tf.variable_scope("accumulate", reuse=True):
+            momentum_global = tf.get_variable("momenta", dtype=tf.float64)
+            momentum_global_t = tf.assign_add(
+                momentum_global,
+                tf.reduce_sum(tf.multiply(momentum, momentum)))
+
+        momentum_sq = 0.5 * tf.reduce_sum(tf.multiply(momentum, momentum))
+        with tf.variable_scope("accumulate", reuse=True):
+            kinetic_energy = tf.get_variable("kinetic", dtype=tf.float64)
+            kinetic_energy_t = tf.assign_add(kinetic_energy, momentum_sq)
+
+        criterion_block_t = tf.cond(
+            tf.equal(tf.mod(current_step_t, num_steps_t), 0),
+            accept_reject_block, step_block)
+
+        return control_flow_ops.group(*([criterion_block_t,
+                                        virial_global_t, gradient_global_t,
+                                        momentum_global_t, kinetic_energy_t]))
+
+    def _apply_sparse(self, grad, var):
+        """ Adds nodes to TensorFlow's computational graph in the case of sparsely
+        occupied tensors to perform the actual sampling.
+
+        Note that this is not implemented so far.
+
+        :param grad: gradient nodes, i.e. they contain the gradient per parameter in `var`
+        :param var: parameters of the neural network
+        :return: a group of operations to be added to the graph
+        """
+        raise NotImplementedError("Sparse gradient updates are not supported.")

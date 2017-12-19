@@ -29,6 +29,7 @@ m4_include([DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reprod
 # tests on various samplers
 m4_include([DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-sgld.at])
 m4_include([DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-gla_1st.at])
+m4_include([DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-hmc.at])
 m4_include([DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-gla_2nd.at])
 
 # tests on various options

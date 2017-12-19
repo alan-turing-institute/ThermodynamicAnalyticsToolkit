@@ -3,6 +3,9 @@ from DataDrivenSampler.samplers.GradientDescent import GradientDescent
 from DataDrivenSampler.samplers.sgldsampler import SGLDSampler
 from DataDrivenSampler.samplers.GLAFirstOrderMomentumSampler import GLAFirstOrderMomentumSampler
 from DataDrivenSampler.samplers.GLASecondOrderMomentumSampler import GLASecondOrderMomentumSampler
+from DataDrivenSampler.samplers.HamiltonianMonteCarloSampler import HamiltonianMonteCarloSampler
+
+import numpy as np
 
 class NeuralNetwork(object):
     """ This class encapsulates the construction of the neural network.
@@ -193,9 +196,19 @@ class NeuralNetwork(object):
             step_width = tf.placeholder(tf.float64, name="step_width")
             tf.summary.scalar('step_width', step_width)
             self.placeholder_nodes['step_width'] = step_width
+
+            num_steps = tf.placeholder(tf.int64, name="num_steps")
+            tf.summary.scalar('num_steps', num_steps)
+            self.placeholder_nodes['num_steps'] = num_steps
+
+            current_step = tf.placeholder(tf.int64, name="current_step")
+            tf.summary.scalar('current_step', current_step)
+            self.placeholder_nodes['current_step'] = current_step
+
             inverse_temperature = tf.placeholder(tf.float64, name="inverse_temperature")
             tf.summary.scalar('inverse_temperature', inverse_temperature)
             self.placeholder_nodes['inverse_temperature'] = inverse_temperature
+
             friction_constant = tf.placeholder(tf.float64, name="friction_constant")
             tf.summary.scalar('friction_constant', friction_constant)
             self.placeholder_nodes['friction_constant'] = friction_constant
@@ -209,6 +222,11 @@ class NeuralNetwork(object):
                 sampler = GLAFirstOrderMomentumSampler(step_width, inverse_temperature, friction_constant, seed=seed)
             elif sampling_method == "GeometricLangevinAlgorithm_2ndOrder":
                 sampler = GLASecondOrderMomentumSampler(step_width, inverse_temperature, friction_constant, seed=seed)
+            elif sampling_method == "HamiltonianMonteCarlo":
+                if seed is not None:
+                    np.random.seed(seed)
+                accept_seed = np.random.uniform(low=0,high=67108864)
+                sampler = HamiltonianMonteCarloSampler(step_width, current_step, num_steps, accept_seed=accept_seed, seed=seed)
             else:
                 raise NotImplementedError("Unknown sampler")
             trainables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)

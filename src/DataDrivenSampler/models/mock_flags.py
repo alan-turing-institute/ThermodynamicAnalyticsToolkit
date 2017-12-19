@@ -21,6 +21,7 @@ class MockFlags:
                  inverse_temperature=1.,
                  loss="mean_squared",
                  max_steps=1000,
+                 hamiltonian_dynamics_steps=10,
                  optimizer="GradientDescent",
                  output_activation="tanh",
                  restore_model=None,
@@ -47,6 +48,7 @@ class MockFlags:
         :param inverse_temperature: Inverse temperature that scales the gradients
         :param loss: Set the loss to be measured during sampling, e.g. mean_squared, log_loss, ...
         :param max_steps: Number of steps to run sampleer.
+        :param hamiltonian_dynamics_steps: number of steps in HMC sampler for checking acceptance criterion
         :param optimizer: Choose the optimizer to use for sampling: GradientDescent
         :param output_activation: Activation function to use for output layer: tanh, relu, linear
         :param restore_model: Restore model (weights and biases) from a file.
@@ -72,6 +74,7 @@ class MockFlags:
         self.inverse_temperature = inverse_temperature
         self.loss = loss
         self.max_steps = max_steps
+        self.hamiltonian_dynamics_steps = hamiltonian_dynamics_steps
         self.optimizer = optimizer
         self.output_activation = output_activation
         self.restore_model = restore_model

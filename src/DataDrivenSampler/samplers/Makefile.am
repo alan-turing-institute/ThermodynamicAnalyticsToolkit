@@ -2,6 +2,7 @@ DataDrivenSampler_samplers_PYTHON = \
 	GradientDescent.py \
 	GLAFirstOrderMomentumSampler.py \
 	GLASecondOrderMomentumSampler.py \
+	HamiltonianMonteCarloSampler.py \
 	sgldsampler.py \
 	__init__.py
 
