@@ -381,12 +381,6 @@ cost of all necessary servicing, repair, or correction.</remark>
         <para>Let us quickly go through each of the parameters: 
         <itemizedlist>
           <listitem>
-          <emphasis>data_type</emphasis> is a number between 0 and 3 that defines
-          one of four hard-coded datasets. See the classification problems at
-          <uri>playground.tensorflow.org</uri> to have an idea.
-          </listitem><listitem>
-          <emphasis>dimension</emphasis> defines the number of data points.
-          </listitem><listitem>
           <emphasis>batch_size</emphasis> sets the subset size of the data set
           looked at per training step, if smaller than dimension, then we add
           stochasticity/noise to the training but for the advantage of smaller
@@ -394,9 +388,6 @@ cost of all necessary servicing, repair, or correction.</remark>
           </listitem><listitem>
           <emphasis>max_steps</emphasis> gives the amount of training steps to
           be performed.
-          </listitem><listitem>
-          <emphasis>noise</emphasis> gives the relative perturbation for each
-          of the dataset items. This is specific to the type of dataset.
           </listitem><listitem>
           <emphasis>optimizer</emphasis> defines the method to use for training.
           Here, we use Gradient Descent (in case batch_size is smaller than 
@@ -500,18 +491,43 @@ nn.init_network(None, setup="sample")
       scientific experiments, we recommend using this interface as well. Here,
       it is to do parameter studies and have extensive runs using different
       seeds.
+      <section xml:id="quickstart.cmdline.creating_dataset">
+        <title  xml:id="quickstart.cmdline.creating_dataset.title">Creating the dataset</title>
+        <para>As data is read from file, this file needs to be created beforehand.</para>
+        <para>For a certain set of simple classification problems, namely those 
+        that can be found in the tensorflow playground, we have added a
+        <quote>DatasetWriter</quote> that spills out the dataset in CSV format.
+        </para>
+        <programlisting>./DatasetWriter \
+	--data_type 2 \
+	--dimension 500 \
+	--noise 0.1 \
+	--seed 426 \
+	--train_test_ratio 0 \
+	--test_data_file testset-twoclusters.csv</programlisting>
+	    <para>This will write 500 datums of the dataset type 2 ("two clusters")
+	    to a file <quote>testset-twoclusters.csv</quote> using all of the points as we have
+	    set the test/train ratio to 0. Note that we also perturb the points by
+	    0.1 relative noise.</para>
+	    <para>Similarly, for testing the dataset can be parsed using the same
+	    tensorflow machinery as is done for sampling and optimizing, using</para>
+	    <programlisting>./DatasetParser \
+	--batch_data_files testset-twoclusters.csv \
+	--batch_size 20 \
+	--seed 426</programlisting>
+	    <para>where the <emphasis>seed</emphasis> is used for shuffling the
+	    dataset.</para>
+      </section>
       <section xml:id="quickstart.cmdline.optimizing">
         <title  xml:id="quickstart.cmdline.optimizing.title">Optimizing the network</title>
         <para>As weights (and biases) are usually uniformly random initialized and
         the potential may therefore start with large values, we first have to 
         optimize the network, using (Stochastic) Gradient Descent (GD).</para>
         <programlisting>./DDSOptimizer \
+  	--batch_data_files dataset-twoclusters.csv \
     --batch_size 50 \
-    --data_type 2 \
-    --dimension 500 \
     --loss mean_squared \
     --max_steps 1000 \
-    --noise 0.1 \
     --optimizer GradientDescent \
     --save_model model.ckpt.meta \
     --seed 426 \
@@ -539,14 +555,12 @@ nn.init_network(None, setup="sample")
         force it back into the minimum.</para>
         <para>Let us call the sampler.</para>
         <programlisting>./DDSampler \
+  	--batch_data_files dataset-twoclusters.csv \
     --batch_size 50 \
-    --data_type 2 \
-    --dimension 500 \
     --friction_constant 10 \
     --inverse_temperature 10 \
     --loss mean_squared \
     --max_steps 100000 \
-    --noise 0.1 \
     --sampler GeometricLangevinAlgorithm_2ndOrder \
     --restore_model model.ckpt \
     --run_file run.csv \
