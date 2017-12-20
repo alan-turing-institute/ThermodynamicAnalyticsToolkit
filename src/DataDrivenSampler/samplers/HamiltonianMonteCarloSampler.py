@@ -116,12 +116,43 @@ class HamiltonianMonteCarloSampler(SGLDSampler):
                 virial_global,
                 tf.reduce_sum(tf.multiply(grad, var)))
 
+        # update momentum
+        scaled_noise = tf.sqrt(1./inverse_temperature_t)*random_noise_t
+        def momentum_step_block():
+            with tf.control_dependencies([state_ops.assign_sub(momentum, scaled_gradient)]):
+                return tf.identity(momentum)
+
+        def moment_reinit_block():
+            with tf.control_dependencies([momentum.assign(scaled_noise)]):
+                return tf.identity(momentum)
+
+        momentum_criterion_block_t = tf.cond(
+            tf.equal(tf.mod(current_step_t, num_steps_t), 0),
+            moment_reinit_block, momentum_step_block)
+
         with tf.variable_scope("accumulate", reuse=True):
-            loss = tf.get_variable("loss", dtype=tf.float64)
+            momentum_global = tf.get_variable("momenta", dtype=tf.float64)
+            momentum_global_t = tf.assign_add(
+                momentum_global,
+                tf.reduce_sum(tf.multiply(momentum_criterion_block_t, momentum_criterion_block_t)))
+
+        momentum_sq = 0.5 * tf.reduce_sum(tf.multiply(momentum_criterion_block_t, momentum_criterion_block_t))
+        with tf.variable_scope("accumulate", reuse=True):
             kinetic_energy = tf.get_variable("kinetic", dtype=tf.float64)
+            kinetic_energy_t = tf.assign_add(kinetic_energy, momentum_sq)
+
+        with tf.variable_scope("accumulate", reuse=True):
+            loss = tf.get_variable("old_loss", dtype=tf.float64)
+            kinetic_energy = tf.get_variable("old_kinetic", dtype=tf.float64)
             current_energy = loss + kinetic_energy
 
-        scaled_noise = tf.sqrt(1./inverse_temperature_t)*random_noise_t
+        # Note that it does not matter which layer actually sets the old_total_energy
+        # on acceptance. As soon as the first set of variables has done it, old and
+        # current are the same, hence exp(0)=1, and we always accept throughout the
+        # step
+        # Moreover, as all have the same seed, i.e. all get the same random number
+        # sequences. Each one set of variable would accept if it were the first to
+        # get called.
 
         # see https://stackoverflow.com/questions/37063952/confused-by-the-behavior-of-tf-cond
         # In other words, each branch inside a tf.cond is evaluated. All "side effects"
@@ -129,13 +160,12 @@ class HamiltonianMonteCarloSampler(SGLDSampler):
         # I.E. DONT PLACE INSIDE NODES (confusing indeed)
         def accept_block():
             with tf.control_dependencies([old_total_energy_t.assign(current_energy),
-                                          initial_parameters.assign(var),
-                                          momentum.assign(scaled_noise)]):
+                                          initial_parameters.assign(var)]):
                 return tf.identity(old_total_energy_t)
 
+        # DONT use nodes in the control_dependencies, always functions!
         def reject_block():
-            with tf.control_dependencies([var.assign(initial_parameters),
-                                          momentum.assign(scaled_noise)]):
+            with tf.control_dependencies([var.assign(initial_parameters)]):
                 return tf.identity(old_total_energy_t)
 
         max_value_t = tf.constant(1.0, dtype=tf.float64)
@@ -146,30 +176,19 @@ class HamiltonianMonteCarloSampler(SGLDSampler):
                 tf.greater(p_accept, uniform_random_t),
                 accept_block, reject_block)
 
-        momentum_update = state_ops.assign_sub(momentum, scaled_gradient)
-        scaled_momentum = step_width_t * momentum_update
-        var_update = state_ops.assign_add(var, scaled_momentum)
+        # update variables
+        scaled_momentum = step_width_t * momentum_criterion_block_t
 
+        # DONT use nodes in the control_dependencies, always functions!
         def step_block():
-            with tf.control_dependencies([momentum_update, var_update]):
+            with tf.control_dependencies([state_ops.assign_add(var, scaled_momentum)]):
                 return tf.identity(old_total_energy_t)
-
-        with tf.variable_scope("accumulate", reuse=True):
-            momentum_global = tf.get_variable("momenta", dtype=tf.float64)
-            momentum_global_t = tf.assign_add(
-                momentum_global,
-                tf.reduce_sum(tf.multiply(momentum, momentum)))
-
-        momentum_sq = 0.5 * tf.reduce_sum(tf.multiply(momentum, momentum))
-        with tf.variable_scope("accumulate", reuse=True):
-            kinetic_energy = tf.get_variable("kinetic", dtype=tf.float64)
-            kinetic_energy_t = tf.assign_add(kinetic_energy, momentum_sq)
 
         criterion_block_t = tf.cond(
             tf.equal(tf.mod(current_step_t, num_steps_t), 0),
             accept_reject_block, step_block)
 
-        return control_flow_ops.group(*([criterion_block_t,
+        return control_flow_ops.group(*([momentum_criterion_block_t, criterion_block_t,
                                         virial_global_t, gradient_global_t,
                                         momentum_global_t, kinetic_energy_t]))
 

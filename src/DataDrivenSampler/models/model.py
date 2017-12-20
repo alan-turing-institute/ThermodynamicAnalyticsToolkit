@@ -72,7 +72,10 @@ class model:
         during sampling.
         """
         with tf.variable_scope("accumulate", reuse=self.resources_created):
-            loss_t = tf.get_variable("loss", shape=[], trainable=False,
+            old_loss_t = tf.get_variable("old_loss", shape=[], trainable=False,
+                                               initializer=tf.zeros_initializer,
+                                               use_resource=True, dtype=tf.float64)
+            old_kinetic_t = tf.get_variable("old_kinetic", shape=[], trainable=False,
                                                initializer=tf.zeros_initializer,
                                                use_resource=True, dtype=tf.float64)
             total_energy_t = tf.get_variable("total_energy", shape=[], trainable=False,
@@ -264,7 +267,8 @@ class model:
         """
         # create global variable to hold kinetic energy
         with tf.variable_scope("accumulate", reuse=True):
-            loss_t = tf.get_variable("loss", dtype=tf.float64)
+            old_loss_t = tf.get_variable("old_loss", dtype=tf.float64)
+            old_kinetic_energy_t = tf.get_variable("old_kinetic", dtype=tf.float64)
             kinetic_energy_t = tf.get_variable("kinetic", dtype=tf.float64)
             zero_kinetic_energy = kinetic_energy_t.assign(0.)
             total_energy_t = tf.get_variable("total_energy", dtype=tf.float64)
@@ -363,16 +367,18 @@ class model:
                 eval_nodes = []
                 if abs(total_eval) < 1e-10:
                     eval_nodes.append(total_energy_t.assign(loss_eval+kin_eval))
-                eval_nodes.append(loss_t.assign(loss_eval))
+                eval_nodes.append([old_loss_t.assign(loss_eval),
+                                  old_kinetic_energy_t.assign(kin_eval)])
                 self.sess.run(eval_nodes)
+                loss_eval, total_eval, kin_eval = self.sess.run([old_loss_t, total_energy_t, old_kinetic_energy_t], feed_dict=feed_dict)
+                print("#%d: loss is %lg, total is %lg, kinetic is %lg" % (i, loss_eval, total_eval, kin_eval))
 
             # zero kinetic energy
             if self.FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder",
                                       "GeometricLangevinAlgorithm_2ndOrder",
                                       "HamiltonianMonteCarlo"]:
-                check_loss, check_total, check_kinetic, check_momenta, check_gradients, check_virials, check_noise = \
-                    self.sess.run([loss_t, total_energy_t, zero_kinetic_energy, zero_momenta, zero_gradients, zero_virials, zero_noise])
-                #assert ((abs(check_loss) < 1e-10) or (abs(check_loss - loss_eval) < 1e-10))
+                check_total, check_kinetic, check_momenta, check_gradients, check_virials, check_noise = \
+                    self.sess.run([total_energy_t, zero_kinetic_energy, zero_momenta, zero_gradients, zero_virials, zero_noise])
                 assert (abs(check_kinetic) < 1e-10)
                 assert (abs(check_momenta) < 1e-10)
                 assert (abs(check_gradients) < 1e-10)
@@ -397,11 +403,8 @@ class model:
             # or
             #   tf.run([loss_eval, train_step], ...)
             # is not important. Only a subsequent, distinct tf.run() call would produce a different loss_eval.
-            summary, _, acc, global_step, loss_eval, y_true_eval, y_eval, kinetic_eval = \
-                self.sess.run(test_nodes+[kinetic_energy_t], feed_dict=feed_dict)
-
-            if self.FLAGS.sampler == "HamiltonianMonteCarlo":
-                print("Total is %lg, while evaluated loss is %lg" % (check_total, loss_eval+kinetic_eval))
+            summary, _, acc, global_step, loss_eval, y_true_eval, y_eval = \
+                self.sess.run(test_nodes, feed_dict=feed_dict)
 
             if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics",
                                       "GeometricLangevinAlgorithm_1stOrder",
