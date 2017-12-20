@@ -53,6 +53,9 @@ TESTSCRIPTS += \
 	$(srcdir)/DatasetWriter/Datasets/testsuite-datasetwriter-datasets-twocircles.at \
 	$(srcdir)/DatasetWriter/Datasets/testsuite-datasetwriter-datasets-twoclusters.at \
 	$(srcdir)/DatasetWriter/Datasets/testsuite-datasetwriter-datasets-twospirals.at \
+	$(srcdir)/InputSpaceSampler/testsuite-inputspacesampler.at \
+	$(srcdir)/InputSpaceSampler/testsuite-inputspacesampler-simple.at \
+	$(srcdir)/InputSpaceSampler/testsuite-inputspacesampler-sgld-trajectory.at \
 	$(srcdir)/LossFunctionSampler/testsuite-lossfunctionsampler.at \
 	$(srcdir)/LossFunctionSampler/testsuite-lossfunctionsampler-sgld-trajectory.at \
 	$(srcdir)/LossFunctionSampler/testsuite-lossfunctionsampler-simple.at \
