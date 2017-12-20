@@ -226,7 +226,7 @@ class NeuralNetwork(object):
                 if seed is not None:
                     np.random.seed(seed)
                 accept_seed = np.random.uniform(low=0,high=67108864)
-                sampler = HamiltonianMonteCarloSampler(step_width, current_step, num_steps, accept_seed=accept_seed, seed=seed)
+                sampler = HamiltonianMonteCarloSampler(step_width, inverse_temperature, current_step, num_steps, accept_seed=accept_seed, seed=seed)
             else:
                 raise NotImplementedError("Unknown sampler")
             trainables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)

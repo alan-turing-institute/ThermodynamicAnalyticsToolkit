@@ -1,44 +1,43 @@
 # This is heavily inspired by  https://github.com/openai/iaf/blob/master/tf_utils/adamax.py
 from tensorflow.python.ops import control_flow_ops
+from tensorflow.python.ops import init_ops
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import state_ops
 from tensorflow.python.framework import ops
-from tensorflow.python.training import optimizer
 import tensorflow as tf
 
 import numpy as np
 
+from DataDrivenSampler.samplers.sgldsampler import SGLDSampler
 
-class HamiltonianMonteCarloSampler(optimizer.Optimizer):
+
+class HamiltonianMonteCarloSampler(SGLDSampler):
     """ Implements a Hamiltonian Monte Carlo Sampler
     in the form of a TensorFlow Optimizer, overriding tensorflow.python.training.Optimizer.
 
     """
-    def __init__(self, step_width, current_step, num_steps, accept_seed, seed=None, use_locking=False, name='HamiltonianMonteCarlo'):
+    def __init__(self, step_width, inverse_temperature, current_step, num_steps, accept_seed, seed=None, use_locking=False, name='HamiltonianMonteCarlo'):
         """ Init function for this class.
 
         :param step_width: step width for gradient
+        :param inverse_temperature: scale for noise
         :param current_step: current step
         :param num_steps: number of steps in between accept/reject is evaluated
         :param seed: seed value of the random number generator for generating reproducible runs
         :param use_locking: whether to lock in the context of multi-threaded operations
         :param name: internal name of optimizer
         """
-        super(HamiltonianMonteCarloSampler, self).__init__(use_locking, name)
-        self._step_width = step_width
-        self._seed = seed
-        self.random_noise = None
-        self.scaled_gradient = None
-        self.scaled_noise = None
+        super(HamiltonianMonteCarloSampler, self).__init__(step_width, inverse_temperature,
+                                                           seed, use_locking, name)
         self._accept_seed = accept_seed
         self._current_step = current_step
         self._num_steps = num_steps
-    
+
     def _prepare(self):
         """ Converts step width into a tensor, if given as a floating-point
         number.
         """
-        self._step_width_t = ops.convert_to_tensor(self._step_width, name="step_width")
+        super(HamiltonianMonteCarloSampler, self)._prepare()
         self._current_step_t = ops.convert_to_tensor(self._current_step, name="current_step")
         self._num_steps_t = ops.convert_to_tensor(self._num_steps, name="num_steps")
 
@@ -53,7 +52,18 @@ class HamiltonianMonteCarloSampler(optimizer.Optimizer):
         """
         for v in var_list:
             self._zeros_slot(v, "initial_parameters", self._name)
+            # we reinitialize momenta in first step anyway
             self._zeros_slot(v, "momentum", self._name)
+            # # initialize with normal distribution scaled by temperature
+            # #self._seed += 1
+            # mom_initializer = init_ops.random_normal_initializer(
+            #     dtype=v.dtype.base_dtype,
+            #     mean=0., stddev=tf.sqrt(self.temperature),
+            #     seed=self._seed)
+            # self._get_or_make_slot_with_initializer(v, mom_initializer, v.shape,
+            #                                         dtype=v.dtype.base_dtype,
+            #                                         slot_name="momentum",
+            #                                         op_name=self._name)
 
     def _prepare_dense(self, grad, var):
         """ Stuff common to all Langevin samplers.
@@ -62,21 +72,14 @@ class HamiltonianMonteCarloSampler(optimizer.Optimizer):
         :param var: parameters of the neural network
         :return: step_width, inverse_temperature, and noise tensors
         """
-        step_width_t = math_ops.cast(self._step_width_t, var.dtype.base_dtype)
+        step_width_t, inverse_temperature_t, random_noise_t = \
+            super(HamiltonianMonteCarloSampler, self)._prepare_dense(grad, var)
         current_step_t = math_ops.cast(self._current_step_t, tf.int64)
         num_steps_t = math_ops.cast(self._num_steps_t, tf.int64)
-        #print("lr_t is "+str(self._lr))
-        if self._seed is None:
-            random_noise_t = tf.random_normal(grad.get_shape(), mean=0.,stddev=1., dtype=tf.float64)
-        else:
-            # increment such that we use different seed for each random tensor
-            self._seed += 1
-            random_noise_t = tf.random_normal(grad.get_shape(), mean=0., stddev=1., dtype=tf.float64, seed=self._seed)
-        # all minimize() calls need to have the same random number drawn to get to the
-        # same accept/reject goal
+
         uniform_random_t = tf.random_uniform(shape=[], minval=0., maxval=1., dtype=tf.float64, seed=self._accept_seed)
         #print("random_noise_t has shape "+str(random_noise_t.get_shape())+" with seed "+str(self._seed))
-        return step_width_t, current_step_t, num_steps_t, random_noise_t, uniform_random_t
+        return step_width_t, inverse_temperature_t, current_step_t, num_steps_t, random_noise_t, uniform_random_t
 
     def _apply_dense(self, grad, var):
         """ Adds nodes to TensorFlow's computational graph in the case of densely
@@ -91,7 +94,7 @@ class HamiltonianMonteCarloSampler(optimizer.Optimizer):
         :param var: parameters of the neural network
         :return: a group of operations to be added to the graph
         """
-        step_width_t, current_step_t, num_steps_t, random_noise_t, uniform_random_t = \
+        step_width_t, inverse_temperature_t, current_step_t, num_steps_t, random_noise_t, uniform_random_t = \
             self._prepare_dense(grad, var)
         momentum = self.get_slot(var, "momentum")
         initial_parameters = self.get_slot(var, "initial_parameters")
@@ -118,17 +121,21 @@ class HamiltonianMonteCarloSampler(optimizer.Optimizer):
             kinetic_energy = tf.get_variable("kinetic", dtype=tf.float64)
             current_energy = loss + kinetic_energy
 
+        scaled_noise = tf.sqrt(1./inverse_temperature_t)*random_noise_t
+
         # see https://stackoverflow.com/questions/37063952/confused-by-the-behavior-of-tf-cond
         # In other words, each branch inside a tf.cond is evaluated. All "side effects"
         # need to be hidden away inside tf.control_dependencies.
         # I.E. DONT PLACE INSIDE NODES (confusing indeed)
         def accept_block():
             with tf.control_dependencies([old_total_energy_t.assign(current_energy),
-                                          initial_parameters.assign(var)]):
+                                          initial_parameters.assign(var),
+                                          momentum.assign(scaled_noise)]):
                 return tf.identity(old_total_energy_t)
 
         def reject_block():
-            with tf.control_dependencies([var.assign(initial_parameters)]):
+            with tf.control_dependencies([var.assign(initial_parameters),
+                                          momentum.assign(scaled_noise)]):
                 return tf.identity(old_total_energy_t)
 
         max_value_t = tf.constant(1.0, dtype=tf.float64)
@@ -142,10 +149,6 @@ class HamiltonianMonteCarloSampler(optimizer.Optimizer):
         momentum_update = state_ops.assign_sub(momentum, scaled_gradient)
         scaled_momentum = step_width_t * momentum_update
         var_update = state_ops.assign_add(var, scaled_momentum)
-        # by chance this block has the same number of elements (2) as the accept/reject_blocks
-
-        def update_block():
-            return [momentum_update, var_update]
 
         def step_block():
             with tf.control_dependencies([momentum_update, var_update]):
