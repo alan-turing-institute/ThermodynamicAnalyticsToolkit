@@ -28,8 +28,8 @@ AT_CHECK([cp -f ${abs_top_srcdir}/tests/userguide/python/pre/dataset-twoclusters
 AT_CHECK([../../run \
 	${abs_top_srcdir}/doc/userguide/python/fix_parameter.py
 ], 0, [stdout], [stderr])
-AT_CHECK([grep -c "2.00000000e+00" stdout], 0, [stdout], [ignore])
-AT_CHECK([grep "5" stdout], 0, [ignore], [ignore])
+AT_CHECK([grep "5" stdout | awk -F" " '{print NR}'], 0, [stdout], [ignore])
+AT_CHECK([grep "4" stdout], 0, [stdout], [ignore])
 
 AT_CLEANUP
 

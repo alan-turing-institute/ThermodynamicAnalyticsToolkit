@@ -595,12 +595,25 @@ class model:
         :return: None or Variable ref that was fixed
         """
         variable = None
-        collection = tf.get_collection_ref(tf.GraphKeys.TRAINABLE_VARIABLES)
-        for i in range(len(collection)):
-            if collection[i].name == _name:
-                variable = collection[i]
-                del collection[i]
+        trainable_collection = tf.get_collection_ref(tf.GraphKeys.TRAINABLE_VARIABLES)
+        if "weight" in _name:
+            other_collection = tf.get_collection_ref(tf.GraphKeys.WEIGHTS)
+        elif "bias" in _name:
+            other_collection = tf.get_collection_ref(tf.GraphKeys.BIASES)
+        else:
+            print("Unknown parameter category, removing only from trainables.")
+        for i in range(len(trainable_collection)):
+            if trainable_collection[i].name == _name:
+                trainable_variable = trainable_collection[i]
+                del trainable_collection[i]
                 break
+        for i in range(len(other_collection)):
+            if other_collection[i].name == _name:
+                variable = other_collection[i]
+                del other_collection[i]
+                break
+        print("Comparing %s and %s" % (trainable_variable, variable))
+        assert(trainable_variable is variable)
         return variable
 
     @staticmethod

@@ -35,9 +35,8 @@ AT_CHECK([../../../DDSampler \
 	--step_width 1e-1 \
 	--trajectory_file trajectory.csv
 ], 0, [stdout], [stderr])
-
-AT_CHECK([grep -c "1.00000000e+00" trajectory.csv], 0, [stdout], [ignore])
-AT_CHECK([grep "10" stdout], 0, [ignore], [ignore])
+AT_CHECK([grep "step,loss,weight0,weight1" trajectory.csv], 0, [stdout], [ignore])
+AT_CHECK([grep "10," trajectory.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
 
@@ -60,8 +59,8 @@ AT_CHECK([../../../DDSampler \
 	--trajectory_file trajectory.csv
 ], 0, [stdout], [stderr])
 
-AT_CHECK([grep -c "1.00000000e+00,-1.00000000e+00" trajectory.csv], 0, [stdout], [ignore])
-AT_CHECK([grep "10" stdout], 0, [ignore], [ignore])
+AT_CHECK([grep "step,loss,bias0" trajectory.csv], 0, [stdout], [ignore])
+AT_CHECK([grep "10," trajectory.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
 

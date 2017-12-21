@@ -123,7 +123,10 @@ class neuralnet_parameters:
         for array in list_of_array:
             flat_array = np.reshape(array, [array.size])
             flattened.append(flat_array)
-        return np.concatenate(flattened)
+        if len(flattened) > 0:
+            return np.concatenate(flattened)
+        else:
+            return np.empty(shape=(0))
 
     @staticmethod
     def create_feed_dict(list_of_tensors, list_of_arrays):
