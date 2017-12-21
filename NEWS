@@ -1,3 +1,19 @@
+v0.3
+====
+
+- added HamiltonianMonteCarlo sampler
+- added BAOAB sampler
+- parameters can be fixed in optimization or sampling (also loss function
+  sampling)
+- FIX: trajectories are now correctly written also for networks with hidden
+  layers
+- diffusion map analysis can now use python package pydiffmap (and is 
+  recommended due to optimal epsilon choice)
+- all cmdline examples in userguide are also fully tested
+- added input space sampler to see classification boundaries of network
+- we no longer generate datasets in memory but parse from CSV files
+- added DatasetWriter to produce CSV for old in-memory datasets
+
 v0.2
 ====
 
