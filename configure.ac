@@ -41,6 +41,7 @@ AC_CONFIG_TESTDIR([tests/userguide])
 AC_CONFIG_FILES(
 	tests/regression/atlocal
 	tests/regression/Makefile)
+AC_CONFIG_FILES([tests/check_pydiffmap], [chmod +x tests/check_pydiffmap])
 AC_CONFIG_FILES([tests/DatasetParser], [chmod +x tests/DatasetParser])
 AC_CONFIG_FILES([tests/DatasetWriter], [chmod +x tests/DatasetWriter])
 AC_CONFIG_FILES([tests/DDSampler], [chmod +x tests/DDSampler])

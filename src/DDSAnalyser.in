@@ -124,24 +124,25 @@ def main(_):
 
             print("Computing diffusion map")
             try:
-                vectors, values, q, q_target = compute_diffusion_maps( \
+                vectors, values, q = compute_diffusion_maps( \
                     traj=trajectory, \
                     beta=FLAGS.inverse_temperature, \
                     loss=loss, \
                     nrOfFirstEigenVectors=FLAGS.number_of_eigenvalues, \
-                    method=FLAGS.diffusion_map_method)
+                    method=FLAGS.diffusion_map_method,
+                    use_reweighting=FLAGS.use_reweighting)
             except scipy.sparse.linalg.eigen.arpack.ArpackNoConvergence:
                 print("ERROR: Vectors were non-convergent.")
-                vectors = np.zeros( (np.shape(trajectory)[1], number_dof+1) )
-                values = np.zeros( (1, number_dof+1) )
-                q = np.zeros( (np.shape(trajectory)[1], np.shape(trajectory)[1]) )
+                vectors = np.zeros( (np.shape(trajectory)[0], FLAGS.number_of_eigenvalues) )
+                values = np.zeros( (FLAGS.number_of_eigenvalues) )
+                q = np.zeros( (np.shape(trajectory)[0], np.shape(trajectory)[0]) )
                 # override landmarks to skip computation
-                FLAGS.landmarks = 1
+                FLAGS.landmarks = 0
             kernel_diff = np.asarray(q)
 
             if FLAGS.diffusion_map_file is not None:
-                write_values_as_csv(values, FLAGS.diffusion_map_file, output_width, output_precision)
                 print("Eigenvalues are "+str(values))
+                write_values_as_csv(values, FLAGS.diffusion_map_file, output_width, output_precision)
 
             if FLAGS.diffusion_matrix_file is not None:
                 header = ["i", "loss", "kernel_diff"]
@@ -162,13 +163,18 @@ def main(_):
 
             if FLAGS.landmark_prefix is not None:
                 # compute landmarks
-                print("Getting landmarks")
-                landmarks=get_landmarks_over_vectors( \
-                    data=trajectory, \
-                    K=FLAGS.landmarks, \
-                    q=q, \
-                    vectors=vectors, \
-                    energies=loss)
+                if FLAGS.landmarks > 0:
+                    print("Getting landmarks")
+                    landmarks=get_landmarks_over_vectors( \
+                        data=trajectory, \
+                        K=FLAGS.landmarks, \
+                        q=q, \
+                        vectors=vectors, \
+                        energies=loss)
+                else:
+                    landmarks = []
+                    for vindex in range(np.shape(vectors)[1]):
+                        landmarks.append(np.zeros(FLAGS.landmarks))
 
                 # compute free energy at landmark points
                 print("Computing free energy")

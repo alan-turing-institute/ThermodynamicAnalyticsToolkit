@@ -1,0 +1,13 @@
+#!/usr/bin/env @PYTHON@
+
+import sys
+sys.path.insert(1, '@pythondir@')
+
+returncode=0
+try:
+    import pydiffmap
+except ImportError:
+    returncode=255
+
+if __name__ == '__main__':
+    sys.exit(returncode)

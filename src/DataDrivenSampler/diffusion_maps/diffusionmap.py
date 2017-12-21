@@ -53,8 +53,8 @@ def compute_VanillaDiffusionMap(kernel, X):
     :param X: trajectory vector
     :return: rescaled kernel matrix
     """
-    alpha = 0.5;
-    m = np.shape(X)[0];
+    alpha = 0.5
+    m = np.shape(X)[0]
 
     D = sps.csr_matrix.sum(kernel, axis=0)
     Dalpha = sps.spdiags(np.power(D,-alpha), 0, m, m)
@@ -95,7 +95,7 @@ def compute_TMDMap(X, epsilon, qTargetDistribution):
     """
 
     #print('Unweighting according to temperature '+repr(temperature))
-    m = np.shape(X)[0];
+    m = np.shape(X)[0]
 
     kernel = compute_kernel(X, epsilon)
 
