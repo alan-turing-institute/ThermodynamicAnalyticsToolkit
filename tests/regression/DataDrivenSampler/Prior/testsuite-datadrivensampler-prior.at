@@ -1,0 +1,53 @@
+#
+#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    Copyright (C) 2017 The University of Edinburgh
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### all tests on DataDrivenSampler
+
+AT_BANNER([DataDrivenSampler - DataDrivenSampler])
+
+# tests on simple behavior
+m4_include([DataDrivenSampler/testsuite-datadrivensampler-simple.at])
+
+# tests on reproducible runs
+m4_include([DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-given_seeds.at])
+m4_include([DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-no_seeds.at])
+
+# tests on various samplers
+m4_include([DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-sgld.at])
+m4_include([DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-gla_1st.at])
+m4_include([DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-gla_2nd.at])
+
+# tests on various options
+m4_include([DataDrivenSampler/Options/testsuite-datadrivensampler-options-batch_size.at])
+m4_include([DataDrivenSampler/Options/testsuite-datadrivensampler-options-every_nth.at])
+m4_include([DataDrivenSampler/Options/testsuite-datadrivensampler-options-every_nth-misspelled.at])
+m4_include([DataDrivenSampler/Options/testsuite-datadrivensampler-options-friction_constant.at])
+m4_include([DataDrivenSampler/Options/testsuite-datadrivensampler-options-inverse_temperature.at])
+m4_include([DataDrivenSampler/Options/testsuite-datadrivensampler-options-sql_db.at])
+m4_include([DataDrivenSampler/Options/testsuite-datadrivensampler-options-step_width.at])
+
+# tests on saving and restoring
+m4_include([DataDrivenSampler/SavingRestoring/testsuite-datadrivensampler-saving_restoring.at])
+
+# tests on trajectories
+m4_include([DataDrivenSampler/Trajectories/testsuite-datadrivensampler-trajectories.at])
+
+# tests on fixing parameters
+m4_include([DataDrivenSampler/FixParameter/testsuite-datadrivensampler-fix_parameter.at])
+
+# tests on enforcing prior
+m4_include([DataDrivenSampler/Prior/testsuite-datadrivensampler-prior.at])

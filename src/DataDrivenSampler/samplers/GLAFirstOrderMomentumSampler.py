@@ -65,7 +65,7 @@ class GLAFirstOrderMomentumSampler(SGLDSampler):
         step_width_t, inverse_temperature_t, random_noise_t = self._prepare_dense(grad, var)
         momentum = self.get_slot(var, "momentum")
 
-        # \nabla V (q^n ) \Delta t
+        # \nabla V (q^n ) \Delta t + prior constraining force
         scaled_gradient = step_width_t * grad
 
         with tf.variable_scope("accumulate", reuse=True):
@@ -81,8 +81,12 @@ class GLAFirstOrderMomentumSampler(SGLDSampler):
         # p^{n+1} = p^{n} − \nabla V (q^n ) \Delta t
         momentum_full_step_t = momentum - scaled_gradient
 
+        # prior force act directly on var
+        ub_repell, lb_repell = self._apply_prior(var)
+        prior_force = step_width_t * (ub_repell + lb_repell)
+
         # q=^{n+1} = q^n + M^{-1} p_{n+1} ∆t
-        var_update = state_ops.assign_add(var, step_width_t * momentum_full_step_t)
+        var_update = state_ops.assign_add(var, step_width_t * momentum_full_step_t - prior_force)
 
         alpha_t = tf.exp(-friction_constant_t * step_width_t)
 

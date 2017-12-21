@@ -441,6 +441,17 @@ cost of all necessary servicing, repair, or correction.</remark>
         GeometricLangevinAlgorithm_1st, GeometricLangevinAlgorithm_2nd, where
         the firstrtefers to StochasticGradientLangevinDynamics
          [Welling, Teh, 2011]. GLA 2nd is currently recommended to use.</para>
+        <para>Note that you may add a prior to the sampling. At the current 
+        state a single prior as follows is available. In <quote>FLAGS</quote>
+        <command>prior_upper_boundary</command> and 
+        <command>prior_lower_boundary</command> give the admitted interval
+        per parameter. Within a relative distance of 0.01 (with respect to 
+        length of domain) a force increase linearly with the distance.
+        In essence, this will constrain the sampling to within the domain. The
+        force is modified by <command>prior_factor</command>.</para>
+        <para>If upper and lower boundary coincide, then we have the case
+        of tethering, where all parameters are pulled inward to the same 
+        point.</para>
         <para>We might also concatenate optimize and sample if in between the
         two we adjust FLAGS as follows:
         <programlisting>
