@@ -126,6 +126,10 @@ class model:
             hamiltonian_dynamics_steps=10,
             optimizer="GradientDescent",
             output_activation="tanh",
+            prior_factor=1.,
+            prior_lower_boundary=None,
+            prior_power=1.,
+            prior_upper_boundary=None,
             restore_model=None,
             run_file=None,
             sampler="GeometricLangevinAlgorithm_1stOrder",
@@ -151,6 +155,10 @@ class model:
                 hamiltonian_dynamics_steps=hamiltonian_dynamics_steps,
                 optimizer=optimizer,
                 output_activation=output_activation,
+                prior_factor=prior_factor,
+                prior_lower_boundary=prior_lower_boundary,
+                prior_power=prior_power,
+                prior_upper_boundary=prior_upper_boundary,
                 restore_model=restore_model,
                 run_file=run_file,
                 sampler=sampler,
@@ -189,7 +197,16 @@ class model:
         if setup == "train":
             self.nn.add_train_method(loss, optimizer_method=self.FLAGS.optimizer)
         elif setup == "sample":
-            self.nn.add_sample_method(loss, sampling_method=self.FLAGS.sampler, seed=self.FLAGS.seed)
+            prior = {}
+            if self.FLAGS.prior_factor is not None:
+                prior["factor"] = self.FLAGS.prior_factor
+            if self.FLAGS.prior_lower_boundary is not None:
+                prior["lower_boundary"] = self.FLAGS.prior_lower_boundary
+            if self.FLAGS.prior_power is not None:
+                prior["power"] = self.FLAGS.prior_power
+            if self.FLAGS.prior_upper_boundary is not None:
+                prior["upper_boundary"] = self.FLAGS.prior_upper_boundary
+            self.nn.add_sample_method(loss, sampling_method=self.FLAGS.sampler, seed=self.FLAGS.seed, prior=prior)
         else:
             print("Not adding sample or train method.")
 

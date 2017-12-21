@@ -37,6 +37,14 @@ def parse_parameters():
         help='Inverse temperature that scales the gradients')
     parser.add_argument('--max_steps', type=int, default=1000,
         help='Number of steps to run trainer.')
+    parser.add_argument('--prior_factor', type=float, default=None,
+        help='Enforce a prior by constraining parameters, this scales the wall repelling force')
+    parser.add_argument('--prior_lower_boundary', type=float, default=None,
+        help='Enforce a prior by constraining parameters from below with a linear force')
+    parser.add_argument('--prior_power', type=float, default=None,
+        help='Enforce a prior by constraining parameters, this sets the power of the wall repelling force')
+    parser.add_argument('--prior_upper_boundary', type=float, default=None,
+        help='Enforce a prior by constraining parameters from above with a linear force')
     parser.add_argument('--sampler', type=str, default="GeometricLangevinAlgorithm_1stOrder",
         help='Choose the sampler to use for sampling: ' \
         + 'GeometricLangevinAlgorithm_1stOrder, GeometricLangevinAlgorithm_2ndOrder,' \

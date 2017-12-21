@@ -183,12 +183,15 @@ class NeuralNetwork(object):
                 self.summary_nodes['accuracy'] = accuracy
         tf.summary.scalar('accuracy', accuracy)
 
-    def add_sample_method(self, loss, sampling_method, seed):
+    def add_sample_method(self, loss, sampling_method, seed,
+                          prior):
         """ Adds nodes for training the neural network.
 
         :param loss: node for the desired loss function to minimize during training
         :param sampling_method: name of the sampler method, e.g. GradientDescent
         :param seed: seed value for the random number generator to obtain reproducible runs
+        :param prior: dict with keys factor, lower_boundary and upper_boundary that
+                specifies a wall-repelling force to ensure a prior on the parameters
         """
         with tf.name_scope('train'):
             # DON'T add placeholders only sometimes, e.g. when only a specific sampler
@@ -229,6 +232,8 @@ class NeuralNetwork(object):
                 sampler = HamiltonianMonteCarloSampler(step_width, inverse_temperature, current_step, num_steps, accept_seed=accept_seed, seed=seed)
             else:
                 raise NotImplementedError("Unknown sampler")
+            if len(prior) != 0:
+                sampler.set_prior(prior)
             trainables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
             train_step = sampler.minimize(loss, global_step=global_step, var_list=trainables)
 

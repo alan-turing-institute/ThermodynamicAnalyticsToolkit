@@ -443,6 +443,24 @@ cost of all necessary servicing, repair, or correction.</remark>
         GeometricLangevinAlgorithm_1st, GeometricLangevinAlgorithm_2nd, where
         the first refers to StochasticGradientLangevinDynamics
          [Welling, Teh, 2011]. GLA 2nd is currently recommended to use.</para>
+        <para>Note that you may add a prior to the sampling. At the current 
+        state two kinds of priors as follows are available. In <quote>FLAGS</quote>
+        <command>prior_upper_boundary</command> and 
+        <command>prior_lower_boundary</command> give the admitted interval
+        per parameter. Within a relative distance of 0.01 (with respect to 
+        length of domain) a force increase with the distance where the power
+        is determined by <command>prior_power</command>.
+        In essence, this will constrain the sampling to within the domain. The
+        force is modified by <command>prior_factor</command>.</para>
+        <para>If upper and lower boundary coincide, then we have the case
+        of tethering, where all parameters are pulled inward to the same 
+        point.</para>
+        <note>The prior force is acting directly on the variables. It does not 
+        modify momentum. Moeover, it is a force! In other words, it depends on
+        step width. If the step width is too large and if the repelling force
+        increases too steeply close to the walls with respect to the normal
+        dynamics of the system, it may blow up.
+        </note>
         <para>We might also concatenate optimize and sample if in between the
         two we adjust FLAGS as follows:
         <example xml:id="quickstart.python.sampling.example.combined">

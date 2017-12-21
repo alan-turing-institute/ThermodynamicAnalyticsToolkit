@@ -48,6 +48,7 @@ class GLASecondOrderMomentumSampler(GLAFirstOrderMomentumSampler):
         # p^{n}
         momentum = self.get_slot(var, "momentum")
 
+        # \nabla V (q^n ) \Delta t + prior constraining force
         scaled_gradient = step_width_t * grad
 
         # p^{n+1/2} = p^{n} − \nabla V (q^n ) \Delta t/2
@@ -74,8 +75,12 @@ class GLASecondOrderMomentumSampler(GLAFirstOrderMomentumSampler):
         # p^{n+1} = p^{n+1/2} − \nabla V (q^{n+1} ) \Delta t/2
         momentum_t = momentum.assign(momentum_noise_step_t - 0.5 * scaled_gradient)
 
+        # prior force act directly on var
+        ub_repell, lb_repell = self._apply_prior(var)
+        prior_force = step_width_t * (ub_repell + lb_repell)
+
         # q=^{n+1} = q^n + M^{-1} p_{n+1/2} ∆t
-        var_update = state_ops.assign_add(var, step_width_t * momentum_t)
+        var_update = state_ops.assign_add(var, step_width_t * momentum_t - prior_force)
 
         # p^{n+1} = \alpha_{\Delta t} p^{n+1} + \sqrt{ \frac{1-\alpha^2_{\Delta t}}{\beta} M } G^n
         with tf.variable_scope("accumulate", reuse=True):

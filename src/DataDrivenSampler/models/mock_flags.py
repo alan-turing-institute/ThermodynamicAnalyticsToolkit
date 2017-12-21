@@ -24,6 +24,10 @@ class MockFlags:
                  hamiltonian_dynamics_steps=10,
                  optimizer="GradientDescent",
                  output_activation="tanh",
+                 prior_factor=1.,
+                 prior_lower_boundary=None,
+                 prior_power=1.,
+                 prior_upper_boundary=None,
                  restore_model=None,
                  run_file=None,
                  sampler="GeometricLangevinAlgorithm_1stOrder",
@@ -51,6 +55,10 @@ class MockFlags:
         :param hamiltonian_dynamics_steps: number of steps in HMC sampler for checking acceptance criterion
         :param optimizer: Choose the optimizer to use for sampling: GradientDescent
         :param output_activation: Activation function to use for output layer: tanh, relu, linear
+        :param prior_factor: factor for scaling prior force
+        :param prior_lower_boundary: lower boundary for wall-repelling prior force
+        :param prior_power: power of distance used in calculating force
+        :param prior_upper_boundary: upper boundary for wall-repelling prior force
         :param restore_model: Restore model (weights and biases) from a file.
         :param run_file: CSV run file name to runtime information such as output accuracy and loss values.
         :param sampler: Choose the sampler to use for sampling: GeometricLangevinAlgorithm_1stOrder, GeometricLangevinAlgorithm_2ndOrder, StochasticGradientLangevinDynamics
@@ -77,6 +85,10 @@ class MockFlags:
         self.hamiltonian_dynamics_steps = hamiltonian_dynamics_steps
         self.optimizer = optimizer
         self.output_activation = output_activation
+        self.prior_factor = prior_factor
+        self.prior_lower_boundary = prior_lower_boundary
+        self.prior_power = prior_power
+        self.prior_upper_boundary = prior_upper_boundary
         self.restore_model = restore_model
         self.run_file = run_file
         self.sampler = sampler
