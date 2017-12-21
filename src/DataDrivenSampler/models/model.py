@@ -72,6 +72,7 @@ class model:
         during sampling.
         """
         with tf.variable_scope("accumulate", reuse=self.resources_created):
+            # the following are used for HMC
             old_loss_t = tf.get_variable("old_loss", shape=[], trainable=False,
                                                initializer=tf.zeros_initializer,
                                                use_resource=True, dtype=tf.float64)
@@ -81,6 +82,7 @@ class model:
             total_energy_t = tf.get_variable("total_energy", shape=[], trainable=False,
                                                initializer=tf.zeros_initializer,
                                                use_resource=True, dtype=tf.float64)
+            # used for Langevin samplers
             kinetic_energy_t = tf.get_variable("kinetic", shape=[], trainable=False,
                                                initializer=tf.zeros_initializer,
                                                use_resource=True, dtype=tf.float64)
@@ -96,6 +98,13 @@ class model:
             noise_t = tf.get_variable("noise", shape=[], trainable=False,
                                       initializer=tf.zeros_initializer,
                                       use_resource=True, dtype=tf.float64)
+            # the following are used for HMC to measure rejection rate
+            rejected_t = tf.get_variable("rejected", shape=[], trainable=False,
+                                      initializer=tf.zeros_initializer,
+                                      use_resource=True, dtype=tf.int64)
+            accepted_t = tf.get_variable("accepted", shape=[], trainable=False,
+                                      initializer=tf.zeros_initializer,
+                                      use_resource=True, dtype=tf.int64)
         self.resources_created = True
 
     @staticmethod
@@ -244,7 +253,8 @@ class model:
                       'average_kinetic_energy', 'average_virials']
         elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
             header = ['step', 'epoch', 'accuracy', 'loss', 'total_energy', 'old_total_energy', 'kinetic_energy', 'scaled_momentum',
-                      'scaled_gradient', 'virial', 'average_kinetic_energy', 'average_virials']
+                      'scaled_gradient', 'virial', 'average_kinetic_energy', 'average_virials',
+                      'average_rejection_rate']
         else:
             header = ['step', 'epoch', 'accuracy', 'loss']
         return header
@@ -280,6 +290,10 @@ class model:
             zero_virials = virials_t.assign(0.)
             noise_t = tf.get_variable("noise", dtype=tf.float64)
             zero_noise = noise_t.assign(0.)
+            accepted_t = tf.get_variable("accepted", dtype=tf.int64)
+            zero_accepted = accepted_t.assign(0)
+            rejected_t = tf.get_variable("rejected", dtype=tf.int64)
+            zero_rejected = rejected_t.assign(0)
 
         placeholder_nodes = self.nn.get_dict_of_nodes(
             ["friction_constant", "inverse_temperature", "step_width", "current_step", "num_steps", "y_"])
@@ -334,6 +348,11 @@ class model:
         # Start populating the filename queue.
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(coord=coord, sess=self.sess)
+
+        # zero rejection rate before sampling start
+        check_accepted, check_rejected = self.sess.run([zero_accepted, zero_rejected])
+        assert(check_accepted == 0)
+        assert(check_rejected == 0)
 
         print("Starting to sample")
         print_intervals = max(1, int(self.FLAGS.max_steps / 100))
@@ -453,6 +472,11 @@ class model:
                                                                            precision=output_precision)
                                           for x in [sqrt(gradients), abs(0.5*virials), sqrt(noise), abs(0.5*accumulated_virials)/float(i+1.)]]
                         elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
+                            rejected_eval, accepted_eval = self.sess.run([accepted_t, rejected_t])
+                            if (rejected_eval+accepted_eval) > 0:
+                                rejection_rate = rejected_eval/(rejected_eval+accepted_eval)
+                            else:
+                                rejection_rate = 0
                             run_line = [global_step, i] + ['{:1.3f}'.format(acc)] \
                                        + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
                                                                            precision=output_precision)] \
@@ -465,7 +489,9 @@ class model:
                                        + ['{:{width}.{precision}e}'.format(x, width=output_width,
                                                                            precision=output_precision)
                                           for x in [kinetic_energy, sqrt(momenta), sqrt(gradients), abs(0.5*virials),
-                                                    accumulated_kinetic_energy/float(i+1.), abs(0.5*accumulated_virials)/float(i+1.)]]
+                                                    accumulated_kinetic_energy/float(i+1.), abs(0.5*accumulated_virials)/(float(i+1.))]]\
+                                       + ['{:{width}.{precision}e}'.format(rejection_rate/(float(i)/self.FLAGS.hamiltonian_dynamics_steps+1.), width=output_width,
+                                                                           precision=output_precision)]
                         else:
                             run_line = [global_step, i] + ['{:1.3f}'.format(acc)] \
                                        + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,

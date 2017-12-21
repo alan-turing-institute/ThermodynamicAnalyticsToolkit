@@ -146,6 +146,10 @@ class HamiltonianMonteCarloSampler(SGLDSampler):
             kinetic_energy = tf.get_variable("old_kinetic", dtype=tf.float64)
             current_energy = loss + kinetic_energy
 
+        with tf.variable_scope("accumulate", reuse=True):
+            accepted_t = tf.get_variable("accepted", dtype=tf.int64)
+            rejected_t = tf.get_variable("rejected", dtype=tf.int64)
+
         # Note that it does not matter which layer actually sets the old_total_energy
         # on acceptance. As soon as the first set of variables has done it, old and
         # current are the same, hence exp(0)=1, and we always accept throughout the
@@ -160,12 +164,14 @@ class HamiltonianMonteCarloSampler(SGLDSampler):
         # I.E. DONT PLACE INSIDE NODES (confusing indeed)
         def accept_block():
             with tf.control_dependencies([old_total_energy_t.assign(current_energy),
-                                          initial_parameters.assign(var)]):
+                                          initial_parameters.assign(var),
+                                          accepted_t.assign_add(1)]):
                 return tf.identity(old_total_energy_t)
 
         # DONT use nodes in the control_dependencies, always functions!
         def reject_block():
-            with tf.control_dependencies([var.assign(initial_parameters)]):
+            with tf.control_dependencies([var.assign(initial_parameters),
+                                          rejected_t.assign_add(1)]):
                 return tf.identity(old_total_energy_t)
 
         max_value_t = tf.constant(1.0, dtype=tf.float64)
