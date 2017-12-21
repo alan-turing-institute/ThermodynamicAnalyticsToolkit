@@ -706,6 +706,78 @@ nn.init_network(None, setup="sample")
     replacement for the study of more in-depth material but should rather
     be seen as a reminder of the terms and notation that will appear later 
     on.</para>
+    <itemizedlist>
+      <listitem>
+        <para>Dataset</para> - <para>The dataset contains a fixed number
+        of datums of input tuples and output tuples. They are typically 
+        referred to as <quote>features</quote> and <quote>labels</quote> in
+        the machine learning community. Basically, they are samples taken
+        from the unknown function which we wish to approximate using the
+        neural network. If the output tuples are binary in each component,
+        the approximation problem is called a <quote>classification</quote>
+        problem. Otherwise, it is a <quote>regression</quote> problem.</para>
+      </listitem>
+      <listitem>
+        <para>Neural network</para> - <para>The neural network is a black-box
+        representing a certain set of general functions that are efficient in 
+        solving classification problems (among others). They are parametrized
+        explicitly using weights and biases and implicitly through the topoloy
+        of the network (connections of nodes residing in layers) and the
+        activation functions used. Moreover, the loss function determines the
+        best set of parameters for a given task. </para>
+      </listitem>
+      <listitem>
+        <para>Loss</para> - <para>The loss function determines for a given
+        (labelled) dataset what set of neural network's parameters are best.
+        Note that there are losses that do not require labels though.
+        Different losses result in different set of parameters. It is a
+        high-dimensional manifold that we want to learn and capture using the 
+        neural network. It implicitly depends on the given dataset and 
+        explicitly on the parameters of the neural network, namely weights and 
+        biases. Dual to the loss function is the network's output that 
+        explicitly depends on the dataset's current datum (fed into the 
+        network) and implicitly on the parameters.</para>
+        <para>Most important to understand about the loss is that it is a
+        <emphasis>non-convex</emphasis> function and therefore in general does 
+        not just have a single minimum. This makes the task of finding a good 
+        set of parameters that (globally) minimize the loss difficult as one 
+        would have to find each and every minima in this high-dimensional 
+        manifold and check whether it is actually the global one.</para>
+      </listitem>
+      <listitem>
+        <para>Momenta and kinetic energy</para> - <para>Momenta is a concept
+        taken over from physics where the parameters are considered as particles
+        each in a one-dimensional space where the loss is a potential function 
+        whose ( negative) gradient acts as a force onto the particle driving them
+        down-hill (towards the local minimum). This force is integrated in a 
+        classical Newton's mechanic style, i.e. Newton's equation of motion 
+        is discretized with small time steps (similar to the learning rate in 
+        Gradient Descent). This gives first rise to/velocity and second to 
+        momenta, i.e. second order ordinary differential equation (ODE) 
+        split up into a system of two one-dimensional ODEs. There are numerous
+        stable time integrators, i.e. velocity Verlet/leapfrog, that are employed
+        to propagate both particle position (i.e. the parameter value) and
+        its momentum through time. Note that momentum and velocity are actually
+        equivalent as usually the mass is set to unity.</para>
+      </listitem>
+      <listitem>
+        <para>Optimizers</para> - <para>Optimizers are used to drive the
+        parameters to the local minimum from a given (random) starting 
+        position. GradientDescent (GD) is best known, but there are more
+        elaborate Optimizers that use the concept of momentum as well. This
+        helps in overcoming flat parts of the manifold where the gradient
+        is effectively zero but momentum still drives the particles towards
+        the minimum.</para>
+      </listitem>
+      <listitem>
+        <para>Samplers</para> - <para>The goal of samplers is different than
+        the goal of optimizers. Samplers aim at discovering a great deal of the
+        manifold, not constraint to the local minimum. Usually, they are 
+        started from the local minimum and drive the particles further and
+        further out until new minima are found between which potential
+        barriers had to be overcome.</para>
+      </listitem>
+    </itemizedlist>
   </section>
   <section xml:id="reference.neural_networks">
     <title xml:id="reference.neural_networks.title">Neural Networks</title>
