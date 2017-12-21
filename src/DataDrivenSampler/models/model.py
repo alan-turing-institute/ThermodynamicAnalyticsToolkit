@@ -72,6 +72,17 @@ class model:
         during sampling.
         """
         with tf.variable_scope("accumulate", reuse=self.resources_created):
+            # the following are used for HMC
+            old_loss_t = tf.get_variable("old_loss", shape=[], trainable=False,
+                                               initializer=tf.zeros_initializer,
+                                               use_resource=True, dtype=tf.float64)
+            old_kinetic_t = tf.get_variable("old_kinetic", shape=[], trainable=False,
+                                               initializer=tf.zeros_initializer,
+                                               use_resource=True, dtype=tf.float64)
+            total_energy_t = tf.get_variable("total_energy", shape=[], trainable=False,
+                                               initializer=tf.zeros_initializer,
+                                               use_resource=True, dtype=tf.float64)
+            # used for Langevin samplers
             kinetic_energy_t = tf.get_variable("kinetic", shape=[], trainable=False,
                                                initializer=tf.zeros_initializer,
                                                use_resource=True, dtype=tf.float64)
@@ -87,6 +98,13 @@ class model:
             noise_t = tf.get_variable("noise", shape=[], trainable=False,
                                       initializer=tf.zeros_initializer,
                                       use_resource=True, dtype=tf.float64)
+            # the following are used for HMC to measure rejection rate
+            rejected_t = tf.get_variable("rejected", shape=[], trainable=False,
+                                      initializer=tf.zeros_initializer,
+                                      use_resource=True, dtype=tf.int64)
+            accepted_t = tf.get_variable("accepted", shape=[], trainable=False,
+                                      initializer=tf.zeros_initializer,
+                                      use_resource=True, dtype=tf.int64)
         self.resources_created = True
 
     @staticmethod
@@ -105,6 +123,7 @@ class model:
             inverse_temperature=1.,
             loss="mean_squared",
             max_steps=1000,
+            hamiltonian_dynamics_steps=10,
             optimizer="GradientDescent",
             output_activation="tanh",
             restore_model=None,
@@ -129,6 +148,7 @@ class model:
                 inverse_temperature=inverse_temperature,
                 loss=loss,
                 max_steps=max_steps,
+                hamiltonian_dynamics_steps=hamiltonian_dynamics_steps,
                 optimizer=optimizer,
                 output_activation=output_activation,
                 restore_model=restore_model,
@@ -231,6 +251,10 @@ class model:
             header = ['step', 'epoch', 'accuracy', 'loss', 'total_energy', 'kinetic_energy', 'scaled_momentum',
                       'scaled_gradient', 'virial', 'scaled_noise',
                       'average_kinetic_energy', 'average_virials']
+        elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
+            header = ['step', 'epoch', 'accuracy', 'loss', 'total_energy', 'old_total_energy', 'kinetic_energy', 'scaled_momentum',
+                      'scaled_gradient', 'virial', 'average_kinetic_energy', 'average_virials',
+                      'average_rejection_rate']
         else:
             header = ['step', 'epoch', 'accuracy', 'loss']
         return header
@@ -253,8 +277,11 @@ class model:
         """
         # create global variable to hold kinetic energy
         with tf.variable_scope("accumulate", reuse=True):
+            old_loss_t = tf.get_variable("old_loss", dtype=tf.float64)
+            old_kinetic_energy_t = tf.get_variable("old_kinetic", dtype=tf.float64)
             kinetic_energy_t = tf.get_variable("kinetic", dtype=tf.float64)
             zero_kinetic_energy = kinetic_energy_t.assign(0.)
+            total_energy_t = tf.get_variable("total_energy", dtype=tf.float64)
             momenta_t = tf.get_variable("momenta", dtype=tf.float64)
             zero_momenta = momenta_t.assign(0.)
             gradients_t = tf.get_variable("gradients", dtype=tf.float64)
@@ -263,9 +290,13 @@ class model:
             zero_virials = virials_t.assign(0.)
             noise_t = tf.get_variable("noise", dtype=tf.float64)
             zero_noise = noise_t.assign(0.)
+            accepted_t = tf.get_variable("accepted", dtype=tf.int64)
+            zero_accepted = accepted_t.assign(0)
+            rejected_t = tf.get_variable("rejected", dtype=tf.int64)
+            zero_rejected = rejected_t.assign(0)
 
         placeholder_nodes = self.nn.get_dict_of_nodes(
-            ["friction_constant", "inverse_temperature", "step_width", "y_"])
+            ["friction_constant", "inverse_temperature", "step_width", "current_step", "num_steps", "y_"])
         test_nodes = self.nn.get_list_of_nodes(["merged", "sample_step", "accuracy", "global_step", "loss", "y_", "y"])
 
         output_width = 8
@@ -304,11 +335,24 @@ class model:
                 placeholder_nodes["inverse_temperature"]: self.FLAGS.inverse_temperature,
                 placeholder_nodes["friction_constant"]: self.FLAGS.friction_constant
             })
-            print("Sampler parameters: gamma = %lg, beta = %lg, delta t = %lg" % (gamma, beta, deltat))
+        elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
+            current_step, num_mc_steps, deltat = self.sess.run(self.nn.get_list_of_nodes(
+                ["current_step", "num_steps", "step_width"]), feed_dict={
+                placeholder_nodes["step_width"]: self.FLAGS.step_width,
+                placeholder_nodes["current_step"]: 0,
+                placeholder_nodes["num_steps"]: self.FLAGS.hamiltonian_dynamics_steps
+            })
+            print("Sampler parameters: current_step = %lg, num_mc_steps = %lg, delta t = %lg" %
+                  (current_step, num_mc_steps, deltat))
 
         # Start populating the filename queue.
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(coord=coord, sess=self.sess)
+
+        # zero rejection rate before sampling start
+        check_accepted, check_rejected = self.sess.run([zero_accepted, zero_rejected])
+        assert(check_accepted == 0)
+        assert(check_rejected == 0)
 
         print("Starting to sample")
         print_intervals = max(1, int(self.FLAGS.max_steps / 100))
@@ -327,17 +371,33 @@ class model:
                 self.xinput: batch_xs, placeholder_nodes["y_"]: batch_ys,
                 placeholder_nodes["step_width"]: self.FLAGS.step_width,
                 placeholder_nodes["inverse_temperature"]: self.FLAGS.inverse_temperature,
-                placeholder_nodes["friction_constant"]: self.FLAGS.friction_constant
+                placeholder_nodes["friction_constant"]: self.FLAGS.friction_constant,
+                placeholder_nodes["current_step"]: i,
+                placeholder_nodes["num_steps"]: self.FLAGS.hamiltonian_dynamics_steps
             }
             if self.FLAGS.dropout is not None:
                 feed_dict.update({placeholder_nodes["keep_prob"] : self.FLAGS.dropout})
             # print("Testset is x: "+str(test_xs[:])+", y: "+str(test_ys[:]))
             # print("Testset is x: "+str(test_xs[:])+", y: "+str(test_ys[:]))
 
+            # set global variable used in HMC sampler for criterion to initial loss
+            if self.FLAGS.sampler == "HamiltonianMonteCarlo":
+                loss_eval, total_eval, kin_eval = self.sess.run(self.nn.get_list_of_nodes(["loss"])+[total_energy_t, kinetic_energy_t], feed_dict=feed_dict)
+                eval_nodes = []
+                if abs(total_eval) < 1e-10:
+                    eval_nodes.append(total_energy_t.assign(loss_eval+kin_eval))
+                eval_nodes.append([old_loss_t.assign(loss_eval),
+                                  old_kinetic_energy_t.assign(kin_eval)])
+                self.sess.run(eval_nodes)
+                loss_eval, total_eval, kin_eval = self.sess.run([old_loss_t, total_energy_t, old_kinetic_energy_t], feed_dict=feed_dict)
+                print("#%d: loss is %lg, total is %lg, kinetic is %lg" % (i, loss_eval, total_eval, kin_eval))
+
             # zero kinetic energy
-            if self.FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder", "GeometricLangevinAlgorithm_2ndOrder"]:
-                check_kinetic, check_momenta, check_gradients, check_virials, check_noise = \
-                    self.sess.run([zero_kinetic_energy, zero_momenta, zero_gradients, zero_virials, zero_noise])
+            if self.FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder",
+                                      "GeometricLangevinAlgorithm_2ndOrder",
+                                      "HamiltonianMonteCarlo"]:
+                check_total, check_kinetic, check_momenta, check_gradients, check_virials, check_noise = \
+                    self.sess.run([total_energy_t, zero_kinetic_energy, zero_momenta, zero_gradients, zero_virials, zero_noise])
                 assert (abs(check_kinetic) < 1e-10)
                 assert (abs(check_momenta) < 1e-10)
                 assert (abs(check_gradients) < 1e-10)
@@ -364,12 +424,19 @@ class model:
             # is not important. Only a subsequent, distinct tf.run() call would produce a different loss_eval.
             summary, _, acc, global_step, loss_eval, y_true_eval, y_eval = \
                 self.sess.run(test_nodes, feed_dict=feed_dict)
+
             if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics",
                                       "GeometricLangevinAlgorithm_1stOrder",
-                                      "GeometricLangevinAlgorithm_2ndOrder"]:
+                                      "GeometricLangevinAlgorithm_2ndOrder",
+                                      "HamiltonianMonteCarlo"]:
                 if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
                     gradients, virials, noise = \
                         self.sess.run([gradients_t, virials_t, noise_t])
+                    accumulated_virials += virials
+                elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
+                    old_total_energy, kinetic_energy, momenta, gradients, virials = \
+                        self.sess.run([total_energy_t, kinetic_energy_t, momenta_t, gradients_t, virials_t])
+                    accumulated_kinetic_energy += kinetic_energy
                     accumulated_virials += virials
                 else:
                     kinetic_energy, momenta, gradients, virials, noise = \
@@ -395,7 +462,8 @@ class model:
                     run_line  = []
                     if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics",
                                               "GeometricLangevinAlgorithm_1stOrder",
-                                              "GeometricLangevinAlgorithm_2ndOrder"]:
+                                              "GeometricLangevinAlgorithm_2ndOrder",
+                                              "HamiltonianMonteCarlo"]:
                         if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
                             run_line = [global_step, i] + ['{:1.3f}'.format(acc)] \
                                        + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
@@ -403,6 +471,27 @@ class model:
                                        + ['{:{width}.{precision}e}'.format(x, width=output_width,
                                                                            precision=output_precision)
                                           for x in [sqrt(gradients), abs(0.5*virials), sqrt(noise), abs(0.5*accumulated_virials)/float(i+1.)]]
+                        elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
+                            rejected_eval, accepted_eval = self.sess.run([accepted_t, rejected_t])
+                            if (rejected_eval+accepted_eval) > 0:
+                                rejection_rate = rejected_eval/(rejected_eval+accepted_eval)
+                            else:
+                                rejection_rate = 0
+                            run_line = [global_step, i] + ['{:1.3f}'.format(acc)] \
+                                       + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
+                                                                           precision=output_precision)] \
+                                       + ['{:{width}.{precision}e}'.format(loss_eval + kinetic_energy,
+                                                                           width=output_width,
+                                                                           precision=output_precision)]\
+                                       + ['{:{width}.{precision}e}'.format(old_total_energy,
+                                                                           width=output_width,
+                                                                           precision=output_precision)]\
+                                       + ['{:{width}.{precision}e}'.format(x, width=output_width,
+                                                                           precision=output_precision)
+                                          for x in [kinetic_energy, sqrt(momenta), sqrt(gradients), abs(0.5*virials),
+                                                    accumulated_kinetic_energy/float(i+1.), abs(0.5*accumulated_virials)/(float(i+1.))]]\
+                                       + ['{:{width}.{precision}e}'.format(rejection_rate/(float(i)/self.FLAGS.hamiltonian_dynamics_steps+1.), width=output_width,
+                                                                           precision=output_precision)]
                         else:
                             run_line = [global_step, i] + ['{:1.3f}'.format(acc)] \
                                        + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,

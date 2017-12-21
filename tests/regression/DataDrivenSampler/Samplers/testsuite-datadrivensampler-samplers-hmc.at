@@ -1,0 +1,73 @@
+#
+#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    Copyright (C) 2017 The University of Edinburgh
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### test on different samplers
+
+AT_SETUP([Samplers - HMC])
+AT_KEYWORDS([samplers ddsampler hmc])
+
+# dataset prepared as follows:
+# DatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+
+# we picked a case (temp, seed, number_mc_steps) were there is accept&reject
+AT_CHECK([../../../DDSampler \
+	--batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/pre/dataset-twoclusters.csv \
+	--batch_size 20 \
+	--run_file run-HMC.csv \
+	--inverse_temperature 1e1 \
+	--max_steps 100 \
+	--hamiltonian_dynamics_steps 5 \
+	--step_width 1e-2 \
+	--sampler HamiltonianMonteCarlo\
+	--seed 426 \
+	--trajectory_file trajectory-HMC.csv
+], 0, [stdout], [stderr])
+
+# now compare
+AT_CHECK([diff run-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-HMC.csv], 0, [ignore], [ignore])
+AT_CHECK([diff trajectory-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-HMC.csv], 0, [ignore], [ignore])
+
+AT_CLEANUP
+
+
+AT_SETUP([Samplers - HMC with hidden nodes])
+AT_KEYWORDS([samplers ddsampler hmc hidden])
+
+# dataset prepared as follows:
+# DatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+
+# we picked a case (temp, seed, number_mc_steps) were there is accept&reject
+AT_CHECK([../../../DDSampler \
+	--batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/pre/dataset-twoclusters.csv \
+	--batch_size 20 \
+	--run_file run-HMC-hidden.csv \
+	--hidden_dimension 4 \
+	--inverse_temperature 1e1 \
+	--max_steps 100 \
+	--hamiltonian_dynamics_steps 5 \
+	--step_width 1e-2 \
+	--sampler HamiltonianMonteCarlo\
+	--seed 426 \
+	--trajectory_file trajectory-HMC-hidden.csv
+], 0, [stdout], [stderr])
+
+# now compare
+AT_CHECK([diff run-HMC-hidden.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-HMC-hidden.csv], 0, [ignore], [ignore])
+AT_CHECK([diff trajectory-HMC-hidden.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-HMC-hidden.csv], 0, [ignore], [ignore])
+
+AT_CLEANUP
+
