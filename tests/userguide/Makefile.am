@@ -8,12 +8,12 @@ TESTSCRIPTS =
 
 # PLEASE adhere to alphabetical ordering of TESTSCRIPTS
 TESTSCRIPTS += \
-	$(srcdir)/userguide/testsuite-userguide.at \
-	$(srcdir)/userguide/testsuite-userguide-analyse.at \
-	$(srcdir)/userguide/testsuite-userguide-fix_parameter.at \
-	$(srcdir)/userguide/testsuite-userguide-optimize.at \
-	$(srcdir)/userguide/testsuite-userguide-plot_optimize.at \
-	$(srcdir)/userguide/testsuite-userguide-sample.at
+	$(srcdir)/python/testsuite-userguide-python.at \
+	$(srcdir)/python/testsuite-userguide-python-analyse.at \
+	$(srcdir)/python/testsuite-userguide-python-fix_parameter.at \
+	$(srcdir)/python/testsuite-userguide-python-optimize.at \
+	$(srcdir)/python/testsuite-userguide-python-plot_optimize.at \
+	$(srcdir)/python/testsuite-userguide-python-sample.at
 
 EXTRA_DIST = \
 	testsuite.at \

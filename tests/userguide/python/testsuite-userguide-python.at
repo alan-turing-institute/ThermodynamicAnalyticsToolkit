@@ -15,21 +15,13 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-### test on examples in the userguide
+### all tests on userguide
 
-# dataset prepared as follows:
-# DatasetWriter --data_type 3 --dimension 10 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+# tests on simple behavior
+m4_include([python/testsuite-userguide-python-optimize.at])
+m4_include([python/testsuite-userguide-python-plot_optimize.at])
+m4_include([python/testsuite-userguide-python-sample.at])
+m4_include([python/testsuite-userguide-python-analyse.at])
 
-AT_SETUP([Examples - fix parameter])
-AT_KEYWORDS([fix_parameter])
-
-# run 1
-AT_CHECK([cp -f ${abs_top_srcdir}/tests/python/userguide/pre/dataset-twoclusters-small.csv .], 0, [ignore], [ignore])
-AT_CHECK([../../run \
-	${abs_top_srcdir}/doc/userguide/python/fix_parameter.py
-], 0, [stdout], [stderr])
-AT_CHECK([grep -c "2.00000000e+00" stdout], 0, [stdout], [ignore])
-AT_CHECK([grep "5" stdout], 0, [ignore], [ignore])
-
-AT_CLEANUP
-
+# tests on specific examples
+m4_include([python/testsuite-userguide-python-fix_parameter.at])

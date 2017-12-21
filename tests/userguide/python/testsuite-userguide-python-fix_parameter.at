@@ -15,16 +15,21 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Process with autom4te to create an -*- Autotest -*- test suite.
-#
-# see regression/... subdirs wherein for each of the cases and each check (enumerated) is a pre and post dir. 
-# In pre initial files are placed, in post results can be found to be checked by diff in this testsuite.
+### test on examples in the userguide
 
-AT_INIT([Python interface])
+# dataset prepared as follows:
+# DatasetWriter --data_type 3 --dimension 10 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
 
-# Use colored output with new-enough Autotest.
-m4_ifdef([AT_COLOR_TESTS], [AT_COLOR_TESTS])
+AT_SETUP([Examples - fix parameter])
+AT_KEYWORDS([example python fix_parameter])
 
-# tests for examples in userguide
-m4_include(userguide/testsuite-userguide.at)
+# run 1
+AT_CHECK([cp -f ${abs_top_srcdir}/tests/userguide/python/pre/dataset-twoclusters-small.csv .], 0, [ignore], [ignore])
+AT_CHECK([../../run \
+	${abs_top_srcdir}/doc/userguide/python/fix_parameter.py
+], 0, [stdout], [stderr])
+AT_CHECK([grep -c "2.00000000e+00" stdout], 0, [stdout], [ignore])
+AT_CHECK([grep "5" stdout], 0, [ignore], [ignore])
+
+AT_CLEANUP
 

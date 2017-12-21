@@ -15,13 +15,16 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-### all tests on userguide
+# Process with autom4te to create an -*- Autotest -*- test suite.
+#
+# see regression/... subdirs wherein for each of the cases and each check (enumerated) is a pre and post dir. 
+# In pre initial files are placed, in post results can be found to be checked by diff in this testsuite.
 
-# tests on simple behavior
-m4_include([userguide/testsuite-userguide-optimize.at])
-m4_include([userguide/testsuite-userguide-plot_optimize.at])
-m4_include([userguide/testsuite-userguide-sample.at])
-m4_include([userguide/testsuite-userguide-analyse.at])
+AT_INIT([Python interface])
 
-# tests on specific examples
-m4_include([userguide/testsuite-userguide-fix_parameter.at])
+# Use colored output with new-enough Autotest.
+m4_ifdef([AT_COLOR_TESTS], [AT_COLOR_TESTS])
+
+# tests for examples in userguide
+m4_include(python/testsuite-userguide-python.at)
+

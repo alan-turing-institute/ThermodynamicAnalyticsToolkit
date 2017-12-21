@@ -2,6 +2,6 @@ SUBDIRS =
 
 SUBDIRS += \
 	regression \
-	python \
+	userguide \
 	integration
 
