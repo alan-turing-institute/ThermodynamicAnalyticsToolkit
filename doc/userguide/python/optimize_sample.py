@@ -13,10 +13,18 @@ FLAGS = model.setup_parameters(
 )
 nn = model(FLAGS)
 nn.init_network(None, setup="train")
-run_info, trajectory = nn.train(return_run_info=True, \
-  return_trajectories=True)
+opt_run_info, opt_trajectory = nn.train( \
+    return_run_info=True, return_trajectories=True)
+
+FLAGS.max_steps = 1000
+FLAGS.sampler = "GeometricLangevinAlgorithm_2ndOrder"
+nn.reset_parameters(FLAGS)
+nn.init_network(None, setup="sample")
+sample_run_info, sample_trajectory = nn.sample( \
+    return_run_info=True, return_trajectories=True)
+
 nn.finish()
 
-print("Train results")
-print(np.asarray(run_info[0:10]))
-print(np.asarray(trajectory[0:10]))
+print("Sample results")
+print(np.asarray(sample_run_info[0:10]))
+print(np.asarray(sample_trajectory[0:10]))

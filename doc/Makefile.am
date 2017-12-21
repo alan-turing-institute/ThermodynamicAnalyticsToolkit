@@ -19,6 +19,7 @@ PYTHON_EXAMPLES = \
 	$(srcdir)/userguide/cmdline/write_dataset.sh \
 	$(srcdir)/userguide/python/analyse.py \
 	$(srcdir)/userguide/python/optimize.py \
+	$(srcdir)/userguide/python/optimize_sample.py \
 	$(srcdir)/userguide/python/plot_optimize.py \
 	$(srcdir)/userguide/python/sample.py
 

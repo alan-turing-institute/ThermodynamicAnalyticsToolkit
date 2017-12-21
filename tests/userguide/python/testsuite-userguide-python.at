@@ -21,6 +21,7 @@
 m4_include([python/testsuite-userguide-python-optimize.at])
 m4_include([python/testsuite-userguide-python-plot_optimize.at])
 m4_include([python/testsuite-userguide-python-sample.at])
+m4_include([python/testsuite-userguide-python-optimize_sample.at])
 m4_include([python/testsuite-userguide-python-analyse.at])
 
 # tests on specific examples

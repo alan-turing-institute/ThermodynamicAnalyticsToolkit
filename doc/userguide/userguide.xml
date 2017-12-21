@@ -431,28 +431,27 @@ cost of all necessary servicing, repair, or correction.</remark>
         <title  xml:id="quickstart.python.sampling.title">Sampling the network</title>
         <para>After optimization we may continue sampling the network.</para>
         <example xml:id="quickstart.python.sampling.example">
-          <title>Plotting the loss and other properties over steps</title>
+          <title>Sampling the loss manifold using GLA 2nd</title>
           <programlisting><xi:include  href="python/sample.py"  parse="text"  
       xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
           <programlisting>
           </programlisting>
         </example>
-        <para>Here, the <emphasis>sampler</emphasis> setting mentioned before
-        becomes important as it states which sampling scheme to use. At the
-        moment the following are available: sgld, 
+        <para>Here, the <emphasis>sampler</emphasis> setting takes the place
+        of the <command>optimizer</command> before as it states which sampling 
+        scheme to use. At the moment the following are available: sgld, 
         GeometricLangevinAlgorithm_1st, GeometricLangevinAlgorithm_2nd, where
-        the firstrtefers to StochasticGradientLangevinDynamics
+        the first refers to StochasticGradientLangevinDynamics
          [Welling, Teh, 2011]. GLA 2nd is currently recommended to use.</para>
         <para>We might also concatenate optimize and sample if in between the
         two we adjust FLAGS as follows:
-        <programlisting>
-...
-FLAGS.max_steps = 10000
-FLAGS.sampler = "GeometricLangevinAlgorithm_2ndOrder"
-nn.reset_flags(FLAGS)
-nn.init_network(None, setup="sample")
-...
-        </programlisting>
+        <example xml:id="quickstart.python.sampling.example.combined">
+          <title>Optimizing first and subsequent sampling</title>
+          <programlisting><xi:include  href="python/optimize_sample.py"  parse="text"  
+      xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
+          <programlisting>
+          </programlisting>
+        </example>
         The only thing we change in FLAGS is the number of steps and adding the
         sampler. However, as the model simply stores a copy of the FLAGS, in 
         order to update the FLAGS in the model class as well, we need to reset 
@@ -462,6 +461,9 @@ nn.init_network(None, setup="sample")
         <xref xrefstyle="template:Example %n" linkend="quickstart.python.sampling.example"/>.
         Again, at the very end we obtain pandas DataFrame containing runtime 
         information and trajectory.
+        <note>This is actually the <emphasis>recommended</emphasis> way of
+        doing sampling: First make sure that the parameters start in a local 
+        minima and from there we explore the surrounding manifold.</note>
         </para>
       </section>
       <section xml:id="quickstart.python.analysis">
@@ -474,7 +476,7 @@ nn.init_network(None, setup="sample")
          "DDSAnalyser.in".</para>
         <example xml:id="quickstart.python.analysis.example">
           <title>Plotting the averages of the parameters over steps</title>
-          <programlisting><xi:include  href="python/sample.py"  parse="text"  
+          <programlisting><xi:include  href="python/analyse.py"  parse="text"  
       xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
           <programlisting>
           </programlisting>

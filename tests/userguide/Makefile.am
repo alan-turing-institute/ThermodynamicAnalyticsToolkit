@@ -24,6 +24,7 @@ TESTSCRIPTS += \
 	$(srcdir)/python/testsuite-userguide-python-analyse.at \
 	$(srcdir)/python/testsuite-userguide-python-fix_parameter.at \
 	$(srcdir)/python/testsuite-userguide-python-optimize.at \
+	$(srcdir)/python/testsuite-userguide-python-optimize_sample.at \
 	$(srcdir)/python/testsuite-userguide-python-plot_optimize.at \
 	$(srcdir)/python/testsuite-userguide-python-sample.at
 
