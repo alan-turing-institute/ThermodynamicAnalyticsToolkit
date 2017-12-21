@@ -8,6 +8,18 @@ TESTSCRIPTS =
 
 # PLEASE adhere to alphabetical ordering of TESTSCRIPTS
 TESTSCRIPTS += \
+	$(srcdir)/cmdline/testsuite-userguide-cmdline.at \
+	$(srcdir)/cmdline/testsuite-userguide-cmdline-analyse_averages.at \
+	$(srcdir)/cmdline/testsuite-userguide-cmdline-analyse_diffmap.at \
+	$(srcdir)/cmdline/testsuite-userguide-cmdline-analyse_free_energy.at \
+	$(srcdir)/cmdline/testsuite-userguide-cmdline-inputspacesampler.at \
+	$(srcdir)/cmdline/testsuite-userguide-cmdline-lossfunctionsampler-fix_parameter.at \
+	$(srcdir)/cmdline/testsuite-userguide-cmdline-lossfunctionsampler-grid.at \
+	$(srcdir)/cmdline/testsuite-userguide-cmdline-lossfunctionsampler-trajectory.at \
+	$(srcdir)/cmdline/testsuite-userguide-cmdline-optimize.at \
+	$(srcdir)/cmdline/testsuite-userguide-cmdline-parse_dataset.at \
+	$(srcdir)/cmdline/testsuite-userguide-cmdline-sample.at \
+	$(srcdir)/cmdline/testsuite-userguide-cmdline-write_dataset.at \
 	$(srcdir)/python/testsuite-userguide-python.at \
 	$(srcdir)/python/testsuite-userguide-python-analyse.at \
 	$(srcdir)/python/testsuite-userguide-python-fix_parameter.at \

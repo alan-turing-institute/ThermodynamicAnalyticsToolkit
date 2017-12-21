@@ -1,4 +1,4 @@
-./InputSpaceSampler \
+InputSpaceSampler \
 	--batch_data_files grid.csv \
 	--interval_input -4 4 \
 	--samples_input 10 \

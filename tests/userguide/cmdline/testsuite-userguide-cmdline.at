@@ -1,0 +1,31 @@
+#
+#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    Copyright (C) 2017 The University of Edinburgh
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### all tests on userguide
+
+# tests on each example
+m4_include([cmdline/testsuite-userguide-cmdline-analyse_averages.at])
+m4_include([cmdline/testsuite-userguide-cmdline-analyse_diffmap.at])
+m4_include([cmdline/testsuite-userguide-cmdline-analyse_free_energy.at])
+m4_include([cmdline/testsuite-userguide-cmdline-inputspacesampler.at])
+m4_include([cmdline/testsuite-userguide-cmdline-lossfunctionsampler-fix_parameter.at])
+m4_include([cmdline/testsuite-userguide-cmdline-lossfunctionsampler-grid.at])
+m4_include([cmdline/testsuite-userguide-cmdline-lossfunctionsampler-trajectory.at])
+m4_include([cmdline/testsuite-userguide-cmdline-optimize.at])
+m4_include([cmdline/testsuite-userguide-cmdline-parse_dataset.at])
+m4_include([cmdline/testsuite-userguide-cmdline-sample.at])
+m4_include([cmdline/testsuite-userguide-cmdline-write_dataset.at])

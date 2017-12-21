@@ -15,19 +15,15 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Process with autom4te to create an -*- Autotest -*- test suite.
-#
-# see regression/... subdirs wherein for each of the cases and each check (enumerated) is a pre and post dir. 
-# In pre initial files are placed, in post results can be found to be checked by diff in this testsuite.
+### test on examples in the userguide
 
-AT_INIT([Userguide])
+AT_SETUP([Examples cmdline - writing dataset])
+AT_KEYWORDS([example cmdline write_dataset])
 
-# Use colored output with new-enough Autotest.
-m4_ifdef([AT_COLOR_TESTS], [AT_COLOR_TESTS])
+AT_CHECK([env - PATH=${AUTOTEST_PATH} /bin/bash \
+	${abs_top_srcdir}/doc/userguide/cmdline/write_dataset.sh
+], 0, [stdout], [stderr])
+AT_CHECK([grep "x1,x2,label" testset-twoclusters.csv], 0, [ignore], [ignore])
 
-# tests for cmdline examples in userguide
-m4_include(cmdline/testsuite-userguide-cmdline.at)
-
-# tests for python examples in userguide
-m4_include(python/testsuite-userguide-python.at)
+AT_CLEANUP
 

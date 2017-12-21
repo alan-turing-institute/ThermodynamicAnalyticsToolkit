@@ -1,4 +1,4 @@
-./DDSAnalyser \
+DDSAnalyser \
     --average_run_file average_run.csv \
     --average_trajectory_file average_trajectory.csv \
     --drop_burnin 100 \

@@ -1,0 +1,45 @@
+#
+#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    Copyright (C) 2017 The University of Edinburgh
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### test on examples in the userguide
+
+AT_SETUP([Examples cmdline - analysis free energy profiles])
+AT_KEYWORDS([example cmdline analyse_free_energy])
+
+# analyse a trajectory that was created by:
+# (Two clusters dataset with two inputs nodes, single output, linear activation)
+# DDSampler \
+# --run_file run-two_clusters-dim_500-gamma_10-beta_1e4-max_steps_1000-noise_0.1-linear-seed_426.csv
+# --data_type 2 \
+# --dimension 500 \
+# --friction_constant 10 \
+# --inverse_temperatur 1e4 \
+# --max_steps 1000 \
+# --noise 0.1 \
+# --output_activation linear \
+# --seed 426 \
+# --trajectory_file trajectory-two_clusters-dim_500-gamma_10-beta_1e4-max_steps_1000-noise_0.1-linear-seed_426.csv
+#
+file="trajectory.csv"
+AT_CHECK([cp -f ${abs_top_srcdir}/tests/userguide/cmdline/pre/trajectory-two_clusters-dim_500-gamma_10-beta_1e4-max_steps_1000-noise_0.1-linear-seed_426.csv $file], 0, [ignore], [ignore])
+
+AT_CHECK([env - PATH=${AUTOTEST_PATH} /bin/bash \
+	${abs_top_srcdir}/doc/userguide/cmdline/analyse_free_energy.sh
+], 0, [stdout], [stderr])
+
+AT_CLEANUP
+

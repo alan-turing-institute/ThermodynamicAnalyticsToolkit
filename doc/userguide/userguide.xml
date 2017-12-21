@@ -127,8 +127,8 @@
         <para>does <emphasis>not</emphasis> throw an error.</para>
         <para>Moreover,</para>
         <programlisting>a=tf.constant("Hello world")
-  sess=tf.Session()
-  sess.run(a)</programlisting>
+sess=tf.Session()
+sess.run(a)</programlisting>
         <para>should print <quote>Hello world</quote> or something similar.
         </para>
       </section>
@@ -137,14 +137,15 @@
         <para>This package is distributed via autotools, "compiled" and installed 
         via automake. If you are familiar with this set of tools, there should be
         no problem. If not, please refer to the text INSTALL file that is included
-        in this distributable archive. The installation, very briefly, goes like this:</para>
+        in this distributable archive. The installation, very briefly, is 
+        accomplished like this:</para>
         <programlisting>
 ./bootstrap.sh
 mkdir build64
 cd build64
 ../configure --prefix="somepath" -C PYTHON="path to python3"
-        make
-        make install
+make
+make install
         </programlisting>
         <para>where the first step is only required if you have obtained the 
         package through cloning the github repository. If you extracted it from
@@ -173,14 +174,15 @@ cd build64
           contact the author, see <xref linkend="introduction.feedback"/>.
           As always with GNU make you may use <command>make -j4 check</command>
           to execute four processes in parallel performing the checks which
-          should give a significant speed up.
+          should give a significant speed up. Replace "4" by the number of
+          cores in your machine or any other number you find appropriate.
         </note>
       </section>
     </section>
     <section xml:id="introduction.license">
       <title xml:id="introduction.license.title">License</title>
       <para>As long as no other license statement is given, DataDrivenSampler is
-      free for user under the GNU Public License (GPL) Version 3 (see
+      free for use under the GNU Public License (GPL) Version 3 (see
       <uri>www.gnu.de/documents/gpl-3.0.de.html</uri>).</para>
     </section>
     <section xml:id="introduction.disclaimer">
@@ -202,7 +204,7 @@ cost of all necessary servicing, repair, or correction.</remark>
       feature request, please use the email address provided at the very
       beginning of this user guide. The author is especially thankful for
       any description of all related events prior to occurrence of the
-      error, saved &quot;session scripts&quot; (see below) and auxiliary files.
+      error and auxiliary files.
       Please mind sensible space restrictions of email attachments.</para>
     </section>
   </chapter>
@@ -350,9 +352,9 @@ cost of all necessary servicing, repair, or correction.</remark>
       experiments inside python scripts kept safely inside a code versioning 
       system such as <command>git</command>.</para>
       <para>
-      If you have installed the package in the folder "/foo", i.e. we have a 
-      folder "DataDrivenSampler" with a file 
-      <command>DataDrivenSampler.py</command> residing in there, then you 
+      If you have installed the package in the folder "/foo", i.e. we have 
+      folders "DataDrivenSampler/models" with a file 
+      <command>model.py</command> residing in there, then you 
       probably need to add it to the 
       <command>PYTHONPATH</command> as follows</para>
       <programlisting>PYTHONPATH=/foo python3</programlisting>
@@ -374,7 +376,7 @@ cost of all necessary servicing, repair, or correction.</remark>
         </example>
         <para>
         As you see, all options are set in a struct called <command>FLAGS</command> 
-        that control how the optimization is performed. 
+        that controls how the optimization is performed. 
         There is a helper function in <command>model</command> called 
         <command>setup_parameters</command>
         that creates the FLAGS for you with some default parameters. </para>
