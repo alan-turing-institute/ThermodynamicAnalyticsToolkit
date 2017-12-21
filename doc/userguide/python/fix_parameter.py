@@ -2,7 +2,7 @@ from DataDrivenSampler.models.model import model
 
 import numpy as np
 
-FLAGS = model.create_mock_flags(
+FLAGS = model.setup_parameters(
     batch_data_files=["dataset-twoclusters-small.csv"],
     fix_parameters="output/biases/Variable:0=2.",
     max_steps=5,

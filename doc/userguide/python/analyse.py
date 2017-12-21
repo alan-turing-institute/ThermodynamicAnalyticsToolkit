@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 from DataDrivenSampler.models.model import model
 
-FLAGS = model.create_mock_flags(
+FLAGS = model.setup_parameters(
     trajectory_file="trajectory.csv"
 )
 

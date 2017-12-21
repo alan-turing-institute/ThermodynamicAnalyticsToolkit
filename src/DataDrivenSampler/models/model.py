@@ -60,7 +60,7 @@ class model:
         self.run_writer = None
         self.trajectory_writer = None
 
-    def reset_flags(self, FLAGS):
+    def reset_parameters(self, FLAGS):
         """ Use to pass a different set of FLAGS controlling training or sampling.
 
         :param FLAGS: new set of parameters
@@ -90,7 +90,7 @@ class model:
         self.resources_created = True
 
     @staticmethod
-    def create_mock_flags(
+    def setup_parameters(
             batch_data_files=[],
             batch_size=10,
             dropout=None,

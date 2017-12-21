@@ -376,7 +376,7 @@ cost of all necessary servicing, repair, or correction.</remark>
         As you see, all options are set in a struct called <command>FLAGS</command> 
         that control how the optimization is performed. 
         There is a helper function in <command>model</command> called 
-        <command>create_mock_flags</command>
+        <command>setup_parameters</command>
         that creates the FLAGS for you with some default parameters. </para>
         <para>Let us quickly go through each of the parameters: 
         <itemizedlist>
