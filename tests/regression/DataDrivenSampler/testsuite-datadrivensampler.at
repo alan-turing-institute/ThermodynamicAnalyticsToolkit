@@ -48,3 +48,6 @@ m4_include([DataDrivenSampler/Trajectories/testsuite-datadrivensampler-trajector
 
 # tests on fixing parameters
 m4_include([DataDrivenSampler/FixParameter/testsuite-datadrivensampler-fix_parameter.at])
+
+# tests on enforcing prior
+m4_include([DataDrivenSampler/Prior/testsuite-datadrivensampler-prior.at])

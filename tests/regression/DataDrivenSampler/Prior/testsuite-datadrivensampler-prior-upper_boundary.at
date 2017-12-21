@@ -17,8 +17,8 @@
 #
 ### test on prior by wall-repelling force
 
-AT_SETUP([Sampler - Prior through lower wall-repelling force])
-AT_KEYWORDS([ddsampler prior lower wall_repelling])
+AT_SETUP([Sampler - Prior through upper wall-repelling force])
+AT_KEYWORDS([ddsampler prior upper_boundary wall_repelling])
 
 # dataset prepared as follows:
 # DatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
@@ -29,15 +29,17 @@ AT_CHECK([../../../DDSampler \
 	--friction_constant 1 \
 	--inverse_temperature 1 \
 	--max_steps 20 \
-	--prior_factor 1.0 \
-	--prior_lower_boundary -1.0 \
+	--prior_factor .1 \
+	--prior_upper_boundary 1.0 \
 	--sampler GeometricLangevinAlgorithm_1stOrder \
 	--seed 426 \
 	--step_width 1e-1 \
 	--trajectory_file trajectory.csv
 ], 0, [stdout], [stderr])
 
-AT_CHECK([grep -c "1.00000000e+00" trajectory.csv], 0, [stdout], [ignore])
-AT_CHECK([grep "10" stdout], 0, [ignore], [ignore])
+# except for initial step check we remain within bounds
+for col in `seq 3 5`; do
+    AT_CHECK([tail -n 19 trajectory.csv | awk -F"," -v col=$col '{if (($col > 1.2)) { print NR","col": "$col; exit 255} }'], 0, [stdout], [ignore])
+done
 
 AT_CLEANUP
