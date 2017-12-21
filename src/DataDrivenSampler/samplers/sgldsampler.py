@@ -34,7 +34,8 @@ class SGLDSampler(optimizer.Optimizer):
         self._inverse_temperature = inverse_temperature
         self.upper_boundary = None
         self.lower_boundary = None
-        self.force_factor = 1.
+        self.force_factor = .1
+        self.force_power = 1.
 
     def _prepare(self):
         """ Converts step width into a tensor, if given as a floating-point
@@ -82,6 +83,8 @@ class SGLDSampler(optimizer.Optimizer):
             self.force_factor = prior["factor"]
         if "lower_boundary" in prior:
             self.lower_boundary = prior["lower_boundary"]
+        if "power" in prior:
+            self.force_power = prior["power"]
         if "upper_boundary" in prior:
             self.upper_boundary = prior["upper_boundary"]
 
@@ -107,10 +110,14 @@ class SGLDSampler(optimizer.Optimizer):
         """
 
         def wall_force(signed_distance, wall_size):
-            return self.force_factor * (tf.minimum(tf.div(signed_distance, wall_size), 1.0)-1.0)
+            return -1. * self.force_factor * tf.pow(
+                tf.abs(tf.minimum(tf.div(signed_distance, wall_size), 1.0)-1.0),
+                self.force_power)
 
         def tether_force(signed_distance):
-            return self.force_factor * (tf.maximum(signed_distance, 0.0))
+            return self.force_factor * tf.pow(
+                tf.maximum(signed_distance, 0.0),
+                self.force_power)
 
         # mind that sign needs to be reversed as we update using _negative_ gradient
         if self.upper_boundary is not None or self.lower_boundary is not None:

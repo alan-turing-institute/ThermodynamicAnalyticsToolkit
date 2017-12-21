@@ -21,7 +21,9 @@ TESTSCRIPTS += \
 	$(srcdir)/DataDrivenSampler/Prior/testsuite-datadrivensampler-prior.at \
 	$(srcdir)/DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-lower_boundary.at \
 	$(srcdir)/DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-lower_upper_boundary.at \
+	$(srcdir)/DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-lower_upper_boundary-squared.at \
 	$(srcdir)/DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-tethering.at \
+	$(srcdir)/DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-tethering-squared.at \
 	$(srcdir)/DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-upper_boundary.at \
 	$(srcdir)/DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-given_seeds.at \
 	$(srcdir)/DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-no_seeds.at \

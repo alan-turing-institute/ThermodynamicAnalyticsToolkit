@@ -23,6 +23,8 @@ AT_BANNER([DataDrivenSampler - Priors])
 m4_include([DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-lower_boundary.at])
 m4_include([DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-lower_upper_boundary.at])
 m4_include([DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-upper_boundary.at])
+m4_include([DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-lower_upper_boundary-squared.at])
 
 # tests on tethering
 m4_include([DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-tethering.at])
+m4_include([DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-tethering-squared.at])

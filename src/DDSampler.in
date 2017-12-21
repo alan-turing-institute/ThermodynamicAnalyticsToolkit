@@ -39,6 +39,8 @@ def parse_parameters():
         help='Enforce a prior by constraining parameters, this scales the wall repelling force')
     parser.add_argument('--prior_lower_boundary', type=float, default=None,
         help='Enforce a prior by constraining parameters from below with a linear force')
+    parser.add_argument('--prior_power', type=float, default=None,
+        help='Enforce a prior by constraining parameters, this sets the power of the wall repelling force')
     parser.add_argument('--prior_upper_boundary', type=float, default=None,
         help='Enforce a prior by constraining parameters from above with a linear force')
     parser.add_argument('--sampler', type=str, default="GeometricLangevinAlgorithm_1stOrder",

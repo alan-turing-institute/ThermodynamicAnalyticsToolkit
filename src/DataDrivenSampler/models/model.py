@@ -109,6 +109,7 @@ class model:
             output_activation="tanh",
             prior_factor=1.,
             prior_lower_boundary=None,
+            prior_power=1.,
             prior_upper_boundary=None,
             restore_model=None,
             run_file=None,
@@ -136,6 +137,7 @@ class model:
                 output_activation=output_activation,
                 prior_factor=prior_factor,
                 prior_lower_boundary=prior_lower_boundary,
+                prior_power=prior_power,
                 prior_upper_boundary=prior_upper_boundary,
                 restore_model=restore_model,
                 run_file=run_file,
@@ -180,6 +182,8 @@ class model:
                 prior["factor"] = self.FLAGS.prior_factor
             if self.FLAGS.prior_lower_boundary is not None:
                 prior["lower_boundary"] = self.FLAGS.prior_lower_boundary
+            if self.FLAGS.prior_power is not None:
+                prior["power"] = self.FLAGS.prior_power
             if self.FLAGS.prior_upper_boundary is not None:
                 prior["upper_boundary"] = self.FLAGS.prior_upper_boundary
             self.nn.add_sample_method(loss, sampling_method=self.FLAGS.sampler, seed=self.FLAGS.seed, prior=prior)
