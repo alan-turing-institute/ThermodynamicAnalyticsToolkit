@@ -440,9 +440,10 @@ cost of all necessary servicing, repair, or correction.</remark>
         <para>Here, the <emphasis>sampler</emphasis> setting takes the place
         of the <command>optimizer</command> before as it states which sampling 
         scheme to use. At the moment the following are available: sgld, 
-        GeometricLangevinAlgorithm_1st, GeometricLangevinAlgorithm_2nd, where
-        the first refers to StochasticGradientLangevinDynamics
-         [Welling, Teh, 2011]. GLA 2nd is currently recommended to use.</para>
+        GeometricLangevinAlgorithm_1st, GeometricLangevinAlgorithm_2nd, BAOAB,
+        and HamiltonianMonteCarlo, where the first refers to 
+        StochasticGradientLangevinDynamics [Welling, Teh, 2011]. GLA 2nd or 
+        BAOAB is currently recommended to use.</para>
         <para>Note that you may add a prior to the sampling. At the current 
         state two kinds of priors as follows are available. In <quote>FLAGS</quote>
         <command>prior_upper_boundary</command> and 

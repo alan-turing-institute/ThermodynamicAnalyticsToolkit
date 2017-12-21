@@ -1,9 +1,10 @@
 import tensorflow as tf
-from DataDrivenSampler.samplers.GradientDescent import GradientDescent
-from DataDrivenSampler.samplers.sgldsampler import SGLDSampler
+from DataDrivenSampler.samplers.BAOAB import BAOABSampler
 from DataDrivenSampler.samplers.GLAFirstOrderMomentumSampler import GLAFirstOrderMomentumSampler
 from DataDrivenSampler.samplers.GLASecondOrderMomentumSampler import GLASecondOrderMomentumSampler
 from DataDrivenSampler.samplers.HamiltonianMonteCarloSampler import HamiltonianMonteCarloSampler
+from DataDrivenSampler.samplers.GradientDescent import GradientDescent
+from DataDrivenSampler.samplers.sgldsampler import SGLDSampler
 
 import numpy as np
 
@@ -230,6 +231,8 @@ class NeuralNetwork(object):
                     np.random.seed(seed)
                 accept_seed = np.random.uniform(low=0,high=67108864)
                 sampler = HamiltonianMonteCarloSampler(step_width, inverse_temperature, current_step, num_steps, accept_seed=accept_seed, seed=seed)
+            elif sampling_method == "BAOAB":
+                sampler = BAOABSampler(step_width, inverse_temperature, friction_constant, seed=seed)
             else:
                 raise NotImplementedError("Unknown sampler")
             if len(prior) != 0:
