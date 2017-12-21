@@ -6,6 +6,17 @@ EXTRA_DIST += \
 	$(top_builddir)/doc/datadrivensampler.pdf
 
 PYTHON_EXAMPLES = \
+	$(srcdir)/userguide/cmdline/analyse_average.sh \
+	$(srcdir)/userguide/cmdline/analyse_diffmap.sh \
+	$(srcdir)/userguide/cmdline/analyse_free_energy.sh \
+	$(srcdir)/userguide/cmdline/inputspacesampler.sh \
+	$(srcdir)/userguide/cmdline/lossfunctionsampler-fix_parameter.sh \
+	$(srcdir)/userguide/cmdline/lossfunctionsampler-grid.sh \
+	$(srcdir)/userguide/cmdline/lossfunctionsampler-trajectory.sh \
+	$(srcdir)/userguide/cmdline/optimize.sh \
+	$(srcdir)/userguide/cmdline/parse_dataset.sh \
+	$(srcdir)/userguide/cmdline/sample.sh \
+	$(srcdir)/userguide/cmdline/write_dataset.sh \
 	$(srcdir)/userguide/python/analyse.py \
 	$(srcdir)/userguide/python/optimize.py \
 	$(srcdir)/userguide/python/plot_optimize.py \

@@ -1,0 +1,13 @@
+./DDSampler \
+  	--batch_data_files dataset-twoclusters.csv \
+    --batch_size 50 \
+    --friction_constant 10 \
+    --inverse_temperature 10 \
+    --loss mean_squared \
+    --max_steps 100000 \
+    --sampler GeometricLangevinAlgorithm_2ndOrder \
+    --restore_model model.ckpt \
+    --run_file run.csv \
+    --seed 426 \
+    --step_width 1e-2 \
+    --trajectory_file trajectory.csv

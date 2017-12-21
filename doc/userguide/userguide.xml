@@ -491,48 +491,51 @@ nn.init_network(None, setup="sample")
       scientific experiments, we recommend using this interface as well. Here,
       it is to do parameter studies and have extensive runs using different
       seeds.
-      <section xml:id="quickstart.cmdline.creating_dataset">
-        <title  xml:id="quickstart.cmdline.creating_dataset.title">Creating the dataset</title>
+      <section xml:id="quickstart.cmdline.writing_dataset">
+        <title  xml:id="quickstart.cmdline.writing_dataset.title">Creating the dataset</title>
         <para>As data is read from file, this file needs to be created beforehand.</para>
         <para>For a certain set of simple classification problems, namely those 
         that can be found in the tensorflow playground, we have added a
         <quote>DatasetWriter</quote> that spills out the dataset in CSV format.
         </para>
-        <programlisting>./DatasetWriter \
-	--data_type 2 \
-	--dimension 500 \
-	--noise 0.1 \
-	--seed 426 \
-	--train_test_ratio 0 \
-	--test_data_file testset-twoclusters.csv</programlisting>
-	    <para>This will write 500 datums of the dataset type 2 ("two clusters")
-	    to a file <quote>testset-twoclusters.csv</quote> using all of the points as we have
-	    set the test/train ratio to 0. Note that we also perturb the points by
-	    0.1 relative noise.</para>
-	    <para>Similarly, for testing the dataset can be parsed using the same
-	    tensorflow machinery as is done for sampling and optimizing, using</para>
-	    <programlisting>./DatasetParser \
-	--batch_data_files testset-twoclusters.csv \
-	--batch_size 20 \
-	--seed 426</programlisting>
-	    <para>where the <emphasis>seed</emphasis> is used for shuffling the
-	    dataset.</para>
+        <example xml:id="quickstart.cmdline.writing_dataset.example">
+          <title>Creating the "two clusters" dataset as CSV file</title>
+          <programlisting><xi:include  href="cmdline/write_dataset.sh"  parse="text"  
+      xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
+          <programlisting>
+          </programlisting>
+        </example>
+        <para>This will write 500 datums of the dataset type 2 ("two clusters")
+        to a file <quote>testset-twoclusters.csv</quote> using all of the points as we have
+        set the test/train ratio to 0. Note that we also perturb the points by
+        0.1 relative noise.</para>
+      </section>
+      <section xml:id="quickstart.cmdline.parsing_dataset">
+        <title  xml:id="quickstart.cmdline.parsing_dataset.title">Creating the dataset</title>
+        <para>Similarly, for testing the dataset can be parsed using the same
+        tensorflow machinery as is done for sampling and optimizing, using</para>
+        <example xml:id="quickstart.cmdline.parsing_dataset.example">
+          <title>Parsing dataset from CSV file</title>
+          <programlisting><xi:include  href="cmdline/parse_dataset.sh"  parse="text"  
+      xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
+          <programlisting>
+          </programlisting>
+        </example>
+        <para>where the <emphasis>seed</emphasis> is used for shuffling the
+        dataset.</para>
       </section>
       <section xml:id="quickstart.cmdline.optimizing">
         <title  xml:id="quickstart.cmdline.optimizing.title">Optimizing the network</title>
         <para>As weights (and biases) are usually uniformly random initialized and
         the potential may therefore start with large values, we first have to 
         optimize the network, using (Stochastic) Gradient Descent (GD).</para>
-        <programlisting>./DDSOptimizer \
-  	--batch_data_files dataset-twoclusters.csv \
-    --batch_size 50 \
-    --loss mean_squared \
-    --max_steps 1000 \
-    --optimizer GradientDescent \
-    --save_model model.ckpt.meta \
-    --seed 426 \
-    --step_width 1e-2
-        </programlisting>
+        <example xml:id="quickstart.cmdline.optimizing.example">
+          <title>Optimizing the network with Gradient Descent on Two Clusters dataset</title>
+          <programlisting><xi:include  href="cmdline/optimize.sh"  parse="text"  
+      xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
+          <programlisting>
+          </programlisting>
+        </example>
         <para>This call will create an internal dataset called "two clusters" with 500 
         points using random number seed 426 (to generate the dataset in a 
         deterministic fashion) using 10% of noise. 
@@ -554,20 +557,13 @@ nn.init_network(None, setup="sample")
         means that small changes to the parameters will result in gradients that 
         force it back into the minimum.</para>
         <para>Let us call the sampler.</para>
-        <programlisting>./DDSampler \
-  	--batch_data_files dataset-twoclusters.csv \
-    --batch_size 50 \
-    --friction_constant 10 \
-    --inverse_temperature 10 \
-    --loss mean_squared \
-    --max_steps 100000 \
-    --sampler GeometricLangevinAlgorithm_2ndOrder \
-    --restore_model model.ckpt \
-    --run_file run.csv \
-    --seed 426 \
-    --step_width 1e-2 \
-    --trajectory_file trajectory.csv
-        </programlisting>
+        <example xml:id="quickstart.cmdline.sampling.example">
+          <title>Sampling the loss manifold using on Two Clusters dataset</title>
+          <programlisting><xi:include  href="cmdline/sample.sh"  parse="text"  
+      xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
+          <programlisting>
+          </programlisting>
+        </example>
         <para>This will cause the sampler to prepare the same dataset as before, as
         we still are using the same seed, data_type, dimension, and noise.
         Moreover, the sampler will load the neural network from the model, i.e.
@@ -604,44 +600,40 @@ nn.init_network(None, setup="sample")
         <section xml:id="quickstart.cmdline.analysing.averages">
           <title  xml:id="quickstart.cmdline.analysing.averages.title">Averages</title>
           <para>Averages are calculated by specifying two options as follows:</para>
-          <programlisting>./DDSAnalyser \
-    --average_run_file average_run.csv \
-    --average_trajectory_file average_trajectory.csv \
-    --drop_burnin 100 \
-    --every_nth 10 \
-    --run_file run.csv \
-    --steps 10 \
-    --trajectory_file trajectory.csv
-          </programlisting>
-        <para>This will load both the run file <command>run.csv</command>
-        and the trajectory file <command>trajectory.csv</command>and average
-         over them using only every 10th data point 
-         (<emphasis>every_nth</emphasis>) and also dropping the first steps 
-         below 100 (<emphasis>drop_burnin</emphasis>). It will produce then
-         ten averages (<emphasis>steps</emphasis>) for each of energies in the 
-         run file and each of the parameters in the trajectories file (along 
-         with the variance) from the first non-dropped step till one of the 
-         ten end steps. These end steps are obtained by equidistantly 
-         splitting up the whole step interval.</para>
-         <para>Eventually, we have two output file. The averages over the run
-         information such as total, kinetic, and potential energy in
-         <command>average_run.csv</command>. Also, we have the averages
-         over the degrees of freedom in 
-         <command>average_trajectories.csv</command>.</para>
+          <example xml:id="quickstart.cmdline.analysing.averages.example">
+            <title>Calculating averages over a sampled trajectory</title>
+            <programlisting><xi:include  href="cmdline/analyse_average.sh"  parse="text"  
+        xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
+            <programlisting>
+            </programlisting>
+          </example>
+          <para>This will load both the run file <command>run.csv</command>
+          and the trajectory file <command>trajectory.csv</command>and average
+           over them using only every 10th data point 
+           (<emphasis>every_nth</emphasis>) and also dropping the first steps 
+           below 100 (<emphasis>drop_burnin</emphasis>). It will produce then
+           ten averages (<emphasis>steps</emphasis>) for each of energies in the 
+           run file and each of the parameters in the trajectories file (along 
+           with the variance) from the first non-dropped step till one of the 
+           ten end steps. These end steps are obtained by equidistantly 
+           splitting up the whole step interval.</para>
+           <para>Eventually, we have two output file. The averages over the run
+           information such as total, kinetic, and potential energy in
+           <command>average_run.csv</command>. Also, we have the averages
+           over the degrees of freedom in 
+           <command>average_trajectories.csv</command>.</para>
         </section>
         <section  xml:id="quickstart.cmdline.analysing.diffusion_map">
           <title  xml:id="quickstart.cmdline.analysing.diffusion_map.title">Diffusion map</title>
           <para>The eigenvalues and eigenvectors can be written as well to two 
           output files.</para>
-            <programlisting>./DDSAnalyser \
-    --diffusion_map_file diffusion_map_values.csv \
-    --diffusion_mapmethod vanilla \
-    --diffusion_mtrixp_file diffusion_map_vectors.csv \
-    --drop_burnin 100 \
-    --every_nth 10 \
-    --steps 10 \
-    --trajectory_file trajectory.csv
+          <example xml:id="quickstart.cmdline.analysing.diffusion_map.example">
+            <title>Calculating diffusion maps on a sampled trajectory</title>
+            <programlisting><xi:include  href="cmdline/analyse_diffmap.sh"  parse="text"  
+        xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
+            <programlisting>
             </programlisting>
+          </example>
           <para>The files ending in <command>..values.csv</command> contains 
           the eigenvalues in two columns, the first is the eigenvalue index,
           the second is the eigenvalue.</para>
@@ -659,17 +651,13 @@ nn.init_network(None, setup="sample")
         <section xml:id="quickstart.cmdline.analysing.free_energy">
           <title  xml:id="quickstart.cmdline.analysing.free_energy.title">Free energy</title>
           <para>Last but not least, the free energy is calculated.</para>
-            <programlisting>./DDSAnalyser \
-    --diffusion_mapmethod TMDMap \
-    --drop_burnin 100 \
-    --every_nth 10 \
-    --inverse_temperature 10 \
-    --landmarks 5 \
-    --landmark_file landmarks-ev_1.csv \
-    --number_of_eigenvectors 2 \
-    --steps 10 \
-    --trajectory_file trajectory.csv
+          <example xml:id="quickstart.cmdline.analysing.free_energy.example">
+            <title>Calculating free energy over profiles  over diffusion map eigenvectors on a sampled trajectory</title>
+            <programlisting><xi:include  href="cmdline/analyse_free_energy.sh"  parse="text"  
+        xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
+            <programlisting>
             </programlisting>
+          </example>
           <para>This will extract landmark points from the trajectory. 
           Basically, the loss manifold is discretized using these landmarks
           where all configurations close to a landmark step are combined
@@ -708,7 +696,7 @@ nn.init_network(None, setup="sample")
     on.</para>
     <itemizedlist>
       <listitem>
-        <para>Dataset</para> - <para>The dataset contains a fixed number
+        <emphasis>Dataset</emphasis><para>The dataset contains a fixed number
         of datums of input tuples and output tuples. They are typically 
         referred to as <quote>features</quote> and <quote>labels</quote> in
         the machine learning community. Basically, they are samples taken
@@ -718,7 +706,7 @@ nn.init_network(None, setup="sample")
         problem. Otherwise, it is a <quote>regression</quote> problem.</para>
       </listitem>
       <listitem>
-        <para>Neural network</para> - <para>The neural network is a black-box
+        <emphasis>Neural network</emphasis><para>The neural network is a black-box
         representing a certain set of general functions that are efficient in 
         solving classification problems (among others). They are parametrized
         explicitly using weights and biases and implicitly through the topoloy
@@ -727,7 +715,7 @@ nn.init_network(None, setup="sample")
         best set of parameters for a given task. </para>
       </listitem>
       <listitem>
-        <para>Loss</para> - <para>The loss function determines for a given
+        <emphasis>Loss</emphasis><para>The loss function determines for a given
         (labelled) dataset what set of neural network's parameters are best.
         Note that there are losses that do not require labels though.
         Different losses result in different set of parameters. It is a
@@ -745,7 +733,7 @@ nn.init_network(None, setup="sample")
         manifold and check whether it is actually the global one.</para>
       </listitem>
       <listitem>
-        <para>Momenta and kinetic energy</para> - <para>Momenta is a concept
+        <emphasis>Momenta and kinetic energy</emphasis><para>Momenta is a concept
         taken over from physics where the parameters are considered as particles
         each in a one-dimensional space where the loss is a potential function 
         whose ( negative) gradient acts as a force onto the particle driving them
@@ -761,7 +749,7 @@ nn.init_network(None, setup="sample")
         equivalent as usually the mass is set to unity.</para>
       </listitem>
       <listitem>
-        <para>Optimizers</para> - <para>Optimizers are used to drive the
+        <emphasis>Optimizers</emphasis><para>Optimizers are used to drive the
         parameters to the local minimum from a given (random) starting 
         position. GradientDescent (GD) is best known, but there are more
         elaborate Optimizers that use the concept of momentum as well. This
@@ -770,7 +758,7 @@ nn.init_network(None, setup="sample")
         the minimum.</para>
       </listitem>
       <listitem>
-        <para>Samplers</para> - <para>The goal of samplers is different than
+        <emphasis>Samplers</emphasis><para>The goal of samplers is different than
         the goal of optimizers. Samplers aim at discovering a great deal of the
         manifold, not constraint to the local minimum. Usually, they are 
         started from the local minimum and drive the particles further and
@@ -808,11 +796,13 @@ nn.init_network(None, setup="sample")
     evaluating the loss function given a certain dataset, namely the
     <quote>LossFunctionSampler</quote>. Let us give an example
     call right away.</para>
-    <programlisting>./LossFunctionSampler \
-	--batch_data_files dataset-twoclusters.csv \
-	--batch_size 20 \
-	--csv_file LossFunctionSampler-output-SGLD.csv \
-  --trajectory_file trajectory.csv</programlisting>
+    <example xml:id="reference.loss.example.trajectory">
+      <title>Using LossFunctionSampler on a given trajectory</title>
+      <programlisting><xi:include  href="cmdline/lossfunctionsampler-trajectory.sh"  parse="text"  
+  xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
+      <programlisting>
+      </programlisting>
+    </example>
     <para>It takes as input the dataset file <quote>dataset-twoclusters.csv</quote>
     and either a trajectory file <quote>trajectory.csv</quote>. This will
     cause the program the re-evaluate the loss function at the trajectory
@@ -821,15 +811,13 @@ nn.init_network(None, setup="sample")
     <para>More interesting is the second case, where instead of giving
     a trajectory file, we sample the parameter space equidistantly as
     follows:</para>
-      <programlisting>./LossFunctionSampler \
-    --batch_data_files dataset-twoclusters.csv \
-    --batch_size 20 \
-    --csv_file LossFunctionSampler-output-SGLD.csv \
-    --interval_weights -5 5 \
-    --interval_biases -1 1 \
-    --samples_weights 10 \
-    --samples_biases 4
-    </programlisting>
+    <example xml:id="reference.loss.example.grid">
+      <title>Using LossFunctionSampler with an equidistant grid</title>
+      <programlisting><xi:include  href="cmdline/lossfunctionsampler-grid.sh"  parse="text"  
+  xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
+      <programlisting>
+      </programlisting>
+    </example>
     <para>Here, sample for each weight in the interval [-5,5] at 11 points 
     (10 + endpoint), and similarly for the weights in the interval [-1,1] at
     5 points.</para>
@@ -837,16 +825,13 @@ nn.init_network(None, setup="sample")
     becomes prohibitively large. However, you may use <quote>fix_parameter</quote>
     to lower the computational cost by choosing a certain subsets of weights
     and biases to sample.</note>
-    <programlisting>./LossFunctionSampler \
-  --batch_data_files dataset-twoclusters.csv \
-  --batch_size 20 \
-  --csv_file LossFunctionSampler-output-SGLD.csv \
-  --fix_parameter "
-  --interval_weights -5 5 \
-  --interval_biases -1 1 \
-  --samples_weights 10 \
-  --samples_biases 4
-  </programlisting>
+    <example xml:id="reference.loss.example.fix_parameter">
+      <title>Using LossFunctionSampler with an equidistant grid and fixing parameters</title>
+      <programlisting><xi:include  href="cmdline/lossfunctionsampler-fix_parameter.sh"  parse="text"  
+  xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
+      <programlisting>
+      </programlisting>
+    </example>
   </section>
   <section xml:id="reference.network">
     <title xml:id="reference.network.title">The learned function</title>
@@ -855,14 +840,13 @@ nn.init_network(None, setup="sample")
     on the loss function, called the <quote>InputSpaceSampler</quote>. 
     In other words, it gives the classification result for data point sampled
     from an equidistant grid. Let us give an example call right away.</para>
-    <programlisting>./InputSpaceSampler \
-	--batch_data_files grid.csv \
-  --interval_input -4 4 \
-	--samples_input 10 \
-	--csv_file InputSpaceSampler-output.csv \
-	--seed 426 \
-	--steps 1 \
-  --trajectory_file trajectory.csv</programlisting>
+    <example xml:id="reference.network.example">
+      <title>Using InputSpaceSampler with an equidistant grid</title>
+      <programlisting><xi:include  href="cmdline/inputspacesampler.sh"  parse="text"  
+  xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
+      <programlisting>
+      </programlisting>
+    </example>
     <para>Here, <quote>batch_data_files</quote> is an input file but it does
     not need to be present. (Sorry about that abuse of the parameter as
     usually <quote>batch_data_files</quote> is read-only. Here, it is 
@@ -903,6 +887,17 @@ nn.init_network(None, setup="sample")
       bias vectors per layer at the moment.</note>
     </section>
     <para>still empty</para>
+  </section>
+  <section xml:id="reference.limitations">
+    <title xml:id="reference.limitations.title">Current limitations</title>
+    <para>We would like to list the current limitations of the implementation.
+    Note that in general this code is heavily based on tensorflow, hence all its
+    limitations also apply to us.</para>
+    <itemizedlist>
+      <listitem> 
+        <para>At the moment only exactly two-dimensional inputs are supported.</para>
+      </listitem>
+    </itemizedlist>
   </section>
 </chapter>
   <chapter>
