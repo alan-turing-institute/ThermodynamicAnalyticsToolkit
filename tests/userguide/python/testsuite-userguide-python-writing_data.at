@@ -1,6 +1,6 @@
 #
 #    DataDrivenSampler - explore high-dimensional manifold of neural networks
-#    Copyright (C) 2017 The University of Edinburgh
+#    Copyright (C) 2018 The University of Edinburgh
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -15,15 +15,24 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-### all tests on userguide
+### test on examples in the userguide
 
-# tests on simple behavior
-m4_include([python/testsuite-userguide-python-writing_data.at])
-m4_include([python/testsuite-userguide-python-optimize.at])
-m4_include([python/testsuite-userguide-python-plot_optimize.at])
-m4_include([python/testsuite-userguide-python-sample.at])
-m4_include([python/testsuite-userguide-python-optimize_sample.at])
-m4_include([python/testsuite-userguide-python-analyse.at])
+AT_SETUP([Examples - writing the dataset])
+AT_KEYWORDS([example python writing_data])
 
-# tests on specific examples
-m4_include([python/testsuite-userguide-python-fix_parameter.at])
+# the comparison file was crated by running:
+# (Two clusters dataset with two inputs nodes, single output, linear activation)
+# DatasetWriter \
+# --train_data_file dataset-twoclusters.csv \
+# --data_type 2 \
+# --dimension 100 \
+# --noise 0.1 \
+# --seed 426
+#
+AT_CHECK([../../run \
+	${abs_top_srcdir}/doc/userguide/python/writing_data.py
+], 0, [stdout], [stderr])
+AT_CHECK([diff dataset-twoclusters.csv ${abs_top_srcdir}/tests/userguide/python/post/dataset-twoclusters.csv], 0, [ignore], [ignore])
+
+AT_CLEANUP
+

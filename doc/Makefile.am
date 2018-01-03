@@ -21,7 +21,8 @@ PYTHON_EXAMPLES = \
 	$(srcdir)/userguide/python/optimize.py \
 	$(srcdir)/userguide/python/optimize_sample.py \
 	$(srcdir)/userguide/python/plot_optimize.py \
-	$(srcdir)/userguide/python/sample.py
+	$(srcdir)/userguide/python/sample.py \
+	$(srcdir)/userguide/python/writing_data.py
 
 # mind: https://stackoverflow.com/questions/39786947/how-to-convert-to-pdf-from-xsl-fo-with-mathml
 #
