@@ -44,6 +44,9 @@ m4_include(InputSpaceSampler/testsuite-inputspacesampler.at)
 # tests for LossFunctionSampler
 m4_include(LossFunctionSampler/testsuite-lossfunctionsampler.at)
 
+# tests for NumericalDiff
+m4_include(NumericalDiff/testsuite-numericaldiff.at)
+
 # tests for TrajectoryAnalyser or DDSAnalyser
 m4_include(TrajectoryAnalyser/testsuite-trajectoryanalyser.at)
 

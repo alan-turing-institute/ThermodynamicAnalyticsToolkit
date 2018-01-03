@@ -1,0 +1,36 @@
+#
+#    NumericalDiff - diffing files taking numerical imprecision into acccount
+#    Copyright (C) 2018 The University of Edinburgh
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### test on differing header
+
+AT_SETUP([NumericalDiff - different header])
+AT_KEYWORDS([numericaldiff header])
+
+AT_CHECK([../../../NumericalDiff \
+	${abs_top_srcdir}/tests/regression/NumericalDiff/Comparisons/pre/test.csv \
+	${abs_top_srcdir}/tests/regression/NumericalDiff/Comparisons/pre/different_header.csv \
+	--general_threshold 1e-8 relative
+], 1, [stdout], [stderr])
+
+AT_CHECK([../../../NumericalDiff \
+	${abs_top_srcdir}/tests/regression/NumericalDiff/Comparisons/pre/test.csv \
+	${abs_top_srcdir}/tests/regression/NumericalDiff/Comparisons/pre/different_column_name.csv \
+	--general_threshold 1e-8 relative
+], 1, [stdout], [stderr])
+
+AT_CLEANUP
+

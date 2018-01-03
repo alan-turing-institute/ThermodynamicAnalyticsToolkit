@@ -17,7 +17,8 @@ bin_SCRIPTS = \
 	DDSOptimizer \
 	DDSAnalyser \
 	InputSpaceSampler \
-	LossFunctionSampler
+	LossFunctionSampler \
+	NumericalDiff
 
 CLEANFILES = $(bin_SCRIPTS)
 EXTRA_DIST = \
@@ -28,7 +29,8 @@ EXTRA_DIST = \
 	DDSOptimizer.in \
 	DDSAnalyser.in \
 	InputSpaceSampler.in \
-	LossFunctionSampler.in
+	LossFunctionSampler.in \
+	NumericalDiff.in
 
 do_substitution = sed -e 's,[@]pythondir[@],$(pythondir),g' \
 	-e 's,[@]PACKAGE[@],$(PACKAGE),g' \
@@ -62,6 +64,10 @@ InputSpaceSampler: InputSpaceSampler.in Makefile
 LossFunctionSampler: LossFunctionSampler.in Makefile
 	$(do_substitution) < $(srcdir)/LossFunctionSampler.in > LossFunctionSampler
 	chmod +x LossFunctionSampler
+
+NumericalDiff: NumericalDiff.in Makefile
+	$(do_substitution) < $(srcdir)/NumericalDiff.in > NumericalDiff
+	chmod +x NumericalDiff
 
 $(srcdir)/DataDrivenSampler/version.py: $(srcdir)/.git-version
 	echo "def get_package_name():" >$@

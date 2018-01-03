@@ -49,6 +49,7 @@ AC_CONFIG_FILES([tests/DDSOptimizer], [chmod +x tests/DDSOptimizer])
 AC_CONFIG_FILES([tests/DDSAnalyser], [chmod +x tests/DDSAnalyser])
 AC_CONFIG_FILES([tests/InputSpaceSampler], [chmod +x tests/InputSpaceSampler])
 AC_CONFIG_FILES([tests/LossFunctionSampler], [chmod +x tests/LossFunctionSampler])
+AC_CONFIG_FILES([tests/NumericalDiff], [chmod +x tests/NumericalDiff])
 AC_CONFIG_FILES([tests/userguide/run], [chmod +x tests/userguide/run])
 AC_CONFIG_FILES([
         doc/Makefile

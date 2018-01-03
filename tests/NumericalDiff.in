@@ -1,0 +1,12 @@
+#!/bin/sh
+#
+# wrapper for testing NumericalDiff
+
+. ../../atlocal
+
+"${AUTOTEST_PATH}/NumericalDiff" \
+${1+"$@"}
+
+status=$?
+
+exit $status

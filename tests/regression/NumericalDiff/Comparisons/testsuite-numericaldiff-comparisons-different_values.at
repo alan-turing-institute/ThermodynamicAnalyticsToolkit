@@ -1,0 +1,57 @@
+#
+#    NumericalDiff - diffing files taking numerical imprecision into acccount
+#    Copyright (C) 2018 The University of Edinburgh
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### test on differing header
+
+AT_SETUP([NumericalDiff - different values])
+AT_KEYWORDS([numericaldiff values])
+
+AT_CHECK([../../../NumericalDiff \
+	${abs_top_srcdir}/tests/regression/NumericalDiff/Comparisons/pre/test.csv \
+	${abs_top_srcdir}/tests/regression/NumericalDiff/Comparisons/pre/different_values.csv \
+	--general_threshold 1e-8 "relative"
+], 1, [stdout], [stderr])
+AT_CHECK([grep "2 line(s) differ" stdout], 0, [ignore], [ignore])
+
+AT_CHECK([../../../NumericalDiff \
+	${abs_top_srcdir}/tests/regression/NumericalDiff/Comparisons/pre/test.csv \
+	${abs_top_srcdir}/tests/regression/NumericalDiff/Comparisons/pre/different_values.csv \
+	--general_threshold 1e-6 "relative"
+], 1, [stdout], [stderr])
+AT_CHECK([grep "1 line(s) differ" stdout], 0, [ignore], [ignore])
+
+AT_CHECK([../../../NumericalDiff \
+	${abs_top_srcdir}/tests/regression/NumericalDiff/Comparisons/pre/test.csv \
+	${abs_top_srcdir}/tests/regression/NumericalDiff/Comparisons/pre/different_values.csv \
+	--general_threshold 1e-4 "absolute"
+], 0, [stdout], [stderr])
+
+AT_CHECK([../../../NumericalDiff \
+	${abs_top_srcdir}/tests/regression/NumericalDiff/Comparisons/pre/test.csv \
+	${abs_top_srcdir}/tests/regression/NumericalDiff/Comparisons/pre/different_values2.csv \
+	--general_threshold 1e-4 "absolute"
+], 1, [stdout], [stderr])
+AT_CHECK([grep "1 line(s) differ" stdout], 0, [ignore], [ignore])
+
+AT_CHECK([../../../NumericalDiff \
+	${abs_top_srcdir}/tests/regression/NumericalDiff/Comparisons/pre/test.csv \
+	${abs_top_srcdir}/tests/regression/NumericalDiff/Comparisons/pre/different_values2.csv \
+	--general_threshold 1e-4 "relative"
+], 0, [stdout], [stderr])
+
+AT_CLEANUP
+
