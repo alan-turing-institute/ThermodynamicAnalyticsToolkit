@@ -11,7 +11,8 @@ import scipy
 from DataDrivenSampler.version import get_package_version, get_build_hash
 from DataDrivenSampler.common import get_filename_from_fullpath, setup_csv_file
 from DataDrivenSampler.TrajectoryAnalyser import compute_diffusion_maps, \
-            compute_free_energy, get_landmarks_over_vectors, moving_average, parse_parameters, \
+            compute_free_energy, compute_free_energy_using_histograms, \
+            get_landmarks_over_vectors, moving_average, parse_parameters, \
             write_landmarks, write_values_as_csv
 
 FLAGS = None
@@ -180,7 +181,8 @@ def main(_):
 
                 # compute free energy at landmark points
                 print("Computing free energy")
-                freeEnergies, NumLevelsets = compute_free_energy(trajectory, FLAGS.landmarks, q, vectors)
+                freeEnergies, NumLevelsets = compute_free_energy(
+                    trajectory, FLAGS.landmarks, q, vectors)
                 print("freeEnergies: "+str(freeEnergies))
                 print("NumLevelsets: "+str(NumLevelsets))
 
@@ -207,6 +209,25 @@ def main(_):
                     csv_file.close()
 
 
+            if FLAGS.free_energy_prefix is not None:
+                for ev_index in range(np.shape(vectors)[1]):
+                    # calculate free energy by histogramming the eigenvector
+                    freeEnergies, HistogramBins = compute_free_energy_using_histograms(
+                        radius=vectors[:, ev_index],
+                        nrbins=FLAGS.landmarks)
+                    print("freeEnergies: "+str(freeEnergies))
+                    print("HistogramBins: "+str(HistogramBins))
+                    header = ["bin", "free_energy"]
+                    csv_writer, csv_file = setup_csv_file(FLAGS.free_energy_prefix+"-ev_"+str(ev_index)+".csv", header)
+                    for k in range(len(freeEnergies)):
+                        csv_writer.writerow(
+                            ['{:{width}.{precision}e}'.format(HistogramBins[k], \
+                                width=output_width, precision=output_precision)] \
+                            +['{:{width}.{precision}e}'.format(freeEnergies[k], \
+                                width=output_width, precision=output_precision)])
+                    csv_file.close()
+
+
 if __name__ == '__main__':
     FLAGS, unparsed = parse_parameters()
 
@@ -224,6 +245,14 @@ if __name__ == '__main__':
             FLAGS.landmark_prefix = FLAGS.landmark_file
     else:
         FLAGS.landmark_prefix = None
+    if FLAGS.free_energy_file is not None:
+        free_energy_suffix = "-ev_1.csv"
+        if free_energy_suffix in FLAGS.free_energy_file:
+            FLAGS.free_energy_prefix = FLAGS.free_energy_file[0:FLAGS.free_energy_file.find(free_energy_suffix)]
+        else:
+            FLAGS.free_energy_prefix = FLAGS.free_energy_file
+    else:
+        FLAGS.free_energy_prefix = None
 
     print("Using parameters: "+str(FLAGS))
 

@@ -108,3 +108,34 @@ AT_CHECK([../../../NumericalDiff --column_ignore_sign "ev_0" -- landmarks-ev_0.c
 
 AT_CLEANUP
 
+AT_SETUP([Analyser - Free energy using histograms])
+AT_KEYWORDS([ddsanalyser free_energy histograms])
+AT_SKIP_IF([! ../../../check_pydiffmap])
+
+# analyse a trajectory that was created by:
+# (Two clusters dataset with two inputs nodes, single output, linear activation)
+# DDSampler \
+# --data_type 2 \
+# --dimension 500 \
+# --friction_constant 10 \
+# --inverse_temperatur 1e1 \
+# --max_steps 1000 \
+# --noise 0.1 \
+# --output_activation linear \
+# --seed 426 \
+# --trajectory_file trajectory-two_clusters-dim_500-gamma_10-beta_1e1-max_steps_1000-noise_0.1-linear-seed_426.csv
+
+AT_CHECK([../../../DDSAnalyser \
+    --diffusion_map_method "pydiffmap" \
+    --drop_burnin 10 \
+    --every_nth 1 \
+    --inverse_temperature 1e1 \
+    --landmarks 10 \
+    --free_energy_file free_energy-ev_1.csv \
+    --number_of_eigenvalues 4 \
+    --trajectory_file ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/pre/trajectory-two_clusters-dim_500-gamma_10-beta_1e1-max_steps_1000-noise_0.1-linear-seed_426.csv
+], 0, [stdout], [stderr])
+AT_CHECK([../../../NumericalDiff --column_ignore_sign "ev_0" -- free_energy-ev_0.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/post/free_energy-ev_0-method_pydiffmap.csv], 0, [ignore], [ignore])
+
+AT_CLEANUP
+

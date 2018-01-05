@@ -43,6 +43,8 @@ def parse_parameters():
         help='How many values to drop at the beginning of the trajectory.')
     parser.add_argument('--every_nth', type=int, default=1,
         help='Evaluate only every nth trajectory point to files, e.g. 10')
+    parser.add_argument('--free_energy_file', type=str, default=None,
+        help='Give file name ending in "-ev_0.csv" to write free energy over bins per eigenvector to')
     parser.add_argument('--inverse_temperature', type=float, default=None,
         help='Inverse temperature at which the sampling was executed for target Boltzmann distribution')
     parser.add_argument('--landmarks', type=int, default=None,
@@ -166,6 +168,18 @@ def write_landmarks(traj, landmarks, csv_filename, header):
         for i in range(0, len(landmarks)):
             csv_writer.writerow(traj[i,:])
         csv_file.close()
+
+
+def compute_free_energy_using_histograms(radius,   weights=None, nrbins=100, kBT=1):
+
+
+    free_energy, edges=np.histogram(radius, bins=nrbins, weights = weights, normed=True)
+    #free_energy+=0.0001
+    free_energy= - np.log(free_energy)
+
+    #print(edges.shape)
+
+    return free_energy, edges[:-1]
 
 
 def compute_free_energy(traj, landmarks, q, vectors):
