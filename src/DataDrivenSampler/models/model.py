@@ -366,6 +366,16 @@ class model:
             print("Sampler parameters: current_step = %lg, num_mc_steps = %lg, delta t = %lg" %
                   (current_step, num_mc_steps, deltat))
 
+        # create extra nodes for HMC
+        if self.FLAGS.sampler == "HamiltonianMonteCarlo":
+            HMC_eval_nodes = self.nn.get_list_of_nodes(["loss"]) + [total_energy_t, kinetic_energy_t]
+            var_loss_t = tf.placeholder(old_loss_t.dtype.base_dtype, name="var_loss")
+            var_kin_t = tf.placeholder(old_kinetic_energy_t.dtype.base_dtype, name="var_kinetic")
+            var_total_t = tf.placeholder(total_energy_t.dtype.base_dtype, name="var_total")
+            HMC_set_nodes = [old_loss_t.assign(var_loss_t),
+                             old_kinetic_energy_t.assign(var_kin_t)]
+            HMC_set_all_nodes = [total_energy_t.assign(var_total_t)]+HMC_set_nodes
+
         # Start populating the filename queue.
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(coord=coord, sess=self.sess)
@@ -402,14 +412,17 @@ class model:
 
             # set global variable used in HMC sampler for criterion to initial loss
             if self.FLAGS.sampler == "HamiltonianMonteCarlo":
-                loss_eval, total_eval, kin_eval = self.sess.run(self.nn.get_list_of_nodes(["loss"])+[total_energy_t, kinetic_energy_t], feed_dict=feed_dict)
-                eval_nodes = []
+                loss_eval, total_eval, kin_eval = self.sess.run(HMC_eval_nodes, feed_dict=feed_dict)
+                HMC_set_dict = {
+                    var_kin_t: kin_eval,
+                    var_loss_t: loss_eval,
+                    var_total_t: loss_eval+kin_eval
+                }
                 if abs(total_eval) < 1e-10:
-                    eval_nodes.append(total_energy_t.assign(loss_eval+kin_eval))
-                eval_nodes.append([old_loss_t.assign(loss_eval),
-                                  old_kinetic_energy_t.assign(kin_eval)])
-                self.sess.run(eval_nodes)
-                loss_eval, total_eval, kin_eval = self.sess.run([old_loss_t, total_energy_t, old_kinetic_energy_t], feed_dict=feed_dict)
+                    self.sess.run(HMC_set_all_nodes, feed_dict=HMC_set_dict)
+                else:
+                    self.sess.run(HMC_set_nodes, feed_dict=HMC_set_dict)
+                loss_eval, total_eval, kin_eval = self.sess.run(HMC_eval_nodes, feed_dict=feed_dict)
                 print("#%d: loss is %lg, total is %lg, kinetic is %lg" % (i, loss_eval, total_eval, kin_eval))
 
             # zero kinetic energy
