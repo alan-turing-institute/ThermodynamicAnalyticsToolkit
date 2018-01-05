@@ -502,7 +502,7 @@ class model:
                                                                           precision=output_precision)
                                          for x in [sqrt(gradients), abs(0.5*virials), sqrt(noise), abs(0.5*accumulated_virials)/float(i+1.)]]
                         elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
-                            rejected_eval, accepted_eval = self.sess.run([accepted_t, rejected_t])
+                            accepted_eval, rejected_eval  = self.sess.run([accepted_t, rejected_t])
                             if (rejected_eval+accepted_eval) > 0:
                                 rejection_rate = rejected_eval/(rejected_eval+accepted_eval)
                             else:
