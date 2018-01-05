@@ -25,24 +25,6 @@ class BAOABSampler(GLAFirstOrderMomentumSampler):
         super(BAOABSampler, self).__init__(step_width, inverse_temperature,
                                                             friction_constant, seed, use_locking, name)
 
-    def _step_B(self, _momentum, _gradient, _step_width):
-        """ \f$ p_{n+\frac 1 2} = p_n - (h/2) \nabla U(q_n) \f$
-        """
-        momentum_step_t = _momentum - _step_width * _scaled_gradient
-        return momentum_step_t
-
-    def _step_A(self, _position, _momentum, _step_width):
-        """ \f$ q_{n+\frac 1 2} = q_n + (h/2) p_n \f$
-        """
-        position_step_t = _position + _step_width * _momentum
-        return position_step_t
-
-    def _step_O(self, _momentum, _noise, _alpha, _zeta):
-        """ \f$ \tilde{q}_{n} = \alpha q_n + \zeta R_n
-        """
-        momentum_noise_step_t = _alpha * _momentum + _zeta * _noise
-        return momentum_noise_step_t
-
 
     '''
     legend:
@@ -255,10 +237,14 @@ class BAOABSampler(GLAFirstOrderMomentumSampler):
         # next_qn = A(half_qn, tilde_half_pn, h / 2)
         position_full_step_t = position_half_step_t + 0.5 * step_width_t * momentum_noise_step_t
 
+        # prior force act directly on var
+        ub_repell, lb_repell = self._apply_prior(var)
+        prior_force = step_width_t * (ub_repell + lb_repell)
+
         # make sure virial and gradients are evaluated before we update variables
         with tf.control_dependencies([virial_global_t, gradient_global_t, kinetic_energy_t]):
             # assign parameters
-            var_update = state_ops.assign(var, position_full_step_t)
+            var_update = state_ops.assign(var, position_full_step_t - prior_force)
 
         # assign moment to slot
         momentum_t = momentum.assign(momentum_noise_step_t)

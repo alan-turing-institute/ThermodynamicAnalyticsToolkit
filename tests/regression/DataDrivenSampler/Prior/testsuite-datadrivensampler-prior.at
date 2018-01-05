@@ -28,3 +28,5 @@ m4_include([DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-lower_uppe
 # tests on tethering
 m4_include([DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-tethering.at])
 m4_include([DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-tethering-squared.at])
+
+m4_include([DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-samplers.at])

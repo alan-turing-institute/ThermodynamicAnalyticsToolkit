@@ -22,6 +22,7 @@ TESTSCRIPTS += \
 	$(srcdir)/DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-lower_boundary.at \
 	$(srcdir)/DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-lower_upper_boundary.at \
 	$(srcdir)/DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-lower_upper_boundary-squared.at \
+	$(srcdir)/DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-samplers.at \
 	$(srcdir)/DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-tethering.at \
 	$(srcdir)/DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-tethering-squared.at \
 	$(srcdir)/DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-upper_boundary.at \
