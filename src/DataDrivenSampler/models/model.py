@@ -3,6 +3,7 @@ from builtins import staticmethod
 import tensorflow as tf
 import numpy as np
 import sys
+import time
 import pandas as pd
 
 from math import sqrt, floor
@@ -261,27 +262,26 @@ class model:
     def get_sample_header(self):
         """ Prepares the distinct header for the run file for sampling
         """
+        header = ['step', 'epoch', 'accuracy', 'loss', 'time_per_nth_step']
         if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
-            header = ['step', 'epoch', 'accuracy', 'loss', 'scaled_gradient', 'virial', 'scaled_noise',
+            header += ['scaled_gradient', 'virial', 'scaled_noise',
                       'average_virials']
         elif self.FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder",
                                     "GeometricLangevinAlgorithm_2ndOrder",
                                     "BAOAB"]:
-            header = ['step', 'epoch', 'accuracy', 'loss', 'total_energy', 'kinetic_energy', 'scaled_momentum',
+            header += ['total_energy', 'kinetic_energy', 'scaled_momentum',
                       'scaled_gradient', 'virial', 'scaled_noise',
                       'average_kinetic_energy', 'average_virials']
         elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
-            header = ['step', 'epoch', 'accuracy', 'loss', 'total_energy', 'old_total_energy', 'kinetic_energy', 'scaled_momentum',
+            header += ['total_energy', 'old_total_energy', 'kinetic_energy', 'scaled_momentum',
                       'scaled_gradient', 'virial', 'average_kinetic_energy', 'average_virials',
                       'average_rejection_rate']
-        else:
-            header = ['step', 'epoch', 'accuracy', 'loss']
         return header
 
     def get_train_header(self):
         """ Prepares the distinct header for the run file for training
         """
-        return ['step', 'epoch', 'accuracy', 'loss', 'scaled_gradient', 'virial', 'average_virials']
+        return ['step', 'epoch', 'accuracy', 'loss', 'time_per_nth_step', 'scaled_gradient', 'virial', 'average_virials']
 
     def sample(self, return_run_info = False, return_trajectories = False):
         """ Performs the actual sampling of the neural network `nn` given a dataset `ds` and a
@@ -377,9 +377,8 @@ class model:
 
         print("Starting to sample")
         print_intervals = max(1, int(self.FLAGS.max_steps / 100))
+        last_time = time.process_time()
         for i in range(self.FLAGS.max_steps):
-            # print("Current step is "+str(i))
-
             # fetch next batch of data
             try:
                 batch_xs, batch_ys = self.sess.run([self.batch_features, self.batch_labels])
@@ -467,6 +466,11 @@ class model:
                     accumulated_kinetic_energy += kinetic_energy
                     accumulated_virials += virials
             if i % self.FLAGS.every_nth == 0:
+                current_time = time.process_time()
+                time_elapsed_per_nth_step = current_time - last_time
+                last_time = current_time
+                #print("Output at step #" + str(i) + ", time elapsed till last is " + str(time_elapsed_per_nth_step))
+
                 if self.config_map["do_write_trajectory_file"] or return_trajectories:
                     trajectory_line = [global_step] \
                                       + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
@@ -488,25 +492,24 @@ class model:
                                               "GeometricLangevinAlgorithm_2ndOrder",
                                               "HamiltonianMonteCarlo",
                                               "BAOAB"]:
+                        run_line = [global_step, i] + ['{:1.3f}'.format(acc)] \
+                                   + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
+                                                                       precision=output_precision)] \
+                                   + ['{:{width}.{precision}e}'.format(time_elapsed_per_nth_step, width=output_width,
+                                                                       precision=output_precision)]
                         if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
-                            run_line = [global_step, i] + ['{:1.3f}'.format(acc)] \
-                                       + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
-                                                                           precision=output_precision)] \
-                                       + ['{:{width}.{precision}e}'.format(x, width=output_width,
-                                                                           precision=output_precision)
-                                          for x in [sqrt(gradients), abs(0.5*virials), sqrt(noise), abs(0.5*accumulated_virials)/float(i+1.)]]
+                            run_line += ['{:{width}.{precision}e}'.format(x, width=output_width,
+                                                                          precision=output_precision)
+                                         for x in [sqrt(gradients), abs(0.5*virials), sqrt(noise), abs(0.5*accumulated_virials)/float(i+1.)]]
                         elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
                             rejected_eval, accepted_eval = self.sess.run([accepted_t, rejected_t])
                             if (rejected_eval+accepted_eval) > 0:
                                 rejection_rate = rejected_eval/(rejected_eval+accepted_eval)
                             else:
                                 rejection_rate = 0
-                            run_line = [global_step, i] + ['{:1.3f}'.format(acc)] \
-                                       + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
-                                                                           precision=output_precision)] \
-                                       + ['{:{width}.{precision}e}'.format(loss_eval + kinetic_energy,
-                                                                           width=output_width,
-                                                                           precision=output_precision)]\
+                            run_line += ['{:{width}.{precision}e}'.format(loss_eval + kinetic_energy,
+                                                                          width=output_width,
+                                                                          precision=output_precision)]\
                                        + ['{:{width}.{precision}e}'.format(old_total_energy,
                                                                            width=output_width,
                                                                            precision=output_precision)]\
@@ -517,20 +520,13 @@ class model:
                                        + ['{:{width}.{precision}e}'.format(rejection_rate/(float(i)/self.FLAGS.hamiltonian_dynamics_steps+1.), width=output_width,
                                                                            precision=output_precision)]
                         else:
-                            run_line = [global_step, i] + ['{:1.3f}'.format(acc)] \
-                                       + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
-                                                                           precision=output_precision)] \
-                                       + ['{:{width}.{precision}e}'.format(loss_eval + kinetic_energy,
-                                                                           width=output_width,
-                                                                           precision=output_precision)]\
+                            run_line += ['{:{width}.{precision}e}'.format(loss_eval + kinetic_energy,
+                                                                          width=output_width,
+                                                                          precision=output_precision)]\
                                        + ['{:{width}.{precision}e}'.format(x, width=output_width,
                                                                            precision=output_precision)
                                           for x in [kinetic_energy, sqrt(momenta), sqrt(gradients), abs(0.5*virials), sqrt(noise),
                                                     accumulated_kinetic_energy/float(i+1.), abs(0.5*accumulated_virials)/float(i+1.)]]
-                    else:
-                        run_line = [global_step, i] + ['{:1.3f}'.format(acc)] \
-                                   + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
-                                                                       precision=output_precision)]
 
                     if self.config_map["do_write_run_file"]:
                         self.run_writer.writerow(run_line)
@@ -603,6 +599,7 @@ class model:
         threads = tf.train.start_queue_runners(coord=coord, sess=self.sess)
 
         print("Starting to train")
+        last_time = time.process_time()
         for i in range(self.FLAGS.max_steps):
             print("Current step is " + str(i))
 
@@ -633,8 +630,15 @@ class model:
             accumulated_virials += virials
 
             if i % self.FLAGS.every_nth == 0:
+                current_time = time.process_time()
+                time_elapsed_per_nth_step = current_time - last_time
+                last_time = current_time
+                #print("Output at step #" + str(i) + ", time elapsed till last is " + str(time_elapsed_per_nth_step))
+
                 run_line = [global_step, i] + ['{:1.3f}'.format(acc)] \
                            + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
+                                                               precision=output_precision)] \
+                           + ['{:{width}.{precision}e}'.format(time_elapsed_per_nth_step, width=output_width,
                                                                precision=output_precision)] \
                            + ['{:{width}.{precision}e}'.format(sqrt(gradients), width=output_width,
                                                                precision=output_precision)] \

@@ -60,9 +60,9 @@ AT_CHECK([../../../DDSOptimizer \
 	--step_width 0.03
 ], 0, [stdout], [stderr])
 
-# now compare all
-AT_CHECK([diff run-base.csv run-sameseed.csv], 0, [ignore], [ignore])
-AT_CHECK([diff run-base.csv run-otherseed.csv], 1, [ignore], [ignore])
+# now compare all (exclude time_per_nth_step column)
+AT_CHECK([../../../NumericalDiff --column_threshold time_per_nth_step 1e16 absolute -- run-base.csv run-sameseed.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff --column_threshold time_per_nth_step 1e16 absolute -- run-base.csv run-otherseed.csv], 1, [ignore], [ignore])
 
 AT_CLEANUP
 

@@ -33,7 +33,9 @@ AT_CHECK([../../../DDSOptimizer \
 	--seed 426 \
 	--step_width 0.03
 ], 0, [stdout], [stderr])
-AT_CHECK([diff run.csv ${abs_top_srcdir}/tests/regression/DataOptimizer/Datasets/post/run-twospirals.csv], 0, [ignore], [ignore])
+
+# and compare (exclude time_per_nth_step column)
+AT_CHECK([../../../NumericalDiff --column_threshold time_per_nth_step 1e16 absolute -- run.csv ${abs_top_srcdir}/tests/regression/DataOptimizer/Datasets/post/run-twospirals.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
 

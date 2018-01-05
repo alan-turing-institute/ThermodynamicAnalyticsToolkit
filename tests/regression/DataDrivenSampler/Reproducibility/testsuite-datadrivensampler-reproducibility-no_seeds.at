@@ -45,8 +45,8 @@ AT_CHECK([../../../DDSampler \
 	--step_width 0.03
 ], 0, [stdout], [stderr])
 
-# now compare
-AT_CHECK([diff run-first.csv run-second.csv], 1, [ignore], [ignore])
+# now compare (exclude time_per_nth_step column)
+AT_CHECK([../../../NumericalDiff --column_threshold time_per_nth_step 1e16 absolute -- run-first.csv run-second.csv], 1, [ignore], [ignore])
 
 AT_CLEANUP
 
