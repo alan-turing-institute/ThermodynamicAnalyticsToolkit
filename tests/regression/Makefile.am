@@ -89,8 +89,14 @@ EXTRA_DIST = \
 	atlocal.in \
 	package.m4 \
 	$(TESTSCRIPTS) \
+	DataDrivenExplorer \
 	DataDrivenSampler \
 	DataOptimizer \
+	DatasetParser \
+	DatasetWriter \
+	InputSpaceSampler \
+	LossFunctionSampler \
+	NumericalDiff \
 	TrajectoryAnalyser
 
 max_jobs = 4
