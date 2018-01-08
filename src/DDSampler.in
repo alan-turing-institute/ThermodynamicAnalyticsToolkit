@@ -10,7 +10,8 @@ import argparse
 import time
 
 from DataDrivenSampler.common import add_common_options_to_parser, add_data_options_to_parser, \
-        add_model_options_to_parser, get_filename_from_fullpath, react_to_common_options
+        add_model_options_to_parser, add_prior_options_to_parser, get_filename_from_fullpath, \
+        react_to_common_options
 from DataDrivenSampler.models.model import model
 from DataDrivenSampler.runtime.runtime import runtime
 
@@ -27,6 +28,7 @@ def parse_parameters():
     add_common_options_to_parser(parser)
     add_data_options_to_parser(parser)
     add_model_options_to_parser(parser)
+    add_prior_options_to_parser(parser)
 
     # please adhere to alphabetical ordering
     parser.add_argument('--friction_constant', type=float, default=0.,
@@ -37,14 +39,6 @@ def parse_parameters():
         help='Inverse temperature that scales the gradients')
     parser.add_argument('--max_steps', type=int, default=1000,
         help='Number of steps to run trainer.')
-    parser.add_argument('--prior_factor', type=float, default=None,
-        help='Enforce a prior by constraining parameters, this scales the wall repelling force')
-    parser.add_argument('--prior_lower_boundary', type=float, default=None,
-        help='Enforce a prior by constraining parameters from below with a linear force')
-    parser.add_argument('--prior_power', type=float, default=None,
-        help='Enforce a prior by constraining parameters, this sets the power of the wall repelling force')
-    parser.add_argument('--prior_upper_boundary', type=float, default=None,
-        help='Enforce a prior by constraining parameters from above with a linear force')
     parser.add_argument('--sampler', type=str, default="GeometricLangevinAlgorithm_1stOrder",
         help='Choose the sampler to use for sampling: ' \
         + 'GeometricLangevinAlgorithm_1stOrder, GeometricLangevinAlgorithm_2ndOrder,' \

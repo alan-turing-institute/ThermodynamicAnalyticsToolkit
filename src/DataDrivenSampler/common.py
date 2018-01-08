@@ -139,6 +139,21 @@ def add_data_options_to_parser(parser):
         help='Names of CSV files to parse input data from')
 
 
+def add_prior_options_to_parser(parser):
+    """ Adding options for setting up the prior enforcing to argparse
+
+    :param parser: argparse's parser object
+    """
+    parser.add_argument('--prior_factor', type=float, default=None,
+        help='Enforce a prior by constraining parameters, this scales the wall repelling force')
+    parser.add_argument('--prior_lower_boundary', type=float, default=None,
+        help='Enforce a prior by constraining parameters from below with a linear force')
+    parser.add_argument('--prior_power', type=float, default=None,
+        help='Enforce a prior by constraining parameters, this sets the power of the wall repelling force')
+    parser.add_argument('--prior_upper_boundary', type=float, default=None,
+        help='Enforce a prior by constraining parameters from above with a linear force')
+
+
 def add_model_options_to_parser(parser):
     """ Adding options common to both sampler and optimizer to argparse
     object for specifying the model.
