@@ -190,10 +190,13 @@ class HamiltonianMonteCarloSampler(SGLDSampler):
             with tf.control_dependencies([state_ops.assign_add(var, scaled_momentum)]):
                 return tf.identity(old_total_energy_t)
 
-        criterion_block_t = tf.cond(
-            tf.equal(tf.mod(current_step_t, num_steps_t), 0),
-            accept_reject_block, step_block)
+        # make sure virial and gradients are evaluated before we update variables
+        with tf.control_dependencies([virial_global_t, gradient_global_t]):
+            criterion_block_t = tf.cond(
+                tf.equal(tf.mod(current_step_t, num_steps_t), 0),
+                accept_reject_block, step_block)
 
+        # note: these are evaluated in any order, use control_dependencies if required
         return control_flow_ops.group(*([momentum_criterion_block_t, criterion_block_t,
                                         virial_global_t, gradient_global_t,
                                         momentum_global_t, kinetic_energy_t]))
