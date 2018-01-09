@@ -28,7 +28,7 @@ AT_CHECK([../../../DatasetWriter \
 	--train_test_ratio 0 \
 	--test_data_file testset.csv
 ], 0, [stdout], [stderr])
-AT_CHECK([diff testset.csv ${abs_top_srcdir}/tests/regression/DatasetWriter/Datasets/post/testset-foursquares.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff -- testset.csv ${abs_top_srcdir}/tests/regression/DatasetWriter/Datasets/post/testset-foursquares.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
 
