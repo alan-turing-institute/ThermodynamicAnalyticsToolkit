@@ -23,6 +23,10 @@ from DataDrivenSampler.version import get_package_version, get_build_hash
 
 FLAGS = None
 
+output_width=8
+output_precision=8
+
+
 def parse_parameters():
     """ Sets up the argument parser for parsing command line parameters into dictionary
 
@@ -136,11 +140,15 @@ def main(_):
             assert( math.fabs(biases_eval[i] - biases_vals[i]) < 1e-6 )
 
         if FLAGS.csv_file is not None:
-            print_row = []
-            print_row.append(current_step)
-            print_row.append(loss_eval[0])
-            print_row.extend(weights_vals[:])
-            print_row.extend(biases_vals[:])
+            print_row = [current_step] \
+                        + ['{:{width}.{precision}e}'.format(loss_eval[0], width=output_width,
+                                                            precision=output_precision)] \
+                        + ['{:{width}.{precision}e}'.format(weight, width=output_width,
+                                                            precision=output_precision)
+                                                            for weight in weights_vals[:]] \
+                        + ['{:{width}.{precision}e}'.format(bias, width=output_width,
+                                                            precision=output_precision)
+                                                            for bias in biases_vals[:]]
             csv_writer.writerow(print_row)
 
         return loss_eval[0]

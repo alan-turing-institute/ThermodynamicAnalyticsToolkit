@@ -23,6 +23,10 @@ from DataDrivenSampler.version import get_package_version, get_build_hash
 
 FLAGS = None
 
+output_width=8
+output_precision=8
+
+
 def parse_parameters():
     """ Sets up the argument parser for parsing command line parameters into dictionary
 
@@ -163,9 +167,13 @@ def main(_):
             feed_dict=feed_dict)
 
         if FLAGS.csv_file is not None:
-            print_row = [current_step]
-            print_row.extend(np.asarray(batch_xs[0]))
-            print_row.extend(np.asarray(label[0]))
+            print_row = [current_step] \
+                        + ['{:{width}.{precision}e}'.format(feature, width=output_width,
+                                                            precision=output_precision)
+                                                            for feature in np.asarray(batch_xs[0])] \
+                        + ['{:{width}.{precision}e}'.format(label, width=output_width,
+                                                            precision=output_precision)
+                                                            for label in np.asarray(label[0])]
             csv_writer.writerow(print_row)
 
     if FLAGS.trajectory_file is None:
