@@ -37,8 +37,13 @@ AT_CHECK([../../../DDSampler \
 ], 0, [stdout], [stderr])
 
 # now compare (exclude time_per_nth_step column)
-AT_CHECK([../../../NumericalDiff --column_threshold time_per_nth_step 1e16 absolute -- run-SGLD.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-SGLD.csv], 0, [ignore], [ignore])
-AT_CHECK([diff trajectory-SGLD.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-SGLD.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff \
+    --general_threshold 2e-7 relative \
+    --column_threshold time_per_nth_step 1e16 absolute -- \
+    run-SGLD.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-SGLD.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff \
+    --general_threshold 2e-7 relative -- \
+    trajectory-SGLD.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-SGLD.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
 

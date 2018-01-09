@@ -38,8 +38,13 @@ AT_CHECK([../../../DDSampler \
 ], 0, [stdout], [stderr])
 
 # now compare (exclude time_per_nth_step column)
-AT_CHECK([../../../NumericalDiff --column_threshold time_per_nth_step 1e16 absolute -- run-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-HMC.csv], 0, [ignore], [ignore])
-AT_CHECK([diff trajectory-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-HMC.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff \
+    --general_threshold 2e-7 relative \
+    --column_threshold time_per_nth_step 1e16 absolute -- \
+    run-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-HMC.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff \
+    --general_threshold 2e-7 relative -- \
+    trajectory-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-HMC.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
 
@@ -66,8 +71,13 @@ AT_CHECK([../../../DDSampler \
 ], 0, [stdout], [stderr])
 
 # now compare
-AT_CHECK([../../../NumericalDiff --column_threshold time_per_nth_step 1e16 absolute -- run-HMC-hidden.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-HMC-hidden.csv], 0, [ignore], [ignore])
-AT_CHECK([diff trajectory-HMC-hidden.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-HMC-hidden.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff \
+    --general_threshold 2e-7 relative \
+    --column_threshold time_per_nth_step 1e16 absolute -- \
+    run-HMC-hidden.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-HMC-hidden.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff \
+    --general_threshold 2e-7 relative -- \
+    trajectory-HMC-hidden.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-HMC-hidden.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
 
