@@ -46,6 +46,9 @@ TESTSCRIPTS += \
 	$(srcdir)/DataOptimizer/Options/testsuite-dataoptimizer-options-every_nth.at \
 	$(srcdir)/DataOptimizer/Options/testsuite-dataoptimizer-options-sql_db.at \
 	$(srcdir)/DataOptimizer/Options/testsuite-dataoptimizer-options-step_width.at \
+	$(srcdir)/DataOptimizer/Prior/testsuite-dataoptimizer-prior.at \
+	$(srcdir)/DataOptimizer/Prior/testsuite-dataoptimizer-prior-lower_upper_boundary.at \
+	$(srcdir)/DataOptimizer/Prior/testsuite-dataoptimizer-prior-tethering.at \
 	$(srcdir)/DataOptimizer/Reproducibility/testsuite-dataoptimizer-reproducibility-given_seeds.at \
 	$(srcdir)/DataOptimizer/Reproducibility/testsuite-dataoptimizer-reproducibility-no_seeds.at \
 	$(srcdir)/DataOptimizer/SavingRestoring/testsuite-dataoptimizer-saving_restoring.at \

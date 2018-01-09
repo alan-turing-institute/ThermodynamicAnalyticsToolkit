@@ -10,7 +10,8 @@ import argparse
 import time
 
 from DataDrivenSampler.common import add_common_options_to_parser, add_data_options_to_parser, \
-        add_model_options_to_parser, get_filename_from_fullpath, react_to_common_options
+        add_model_options_to_parser, add_prior_options_to_parser, \
+        get_filename_from_fullpath, react_to_common_options
 from DataDrivenSampler.models.model import model
 from DataDrivenSampler.runtime.runtime import runtime
 
@@ -27,6 +28,7 @@ def parse_parameters():
     add_common_options_to_parser(parser)
     add_data_options_to_parser(parser)
     add_model_options_to_parser(parser)
+    add_prior_options_to_parser(parser)
 
     # please adhere to alphabetical ordering
     parser.add_argument('--max_steps', type=int, default=1000,

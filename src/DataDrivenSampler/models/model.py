@@ -195,10 +195,8 @@ class model:
             names, values = self.split_parameters_as_names_values(self.FLAGS.fix_parameters)
             fixed_variables = self.fix_parameters(names)
 
-        if setup == "train":
-            self.nn.add_train_method(loss, optimizer_method=self.FLAGS.optimizer)
-        elif setup == "sample":
-            prior = {}
+        prior = {}
+        try:
             if self.FLAGS.prior_factor is not None:
                 prior["factor"] = self.FLAGS.prior_factor
             if self.FLAGS.prior_lower_boundary is not None:
@@ -207,6 +205,11 @@ class model:
                 prior["power"] = self.FLAGS.prior_power
             if self.FLAGS.prior_upper_boundary is not None:
                 prior["upper_boundary"] = self.FLAGS.prior_upper_boundary
+        except AttributeError:
+            pass
+        if setup == "train":
+            self.nn.add_train_method(loss, optimizer_method=self.FLAGS.optimizer, prior=prior)
+        elif setup == "sample":
             self.nn.add_sample_method(loss, sampling_method=self.FLAGS.sampler, seed=self.FLAGS.seed, prior=prior)
         else:
             print("Not adding sample or train method.")
