@@ -152,7 +152,9 @@ def main(_):
                     header.append("ev_"+str(i))
                 csv_writer, csv_file = setup_csv_file(FLAGS.diffusion_matrix_file, header)
                 for i in range(np.shape(vectors)[0]):
-                    csv_writer.writerow([i, loss[i]] \
+                    csv_writer.writerow([i] \
+                        +['{:{width}.{precision}e}'.format(loss[i], \
+                            width=output_width, precision=output_precision)] \
                         +['{:{width}.{precision}e}'.format(kernel_diff[i,0], \
                             width=output_width, precision=output_precision)] \
                         +['{:{width}.{precision}e}'.format(x, \
@@ -191,7 +193,9 @@ def main(_):
                     csv_writer, csv_file = setup_csv_file(FLAGS.landmark_prefix+"-ev_"+str(ev_index)+".csv", header)
                     for k in range(np.shape(landmarks[ev_index])[0]):
                         i = landmarks[ev_index][k]
-                        csv_writer.writerow([steps[i], loss[i]]
+                        csv_writer.writerow([steps[i]]
+                            +['{:{width}.{precision}e}'.format(loss[i], \
+                                width=output_width, precision=output_precision)] \
                             +['{:{width}.{precision}e}'.format(q[i,0], \
                                 width=output_width, precision=output_precision)] \
                             +['{:{width}.{precision}e}'.format(x, \
