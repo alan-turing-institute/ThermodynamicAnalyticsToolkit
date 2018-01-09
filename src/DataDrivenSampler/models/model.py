@@ -565,7 +565,7 @@ class model:
             gradients_t = tf.get_variable("gradients", dtype=tf.float64)
             zero_gradients = gradients_t.assign(0.)
             virials_t = tf.get_variable("virials", dtype=tf.float64)
-            zero_virials = gradients_t.assign(0.)
+            zero_virials = virials_t.assign(0.)
 
         placeholder_nodes = self.nn.get_dict_of_nodes(["step_width", "y_"])
         test_nodes = self.nn.get_list_of_nodes(["merged", "train_step", "accuracy", "global_step",
