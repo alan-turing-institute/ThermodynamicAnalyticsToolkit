@@ -19,5 +19,10 @@ with open("dataset-twoclusters.csv", 'w', newline='') as data_file:
     header = ["x"+str(i+1) for i in range(len(ds.xs[0]))]+["label"]
     csv_writer.writerow(header)
     for x, y in zip(ds.xs, ds.ys):
-        csv_writer.writerow(list(x)+[y[0]])
+        csv_writer.writerow(
+            ['{:{width}.{precision}e}'.format(val, width=8,
+                                              precision=8)
+             for val in list(x)] \
+            + ['{:{width}.{precision}e}'.format(y[0], width=8,
+                                                precision=8)])
     data_file.close()

@@ -32,7 +32,7 @@ AT_KEYWORDS([example python writing_data])
 AT_CHECK([../../run \
 	${abs_top_srcdir}/doc/userguide/python/writing_data.py
 ], 0, [stdout], [stderr])
-AT_CHECK([diff dataset-twoclusters.csv ${abs_top_srcdir}/tests/userguide/python/post/dataset-twoclusters.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff -- dataset-twoclusters.csv ${abs_top_srcdir}/tests/userguide/python/post/dataset-twoclusters.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
 
