@@ -4,6 +4,6 @@ DDSOptimizer \
     --loss mean_squared \
     --max_steps 1000 \
     --optimizer GradientDescent \
-    --save_model model.ckpt.meta \
+    --save_model `pwd`/model.ckpt.meta \
     --seed 426 \
     --step_width 1e-2

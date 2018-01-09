@@ -17,7 +17,7 @@
 #
 ### test on option friction_constant
 
-AT_SETUP([Sampler Sampler Options - friction constant])
+AT_SETUP([Sampler Options - friction constant])
 AT_KEYWORDS([options ddsampler friction_constant])
 
 # dataset prepared as follows:

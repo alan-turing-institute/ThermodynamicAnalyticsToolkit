@@ -593,8 +593,11 @@ cost of all necessary servicing, repair, or correction.</remark>
         parameters of the network using a step width/learning rate of 0.01 and
         do this for 1000 steps after which it stops and writes the resulting neural
         network in a TensorFlow-specific format to a set of files, one of which
-        is called <command>model.cpkt.meta</command> (and the other filenames
+        is called <command>model.ckpt.meta</command> (and the other filenames
         are derived from this).</para>
+        <note>Since Tensorfloe 1.4 an absolute path is required for the storing 
+        the model. In the example we use the current directory returned by the
+        unix command <command>pwd</command>.</note>
         <para>In case you have read the quickstart tutorial on the Python
         interface before, then the names of the command-line option will
         probably remind you of the variables in the FLAGS structure.</para>

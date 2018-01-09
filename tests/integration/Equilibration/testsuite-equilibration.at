@@ -20,6 +20,7 @@
 AT_SETUP([Equilibration - Create data, optimize, then sample])
 AT_KEYWORDS([datasetwriter ddsoptimizer ddsampler save_model restore_model])
 
+DIR=`pwd`
 # run 1: Create dataset
 AT_CHECK([../../../DatasetWriter \
 	--data_type 2 \
@@ -36,7 +37,7 @@ AT_CHECK([../../../DDSOptimizer \
 	--max_steps 10 \
 	--optimizer GradientDescent \
 	--run_file run-save_model.csv \
-	--save_model model.cpkt \
+	--save_model ${DIR}/model.ckpt \
 	--seed 426 \
 	--step_width 1e-1
 ], 0, [stdout], [stderr])
@@ -49,7 +50,7 @@ AT_CHECK([../../../DDSampler \
 	--inverse_temperature 1 \
 	--max_steps 10 \
 	--sampler GeometricLangevinAlgorithm_1stOrder \
-	--restore_model model.cpkt \
+	--restore_model ${DIR}/model.ckpt \
 	--run_file run-restore_model.csv \
 	--seed 426 \
 	--step_width 1e-1

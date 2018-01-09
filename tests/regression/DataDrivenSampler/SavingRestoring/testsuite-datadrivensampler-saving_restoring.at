@@ -23,6 +23,8 @@ AT_KEYWORDS([ddsampler save_model restore_model])
 # dataset prepared as follows:
 # DatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
 
+# we need absolute path for storing model (since tensorfloe 1.4)
+DIR=`pwd`
 # run 1
 AT_CHECK([../../../DDSampler \
     --batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/SavingRestoring/pre/dataset-twoclusters.csv \
@@ -32,7 +34,7 @@ AT_CHECK([../../../DDSampler \
 	--max_steps 10 \
 	--run_file run-save_model.csv \
 	--sampler GeometricLangevinAlgorithm_1stOrder \
-	--save_model model.cpkt \
+	--save_model ${DIR}/model.ckpt \
 	--seed 426 \
 	--step_width 1e-1
 ], 0, [stdout], [stderr])
@@ -44,7 +46,7 @@ AT_CHECK([../../../DDSampler \
 	--friction_constant 1 \
 	--inverse_temperature 1 \
 	--max_steps 10 \
-	--restore_model model.cpkt \
+	--restore_model ${DIR}/model.ckpt \
 	--run_file run-restore_model.csv \
 	--sampler GeometricLangevinAlgorithm_1stOrder \
 	--seed 426 \
