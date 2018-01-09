@@ -109,6 +109,17 @@ def compute_diffusion_maps(traj, beta, loss, nrOfFirstEigenVectors,
         print("Unknown diffusion map method "+method)
         sys.exit(255)
 
+    # flip signs of ev to maximize non-negative entries (does not change ev property)
+    for index in range(len(lambdas)):
+        neg_signs = (X_se[:, index] < 0).sum()
+        if neg_signs > X_se[:, index].size / 2:
+            # print("Negative signs: " + str(neg_signs) + ", dim: " + str(X_se[:, index].size)+", flipping.")
+            X_se[:, index] = np.negative(X_se[:, index])
+        if neg_signs == X_se[:, index].size / 2:
+            # exactly half is negative, half is positive, then decide on first comp
+            if X_se[0, index] < 0:
+                X_se[:, index] = np.negative(X_se[:, index])
+
     return X_se, lambdas, qEstimated
 
 
