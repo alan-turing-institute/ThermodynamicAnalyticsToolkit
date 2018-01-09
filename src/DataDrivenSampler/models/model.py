@@ -1,17 +1,18 @@
 from builtins import staticmethod
 
-import tensorflow as tf
+import functools
 import numpy as np
-import sys
-import time
 import pandas as pd
+import sys
+import tensorflow as tf
+import time
 
-from math import sqrt, floor
+from math import sqrt, floor, ceil
 
-from DataDrivenSampler.common import create_input_layer, file_length, \
-    get_filename_from_fullpath, get_list_from_string, get_trajectory_header, \
-    initialize_config_map, create_input_pipeline, setup_run_file, setup_trajectory_file
-from DataDrivenSampler.datasets.classificationdatasets import ClassificationDatasets
+from DataDrivenSampler.common import create_input_layer, decode_csv_line, file_length, \
+    get_csv_defaults, get_list_from_string, get_trajectory_header, \
+    initialize_config_map, \
+    setup_run_file, setup_trajectory_file
 from DataDrivenSampler.models.mock_flags import MockFlags
 from DataDrivenSampler.models.neuralnet_parameters import neuralnet_parameters
 from DataDrivenSampler.models.neuralnetwork import NeuralNetwork
@@ -28,29 +29,26 @@ class model:
         self.config_map = initialize_config_map()
 
         # we train only on size batch and need as many epochs as tests
-        print("Parsing "+str(FLAGS.batch_data_files))
         self.FLAGS.dimension = sum([file_length(filename)
                                     for filename in FLAGS.batch_data_files]) \
                                - len(FLAGS.batch_data_files)
+        print("Parsing "+str(FLAGS.batch_data_files))
         try:
-            max_steps = FLAGS.max_steps
+            FLAGS.max_steps
         except AttributeError:
-            max_steps = 1
-        if FLAGS.batch_size is not None:
-            batch_size = FLAGS.batch_size
-        else:
-            batch_size = 1
-        self.batch_features, self.batch_labels = create_input_pipeline(
-            FLAGS.batch_data_files,
-            batch_size = batch_size,
-            shuffle=False,
-            num_epochs = max_steps,
-            seed = FLAGS.seed)
-        input_dimension = 2
+            FLAGS.max_steps = 1
+        # self.batch_features, self.batch_labels = create_input_pipeline(
+        #     FLAGS.batch_data_files,
+        #     batch_size = batch_size,
+        #     shuffle=False,
+        #     num_epochs = max_steps,
+        #     seed = FLAGS.seed)
+        self.input_dimension = 2
         self.config_map["output_dimension"] = 1
+        self.batch_next = self.create_input_pipeline(FLAGS)
         input_columns = get_list_from_string(FLAGS.input_columns)
 
-        self.xinput, self.x = create_input_layer(input_dimension, input_columns)
+        self.xinput, self.x = create_input_layer(self.input_dimension, input_columns)
 
         self.resources_created = None
 
@@ -60,6 +58,34 @@ class model:
 
         self.run_writer = None
         self.trajectory_writer = None
+
+    def create_input_pipeline(self, FLAGS, shuffle=False):
+        """ This creates an input pipeline using the tf.Dataset module.
+
+        :param FLAGS: parameters
+        :param shuffle: whether to shuffle dataset or not
+        """
+        defaults = get_csv_defaults(
+            input_dimension=self.input_dimension,
+            output_dimension=self.config_map["output_dimension"])
+        #print(defaults)
+        dataset = tf.data.Dataset.from_tensor_slices(FLAGS.batch_data_files)
+        dataset = dataset.flat_map(
+            lambda filename: (
+                tf.data.TextLineDataset(filename)
+                    .skip(1)
+                    .filter(lambda line: tf.not_equal(tf.substr(line, 0, 1), '#'))))
+        dataset = dataset.map(functools.partial(decode_csv_line, defaults=defaults))
+        if shuffle:
+            dataset = dataset.shuffle(seed=FLAGS.seed)
+        dataset = dataset.batch(FLAGS.batch_size)
+        dataset = dataset.repeat(ceil(FLAGS.max_steps*FLAGS.batch_size/FLAGS.dimension))
+        print(dataset.output_shapes)
+        print(dataset.output_types)
+
+        self.iterator = dataset.make_initializable_iterator()
+        return self.iterator.get_next()
+
 
     def reset_parameters(self, FLAGS):
         """ Use to pass a different set of FLAGS controlling training or sampling.
@@ -168,6 +194,11 @@ class model:
                 step_width=step_width,
                 trajectory_file=trajectory_file)
 
+    def reset_dataset(self):
+        """ Re-initializes the dataset for a new run
+        """
+        self.sess.run(self.iterator.initializer)
+
     def init_network(self, filename = None, setup = None):
         """ Initializes the graph, from a stored model if filename is not None.
 
@@ -222,7 +253,11 @@ class model:
                     intra_op_parallelism_threads=self.FLAGS.intra_ops_threads,
                     inter_op_parallelism_threads=self.FLAGS.inter_ops_threads))
 
+        # initialize constants in graph
         self.nn.init_graph(self.sess)
+
+        # initialize dataset iterator
+        self.reset_dataset()
 
         if self.FLAGS.fix_parameters is not None:
             self.assign_parameters(fixed_variables, values)
@@ -376,10 +411,6 @@ class model:
                              old_kinetic_energy_t.assign(var_kin_t)]
             HMC_set_all_nodes = [total_energy_t.assign(var_total_t)]+HMC_set_nodes
 
-        # Start populating the filename queue.
-        coord = tf.train.Coordinator()
-        threads = tf.train.start_queue_runners(coord=coord, sess=self.sess)
-
         # zero rejection rate before sampling start
         check_accepted, check_rejected = self.sess.run([zero_accepted, zero_rejected])
         assert(check_accepted == 0)
@@ -391,14 +422,19 @@ class model:
         for i in range(self.FLAGS.max_steps):
             # fetch next batch of data
             try:
-                batch_xs, batch_ys = self.sess.run([self.batch_features, self.batch_labels])
+                batch_data = self.sess.run(self.batch_next)
             except tf.errors.OutOfRangeError:
-                print('End of epoch reached too early!')
-                sys.exit(255)
+                self.reset_dataset()
+                try:
+                    batch_data = self.sess.run(self.batch_next)
+                except tf.errors.OutOfRangeError:
+                    print('Dataset is too small for one batch!')
+                    sys.exit(255)
 
             # place in feed dict
             feed_dict = {
-                self.xinput: batch_xs, placeholder_nodes["y_"]: batch_ys,
+                self.xinput: batch_data[0],
+                placeholder_nodes["y_"]: batch_data[1],
                 placeholder_nodes["step_width"]: self.FLAGS.step_width,
                 placeholder_nodes["inverse_temperature"]: self.FLAGS.inverse_temperature,
                 placeholder_nodes["friction_constant"]: self.FLAGS.friction_constant,
@@ -554,9 +590,6 @@ class model:
                 # print('y at step %s: %s' % (i, str(y_eval[0:9].transpose())))
         print("SAMPLED.")
 
-        coord.request_stop()
-        coord.join(threads)
-
         return run_info, trajectory
 
     def train(self, return_run_info = False, return_trajectories = False):
@@ -607,25 +640,25 @@ class model:
                 np.zeros((steps, no_params)),
                 columns=header)
 
-        # Start populating the filename queue.
-        coord = tf.train.Coordinator()
-        threads = tf.train.start_queue_runners(coord=coord, sess=self.sess)
-
         print("Starting to train")
         last_time = time.process_time()
         for i in range(self.FLAGS.max_steps):
             #print("Current step is " + str(i))
 
-            # fetch next batch of data
             try:
-                batch_xs, batch_ys = self.sess.run([self.batch_features, self.batch_labels])
+                batch_data = self.sess.run(self.batch_next)
             except tf.errors.OutOfRangeError:
-                print('End of epoch reached too early!')
-                sys.exit(255)
+                self.reset_dataset()
+                try:
+                    batch_data = self.sess.run(self.batch_next)
+                except tf.errors.OutOfRangeError:
+                    print('Dataset is too small for one batch!')
+                    sys.exit(255)
 
             # place in feed dict
             feed_dict = {
-                self.xinput: batch_xs, placeholder_nodes["y_"]: batch_ys,
+                self.xinput: batch_data[0],
+                placeholder_nodes["y_"]: batch_data[1],
                 placeholder_nodes["step_width"]: self.FLAGS.step_width
             }
             if self.FLAGS.dropout is not None:
@@ -685,8 +718,6 @@ class model:
             # print('y_ at step %s: %s' % (i, str(y_true_eval[0:9].transpose())))
             # print('y at step %s: %s' % (i, str(y_eval[0:9].transpose())))
         print("TRAINED down to loss %s and accuracy %s." % (loss_eval, acc))
-        coord.request_stop()
-        coord.join(threads)
 
         return run_info, trajectory
 

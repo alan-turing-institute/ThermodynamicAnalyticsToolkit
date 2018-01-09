@@ -1,8 +1,10 @@
+import collections
 import csv
+import numpy as np
 import os
+import pandas as pd
 import sys
 import tensorflow as tf
-import pandas as pd
 
 from DataDrivenSampler.datasets.classificationdatasets import ClassificationDatasets as DatasetGenerator
 from DataDrivenSampler.version import get_package_version, get_build_hash
@@ -254,56 +256,35 @@ def read_from_csv(filename_queue):
     return features, label
 
 
-def create_input_pipeline(filenames, batch_size, shuffle=False, num_epochs=None, seed=None):
-    """ creates a Tensorflow input pipeline given some files and
-    a batch_size
+def decode_csv_line(line, defaults):
+    """Convert a csv line into a (features_dict,label) pair."""
+    # Decode the line to a tuple of items based on the types of
+    # csv_header.values().
+    items = tf.decode_csv(line, list(defaults.values()))
 
-    :param filenames: name of file
-    :param batch_size: size of each batch to be delivered
-    :param shuffle: whether to shuffle dataset or not
-    :param num_epochs: number of maximum epochs, None means no limit
-    :param seed: random number seed used for reshuffling
-    :return: Tensorflow nodes to receive features and labels
+    # reshape into proper tensors
+    features = items[0:-1]
+    label = tf.reshape(tf.convert_to_tensor(items[-1], dtype=tf.int32), [1])
+
+    # return last element as label, rest as features
+    return features, label
+
+
+def get_csv_defaults(input_dimension, output_dimension=1):
+    """ Return the defaults for a csv line with input features and output labels.
+
+    :param input_dimension: number of features
+    :param output_dimension: number of labels
     """
-    filesize=sum([file_length(filename) for filename in filenames])
-    if filesize < 1e6 and len(filenames) == 1:
-        # parse file and have dataset in memory
-        df = pd.read_csv(filenames[0], sep=',', header=0)
-        feature_header = list(df)
-        assert( 'label' in feature_header )
-        feature_header.remove('label')
-        features=df.loc[:,feature_header].values
-        labels=df.loc[:,['label']].values #np.asarray
-
-        # Tell TensorFlow that the model will be built into the default Graph.
-        with tf.name_scope('input'):
-            # Input data, pin to CPU because rest of pipeline is CPU-only
-            with tf.device('/cpu:0'):
-                input_features = tf.constant(features)
-                input_labels = tf.constant(labels)
-
-            feature, label = tf.train.slice_input_producer(
-                [input_features, input_labels], shuffle=shuffle,
-                num_epochs=num_epochs)
+    defaults = collections.OrderedDict([])
+    for i in range(input_dimension):
+        defaults.update({"x"+str(i+1): [0.]})
+    if output_dimension > 1:
+        for i in range(input_dimension):
+            defaults.update({"label"+str(i+1): [0]})
     else:
-        filename_queue = tf.train.string_input_producer(filenames,
-                                                        num_epochs=num_epochs,
-                                                        shuffle=shuffle,
-                                                        seed=seed)
-        feature, label = read_from_csv(filename_queue)
-
-    print("Using batch size %d" % (batch_size))
-    if shuffle:
-        min_after_dequeue = 30
-        capacity = min_after_dequeue + 10*batch_size
-        feature_batch, label_batch = tf.train.shuffle_batch(
-            [feature, label], batch_size=batch_size, capacity=capacity,
-            min_after_dequeue=min_after_dequeue, seed=seed)
-    else:
-        capacity = batch_size
-        feature_batch, label_batch = tf.train.batch(
-            [feature, label], batch_size=batch_size, capacity=capacity)
-    return feature_batch, label_batch
+        defaults.update({"label": [0]})
+    return defaults
 
 
 def create_input_layer(input_dimension, input_list):

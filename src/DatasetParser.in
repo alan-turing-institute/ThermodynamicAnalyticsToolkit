@@ -11,38 +11,40 @@ import sys, getopt
 sys.path.insert(1, '@pythondir@')
 
 import argparse
+import functools
 import tensorflow as tf
+import numpy as np
 
-from DataDrivenSampler.common import file_length, create_input_pipeline, \
-    react_to_common_options
+import collections
 
+from DataDrivenSampler.common import file_length, \
+    decode_csv_line, get_csv_defaults, react_to_common_options
 
 def main(_):
-    batch_file_length = sum([file_length(filename) for filename in FLAGS.batch_data_files]) \
-                            - len(FLAGS.batch_data_files)
-    batch_examples, batch_labels = create_input_pipeline(
-        FLAGS.batch_data_files,
-        batch_size=batch_file_length,
-        num_epochs=1, seed=FLAGS.seed)
+
+    defaults = get_csv_defaults(input_dimension=2)
+    dataset = tf.data.Dataset.from_tensor_slices(FLAGS.batch_data_files)
+    dataset = dataset.flat_map(
+        lambda filename: (
+            tf.data.TextLineDataset(filename)
+            .skip(1)
+            .filter(lambda line: tf.not_equal(tf.substr(line, 0,1), '#'))))
+    dataset = dataset.map(functools.partial(decode_csv_line, defaults=defaults))
+
+    iterator = dataset.make_initializable_iterator()
+    next_element = iterator.get_next()
 
     sess = tf.Session()
     init_op = tf.group(tf.local_variables_initializer(), tf.global_variables_initializer())
     sess.run(init_op)
-
-    # Start populating the filename queue.
-    coord = tf.train.Coordinator()
-    threads = tf.train.start_queue_runners(coord=coord, sess=sess)
+    sess.run(iterator.initializer)
 
     try:
-        while not coord.should_stop():
-            batch_batch_examples, batch_batch_labels = sess.run([batch_examples, batch_labels])
-            print(batch_batch_examples)
+        while True:
+            features = sess.run(next_element)
+            print(str(features[0])+", "+str(features[1]))
     except tf.errors.OutOfRangeError:
         print('Done training, epoch reached')
-    finally:
-        coord.request_stop()
-
-    coord.join(threads)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

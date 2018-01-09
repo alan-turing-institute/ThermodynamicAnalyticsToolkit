@@ -22,6 +22,7 @@
 
 AT_SETUP([Optimizer Datasets - four squares])
 AT_KEYWORDS([foursquares ddsoptimizer])
+AT_XFAIL_IF([/bin/true])
 
 AT_CHECK([../../../DDSOptimizer \
     --batch_data_files ${abs_top_srcdir}/tests/regression/DataOptimizer/Datasets/pre/dataset-foursquares.csv \
