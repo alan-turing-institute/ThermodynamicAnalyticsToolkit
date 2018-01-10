@@ -423,7 +423,7 @@ class model:
                 else:
                     self.sess.run(HMC_set_nodes, feed_dict=HMC_set_dict)
                 loss_eval, total_eval, kin_eval = self.sess.run(HMC_eval_nodes, feed_dict=feed_dict)
-                print("#%d: loss is %lg, total is %lg, kinetic is %lg" % (i, loss_eval, total_eval, kin_eval))
+                #print("#%d: loss is %lg, total is %lg, kinetic is %lg" % (i, loss_eval, total_eval, kin_eval))
 
             # zero kinetic energy
             if self.FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder",
