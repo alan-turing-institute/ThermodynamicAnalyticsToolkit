@@ -1,15 +1,5 @@
 SUBDIRS = DataDrivenSampler
 
-FORCE:
-$(srcdir)/.git-version: FORCE
-	@if (test -d $(top_srcdir)/.git && cd $(srcdir) \
-		&& { git describe --dirty --always || git describe; } ) > .git-version-t 2>/dev/null \
-		&& ! diff .git-version-t $(srcdir)/.git-version >/dev/null 2>&1; then \
-		mv -f .git-version-t $(srcdir)/.git-version; \
-	else \
-		rm -f .git-version-t; \
-	fi
-
 bin_SCRIPTS = \
 	DatasetParser \
 	DatasetWriter \
@@ -21,8 +11,8 @@ bin_SCRIPTS = \
 	NumericalDiff
 
 CLEANFILES = $(bin_SCRIPTS)
+
 EXTRA_DIST = \
-	$(srcdir)/.git-version \
 	DatasetParser.in \
 	DatasetWriter.in \
 	DDSampler.in \
@@ -68,11 +58,3 @@ LossFunctionSampler: LossFunctionSampler.in Makefile
 NumericalDiff: NumericalDiff.in Makefile
 	$(do_substitution) < $(srcdir)/NumericalDiff.in > NumericalDiff
 	chmod +x NumericalDiff
-
-$(srcdir)/DataDrivenSampler/version.py: $(srcdir)/.git-version
-	echo "def get_package_name():" >$@
-	echo "   return \"$(PACKAGE_NAME)\"" >>$@
-	echo "def get_package_version():" >>$@
-	echo "   return \"$(PACKAGE_VERSION)\"" >>$@
-	echo "def get_build_hash():" >>$@
-	echo "   return \""`cat $(srcdir)/.git-version`"\"" >>$@

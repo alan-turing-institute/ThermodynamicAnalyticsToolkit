@@ -9,9 +9,10 @@ DataDrivenSampler_PYTHON = \
 DataDrivenSamplerdir = $(pythondir)/DataDrivenSampler
 
 FORCE:
+
 $(srcdir)/.git-version: FORCE
 	@if (test -d $(top_srcdir)/.git && cd $(srcdir) \
-		&& { git describe --dirty --always || git describe; } ) > .git-version-t 2>/dev/null \
+		&& { git describe --dirty --long || git describe --long; } ) > .git-version-t 2>/dev/null \
 		&& ! diff .git-version-t $(srcdir)/.git-version >/dev/null 2>&1; then \
 		mv -f .git-version-t $(srcdir)/.git-version; \
 	else \
