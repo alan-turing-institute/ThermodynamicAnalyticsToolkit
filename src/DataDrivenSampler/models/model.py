@@ -614,7 +614,7 @@ class model:
         print("Starting to train")
         last_time = time.process_time()
         for i in range(self.FLAGS.max_steps):
-            print("Current step is " + str(i))
+            #print("Current step is " + str(i))
 
             # fetch next batch of data
             try:
