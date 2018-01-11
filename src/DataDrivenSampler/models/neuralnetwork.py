@@ -194,7 +194,14 @@ class NeuralNetwork(object):
         :param prior: dict with keys factor, lower_boundary and upper_boundary that
                 specifies a wall-repelling force to ensure a prior on the parameters
         """
-        with tf.name_scope('train'):
+        # have this outside scope as it is used by both training and learning
+        if 'global_step' not in self.summary_nodes.keys():
+            global_step = tf.Variable(0, trainable=False, name="global_step")
+            tf.add_to_collection("Variables_to_Save", global_step)
+            self.summary_nodes['global_step'] = global_step
+        else:
+            global_step = self.summary_nodes['global_step']
+        with tf.name_scope('sample'):
             # DON'T add placeholders only sometimes, e.g. when only a specific sampler
             # requires it. Always add them and only sometimes use them!
             step_width = tf.placeholder(tf.float64, name="step_width")
@@ -217,9 +224,6 @@ class NeuralNetwork(object):
             tf.summary.scalar('friction_constant', friction_constant)
             self.placeholder_nodes['friction_constant'] = friction_constant
 
-            global_step = tf.Variable(0, trainable=False, name="global_step")
-            tf.add_to_collection("Variables_to_Save", global_step)
-            self.summary_nodes['global_step'] = global_step
             if sampling_method == "StochasticGradientLangevinDynamics":
                 sampler = SGLDSampler(step_width, inverse_temperature, seed=seed)
             elif sampling_method == "GeometricLangevinAlgorithm_1stOrder":
@@ -253,16 +257,20 @@ class NeuralNetwork(object):
         :param prior: dict with keys factor, lower_boundary and upper_boundary that
                 specifies a wall-repelling force to ensure a prior on the parameters
         """
-        with tf.name_scope('train'):
-            # DON'T add placeholders only sometimes, e.g. when only a specific optimizer
-            # requires it. Always add them and only sometimes use them!
-            step_width = tf.placeholder(tf.float64, name="step_width")
-            tf.summary.scalar('step_width', step_width)
-            self.placeholder_nodes['step_width'] = step_width
-
+        # have this outside scope as it is used by both training and learning
+        if 'global_step' not in self.summary_nodes.keys():
             global_step = tf.Variable(0, trainable=False, name="global_step")
             tf.add_to_collection("Variables_to_Save", global_step)
             self.summary_nodes['global_step'] = global_step
+        else:
+            global_step = self.summary_nodes['global_step']
+        with tf.name_scope('train'):
+            # DON'T add placeholders only sometimes, e.g. when only a specific optimizer
+            # requires it. Always add them and only sometimes use them!
+            step_width = tf.placeholder(tf.float64, name="learning_rate")
+            tf.summary.scalar('learning_rate', step_width)
+            self.placeholder_nodes['learning_rate'] = step_width
+
             if optimizer_method == "GradientDescent":
                 optimizer = GradientDescent(step_width)
             else:

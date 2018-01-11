@@ -703,7 +703,7 @@ class model:
             virials_t = tf.get_variable("virials", dtype=tf.float64)
             zero_virials = virials_t.assign(0.)
 
-        placeholder_nodes = self.nn.get_dict_of_nodes(["step_width", "y_"])
+        placeholder_nodes = self.nn.get_dict_of_nodes(["learning_rate", "y_"])
         test_nodes = self.nn.get_list_of_nodes(["merged", "train_step", "accuracy", "global_step",
                                                 "loss", "y_", "y"])+[gradients_t]
 
@@ -746,7 +746,7 @@ class model:
             feed_dict = {
                 self.xinput: features,
                 placeholder_nodes["y_"]: labels,
-                placeholder_nodes["step_width"]: self.FLAGS.step_width
+                placeholder_nodes["learning_rate"]: self.FLAGS.step_width
             }
             if self.FLAGS.dropout is not None:
                 feed_dict.update({placeholder_nodes["keep_prob"] : self.FLAGS.dropout})
