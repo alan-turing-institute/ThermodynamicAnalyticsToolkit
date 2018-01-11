@@ -27,6 +27,11 @@ class model:
 
     """
     def __init__(self, FLAGS):
+        # for allowing just reusing a new instance of this class, make sure
+        # that we also reset the default graph before we start setting up
+        # the neural network
+        tf.reset_default_graph()
+
         self.FLAGS = FLAGS
         self.config_map = initialize_config_map()
 
