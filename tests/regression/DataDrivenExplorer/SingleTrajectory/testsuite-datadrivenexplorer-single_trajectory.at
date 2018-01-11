@@ -34,7 +34,8 @@ AT_CHECK([../../../DDSExplorer \
 	--max_legs 25 \
 	--max_steps 20 \
 	--number_of_eigenvalues 1 \
-	--number_of_parallel_trajectories 1 \
+	--number_of_parallel_trajectories 0 \
+	--optimizer GradientDescent \
 	--run_file run-single.csv \
 	--step_width 1e-2 \
 	--sampler GeometricLangevinAlgorithm_1stOrder \
@@ -43,6 +44,8 @@ AT_CHECK([../../../DDSExplorer \
 	--use_reweighting 0
 ], 0, [stdout], [stderr])
 
-AT_CHECK([diff run-single.csv ${abs_top_srcdir}/tests/regression/DataDrivenExplorer/SingleTrajectory/post/run-single.csv], 1, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff \
+    --column_drop time_per_nth_step -- \
+    run-single.csv ${abs_top_srcdir}/tests/regression/DataDrivenExplorer/SingleTrajectory/post/run-single.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
