@@ -2,6 +2,8 @@ import tensorflow as tf
 
 from DataDrivenSampler.models.neuralnet_parameters import neuralnet_parameters
 from DataDrivenSampler.exploration.trajectoryjob_analyze import TrajectoryJob_analyze
+from DataDrivenSampler.exploration.trajectoryjob_extract_minimum_candidates import TrajectoryJob_extract_minimium_candidates
+from DataDrivenSampler.exploration.trajectoryjob_prune import TrajectoryJob_prune
 from DataDrivenSampler.exploration.trajectoryjob_run import TrajectoryJob_run
 from collections import deque
 
@@ -20,7 +22,7 @@ class TrajectoryQueue(object):
         self.queue = deque()
 
     def add_analyze_job(self, data_id, parameters, continue_flag):
-        """ Adds an analyze.
+        """ Adds an analyze job to the queue.
 
         :param data_id: id associated with data object for the job
         :param parameters: parameters for analysis
@@ -31,8 +33,33 @@ class TrajectoryQueue(object):
                                             continue_flag=continue_flag)
         self._enqueue_job(analyze_job)
 
+    def add_extract_job(self, data_id, parameters, continue_flag):
+        """ Adds an extract job to the queue.
+
+        :param data_id: id associated with data object for the job
+        :param parameters: parameters for analysis
+        :param continue_flag: flag whether job should spawn more jobs or not
+        """
+        extract_job = TrajectoryJob_extract_minimium_candidates(
+            data_id=data_id,
+            parameters=parameters,
+            continue_flag=continue_flag)
+        self._enqueue_job(extract_job)
+
+    def add_prune_job(self, data_id, network_model, continue_flag):
+        """ Adds a prune job to the queue.
+
+        :param data_id: id associated with data object for the job
+        :param network_model: neural network model
+        :param continue_flag: flag whether job should spawn more jobs or not
+        """
+        prune_job = TrajectoryJob_prune(data_id=data_id,
+                                        network_model=network_model,
+                                        continue_flag=False)
+        self._enqueue_job(prune_job)
+
     def add_run_job(self, data_id, network_model, continue_flag):
-        """ Adds a run_job.
+        """ Adds a run job to the queue.
 
         :param _data_id: id associated with data object for the job
         :param network_model: neural network object for running the graph
@@ -82,14 +109,17 @@ class TrajectoryQueue(object):
         if continue_flag and current_job.job_type == "run":
             print("Adding analyze job")
             self.add_analyze_job(data_id, analyze_object, current_job.continue_flag)
-        elif continue_flag and (current_job.job_type == "analyze"):
-            print("Adding run job")
-            self.add_run_job(data_id, run_object, current_job.continue_flag)
-        elif continue_flag:
-            print("Unknown job type")
-            assert( False )
+        elif current_job.job_type == "analyze":
+            if continue_flag:
+                print("Adding run job")
+                self.add_run_job(data_id, run_object, current_job.continue_flag)
+            elif not updated_data.is_pruned:
+                print("Adding prune job and post analysis")
+                self.add_prune_job(data_id, run_object, False)
+                self.add_extract_job(data_id, analyze_object, False)
+                self.add_analyze_job(data_id, analyze_object, False)
         else:
-            print("Not adding")
+            print("Not adding.")
 
 
     def is_empty(self):

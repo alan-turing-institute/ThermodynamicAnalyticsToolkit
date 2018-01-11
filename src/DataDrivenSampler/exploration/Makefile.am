@@ -3,6 +3,8 @@ DataDrivenSampler_exploration_PYTHON = \
     trajectorydatacontainer.py \
     trajectoryjob.py \
     trajectoryjob_analyze.py \
+    trajectoryjob_extract_minimum_candidates.py \
+    trajectoryjob_prune.py \
     trajectoryjob_run.py \
     trajectoryqueue.py \
 	__init__.py

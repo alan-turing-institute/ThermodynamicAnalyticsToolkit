@@ -28,9 +28,16 @@ class TrajectoryData(object):
         self.trajectory_lines = []
 
         # these are per leg
-        self.legs_at_step = []
+        self.legs_at_step = []  # this gives the real-world trajectory step at each leg
+        self.index_at_leg = []  # this gives the offset to parameters, ... at each leg
         self.diffmap_eigenvectors = []
         self.diffmap_eigenvalues = []
+
+        # candidates for minima
+        self.minimum_candidates = []
+
+        # indicates whether this trajectory is done
+        self.is_pruned = False
 
     def get_id(self):
         """ Return the unique id of this data object
@@ -52,11 +59,10 @@ class TrajectoryData(object):
         :param _trajectory_lines: single pandas dataframe of trajectory line per step
         """
         self.steps.extend(_steps)
+        self.index_at_leg.append( len(self.parameters) )
         self.parameters.extend(_parameters)
         self.losses.extend(_losses)
         self.gradients.extend(_gradients)
-        assert( len(self.parameters) == len(self.losses) )
-        assert( len(self.parameters) == len(self.gradients) )
         # trajectories need to append continuously w.r.t steps
         if (len(self.legs_at_step) > 0):
             print("Last leg ended at "+str(self.legs_at_step[-1])+", next starts at "+str(_steps[0]))
@@ -64,10 +70,25 @@ class TrajectoryData(object):
         self.legs_at_step.append(_steps[-1])
         if _run_lines is not None:
             self.run_lines.append(_run_lines)
-        assert (len(self.legs_at_step) == len(self.run_lines))
         if _trajectory_lines is not None:
             self.trajectory_lines.append(_trajectory_lines)
-            assert( len(self.legs_at_step) == len(self.trajectory_lines) )
+        assert( self.check_size_consistency() )
+
+    def check_size_consistency(self):
+        """ Checks whether the sizes of all the arrays are consistent.
+
+        :return: True - sizes match, False - something is broken
+        """
+        status = True
+        status = status and ( len(self.parameters) == len(self.losses) )
+        status = status and ( len(self.parameters) == len(self.gradients) )
+        status = status and ( len(self.legs_at_step) == len(self.index_at_leg) )
+        status = status and ( (len(self.legs_at_step) == len(self.run_lines)) \
+                or (len(self.run_lines)== 0))
+        status = status and ( (len(self.legs_at_step) == len(self.trajectory_lines) ) \
+                or (len(self.trajectory_lines) == 0))
+        status = status and ( len(self.diffmap_eigenvalues) == len(self.diffmap_eigenvectors) )
+        return status
 
     def add_analyze_step(self, _eigenvectors, _eigenvalues):
         """ Adds diffusion map analysis values per leg to specific containers.
@@ -77,4 +98,4 @@ class TrajectoryData(object):
         """
         self.diffmap_eigenvectors.append(_eigenvectors)
         self.diffmap_eigenvalues.append(_eigenvalues)
-        assert( len(self.diffmap_eigenvalues) == len(self.diffmap_eigenvectors) )
+        assert( self.check_size_consistency() )
