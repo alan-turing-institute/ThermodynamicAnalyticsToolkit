@@ -13,18 +13,15 @@ import scipy.spatial.distance as scidist
 
 from DataDrivenSampler.common import add_common_options_to_parser, add_data_options_to_parser, \
         add_model_options_to_parser, add_prior_options_to_parser, add_sampler_options_to_parser, \
-        get_filename_from_fullpath, get_trajectory_header, \
+        get_filename_from_fullpath, get_trajectory_header,\
         react_to_common_options, react_to_sampler_options, \
         setup_csv_file
-from DataDrivenSampler.exploration.trajectorydatacontainer import TrajectoryDataContainer
-from DataDrivenSampler.exploration.trajectoryqueue import TrajectoryQueue
+from DataDrivenSampler.exploration.explorer import Explorer
 from DataDrivenSampler.models.model import model
 from DataDrivenSampler.runtime.runtime import runtime
 from DataDrivenSampler.TrajectoryAnalyser import compute_diffusion_maps
 
 FLAGS = None
-
-INITIAL_LEGS = 3 # how many legs to run without convergence stop check
 
 def parse_parameters():
     """ Sets up the argument parser for parsing command line parameters into dictionary
@@ -64,43 +61,6 @@ def parse_parameters():
     return parser.parse_known_args()
 
 
-def find_corner_points(dmap_eigenvectors, number_corner_points):
-    """ Finds corner points given the diffusion map eigenvectors of a trajectory.
-
-    :param dmap_eigenvectors: diffusion map eigenvector matrix
-    :param number_corner_points: desired number of corner points
-    :return: indices of the corner points with respect to trajectory
-    """
-    # select a random point and compute distances to it
-    select_first = "dominant_eigenmode" # "random"
-    if select_first == "random":
-        m = np.shape(dmap_eigenvectors)[0]
-        idx_corner = np.random.randint(m)
-
-        dist = scidist.cdist(dmap_eigenvectors[[idx_corner],:], dmap_eigenvectors)[0]
-        idx_corner = [np.argmax(dist)]
-
-    elif select_first == "dominant_eigenmode":
-        # find first cornerstone as maximum on dominant eigenvector
-        idx_corner = [np.argmax(dmap_eigenvectors[:,0])]
-    else:
-        assert( False )
-
-    # print('idx_corner ')
-    # print(idx_corner)
-    # iteration to find the other cornerstones
-    for k in np.arange(1, number_corner_points):
-        # update minimum distance to existing cornerstones
-        if(k>1):
-            dist = np.minimum(dist, scidist.cdist(dmap_eigenvectors[[idx_corner[-1]],:], dmap_eigenvectors)[0])
-        else:
-            dist = scidist.cdist(dmap_eigenvectors[idx_corner,:], dmap_eigenvectors)[0]
-        # select new cornerstone
-        idx_corner.append(np.argmax(dist))
-
-    return idx_corner
-
-
 def main(_):
     rt = runtime(FLAGS)
     time_zero = time.process_time()
@@ -118,23 +78,14 @@ def main(_):
     network_model.config_map["do_write_trajectory_file"] = False
 
     # 1. run initially just one trajectory
-    container = TrajectoryDataContainer()
-    queue = TrajectoryQueue(container, FLAGS.number_pruning)
+    explorer = Explorer(FLAGS.number_pruning)
 
     print("Creating starting trajectory.")
     # a. add three legs to queue
-    for i in range(1,INITIAL_LEGS+1):
-        current_id = container.add_empty_data()
-        queue.add_run_job(
-            data_id=current_id,
-            network_model=network_model,
-            initial_step=0,
-            parameters=None,
-            continue_flag=(i == INITIAL_LEGS))
+    explorer.spawn_starting_trajectory(network_model)
 
     # b. continue until queue has run dry
-    while not queue.is_empty():
-        queue.run_next_job(network_model, FLAGS)
+    explorer.run_all_jobs(network_model, FLAGS)
 
     print("Starting multiple explorations from starting trajectory.")
     # 2. with the initial trajectory done and analyzed,
@@ -143,57 +94,16 @@ def main(_):
     exploration_step = 1
     while exploration_step < FLAGS.max_exploration_steps:
         # a. combine all trajectories
-        steps = []
-        parameters = []
-        losses = []
-        for id in container.data.keys():
-            steps.extend( container.data[id].steps )
-            parameters.extend( container.data[id].parameters )
-            losses.extend( container.data[id].losses )
+        steps, parameters, losses = explorer.combine_trajectories()
 
         # b. perform diffusion map analysis for eigenvectors
-        try:
-            dmap_eigenvectors, dmap_eigenvalues, dmap_kernel = compute_diffusion_maps( \
-                traj=parameters, \
-                beta=FLAGS.inverse_temperature, \
-                loss=losses, \
-                nrOfFirstEigenVectors=FLAGS.number_of_eigenvalues, \
-                method=FLAGS.diffusion_map_method,
-                use_reweighting=FLAGS.use_reweighting)
-        except scipy.sparse.linalg.eigen.arpack.ArpackNoConvergence:
-            print("ERROR: Vectors were non-convergent.")
-            dmap_eigenvectors = np.zeros( (np.shape(parameters)[0], FLAGS.number_of_eigenvalues) )
-            dmap_eigenvalues = np.zeros( (FLAGS.number_of_eigenvalues) )
-            dmap_kernel = np.zeros( (np.shape(parameters)[0], np.shape(trajectory)[0]) )
-            # override landmarks to skip computation
-            FLAGS.landmarks = 0
-        print("Global diffusion map eigenvalues: "+str(dmap_eigenvalues))
-
-        # c. find number of points maximally apart
-        idx_corner = find_corner_points(
-                dmap_eigenvectors, FLAGS.number_of_parallel_trajectories)
+        idx_corner = explorer.get_corner_points(parameters, losses, FLAGS)
 
         # d. spawn new trajectories from these points
-        for i in range(FLAGS.number_of_parallel_trajectories):
-            print("Current corner point is "+str(parameters[idx_corner[i]]))
-            current_id = container.add_empty_data()
-            data_object = container.data[current_id]
-            data_object.steps[:] = [steps[idx_corner[i]]]
-            data_object.parameters[:] = [parameters[idx_corner[i]]]
-            data_object.losses[:] = [losses[idx_corner[i]]]
-            data_object.gradients[:] = [1]
-
-            queue.add_run_job(
-                data_id=current_id,
-                network_model=network_model,
-                initial_step=container.data[current_id].steps[-1],
-                parameters=container.data[current_id].parameters[-1],
-                continue_flag=True)
-            cornerpoints.append( [data_object.steps[-1], data_object.losses[-1], data_object.parameters[-1]] )
+        cornerpoints.append( explorer.spawn_corner_trajectories(steps, parameters, losses, idx_corner, network_model) )
 
         # d. run all trajectories till terminated
-        while not queue.is_empty():
-            queue.run_next_job(network_model, FLAGS)
+        explorer.run_all_jobs(network_model, FLAGS)
 
         exploration_step += 1
 
@@ -204,8 +114,8 @@ def main(_):
     # write away run time information
     if network_model.config_map["csv_file"] is not None:
         network_model.config_map["do_write_run_file"] = True
-        for current_id in container.data.keys():
-            run_lines_per_leg = container.data[current_id].run_lines
+        for current_id in explorer.container.data.keys():
+            run_lines_per_leg = explorer.container.data[current_id].run_lines
             for leg_nr in range(len(run_lines_per_leg)):
                 run_lines = run_lines_per_leg[leg_nr]
                 for row in range(len(run_lines.index)):
@@ -217,8 +127,8 @@ def main(_):
     # write away trajectory information
     if network_model.config_map["trajectory_file"] is not None:
         network_model.config_map["do_write_trajectory_file"] = True
-        for current_id in container.data.keys():
-            trajectory_lines_per_leg = container.data[current_id].trajectory_lines
+        for current_id in explorer.container.data.keys():
+            trajectory_lines_per_leg = explorer.container.data[current_id].trajectory_lines
             for leg_nr in range(len(trajectory_lines_per_leg)):
                 trajectory_lines = trajectory_lines_per_leg[leg_nr]
                 for row in range(len(trajectory_lines.index)):

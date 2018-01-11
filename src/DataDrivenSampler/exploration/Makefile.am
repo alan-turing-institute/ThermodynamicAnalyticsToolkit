@@ -1,4 +1,5 @@
 DataDrivenSampler_exploration_PYTHON = \
+    explorer.py \
     trajectorydata.py \
     trajectorydatacontainer.py \
     trajectoryjob.py \
