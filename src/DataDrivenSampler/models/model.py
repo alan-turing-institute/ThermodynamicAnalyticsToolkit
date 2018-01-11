@@ -35,6 +35,8 @@ class model:
         except AttributeError:
             FLAGS.max_steps = 1
 
+        self.number_of_parameters = 0 # number of biases and weights
+
         if len(FLAGS.batch_data_files) > 0:
             self.input_dimension = self.FLAGS.input_dimension
             self.output_dimension = self.FLAGS.output_dimension
@@ -66,6 +68,10 @@ class model:
         self.nn = None
         self.saver = None
         self.sess = None
+
+        # mark placeholder neuralnet_parameters as to be created
+        self.weights = None
+        self.biases = None
 
         # mark writer as to be created
         self.run_writer = None
@@ -306,6 +312,13 @@ class model:
         else:
             loss = self.nn.get_list_of_nodes(["loss"])[0]
 
+        # set number of degrees of freedom
+        self.number_of_parameters = \
+            neuralnet_parameters.get_total_dof_from_list(
+                tf.get_collection(tf.GraphKeys.WEIGHTS)) \
+            + neuralnet_parameters.get_total_dof_from_list(
+                tf.get_collection(tf.GraphKeys.BIASES))
+
         if self.FLAGS.fix_parameters is not None:
             names, values = self.split_parameters_as_names_values(self.FLAGS.fix_parameters)
             fixed_variables = self.fix_parameters(names)
@@ -365,8 +378,10 @@ class model:
         elif setup == "train":
             header = self.get_train_header()
 
-        self.weights = neuralnet_parameters(tf.get_collection(tf.GraphKeys.WEIGHTS))
-        self.biases = neuralnet_parameters(tf.get_collection(tf.GraphKeys.BIASES))
+        if self.weights is None:
+            self.weights = neuralnet_parameters(tf.get_collection(tf.GraphKeys.WEIGHTS))
+        if self.biases is None:
+            self.biases = neuralnet_parameters(tf.get_collection(tf.GraphKeys.BIASES))
         #print("There are %d weights and %d biases in the network"
         #      % (self.length_weights, self.length_biases))
 
