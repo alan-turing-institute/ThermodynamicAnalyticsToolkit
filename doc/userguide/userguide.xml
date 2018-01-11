@@ -545,13 +545,57 @@ cost of all necessary servicing, repair, or correction.</remark>
       </section>
       <section xml:id="quickstart.python.exploration">
         <title  xml:id="quickstart.python.exploration.title">Exploring the loss manifold</title>
-        <para>At this time of writing, the loss manifold exploration is not 
-        available from the Python API in a simple form. Please refer to the
-        <command>DDSExplorer</command> utility, written in Python, if you
-        need the functionality within a Python script. See 
-        <xref linkend="quickstart.cmdline.exploration"/> for info about the
-        utility.</para>
-      </section>
+        <para>Exploration of the loss manifold is a bit more involved using
+        the python interface.</para>
+        <para>In general, the procedure has the following stages:</para>
+        <itemizedlist>
+          <listitem><para>We sample a start trajectory.</para></listitem>
+          <listitem><para>For the current set of trajectory points we perform a
+          diffusion map analysis. Using the first eigenvector as the dominant
+          diffusion mode, we pick the first corner points at its maximal
+          component.</para></listitem>
+          <listitem><para>If more corner points are needed, then we look at
+          the diffusion distance with respect to already picked corner points
+          over all eigenvectors of the diffusion map and pick the next point
+          always such that it maximizes the diffusion distance to the present
+          ones.</para></listitem>
+          <listitem><para>Finally, we sample further trajectories, one starting
+          at each of the picked corner points.</para></listitem>
+          <listitem><para>This is repeated (go to second step) for as many
+          exploration steps as we want to do.</para></listitem>
+        </itemizedlist>
+        <para>Note that each single trajectory is sampled in a special way:</para>
+        <itemizedlist>
+          <listitem><para>First, three legs of sampling are performed</para></listitem>
+          <listitem><para>Then, we analyse the resulting diffusion map.</para></listitem>
+          <listitem><para>If the eigenvalues have not yet converged with respect
+          to some relative threshold, we continue for one more leg and analyse
+          again after that</para></listitem>
+          <listitem><para>If they have converged, we stop.</para></listitem>
+          <listitem><para>Finally, we look at the norm of the gradients along
+          the trajectory. If it is below a certain threshold, then within this
+          section of the trajectory (with gradient norms beneath the threshold)
+          we pick the smallest gradient value as the trajectory step being a
+          possible minimum candidate.</para></listitem>
+          <listitem><para>For all minimum candidates (if any) we run additional
+          optimization trajectories, e.g. using GradientDescent, to find a local
+          minima.</para></listitem>
+        </itemizedlist>
+        <para>Have a look at the following example.</para>
+        <example xml:id="quickstart.python.exploration.example">
+          <title>Exploring the loss manifold using multiple trajectories from 
+          corner points in the diffusion map</title>
+          <programlisting><xi:include  href="python/explore.py"  parse="text"  
+      xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
+        </example>
+        <para>This performs exactly the procedure described before using
+        very, very short trajectories (<command>max_steps</command>),
+        only a few legs (<command>max_legs</command>) and only a
+        very limited number of exploration steps (<command>exploration_steps
+        </command>). This is simple for the purpose of illustration. Naturally,
+        larger values for all these parameters are required in order to explore
+        complex manifolds and eventually find the global minima.</para>
+        </section>
     </section>
     <section xml:id="quickstart.cmdline">
       <title  xml:id="quickstart.cmdline.title">Using command-line interface</title>

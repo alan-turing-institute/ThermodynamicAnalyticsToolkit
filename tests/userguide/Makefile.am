@@ -23,6 +23,7 @@ TESTSCRIPTS += \
 	$(srcdir)/cmdline/testsuite-userguide-cmdline-write_dataset.at \
 	$(srcdir)/python/testsuite-userguide-python.at \
 	$(srcdir)/python/testsuite-userguide-python-analyse.at \
+	$(srcdir)/python/testsuite-userguide-python-explore.at \
 	$(srcdir)/python/testsuite-userguide-python-fix_parameter.at \
 	$(srcdir)/python/testsuite-userguide-python-optimize.at \
 	$(srcdir)/python/testsuite-userguide-python-optimize_sample.at \

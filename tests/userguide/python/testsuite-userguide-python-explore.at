@@ -15,17 +15,19 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-### all tests on userguide
+### test on examples in the userguide
 
-# tests on simple behavior
-m4_include([python/testsuite-userguide-python-writing_data.at])
-m4_include([python/testsuite-userguide-python-optimize.at])
-m4_include([python/testsuite-userguide-python-plot_optimize.at])
-m4_include([python/testsuite-userguide-python-sample.at])
-m4_include([python/testsuite-userguide-python-supply_dataset.at])
-m4_include([python/testsuite-userguide-python-optimize_sample.at])
-m4_include([python/testsuite-userguide-python-analyse.at])
-m4_include([python/testsuite-userguide-python-explore.at])
+AT_SETUP([Examples - exploration])
+AT_KEYWORDS([example python explore])
 
-# tests on specific examples
-m4_include([python/testsuite-userguide-python-fix_parameter.at])
+# dataset prepared as follows:
+# DatasetWriter --data_type 2 --dimension 500 --seed 426 --noise 0.1 --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+
+# run 1
+AT_CHECK([cp -f ${abs_top_srcdir}/tests/userguide/python/pre/dataset-twoclusters.csv .], 0, [ignore], [ignore])
+AT_CHECK([../../run \
+	${abs_top_srcdir}/doc/userguide/python/explore.py
+], 0, [stdout], [stderr])
+
+AT_CLEANUP
+

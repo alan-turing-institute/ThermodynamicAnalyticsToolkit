@@ -5,10 +5,13 @@ DDSExplorer \
     --friction_constant 10 \
     --inverse_temperature 10 \
     --loss mean_squared \
+    --max_exploration_steps 2 \
     --max_legs 10 \
     --max_steps 10 \
     --number_of_eigenvalues 1 \
     --number_of_parallel_trajectories 1 \
+    --number_pruning 0 \
+    --optimizer GradientDescent \
     --sampler GeometricLangevinAlgorithm_2ndOrder \
     --run_file run.csv \
     --seed 426 \

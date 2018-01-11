@@ -9,6 +9,7 @@ PYTHON_EXAMPLES = \
 	$(srcdir)/userguide/cmdline/analyse_average.sh \
 	$(srcdir)/userguide/cmdline/analyse_diffmap.sh \
 	$(srcdir)/userguide/cmdline/analyse_free_energy.sh \
+	$(srcdir)/userguide/cmdline/exploring.sh \
 	$(srcdir)/userguide/cmdline/inputspacesampler.sh \
 	$(srcdir)/userguide/cmdline/lossfunctionsampler-fix_parameter.sh \
 	$(srcdir)/userguide/cmdline/lossfunctionsampler-grid.sh \
@@ -18,6 +19,7 @@ PYTHON_EXAMPLES = \
 	$(srcdir)/userguide/cmdline/sample.sh \
 	$(srcdir)/userguide/cmdline/write_dataset.sh \
 	$(srcdir)/userguide/python/analyse.py \
+	$(srcdir)/userguide/python/explore.py \
 	$(srcdir)/userguide/python/fix_parameter.py \
 	$(srcdir)/userguide/python/optimize.py \
 	$(srcdir)/userguide/python/optimize_sample.py \
