@@ -24,3 +24,6 @@ m4_include([DataDrivenExplorer/testsuite-datadrivenexplorer-simple.at])
 
 # tests on using just a single trajectory
 m4_include([DataDrivenExplorer/SingleTrajectory/testsuite-datadrivenexplorer-single_trajectory.at])
+
+# tests on trajectory pruning
+m4_include([DataDrivenExplorer/Pruning/testsuite-datadrivenexplorer-pruning.at])

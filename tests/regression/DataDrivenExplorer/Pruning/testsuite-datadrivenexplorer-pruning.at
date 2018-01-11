@@ -1,0 +1,75 @@
+#
+#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    Copyright (C) 2018 The University of Edinburgh
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### test on exploring and pruning being reproducible
+
+
+AT_SETUP([Explorer - trajectory pruning])
+AT_KEYWORDS([options ddsexplorer exploration prune single_trajectory])
+
+# dataset prepared as follows:
+# DatasetWriter --data_type 2 --dimension 10 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+
+# run 1: no pruning
+AT_CHECK([../../../DDSExplorer \
+	--batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenExplorer/Pruning/pre/dataset-twoclusters.csv \
+	--batch_size 10 \
+	--diffusion_map_method vanilla \
+	--every_nth 1 \
+	--friction_constant 1 \
+	--inverse_temperature 1 \
+	--max_legs 5 \
+	--max_steps 10 \
+	--number_of_eigenvalues 1 \
+	--number_of_parallel_trajectories 0 \
+	--number_pruning 0 \
+	--optimizer GradientDescent \
+	--run_file run-none.csv \
+	--step_width 1e-2 \
+	--sampler GeometricLangevinAlgorithm_1stOrder \
+	--seed 426 \
+	--trajectory_file trajectory-none.csv \
+	--use_reweighting 0
+], 0, [stdout], [stderr])
+
+# run 2: single pruning
+AT_CHECK([../../../DDSExplorer \
+	--batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenExplorer/Pruning/pre/dataset-twoclusters.csv \
+	--batch_size 10 \
+	--diffusion_map_method vanilla \
+	--every_nth 1 \
+	--friction_constant 1 \
+	--inverse_temperature 1 \
+	--max_legs 5 \
+	--max_steps 10 \
+	--number_of_eigenvalues 1 \
+	--number_of_parallel_trajectories 0 \
+	--number_pruning 1 \
+	--optimizer GradientDescent \
+	--run_file run-single.csv \
+	--step_width 1e-2 \
+	--sampler GeometricLangevinAlgorithm_1stOrder \
+	--seed 426 \
+	--trajectory_file trajectory-single.csv \
+	--use_reweighting 0
+], 0, [stdout], [stderr])
+
+AT_CHECK([diff run-none.csv run-single.csv], 1, [ignore], [ignore])
+AT_CHECK([diff trajectory-none.csv trajectory-single.csv], 1, [ignore], [ignore])
+
+AT_CLEANUP
+

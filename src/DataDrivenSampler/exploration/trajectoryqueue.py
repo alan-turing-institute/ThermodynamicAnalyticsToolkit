@@ -13,12 +13,14 @@ class TrajectoryQueue(object):
     which are executed in a FIFO fashion until the queue is empty.
 
     '''
-    def __init__(self, _data_container):
+    def __init__(self, _data_container, number_pruning):
         """ Initializes a queue of trajectory jobs.
 
         :param _data_container: data container with all data object
+        :param number_pruning: number of pruning jobs added at trajectory end
         """
         self.data_container =  _data_container
+        self.number_pruning = number_pruning
         self.current_job_id = 1
         self.queue = deque()
 
@@ -135,12 +137,19 @@ class TrajectoryQueue(object):
                                  current_job.continue_flag)
             elif not updated_data.is_pruned:
                 print("Adding prune job and post analysis")
-                self.add_prune_job(data_id, run_object, False)
+                for i in range(self.number_pruning):
+                    self.add_prune_job(data_id, run_object, False)
                 self.add_extract_minima_job(data_id, analyze_object, False)
-                self.add_analyze_job(data_id, analyze_object, False)
+                if self.number_pruning == 0:
+                    updated_data.is_pruned = True
+                else:
+                    self.add_analyze_job(data_id, analyze_object, False)
             else:
-                print("Adding check minima jobs")
-                self.add_check_minima_job(data_id, run_object, False)
+                if len(updated_data.minimum_candidates) > 0:
+                    print("Adding check minima jobs")
+                    self.add_check_minima_job(data_id, run_object, False)
+                else:
+                    print("No minimum candidates on this trajectory.")
         else:
             print("Not adding.")
 

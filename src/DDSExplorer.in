@@ -47,6 +47,8 @@ def parse_parameters():
         help='How many largest eigenvalues to compute')
     parser.add_argument('--number_of_parallel_trajectories', type=int, default=5,
         help='Number of trajectories to run in parallel, i.e. number of points maximally apart in diffusion distance')
+    parser.add_argument('--number_pruning', type=int, default=0,
+        help='Number of pruning stages through metropolis criterion after end of trajectory')
     parser.add_argument('--optimizer', type=str, default="GradientDescent",
         help='Choose the optimizer to use for sampling: GradientDescent')
     parser.add_argument('--use_reweighting', type=bool, default=False,
@@ -73,7 +75,7 @@ def main(_):
 
     # 1. run initially just one trajectory
     container = TrajectoryDataContainer()
-    queue = TrajectoryQueue(container)
+    queue = TrajectoryQueue(container, FLAGS.number_pruning)
 
     # a. add three legs to queue
     for i in range(1,INITIAL_LEGS+1):
