@@ -13,13 +13,15 @@ class TrajectoryQueue(object):
     which are executed in a FIFO fashion until the queue is empty.
 
     '''
-    def __init__(self, _data_container, number_pruning):
+    def __init__(self, _data_container, max_legs, number_pruning):
         """ Initializes a queue of trajectory jobs.
 
         :param _data_container: data container with all data object
+        :param .max_legs: maximum number of legs (of length max_steps) per trajectory
         :param number_pruning: number of pruning jobs added at trajectory end
         """
         self.data_container =  _data_container
+        self.max_legs = max_legs
         self.number_pruning = number_pruning
         self.current_job_id = 1
         self.queue = deque()
@@ -129,6 +131,9 @@ class TrajectoryQueue(object):
             print("Adding analyze job")
             self.add_analyze_job(data_id, analyze_object, current_job.continue_flag)
         elif current_job.job_type == "analyze":
+            if len(updated_data.legs_at_step) >= self.max_legs:
+                print("Maximum number of legs exceeded, stopping anyway.")
+                continue_flag = False
             if continue_flag:
                 print("Adding run job")
                 self.add_run_job(data_id, run_object,

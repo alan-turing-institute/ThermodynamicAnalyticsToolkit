@@ -78,7 +78,8 @@ def main(_):
     network_model.config_map["do_write_trajectory_file"] = False
 
     # 1. run initially just one trajectory
-    explorer = Explorer(FLAGS.number_pruning)
+    explorer = Explorer(max_legs=FLAGS.max_legs,
+                        number_pruning=FLAGS.number_pruning)
 
     print("Creating starting trajectory.")
     # a. add three legs to queue
@@ -97,7 +98,7 @@ def main(_):
         steps, parameters, losses = explorer.combine_trajectories()
 
         # b. perform diffusion map analysis for eigenvectors
-        idx_corner = explorer.get_corner_points(parameters, losses, FLAGS)
+        idx_corner = explorer.get_corner_points(parameters, losses, FLAGS, FLAGS.number_of_parallel_trajectories)
 
         # d. spawn new trajectories from these points
         cornerpoints.append( explorer.spawn_corner_trajectories(steps, parameters, losses, idx_corner, network_model) )

@@ -16,13 +16,14 @@ class Explorer(object):
 
     INITIAL_LEGS = 3  # how many legs to run without convergence stop check
 
-    def __init__(self, number_pruning=0):
+    def __init__(self, max_legs, number_pruning=0):
         """ Initializes the explorer class with its internal instances.
 
         :param number_pruning: number of pruning tasks to spawn at end of trajectory
+        :param max_legs:
         """
         self.container = TrajectoryDataContainer()
-        self.queue = TrajectoryQueue(self.container, number_pruning)
+        self.queue = TrajectoryQueue(self.container, max_legs, number_pruning)
 
     def spawn_starting_trajectory(self, network_model):
         """ Begin exploration by sampling an initial starting trajectory.
@@ -51,7 +52,7 @@ class Explorer(object):
         """ Run further trajectories for a given list of corner points.
 
         :param steps: continuous step number per step
-        :param trajectory: trajectory as parameters (i.e. weights and biases) per step
+        :param parameters: trajectory as parameters (i.e. weights and biases) per step
         :param losses: loss per step
         :param idx_corner: list of indices of all corner points w.r.t. trajectory
         :param network_model: model of neural network with Session for sample and optimize jobs
@@ -99,6 +100,9 @@ class Explorer(object):
         :param number_corner_points: desired number of corner points
         :return: indices of the corner points with respect to trajectory
         """
+        if number_corner_points == 0:
+            return []
+
         # select a random point and compute distances to it
         select_first = "dominant_eigenmode"  # "random"
         if select_first == "random":
@@ -128,12 +132,14 @@ class Explorer(object):
 
         return idx_corner
 
-    def get_corner_points(self, trajectory, losses, parameters):
+    def get_corner_points(self, trajectory, losses, parameters,
+                          number_of_corner_points):
         """ Returns the corner points for a given
 
         :param trajectory: trajectory as parameters (i.e. weights and biases) per step
         :param losses: loss per step
         :param parameters: parameter struct controlling the diffusion map analysis
+        :param number_of_corner_points: number of corner points to return
         :return: list of indices of the corner points with respect to the given trajectory
         """
         try:
@@ -155,7 +161,7 @@ class Explorer(object):
 
         # c. find number of points maximally apart
         idx_corner = self.find_corner_points(
-                dmap_eigenvectors, parameters.number_of_parallel_trajectories)
+                dmap_eigenvectors, number_of_corner_points)
         return idx_corner
 
     def get_run_info_and_trajectory(self):

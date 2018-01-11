@@ -66,8 +66,4 @@ class TrajectoryJob_analyze(TrajectoryJob):
             evs_converged = False
         print("Has eigendecompostion converged? "+str(evs_converged))
 
-        if len(_data.legs_at_step) >= self.parameters.max_legs:
-            print("Maximum number of legs exceeded, stopping anyway.")
-            evs_converged = True
-
         return _data, ((not evs_converged) and (self.continue_flag))
