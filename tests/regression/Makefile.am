@@ -12,6 +12,7 @@ TESTSCRIPTS += \
 	$(srcdir)/DataDrivenExplorer/testsuite-datadrivenexplorer-simple.at \
 	$(srcdir)/DataDrivenExplorer/Pruning/testsuite-datadrivenexplorer-pruning.at \
 	$(srcdir)/DataDrivenExplorer/SingleTrajectory/testsuite-datadrivenexplorer-single_trajectory.at \
+	$(srcdir)/DataDrivenExplorer/MultipleTrajectories/testsuite-datadrivenexplorer-multiple_trajectories.at \
 	$(srcdir)/DataDrivenSampler/testsuite-datadrivensampler.at \
 	$(srcdir)/DataDrivenSampler/testsuite-datadrivensampler-simple.at \
 	$(srcdir)/DataDrivenSampler/FixParameter/testsuite-datadrivensampler-fix_parameter.at \

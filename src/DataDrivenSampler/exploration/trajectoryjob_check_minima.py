@@ -55,6 +55,7 @@ class TrajectoryJob_check_minima(TrajectoryJob):
             candidates = _data.minimum_candidates
         for i in range (len(candidates)):
             parameters = _data.parameters[ candidates[i] ]
+            print("Checking local minima from parameters (first ten shown) " + str(parameters[0:10]))
             sess = self.network_model.sess
             weights_dof = self.network_model.weights.get_total_dof()
             self.network_model.weights.assign(sess, parameters[0:weights_dof])
@@ -76,10 +77,10 @@ class TrajectoryJob_check_minima(TrajectoryJob):
             assert ("weight" not in trajectory.columns[2])
             assert ("weight" in trajectory.columns[3])
             parameters=np.asarray(trajectory)[:,3:]
-            print("Steps (last ten): "+str(steps[-10:]))
-            print("Losses (last ten): "+str(losses[-10:]))
-            print("Gradients (last ten): "+str(gradients[-10:]))
-            print("Parameters (last ten): "+str(parameters[-10:]))
+            print("Steps (first and last five): " + str(steps[:5]) + "\n ... \n" + str(steps[-5:]))
+            print("Losses (first and last five): " + str(losses[:5]) + "\n ... \n" + str(losses[-5:]))
+            print("Gradients (first and last five): " + str(gradients[:5]) + "\n ... \n" + str(gradients[-5:]))
+            print("Parameters (first and last five, first ten component shown): " + str(parameters[:5][0:10]) + "\n ... \n" + str(parameters[-5:][0:10]))
 
             # store away found minima
             if gradients[-1] < self.GRADIENT_THRESHOLD:
