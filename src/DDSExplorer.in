@@ -11,8 +11,9 @@ import time
 
 from DataDrivenSampler.common import add_common_options_to_parser, add_data_options_to_parser, \
         add_model_options_to_parser, add_prior_options_to_parser, add_sampler_options_to_parser, \
-        get_filename_from_fullpath, \
-        react_to_common_options, react_to_sampler_options
+        get_filename_from_fullpath, get_trajectory_header, \
+        react_to_common_options, react_to_sampler_options, \
+        setup_csv_file
 from DataDrivenSampler.exploration.trajectorydatacontainer import TrajectoryDataContainer
 from DataDrivenSampler.exploration.trajectoryqueue import TrajectoryQueue
 from DataDrivenSampler.models.model import model
@@ -40,10 +41,14 @@ def parse_parameters():
         help='Method to use for computing the diffusion map: pydiffmap, vanilla or TMDMap')
     parser.add_argument('--max_legs', type=int, default=100,
         help='Maximum number of legs per trajectory')
+    parser.add_argument('--minima_file', type=str, default=None,
+        help='Filename to write found minima to')
     parser.add_argument('--number_of_eigenvalues', type=int, default=4,
         help='How many largest eigenvalues to compute')
     parser.add_argument('--number_of_parallel_trajectories', type=int, default=5,
         help='Number of trajectories to run in parallel, i.e. number of points maximally apart in diffusion distance')
+    parser.add_argument('--optimizer', type=str, default="GradientDescent",
+        help='Choose the optimizer to use for sampling: GradientDescent')
     parser.add_argument('--use_reweighting', type=bool, default=False,
         help='Use reweighting of the kernel matrix of diffusion maps by the target distribution.')
 
@@ -57,7 +62,9 @@ def main(_):
     # setup neural network
     network_model = model(FLAGS)
     time_init_network_zero = time.process_time()
+    # prepare for both sampling and training
     network_model.init_network(FLAGS.restore_model, setup="sample")
+    network_model.init_network(FLAGS.restore_model, setup="train")
     rt.set_init_network_time(time.process_time() - time_init_network_zero)
 
     # prevent writing of output files during leg sampling
@@ -134,7 +141,21 @@ def main(_):
                     trajectory_line = trajectory_lines.iloc[row,:]
                     network_model.trajectory_writer.writerow(trajectory_line)
 
-    # TODO: write away diffusion map analysis
+    # write minima to file
+    if FLAGS.minima_file is not None:
+        header = get_trajectory_header(
+            network_model.weights.get_total_dof(),
+            network_model.biases.get_total_dof())
+        minima_writer, minima_file = setup_csv_file(
+            FLAGS.minima_file, header)
+        for current_id in explorer.container.data.keys():
+            minima = explorer.container.data[current_id].local_minima
+            losses =  explorer.container.data[current_id].loss_at_minima
+            for row in range(len(minima)):
+                minima_line = [current_id, row, losses[row]]
+                minima_line.extend(np.asarray(minima[row]))
+                minima_writer.writerow(minima_line)
+        minima_file.close()
 
     network_model.finish()
 

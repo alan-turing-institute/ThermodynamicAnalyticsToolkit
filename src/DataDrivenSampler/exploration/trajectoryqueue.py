@@ -2,6 +2,7 @@ import tensorflow as tf
 
 from DataDrivenSampler.models.neuralnet_parameters import neuralnet_parameters
 from DataDrivenSampler.exploration.trajectoryjob_analyze import TrajectoryJob_analyze
+from DataDrivenSampler.exploration.trajectoryjob_check_minima import TrajectoryJob_check_minima
 from DataDrivenSampler.exploration.trajectoryjob_extract_minimum_candidates import TrajectoryJob_extract_minimium_candidates
 from DataDrivenSampler.exploration.trajectoryjob_prune import TrajectoryJob_prune
 from DataDrivenSampler.exploration.trajectoryjob_run import TrajectoryJob_run
@@ -33,7 +34,19 @@ class TrajectoryQueue(object):
                                             continue_flag=continue_flag)
         self._enqueue_job(analyze_job)
 
-    def add_extract_job(self, data_id, parameters, continue_flag):
+    def add_check_minima_job(self, data_id, network_model, continue_flag):
+        """ Adds a check_minima/optimize job to the queue.
+
+        :param _data_id: id associated with data object for the job
+        :param network_model: neural network object for running the graph
+        :param continue_flag: flag whether job should spawn more jobs or not
+        """
+        check_minima_job = TrajectoryJob_check_minima(data_id=data_id,
+                                                      network_model=network_model,
+                                                      continue_flag=continue_flag)
+        self._enqueue_job(check_minima_job)
+
+    def add_extract_minima_job(self, data_id, parameters, continue_flag):
         """ Adds an extract job to the queue.
 
         :param data_id: id associated with data object for the job
@@ -116,8 +129,11 @@ class TrajectoryQueue(object):
             elif not updated_data.is_pruned:
                 print("Adding prune job and post analysis")
                 self.add_prune_job(data_id, run_object, False)
-                self.add_extract_job(data_id, analyze_object, False)
+                self.add_extract_minima_job(data_id, analyze_object, False)
                 self.add_analyze_job(data_id, analyze_object, False)
+            else:
+                print("Adding check minima jobs")
+                self.add_check_minima_job(data_id, run_object, False)
         else:
             print("Not adding.")
 

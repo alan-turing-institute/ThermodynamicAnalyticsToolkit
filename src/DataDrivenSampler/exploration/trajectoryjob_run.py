@@ -42,10 +42,10 @@ class TrajectoryJob_run(TrajectoryJob):
         losses=[float(i) for i in np.asarray(run_info.loc[:,'loss'])]
         gradients=[float(i) for i in np.asarray(run_info.loc[:,'scaled_gradient'])]
         parameters=np.asarray(trajectory)[:,2:]
-        print("Steps: "+str(steps))
-        print("Losses: "+str(losses))
-        print("Gradients: "+str(gradients))
-        print("Parameters: "+str(parameters))
+        print("Steps (last ten): "+str(steps[-10:]))
+        print("Losses (last ten): "+str(losses[-10:]))
+        print("Gradients (last ten): "+str(gradients[-10:]))
+        print("Parameters (last ten): "+str(parameters[-10:]))
 
         # append parameters to data
         _data.add_run_step(_steps=steps,

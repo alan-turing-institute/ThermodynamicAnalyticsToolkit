@@ -35,6 +35,8 @@ class TrajectoryData(object):
 
         # candidates for minima
         self.minimum_candidates = []
+        self.local_minima = []    # found parameter associated with local minimum in loss
+        self.loss_at_minima = []    # loss value at the local minimum
 
         # indicates whether this trajectory is done
         self.is_pruned = False

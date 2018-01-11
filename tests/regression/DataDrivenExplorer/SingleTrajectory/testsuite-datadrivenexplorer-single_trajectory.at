@@ -37,7 +37,7 @@ AT_CHECK([../../../DDSExplorer \
 	--number_of_parallel_trajectories 1 \
 	--run_file run-single.csv \
 	--step_width 1e-2 \
-	--sampler GeometricLangevinAlgorithm_1stOrder\
+	--sampler GeometricLangevinAlgorithm_1stOrder \
 	--seed 426 \
 	--trajectory_file trajectory-single.csv \
 	--use_reweighting 0
