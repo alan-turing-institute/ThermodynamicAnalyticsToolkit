@@ -72,13 +72,19 @@ def find_corner_points(dmap_eigenvectors, number_corner_points):
     :return: indices of the corner points with respect to trajectory
     """
     # select a random point and compute distances to it
-    m = np.shape(dmap_eigenvectors)[0]
-    idx_corner = np.random.randint(m)
+    select_first = "dominant_eigenmode" # "random"
+    if select_first == "random":
+        m = np.shape(dmap_eigenvectors)[0]
+        idx_corner = np.random.randint(m)
 
-    dist = scidist.cdist(dmap_eigenvectors[[idx_corner],:], dmap_eigenvectors)[0]
+        dist = scidist.cdist(dmap_eigenvectors[[idx_corner],:], dmap_eigenvectors)[0]
+        idx_corner = [np.argmax(dist)]
 
-    # find first cornerstone
-    idx_corner = [np.argmax(dist)]
+    elif select_first == "dominant_eigenmode":
+        # find first cornerstone as maximum on dominant eigenvector
+        idx_corner = [np.argmax(dmap_eigenvectors[:,0])]
+    else:
+        assert( False )
 
     # print('idx_corner ')
     # print(idx_corner)
@@ -93,6 +99,7 @@ def find_corner_points(dmap_eigenvectors, number_corner_points):
         idx_corner.append(np.argmax(dist))
 
     return idx_corner
+
 
 def main(_):
     rt = runtime(FLAGS)
