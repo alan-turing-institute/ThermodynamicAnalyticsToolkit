@@ -4,6 +4,7 @@ bin_SCRIPTS = \
 	DatasetParser \
 	DatasetWriter \
 	DDSampler \
+	DDSExplorer \
 	DDSOptimizer \
 	DDSAnalyser \
 	InputSpaceSampler \
@@ -16,6 +17,7 @@ EXTRA_DIST = \
 	DatasetParser.in \
 	DatasetWriter.in \
 	DDSampler.in \
+	DDSExplorer.in \
 	DDSOptimizer.in \
 	DDSAnalyser.in \
 	InputSpaceSampler.in \
@@ -38,6 +40,10 @@ DatasetWriter: DatasetWriter.in Makefile
 DDSampler: DDSampler.in Makefile
 	$(do_substitution) < $(srcdir)/DDSampler.in > DDSampler
 	chmod +x DDSampler
+
+DDSExplorer: DDSExplorer.in Makefile
+	$(do_substitution) < $(srcdir)/DDSExplorer.in > DDSExplorer
+	chmod +x DDSExplorer
 
 DDSOptimizer: DDSOptimizer.in Makefile
 	$(do_substitution) < $(srcdir)/DDSOptimizer.in > DDSOptimizer

@@ -1,0 +1,128 @@
+#!/usr/bin/env @PYTHON@
+
+import sys, getopt
+sys.path.insert(1, '@pythondir@')
+
+import tensorflow as tf
+import numpy as np
+
+import argparse
+import time
+
+from DataDrivenSampler.common import add_common_options_to_parser, add_data_options_to_parser, \
+        add_model_options_to_parser, add_prior_options_to_parser, add_sampler_options_to_parser, \
+        get_filename_from_fullpath, \
+        react_to_common_options, react_to_sampler_options
+from DataDrivenSampler.exploration.trajectorydatacontainer import TrajectoryDataContainer
+from DataDrivenSampler.exploration.trajectoryqueue import TrajectoryQueue
+from DataDrivenSampler.models.model import model
+from DataDrivenSampler.runtime.runtime import runtime
+
+FLAGS = None
+
+INITIAL_LEGS = 3 # how many legs to run without convergence stop check
+
+def parse_parameters():
+    """ Sets up the argument parser for parsing command line parameters into dictionary
+
+    :return: dictionary with parameter names as keys, unrecognized parameters
+    """
+    parser = argparse.ArgumentParser()
+
+    add_common_options_to_parser(parser)
+    add_data_options_to_parser(parser)
+    add_model_options_to_parser(parser)
+    add_prior_options_to_parser(parser)
+    add_sampler_options_to_parser(parser)
+
+    # please adhere to alphabetical ordering
+    parser.add_argument('--diffusion_map_method', type=str, default='vanilla',
+        help='Method to use for computing the diffusion map: pydiffmap, vanilla or TMDMap')
+    parser.add_argument('--max_legs', type=int, default=100,
+        help='Maximum number of legs per trajectory')
+    parser.add_argument('--number_of_eigenvalues', type=int, default=4,
+        help='How many largest eigenvalues to compute')
+    parser.add_argument('--number_of_parallel_trajectories', type=int, default=5,
+        help='Number of trajectories to run in parallel, i.e. number of points maximally apart in diffusion distance')
+    parser.add_argument('--use_reweighting', type=bool, default=False,
+        help='Use reweighting of the kernel matrix of diffusion maps by the target distribution.')
+
+    return parser.parse_known_args()
+
+
+def main(_):
+    rt = runtime(FLAGS)
+    time_zero = time.process_time()
+
+    # setup neural network
+    network_model = model(FLAGS)
+    time_init_network_zero = time.process_time()
+    network_model.init_network(FLAGS.restore_model, setup="sample")
+    rt.set_init_network_time(time.process_time() - time_init_network_zero)
+
+    # prevent writing of output files during leg sampling
+    network_model.config_map["do_write_run_file"] = False
+    network_model.config_map["do_write_trajectory_file"] = False
+
+    # 1. run initially just one trajectory
+    container = TrajectoryDataContainer()
+    queue = TrajectoryQueue(container)
+
+    # a. add three legs to queue
+    for i in range(1,INITIAL_LEGS):
+        current_id = container.add_empty_data()
+        queue.add_run_job(
+            data_id=current_id,
+            continue_flag=(i == INITIAL_LEGS))
+
+    # b. continue until queue has run dry
+    while not queue.is_empty():
+        queue.run_next_job(network_model)
+
+    # 2. with the initial trajectory done and analyzed,
+    #    find maximally separate points and sample from these
+    exploration_step = 1
+    while exploration_step < 2:
+        # a. TODO: combine all data objects into single set of trajectory points
+
+        # b. TODO: find number of points maximally apart
+        # TODO: DONT take random one as first point but initial starting point
+        # TODO: After that take one of the old points (maximally away from starting point?)
+
+        # c. spawn new trajectories from these points
+        for i in range(FLAGS.number_of_parallel_trajectories):
+            current_id = container.add_empty_data()
+            # TODO: set initial parameters (with loss and gradient) to those
+            #   of the maximally apart points such that they are used as starting
+            #   points
+            queue.add_run_job(data_id=current_id)
+
+        # d. run all trajectories till terminated
+        while not queue.is_empty():
+            queue.run_next_job(network_model)
+
+        exploration_step += 1
+
+    rt.set_train_network_time(time.process_time() - rt.time_init_network)
+
+    # 3. write final set of values
+
+    # TODO: write away run time information
+    network_model.config_map["do_write_run_file"] = True
+
+    # TODO: write away trajectory information
+    network_model.config_map["do_write_trajectory_file"] = True
+
+    # TODO: write away diffusion map analysis
+
+    network_model.finish()
+
+    rt.set_overall_time(time.process_time() - time_zero)
+
+if __name__ == '__main__':
+    FLAGS, unparsed = parse_parameters()
+
+    react_to_common_options(FLAGS, unparsed)
+    react_to_sampler_options(FLAGS, unparsed)
+
+    tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)

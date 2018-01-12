@@ -1,4 +1,11 @@
-SUBDIRS = datasets diffusion_maps models models/input runtime samplers
+SUBDIRS = \
+    datasets \
+    diffusion_maps \
+    exploration \
+    models \
+    models/input \
+    runtime \
+    samplers
 
 DataDrivenSampler_PYTHON = \
 	common.py \

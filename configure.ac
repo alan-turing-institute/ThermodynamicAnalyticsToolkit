@@ -25,6 +25,7 @@ AC_CONFIG_FILES(
 	src/DataDrivenSampler/Makefile
 	src/DataDrivenSampler/datasets/Makefile
 	src/DataDrivenSampler/diffusion_maps/Makefile
+	src/DataDrivenSampler/exploration/Makefile
 	src/DataDrivenSampler/models/Makefile
 	src/DataDrivenSampler/models/input/Makefile
 	src/DataDrivenSampler/runtime/Makefile
