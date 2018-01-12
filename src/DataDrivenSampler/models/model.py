@@ -221,6 +221,7 @@ class model:
             batch_data_files=[],
             batch_data_file_type="csv",
             batch_size=10,
+            diffusion_map_method="vanilla",
             dropout=None,
             every_nth=1,
             fix_parameters=None,
@@ -235,6 +236,7 @@ class model:
             inverse_temperature=1.,
             loss="mean_squared",
             max_steps=1000,
+            number_of_eigenvalues=4,
             hamiltonian_dynamics_steps=10,
             optimizer="GradientDescent",
             output_activation="tanh",
@@ -249,11 +251,13 @@ class model:
             save_model=None,
             seed=None,
             step_width=0.03,
-            trajectory_file=None):
+            trajectory_file=None,
+            use_reweighting=False):
             return MockFlags(
                 batch_data_files=batch_data_files,
                 batch_data_file_type=batch_data_file_type,
                 batch_size=batch_size,
+                diffusion_map_method=diffusion_map_method,
                 dropout=dropout,
                 every_nth=every_nth,
                 fix_parameters=fix_parameters,
@@ -268,6 +272,7 @@ class model:
                 inverse_temperature=inverse_temperature,
                 loss=loss,
                 max_steps=max_steps,
+                number_of_eigenvalues=number_of_eigenvalues,
                 hamiltonian_dynamics_steps=hamiltonian_dynamics_steps,
                 optimizer=optimizer,
                 output_activation=output_activation,
@@ -282,7 +287,8 @@ class model:
                 save_model=save_model,
                 seed=seed,
                 step_width=step_width,
-                trajectory_file=trajectory_file)
+                trajectory_file=trajectory_file,
+                use_reweighting=use_reweighting)
 
     def reset_dataset(self):
         """ Re-initializes the dataset for a new run

@@ -10,10 +10,12 @@ class MockFlags:
                  batch_data_files=[],
                  batch_data_file_type="csv",
                  batch_size=10,
+                 diffusion_map_method="vanilla",
                  dropout=0.9,
                  every_nth=1,
                  fix_parameters=None,
                  friction_constant=0.,
+                 hamiltonian_dynamics_steps=10,
                  hidden_activation="relu",
                  hidden_dimension="",
                  in_memory_pipeline=True,
@@ -24,7 +26,7 @@ class MockFlags:
                  inverse_temperature=1.,
                  loss="mean_squared",
                  max_steps=1000,
-                 hamiltonian_dynamics_steps=10,
+                 number_of_eigenvalues=4,
                  optimizer="GradientDescent",
                  output_activation="tanh",
                  output_dimension=1,
@@ -38,17 +40,20 @@ class MockFlags:
                  save_model=None,
                  seed=None,
                  step_width=0.03,
-                 trajectory_file=None
+                 trajectory_file=None,
+                 use_reweighting=False
     ):
         """ Init function to set various default values.
 
         :param batch_data_files: set of files to read input from
         :param batch_data_file_type: type of the files to read input from
         :param batch_size: The number of samples used to divide sample set into batches in one sampleing step.
+        :param diffusion_map_method:
         :param dropout: Keep probability for sampleing dropout, e.g. 0.9
         :param every_nth: Store only every nth trajectory (and run) point to files, e.g. 10
         :param fix_parameters: string formatted as "name=value;..." with name of parameter fixed to value
         :param friction_constant: friction to scale the influence of momenta
+        :param hamiltonian_dynamics_steps: number of steps in HMC sampler for checking acceptance criterion
         :param hidden_activation: Activation function to use for hidden layer: tanh, relu, linear
         :param hidden_dimension: Dimension of each hidden layer, e.g. 8 8 for two hidden layers each with 8 nodes fully connected
         :param in_memory_pipeline: whether to feed the dataset from file in-memory (True) or not (False)
@@ -59,7 +64,7 @@ class MockFlags:
         :param inverse_temperature: Inverse temperature that scales the gradients
         :param loss: Set the loss to be measured during sampling, e.g. mean_squared, log_loss, ...
         :param max_steps: Number of steps to run sampleer.
-        :param hamiltonian_dynamics_steps: number of steps in HMC sampler for checking acceptance criterion
+        :param number_of_eigenvalues:
         :param optimizer: Choose the optimizer to use for sampling: GradientDescent
         :param output_activation: Activation function to use for output layer: tanh, relu, linear
         :param output_dimension: number of output nodes/number of classes
@@ -74,10 +79,12 @@ class MockFlags:
         :param seed: Seed to use for random number generators.
         :param step_width: step width \Delta t to use, e.g. 0.01
         :param trajectory_file: CSV file name to output trajectories of sampling, i.e. weights and evaluated loss function.
+        :param use_reweighting:
         """
         self.batch_data_files = batch_data_files
         self.batch_data_file_type = batch_data_file_type
         self.batch_size = batch_size
+        self.diffusion_map_method = diffusion_map_method
         self.dimension = 0 # keeps the input dimension later
         self.dropout = dropout
         self.every_nth = every_nth
@@ -93,6 +100,7 @@ class MockFlags:
         self.inverse_temperature = inverse_temperature
         self.loss = loss
         self.max_steps = max_steps
+        self.number_of_eigenvalues = number_of_eigenvalues
         self.hamiltonian_dynamics_steps = hamiltonian_dynamics_steps
         self.optimizer = optimizer
         self.output_activation = output_activation
@@ -108,3 +116,4 @@ class MockFlags:
         self.seed = seed
         self.step_width = step_width
         self.trajectory_file = trajectory_file
+        self.use_reweighting = use_reweighting
