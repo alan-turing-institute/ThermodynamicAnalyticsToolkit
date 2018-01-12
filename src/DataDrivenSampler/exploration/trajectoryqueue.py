@@ -128,20 +128,19 @@ class TrajectoryQueue(object):
         print("Continue? "+str(continue_flag))
         self.data_container.update_data(updated_data)
         if continue_flag and current_job.job_type == "run":
-            print("Adding analyze job")
             self.add_analyze_job(data_id, analyze_object, current_job.continue_flag)
+            print("Added analyze job")
         elif current_job.job_type == "analyze":
             if len(updated_data.legs_at_step) >= self.max_legs:
                 print("Maximum number of legs exceeded, stopping anyway.")
                 continue_flag = False
             if continue_flag:
-                print("Adding run job")
                 self.add_run_job(data_id, run_object,
                                  data_object.legs_at_step[-1],
                                  data_object.parameters[-1],
                                  current_job.continue_flag)
+                print("Added run job")
             elif not updated_data.is_pruned:
-                print("Adding prune job and post analysis")
                 for i in range(self.number_pruning):
                     self.add_prune_job(data_id, run_object, False)
                 self.add_extract_minima_job(data_id, analyze_object, False)
@@ -149,10 +148,11 @@ class TrajectoryQueue(object):
                     updated_data.is_pruned = True
                 else:
                     self.add_analyze_job(data_id, analyze_object, False)
+                    print("Added prune job and post analysis")
             else:
                 if len(updated_data.minimum_candidates) > 0:
-                    print("Adding check minima jobs")
                     self.add_check_minima_job(data_id, run_object, False)
+                    print("Added check minima jobs")
                 else:
                     print("No minimum candidates on this trajectory.")
         else:
