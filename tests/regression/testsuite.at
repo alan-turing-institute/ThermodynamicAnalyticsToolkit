@@ -38,6 +38,9 @@ m4_include(DataDrivenSampler/testsuite-datadrivensampler.at)
 # tests for DataOptimizer or DDSOptimizer
 m4_include(DataOptimizer/testsuite-dataoptimizer.at)
 
+# tests for DataDrivenExplorer or DDSExplorer
+m4_include(DataDrivenExplorer/testsuite-datadrivenexplorer.at)
+
 # tests for InputSpaceSampler
 m4_include(InputSpaceSampler/testsuite-inputspacesampler.at)
 

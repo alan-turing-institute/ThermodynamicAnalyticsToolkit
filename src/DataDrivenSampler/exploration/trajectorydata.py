@@ -24,6 +24,8 @@ class TrajectoryData(object):
         self.parameters = []
         self.losses = []
         self.gradients = []
+        self.run_lines = []
+        self.trajectory_lines = []
 
         # these are per leg
         self.legs_at_step = []
@@ -37,7 +39,8 @@ class TrajectoryData(object):
         """
         return self.id
 
-    def add_run_step(self, _steps, _parameters, _losses, _gradients):
+    def add_run_step(self, _steps, _parameters, _losses, _gradients,
+                     _run_lines=None, _trajectory_lines=None):
         """ Appends all values from a single run (one leg) to the specific
         internal containers for later analysis
 
@@ -45,6 +48,8 @@ class TrajectoryData(object):
         :param _parameters: (weight and bias) parameters of neural network as flattened vector
         :param _losses: loss/potential energy
         :param _gradients: gradient norm per step
+        :param _run_lines: single pandas dataframe of run info line per step
+        :param _trajectory_lines: single pandas dataframe of trajectory line per step
         """
         self.steps.extend(_steps)
         self.parameters.extend(_parameters)
@@ -53,8 +58,16 @@ class TrajectoryData(object):
         assert( len(self.parameters) == len(self.losses) )
         assert( len(self.parameters) == len(self.gradients) )
         # trajectories need to append continuously w.r.t steps
-        assert( (len(self.legs_at_step) == 0) or (self.legs_at_step[-1] < _steps[0]) )
+        if (len(self.legs_at_step) > 0):
+            print("Last leg ended at "+str(self.legs_at_step[-1])+", next starts at "+str(_steps[0]))
+            assert( (len(self.legs_at_step) == 0) or (self.legs_at_step[-1] < _steps[0]) )
         self.legs_at_step.append(_steps[-1])
+        if _run_lines is not None:
+            self.run_lines.append(_run_lines)
+        assert (len(self.legs_at_step) == len(self.run_lines))
+        if _trajectory_lines is not None:
+            self.trajectory_lines.append(_trajectory_lines)
+            assert( len(self.legs_at_step) == len(self.trajectory_lines) )
 
     def add_analyze_step(self, _eigenvectors, _eigenvalues):
         """ Adds diffusion map analysis values per leg to specific containers.

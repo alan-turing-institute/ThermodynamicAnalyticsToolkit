@@ -12,6 +12,7 @@ TESTSCRIPTS += \
 	$(srcdir)/cmdline/testsuite-userguide-cmdline-analyse_averages.at \
 	$(srcdir)/cmdline/testsuite-userguide-cmdline-analyse_diffmap.at \
 	$(srcdir)/cmdline/testsuite-userguide-cmdline-analyse_free_energy.at \
+	$(srcdir)/cmdline/testsuite-userguide-cmdline-exploring.at \
 	$(srcdir)/cmdline/testsuite-userguide-cmdline-inputspacesampler.at \
 	$(srcdir)/cmdline/testsuite-userguide-cmdline-lossfunctionsampler-fix_parameter.at \
 	$(srcdir)/cmdline/testsuite-userguide-cmdline-lossfunctionsampler-grid.at \

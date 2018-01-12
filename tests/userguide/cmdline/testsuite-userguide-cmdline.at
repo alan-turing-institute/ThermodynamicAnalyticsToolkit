@@ -21,6 +21,7 @@
 m4_include([cmdline/testsuite-userguide-cmdline-analyse_averages.at])
 m4_include([cmdline/testsuite-userguide-cmdline-analyse_diffmap.at])
 m4_include([cmdline/testsuite-userguide-cmdline-analyse_free_energy.at])
+m4_include([cmdline/testsuite-userguide-cmdline-exploring.at])
 m4_include([cmdline/testsuite-userguide-cmdline-inputspacesampler.at])
 m4_include([cmdline/testsuite-userguide-cmdline-lossfunctionsampler-fix_parameter.at])
 m4_include([cmdline/testsuite-userguide-cmdline-lossfunctionsampler-grid.at])

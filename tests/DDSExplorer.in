@@ -1,0 +1,12 @@
+#!/bin/sh
+#
+# wrapper for testing DDSExplorer
+
+. ../../atlocal
+
+"${AUTOTEST_PATH}/DDSExplorer" \
+${1+"$@"}
+
+status=$?
+
+exit $status

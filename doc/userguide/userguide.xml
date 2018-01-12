@@ -543,6 +543,15 @@ cost of all necessary servicing, repair, or correction.</remark>
         average quantities such as loss or kinetic energy be analysed and 
         plotted.</para>
       </section>
+      <section xml:id="quickstart.python.exploration">
+        <title  xml:id="quickstart.python.exploration.title">Exploring the loss manifold</title>
+        <para>At this time of writing, the loss manifold exploration is not 
+        available from the Python API in a simple form. Please refer to the
+        <command>DDSExplorer</command> utility, written in Python, if you
+        need the functionality within a Python script. See 
+        <xref linkend="quickstart.cmdline.exploration"/> for info about the
+        utility.</para>
+      </section>
     </section>
     <section xml:id="quickstart.cmdline">
       <title  xml:id="quickstart.cmdline.title">Using command-line interface</title>
@@ -722,6 +731,50 @@ cost of all necessary servicing, repair, or correction.</remark>
           <para>Both these types of barriers obstruct trajectories and keep
           the optimization trapped in so-called meta-stable states. Each type
           of barrier requires a different type of remedy to overcome.</para>
+        </section>
+      <section xml:id="quickstart.cmdline.exploration">
+        <title  xml:id="quickstart.cmdline.exploration.title">Exploring the loss manifold</title>
+        <para>Eventually, we are not interested in obtaining trajectories on the
+        loss manifold. Instead we would like to find the global minima. Or at 
+        least have a good idea about whether the minimas we have found so far 
+        are reasonable.</para>
+        <para>To this end, a command-line tool called 
+        <command>DDSExplorer</command> is provided. The idea is to make use
+        of the diffusion map with its diffusion distance to assess what part of 
+        the loss manifold has been explored already. Moreover, we use multiple
+        trajectories that are spawned from a specific number of places that are
+        maximally separate with respect to their diffusion distance. This will
+        ensure that we cover the most ground possible.</para>
+        <para>In the end, the eigenvectors obtained through a run using the
+        <command>DDSExplorer</command> will return the dominant diffusion
+        directions and therefore those pointing in the direction along the 
+        minima, i.e. where the sampling usually gets stuck and remains for
+        a while, hence diffusion is slow.</para>
+        <example xml:id="quickstart.cmdline.exploration.example">
+          <title>Exploring the loss manifold</title>
+          <programlisting><xi:include  href="cmdline/exploring.sh"  parse="text"  
+      xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
+          <programlisting>
+          </programlisting>
+          <para>In the example we call the explorer utility in much the same 
+          way as we have called the sampler. There are some additional options
+          that give the number of eigenvalues to calculate and which diffusion
+          map method to use. Note that <command>max_steps</command>
+          now gives the number of steps of a single leg. Further down you find
+          what a lag actually is.</para>
+          <para>Furthermore, there are two options unique to the explorer.
+          This is <command>max_legs</command> which gives the maximum number
+          of legs to look at. Each leg goes over max_steps. After that a 
+          diffusion map analysis is performed that checks whether the 
+          eigenvalues have converged already. If yes, the trajectory is ended,
+          if not we continue with a new log (of max_steps steps). If no 
+          convergence should occur, max_legs gives the maximum number of legs
+          after which the trajectory is still terminated.</para>
+          <para>Finally, we run multiple trajectories in parallel from
+          starting points that are maximally apart from each other in the
+          sense of the diffusion distances. This is controlled by
+          <command>number_of_parallel_trajectories</command>.</para>
+        </example>
         </section>
       </section>
     </section>

@@ -8,6 +8,9 @@ TESTSCRIPTS =
 
 # PLEASE adhere to alphabetical ordering of TESTSCRIPTS
 TESTSCRIPTS += \
+	$(srcdir)/DataDrivenExplorer/testsuite-datadrivenexplorer.at \
+	$(srcdir)/DataDrivenExplorer/testsuite-datadrivenexplorer-simple.at \
+	$(srcdir)/DataDrivenExplorer/SingleTrajectory/testsuite-datadrivenexplorer-single_trajectory.at \
 	$(srcdir)/DataDrivenSampler/testsuite-datadrivensampler.at \
 	$(srcdir)/DataDrivenSampler/testsuite-datadrivensampler-simple.at \
 	$(srcdir)/DataDrivenSampler/FixParameter/testsuite-datadrivensampler-fix_parameter.at \

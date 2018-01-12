@@ -69,15 +69,16 @@ def main(_):
     queue = TrajectoryQueue(container)
 
     # a. add three legs to queue
-    for i in range(1,INITIAL_LEGS):
+    for i in range(1,INITIAL_LEGS+1):
         current_id = container.add_empty_data()
         queue.add_run_job(
             data_id=current_id,
+            network_model=network_model,
             continue_flag=(i == INITIAL_LEGS))
 
     # b. continue until queue has run dry
     while not queue.is_empty():
-        queue.run_next_job(network_model)
+        queue.run_next_job(network_model, FLAGS)
 
     # 2. with the initial trajectory done and analyzed,
     #    find maximally separate points and sample from these
@@ -91,15 +92,18 @@ def main(_):
 
         # c. spawn new trajectories from these points
         for i in range(FLAGS.number_of_parallel_trajectories):
-            current_id = container.add_empty_data()
+            #current_id = container.add_empty_data()
             # TODO: set initial parameters (with loss and gradient) to those
             #   of the maximally apart points such that they are used as starting
             #   points
-            queue.add_run_job(data_id=current_id)
+            queue.add_run_job(
+                data_id=current_id,
+                network_model=network_model,
+                continue_flag=True)
 
         # d. run all trajectories till terminated
         while not queue.is_empty():
-            queue.run_next_job(network_model)
+            queue.run_next_job(network_model, FLAGS)
 
         exploration_step += 1
 
@@ -107,11 +111,28 @@ def main(_):
 
     # 3. write final set of values
 
-    # TODO: write away run time information
-    network_model.config_map["do_write_run_file"] = True
+    # write away run time information
+    if network_model.config_map["csv_file"] is not None:
+        network_model.config_map["do_write_run_file"] = True
+        for current_id in container.data.keys():
+            run_lines_per_leg = container.data[current_id].run_lines
+            for leg_nr in range(len(run_lines_per_leg)):
+                run_lines = run_lines_per_leg[leg_nr]
+                for row in range(len(run_lines.index)):
+                    run_line = run_lines.iloc[row,:]
+                    network_model.run_writer.writerow(run_line)
 
-    # TODO: write away trajectory information
-    network_model.config_map["do_write_trajectory_file"] = True
+
+    # write away trajectory information
+    if network_model.config_map["trajectory_file"] is not None:
+        network_model.config_map["do_write_trajectory_file"] = True
+        for current_id in container.data.keys():
+            trajectory_lines_per_leg = container.data[current_id].trajectory_lines
+            for leg_nr in range(len(trajectory_lines_per_leg)):
+                trajectory_lines = trajectory_lines_per_leg[leg_nr]
+                for row in range(len(trajectory_lines.index)):
+                    trajectory_line = trajectory_lines.iloc[row,:]
+                    network_model.trajectory_writer.writerow(trajectory_line)
 
     # TODO: write away diffusion map analysis
 
