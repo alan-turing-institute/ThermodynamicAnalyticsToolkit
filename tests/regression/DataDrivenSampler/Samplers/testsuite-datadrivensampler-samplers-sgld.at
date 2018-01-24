@@ -19,7 +19,6 @@
 
 AT_SETUP([Samplers - SGLD])
 AT_KEYWORDS([samplers ddsampler SGLD])
-AT_XFAIL_IF([/bin/true])
 
 # dataset prepared as follows:
 # DatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
@@ -39,11 +38,9 @@ AT_CHECK([../../../DDSampler \
 
 # now compare (exclude time_per_nth_step column)
 AT_CHECK([../../../NumericalDiff \
-    --general_threshold 2e-7 relative \
     --column_threshold time_per_nth_step 1e16 absolute -- \
     run-SGLD.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-SGLD.csv], 0, [ignore], [ignore])
 AT_CHECK([../../../NumericalDiff \
-    --general_threshold 2e-7 relative -- \
     trajectory-SGLD.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-SGLD.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP

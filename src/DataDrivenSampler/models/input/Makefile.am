@@ -1,6 +1,7 @@
 DataDrivenSampler_models_input_PYTHON = \
-	inputpipeline.py \
 	datasetpipeline.py \
+	inmemorypipeline.py \
+	inputpipeline.py \
 	__init__.py
 
 DataDrivenSampler_models_inputdir = $(pythondir)/DataDrivenSampler/models/input

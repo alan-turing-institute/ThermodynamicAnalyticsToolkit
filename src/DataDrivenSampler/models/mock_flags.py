@@ -15,6 +15,7 @@ class MockFlags:
                  friction_constant=0.,
                  hidden_activation="relu",
                  hidden_dimension="",
+                 in_memory_pipeline=True,
                  input_columns="1 2",
                  inter_ops_threads=1,
                  intra_ops_threads=None,
@@ -46,6 +47,7 @@ class MockFlags:
         :param friction_constant: friction to scale the influence of momenta
         :param hidden_activation: Activation function to use for hidden layer: tanh, relu, linear
         :param hidden_dimension: Dimension of each hidden layer, e.g. 8 8 for two hidden layers each with 8 nodes fully connected
+        :param in_memory_pipeline: whether to feed the dataset from file in-memory (True) or not (False)
         :param input_columns: Pick a list of the following: (1) x1, (2) x2, (3) x1^2, (4) x2^2, (5) sin(x1), (6) sin(x2).
         :param inter_ops_threads: size of thread pool used for independent ops
         :param intra_ops_threads: size of thread pool used for parallelizing an op
@@ -76,6 +78,7 @@ class MockFlags:
         self.friction_constant = friction_constant
         self.hidden_activation = hidden_activation
         self.hidden_dimension = hidden_dimension
+        self.in_memory_pipeline = in_memory_pipeline
         self.input_columns = input_columns
         self.inter_ops_threads = inter_ops_threads
         self.intra_ops_threads = intra_ops_threads

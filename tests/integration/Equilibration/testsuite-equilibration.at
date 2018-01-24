@@ -20,9 +20,6 @@
 AT_SETUP([Equilibration - Create data, optimize, then sample])
 AT_KEYWORDS([datasetwriter ddsoptimizer ddsampler save_model restore_model])
 
-# this tests fails due to loss of precision (5e-7)
-AT_XFAIL_IF([/bin/true])
-
 DIR=`pwd`
 # run 1: Create dataset
 AT_CHECK([../../../DatasetWriter \

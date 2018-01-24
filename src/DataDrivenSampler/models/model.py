@@ -14,6 +14,7 @@ from DataDrivenSampler.common import create_input_layer, decode_csv_line, file_l
     initialize_config_map, \
     setup_run_file, setup_trajectory_file
 from DataDrivenSampler.models.input.datasetpipeline import DatasetPipeline
+from DataDrivenSampler.models.input.inmemorypipeline import InMemoryPipeline
 from DataDrivenSampler.models.mock_flags import MockFlags
 from DataDrivenSampler.models.neuralnet_parameters import neuralnet_parameters
 from DataDrivenSampler.models.neuralnetwork import NeuralNetwork
@@ -66,10 +67,24 @@ class model:
         :param FLAGS: parameters
         :param shuffle: whether to shuffle dataset or not
         """
-        self.input_pipeline = DatasetPipeline(filenames=FLAGS.batch_data_files,
-                                              batch_size=FLAGS.batch_size, dimension=FLAGS.dimension, max_steps=FLAGS.max_steps,
-                                              input_dimension=self.input_dimension, output_dimension=self.config_map["output_dimension"],
-                                              shuffle=shuffle, seed=FLAGS.seed)
+        input_dimension = self.input_dimension
+        output_dimension = self.config_map["output_dimension"]
+        if FLAGS.in_memory_pipeline:
+            print("Using in-memory pipeline")
+            # at the moment we can only parse a single file
+            assert( len(FLAGS.batch_data_files) == 1 )
+            csv_dataset = pd.read_csv(FLAGS.batch_data_files[0], sep=',', header=0)
+            xs = np.asarray(csv_dataset.iloc[:, 0:input_dimension])
+            ys = np.asarray(csv_dataset.iloc[:, input_dimension:input_dimension+output_dimension])
+            self.input_pipeline = InMemoryPipeline(dataset=[xs,ys], batch_size=FLAGS.batch_size,
+                                                   max_steps=FLAGS.max_steps,
+                                                   shuffle=shuffle, seed=FLAGS.seed)
+        else:
+            print("Using tf.Dataset pipeline")
+            self.input_pipeline = DatasetPipeline(filenames=FLAGS.batch_data_files,
+                                                  batch_size=FLAGS.batch_size, dimension=FLAGS.dimension, max_steps=FLAGS.max_steps,
+                                                  input_dimension=input_dimension, output_dimension=output_dimension,
+                                                  shuffle=shuffle, seed=FLAGS.seed)
 
     def reset_parameters(self, FLAGS):
         """ Use to pass a different set of FLAGS controlling training or sampling.
@@ -128,6 +143,7 @@ class model:
             friction_constant=0.,
             hidden_activation="relu",
             hidden_dimension="",
+            in_memory_pipeline=False,
             input_columns="1 2",
             inter_ops_threads=1,
             intra_ops_threads=None,
@@ -157,6 +173,7 @@ class model:
                 friction_constant=friction_constant,
                 hidden_activation=hidden_activation,
                 hidden_dimension=hidden_dimension,
+                in_memory_pipeline=in_memory_pipeline,
                 input_columns=input_columns,
                 inter_ops_threads=inter_ops_threads,
                 intra_ops_threads=intra_ops_threads,

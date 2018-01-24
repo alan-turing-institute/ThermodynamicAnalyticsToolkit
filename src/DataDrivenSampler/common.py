@@ -1,3 +1,4 @@
+import argparse
 import collections
 import csv
 import numpy as np
@@ -129,6 +130,14 @@ def create_classification_dataset(FLAGS, config_map):
     xinput, x = create_input_layer(config_map["input_dimension"], input_columns)
     return xinput, x, ds
 
+def str2bool(v):
+    # this is the answer from stackoverflow https://stackoverflow.com/a/43357954/1967646
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
 
 def add_data_options_to_parser(parser):
     """ Adding options common to both sampler and optimizer to argparse
@@ -158,6 +167,8 @@ def add_model_options_to_parser(parser):
         help='Activation function to use for hidden layer: tanh, relu, linear')
     parser.add_argument('--hidden_dimension', type=str, nargs='+', default=[],
         help='Dimension of each hidden layer, e.g. 8 8 for two hidden layers each with 8 nodes fully connected')
+    parser.add_argument('--in_memory_pipeline', type=str2bool, default=True,
+        help='Whether to use an in-memory input pipeline (for small datasets) or the tf.Dataset module.')
     parser.add_argument('--input_columns', type=str, nargs='+', default="1 2",
         help='Pick a list of the following: (1) x1, (2) x2, (3) x1^2, (4) x2^2, (5) sin(x1), (6) sin(x2).')
     parser.add_argument('--loss', type=str, default="mean_squared",

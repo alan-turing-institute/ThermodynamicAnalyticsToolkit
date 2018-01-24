@@ -20,9 +20,6 @@
 AT_SETUP([Examples cmdline - loss function sampling over grid])
 AT_KEYWORDS([example cmdline lossfunctionsampler grid])
 
-# this fails at the moment due to some loss of precision (4e-5)
-AT_XFAIL_IF([/bin/true])
-
 # dataset prepared as follows:
 # DatasetWriter --data_type 2 --dimension 500 --seed 426 --noise 0.1 --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
 AT_CHECK([cp -f ${abs_top_srcdir}/tests/userguide/cmdline/pre/dataset-twoclusters.csv .], 0, [ignore], [ignore])

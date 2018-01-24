@@ -19,7 +19,6 @@
 
 AT_SETUP([InputSpaceSampler - two clusters grid])
 AT_KEYWORDS([inputspacesampler two_clusters])
-AT_XFAIL_IF([/bin/true])
 
 AT_CHECK([../../../InputSpaceSampler \
     --batch_data_files grid.csv \
