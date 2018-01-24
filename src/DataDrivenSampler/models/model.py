@@ -13,6 +13,7 @@ from DataDrivenSampler.common import create_input_layer, decode_csv_line, file_l
     get_csv_defaults, get_list_from_string, get_trajectory_header, \
     initialize_config_map, \
     setup_run_file, setup_trajectory_file
+from DataDrivenSampler.models.input.datasetpipeline import DatasetPipeline
 from DataDrivenSampler.models.mock_flags import MockFlags
 from DataDrivenSampler.models.neuralnet_parameters import neuralnet_parameters
 from DataDrivenSampler.models.neuralnetwork import NeuralNetwork
@@ -65,27 +66,10 @@ class model:
         :param FLAGS: parameters
         :param shuffle: whether to shuffle dataset or not
         """
-        defaults = get_csv_defaults(
-            input_dimension=self.input_dimension,
-            output_dimension=self.config_map["output_dimension"])
-        #print(defaults)
-        dataset = tf.data.Dataset.from_tensor_slices(FLAGS.batch_data_files)
-        dataset = dataset.flat_map(
-            lambda filename: (
-                tf.data.TextLineDataset(filename)
-                    .skip(1)
-                    .filter(lambda line: tf.not_equal(tf.substr(line, 0, 1), '#'))))
-        dataset = dataset.map(functools.partial(decode_csv_line, defaults=defaults))
-        if shuffle:
-            dataset = dataset.shuffle(seed=FLAGS.seed)
-        dataset = dataset.batch(FLAGS.batch_size)
-        dataset = dataset.repeat(ceil(FLAGS.max_steps*FLAGS.batch_size/FLAGS.dimension))
-        print(dataset.output_shapes)
-        print(dataset.output_types)
-
-        self.iterator = dataset.make_initializable_iterator()
-        return self.iterator.get_next()
-
+        self.input_pipeline = DatasetPipeline(filenames=FLAGS.batch_data_files,
+                                              batch_size=FLAGS.batch_size, dimension=FLAGS.dimension, max_steps=FLAGS.max_steps,
+                                              input_dimension=self.input_dimension, output_dimension=self.config_map["output_dimension"],
+                                              shuffle=shuffle, seed=FLAGS.seed)
 
     def reset_parameters(self, FLAGS):
         """ Use to pass a different set of FLAGS controlling training or sampling.
@@ -197,7 +181,7 @@ class model:
     def reset_dataset(self):
         """ Re-initializes the dataset for a new run
         """
-        self.sess.run(self.iterator.initializer)
+        self.input_pipeline.reset(self.sess)
 
     def init_network(self, filename = None, setup = None):
         """ Initializes the graph, from a stored model if filename is not None.
@@ -256,8 +240,8 @@ class model:
         # initialize constants in graph
         self.nn.init_graph(self.sess)
 
-        # initialize dataset iterator
-        self.reset_dataset()
+        # initialize dataset
+        self.input_pipeline.reset(self.sess)
 
         if self.FLAGS.fix_parameters is not None:
             self.assign_parameters(fixed_variables, values)
@@ -420,21 +404,13 @@ class model:
         print_intervals = max(1, int(self.FLAGS.max_steps / 100))
         last_time = time.process_time()
         for i in range(self.FLAGS.max_steps):
-            # fetch next batch of data
-            try:
-                batch_data = self.sess.run(self.batch_next)
-            except tf.errors.OutOfRangeError:
-                self.reset_dataset()
-                try:
-                    batch_data = self.sess.run(self.batch_next)
-                except tf.errors.OutOfRangeError:
-                    print('Dataset is too small for one batch!')
-                    sys.exit(255)
+            # get next batch of data
+            features, labels = self.input_pipeline.next_batch(self.sess)
 
             # place in feed dict
             feed_dict = {
-                self.xinput: batch_data[0],
-                placeholder_nodes["y_"]: batch_data[1],
+                self.xinput: features,
+                placeholder_nodes["y_"]: labels,
                 placeholder_nodes["step_width"]: self.FLAGS.step_width,
                 placeholder_nodes["inverse_temperature"]: self.FLAGS.inverse_temperature,
                 placeholder_nodes["friction_constant"]: self.FLAGS.friction_constant,
@@ -645,20 +621,13 @@ class model:
         for i in range(self.FLAGS.max_steps):
             #print("Current step is " + str(i))
 
-            try:
-                batch_data = self.sess.run(self.batch_next)
-            except tf.errors.OutOfRangeError:
-                self.reset_dataset()
-                try:
-                    batch_data = self.sess.run(self.batch_next)
-                except tf.errors.OutOfRangeError:
-                    print('Dataset is too small for one batch!')
-                    sys.exit(255)
+            # get next batch of data
+            features, labels = self.input_pipeline.next_batch(self.sess)
 
             # place in feed dict
             feed_dict = {
-                self.xinput: batch_data[0],
-                placeholder_nodes["y_"]: batch_data[1],
+                self.xinput: features,
+                placeholder_nodes["y_"]: labels,
                 placeholder_nodes["step_width"]: self.FLAGS.step_width
             }
             if self.FLAGS.dropout is not None:

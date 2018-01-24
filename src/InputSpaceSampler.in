@@ -159,7 +159,7 @@ def main(_):
 
     def evaluate_label(current_step):
         # fetch next batch of data
-        batch_data = network_model.sess.run(network_model.batch_next)
+        batch_data = network_model.sess.run(network_model.input_pipeline.batch_next)
         print("batch_data is "+str(batch_data))
 
         # place in feed dict

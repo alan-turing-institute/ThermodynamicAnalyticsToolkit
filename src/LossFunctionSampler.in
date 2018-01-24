@@ -109,13 +109,9 @@ def main(_):
     def evaluate_loss():
         # fetch next batch of data
         try:
-            batch_data = network_model.sess.run(network_model.batch_next)
+            batch_data = network_model.sess.run(network_model.input_pipeline.batch_next)
         except tf.errors.OutOfRangeError:
-            #network_model.reset_dataset()
-            #try:
-            #    batch_data = network_model.sess.run(network_model.batch_next)
-            #except tf.errors.OutOfRangeError:
-            print('Dataset is too small for one batch!')
+            print('Max_steps or batch_size was not chosen right, dataset should always have right size.')
             sys.exit(255)
 
         # place in feed dict
