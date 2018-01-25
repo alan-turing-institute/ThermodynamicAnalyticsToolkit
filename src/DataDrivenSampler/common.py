@@ -20,10 +20,10 @@ def get_filename_from_fullpath(fullpath):
     return os.path.basename(fullpath)
 
 def get_list_from_string(str_or_list_of_str):
-    """ Extracts list of ints from any string (or list of strings).
+    """ Extracts list of strings from any string (or list of strings).
 
     :param str_or_list_of_str: string
-    :return: list of ints
+    :return: list of str
     """
     tmpstr=str_or_list_of_str
     if str_or_list_of_str is not str:
@@ -31,7 +31,7 @@ def get_list_from_string(str_or_list_of_str):
             tmpstr=" ".join(str_or_list_of_str)
         except(TypeError):
             tmpstr=" ".join([item for sublist in str_or_list_of_str for item in sublist])
-    return [int(item) for item in tmpstr.split()]
+    return [item for item in tmpstr.split()]
 
 
 def initialize_config_map():
@@ -169,7 +169,7 @@ def add_model_options_to_parser(parser):
         help='Dimension of each hidden layer, e.g. 8 8 for two hidden layers each with 8 nodes fully connected')
     parser.add_argument('--in_memory_pipeline', type=str2bool, default=True,
         help='Whether to use an in-memory input pipeline (for small datasets) or the tf.Dataset module.')
-    parser.add_argument('--input_columns', type=str, nargs='+', default="1 2",
+    parser.add_argument('--input_columns', type=str, nargs='+', default="",
         help='Pick a list of the following: (1) x1, (2) x2, (3) x1^2, (4) x2^2, (5) sin(x1), (6) sin(x2).')
     parser.add_argument('--loss', type=str, default="mean_squared",
         help='Set the loss to be measured during sampling, e.g. mean_squared, log_loss, ...')
@@ -301,15 +301,14 @@ def get_csv_defaults(input_dimension, output_dimension=1):
 def create_input_layer(input_dimension, input_list):
     """ Creates the input layer of TensorFlow's neural network.
 
-     As the input nodes are directly connected to the type of data we feed
+    As the input nodes are directly connected to the type of data we feed
      into the network, the function is associated with the dataset generator
      class.
 
-     As the datasets all have two-dimensional input, several expression may
-     be derived from this: first coordinate, second coordinate, squared first,
-     squared second, sine of first, sine of second.
+    For arbitrary input dimension we support taking powers, sine or cosine
+     of the argument.
 
-     All data resides in the domain [-r,r]^2.
+    All data resides in the domain [-r,r]^2.
 
     :param input_dimension: number of nodes for the input layer
     :param input_list: Pick of derived arguments to
@@ -321,17 +320,35 @@ def create_input_layer(input_dimension, input_list):
         xinput = tf.placeholder(tf.float64, [None, input_dimension], name='x-input')
         # print("xinput is "+str(xinput.get_shape()))
 
-        # pick from the various available input columns
-        arg_list_names = ["x1", "x2", "x1^2", "x2^2", "sin(x1)", "sin(x2)"]
-        picked_list_names = list(map(lambda i: arg_list_names[i - 1], input_list))
-        print("Picking as input columns: " + str(picked_list_names))
-        arg_list = [xinput[:, 0], xinput[:, 1]]
-        arg_list += [arg_list[0] * arg_list[0],
-                     arg_list[1] * arg_list[1],
-                     tf.sin(arg_list[0]),
-                     tf.sin(arg_list[1])]
-        picked_list = list(map(lambda i: arg_list[i - 1], input_list))
-        x = tf.transpose(tf.stack(picked_list))
+        # parse input columns
+        picked_list = []
+        for token in input_list:
+            # get the argument
+            x_index = token.find('x')
+            if x_index != -1:
+                arg_name = None
+                for i in range(x_index, len(token)):
+                    if (token[i] < "0") or (token[i] > "9"):
+                        arg_name = token[x_index:i]
+                        break
+                assert( arg_name is not None )
+                arg = xinput[:, (int(arg_name[1:])-1)]
+                if "sin" in token:
+                    picked_list.append(tf.sin(arg))
+                elif "cos" in token:
+                    picked_list.append(tf.cos(arg))
+                elif "^" in token:
+                    power = int(token[(token.find('^')+1):])
+                    picked_list.append(tf.pow(arg, power))
+                else:
+                    picked_list.append(arg)
+            else:
+                picked_list.append(xinput[:, (int(token) - 1)])
+        # if no specific input columns are desired, take all
+        if len(input_list) == 0:
+            x = tf.identity(xinput)
+        else:
+            x = tf.transpose(tf.stack(picked_list))
         print("x is " + str(x.get_shape()))
     return xinput, x
 

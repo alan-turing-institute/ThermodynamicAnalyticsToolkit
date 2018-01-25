@@ -40,6 +40,8 @@ def parse_parameters():
 
     parser.add_argument('--csv_file', type=str, default=None,
         help='CSV file name to output sampled values to.')
+    parser.add_argument('--input_dimension', type=int, default=2,
+        help='Number of input nodes.')
     parser.add_argument('--inter_ops_threads', type=int, default=1,
         help='Sets the number of threads to split up ops in between. NOTE: This hurts reproducibility to some extent because of parallelism.')
     parser.add_argument('--interval_input', type=str, nargs='+', default=[],
@@ -61,7 +63,7 @@ def parse_parameters():
 def main(_):
 
     # create the data set
-    input_dimension = len(get_list_from_string(FLAGS.input_columns))
+    input_dimension = FLAGS.input_dimension
 
     # sample space
     input_interval_start = float(FLAGS.interval_input[0])

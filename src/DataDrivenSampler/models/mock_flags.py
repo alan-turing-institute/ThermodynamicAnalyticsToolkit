@@ -16,7 +16,7 @@ class MockFlags:
                  hidden_activation="relu",
                  hidden_dimension="",
                  in_memory_pipeline=True,
-                 input_columns="1 2",
+                 input_columns="",
                  inter_ops_threads=1,
                  intra_ops_threads=None,
                  inverse_temperature=1.,
