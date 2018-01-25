@@ -39,7 +39,10 @@ class model:
             self.FLAGS.dimension = sum([file_length(filename)
                                         for filename in FLAGS.batch_data_files]) \
                                    - len(FLAGS.batch_data_files)
+            self._check_valid_batch_size()
+
             print("Parsing "+str(FLAGS.batch_data_files))
+
             self.number_of_parameters = 0 # number of biases and weights
 
             self.input_dimension = 2
@@ -62,6 +65,23 @@ class model:
         self.run_writer = None
         self.trajectory_writer = None
 
+    def _check_valid_batch_size(self):
+        ''' helper function to check that batch_size does not exceed dimension
+        of dataset. After which it will be valid.
+
+        :return: True - is smaller or equal, False - exceeded and capped batch_size
+        '''
+        if self.FLAGS.batch_size is None:
+            print("batch_size not set, setting to dimension of dataset.")
+            self.FLAGS.batch_size = self.FLAGS.dimension
+            return True
+        if self.FLAGS.batch_size > self.FLAGS.dimension:
+            print("WARNING: batch_size exceeds number of data items, capping.")
+            self.FLAGS.batch_size = self.FLAGS.dimension
+            return False
+        else:
+            return True
+
     def provide_data(self, features, labels, shuffle=False):
         ''' This function allows to provide an in-memory dataset using the Python
         API.
@@ -73,6 +93,9 @@ class model:
         print("Using in-memory pipeline")
         self.input_dimension = len(features[0])
         self.config_map["output_dimension"] = len(labels[0])
+        assert( len(features) == len(labels) )
+        self.FLAGS.dimension = len(features)
+        self._check_valid_batch_size()
         self.input_pipeline = InMemoryPipeline(dataset=[features, labels],
                                                batch_size=self.FLAGS.batch_size,
                                                max_steps=self.FLAGS.max_steps,
