@@ -4,7 +4,7 @@ import functools
 from math import ceil
 import sys
 
-from DataDrivenSampler.common import decode_csv_line, get_csv_defaults
+from DataDrivenSampler.common import decode_csv_line, read_and_decode_image, get_csv_defaults
 from DataDrivenSampler.models.input.inputpipeline import InputPipeline
 
 class DatasetPipeline(InputPipeline):
@@ -13,7 +13,7 @@ class DatasetPipeline(InputPipeline):
 
     """
 
-    def __init__(self, filenames,
+    def __init__(self, filenames, filetype,
                  batch_size, dimension, max_steps,
                  input_dimension, output_dimension,
                  shuffle, seed):
@@ -21,6 +21,7 @@ class DatasetPipeline(InputPipeline):
         them, and putting them into batches.
 
         :param filenames: list of filenames to parse
+        :param filetype: type of the files to parse: csv, tfrecord
         :param batch_size: number of datums to return
         :param dimension: number of datums in total
         :param max_steps: maximum number of steps
@@ -29,18 +30,30 @@ class DatasetPipeline(InputPipeline):
         :param shuffle: whether to shuffle dataset initially or not
         :param seed: seed used for random shuffle to allow reproducible runs
         '''
+
         defaults = get_csv_defaults(
             input_dimension=input_dimension,
             output_dimension=output_dimension)
         #print(defaults)
         self.dataset = tf.data.Dataset.from_tensor_slices(filenames)
-        self.dataset = self.dataset.flat_map(
-            lambda filename: (
-                tf.data.TextLineDataset(filename)
-                    .skip(1)
-                    .filter(lambda line: tf.not_equal(tf.substr(line, 0, 1), '#'))
-                    .cache()))
-        self.dataset = self.dataset.map(functools.partial(decode_csv_line, defaults=defaults))
+        if filetype == "csv":
+            self.dataset = self.dataset.flat_map(
+                lambda filename: (
+                    tf.data.TextLineDataset(filename)
+                        .skip(1)
+                        .filter(lambda line: tf.not_equal(tf.substr(line, 0, 1), '#'))
+                        .cache()))
+            self.dataset = self.dataset.map(functools.partial(decode_csv_line, defaults=defaults))
+        elif filetype == "tfrecord":
+            self.dataset = self.dataset.flat_map(
+                lambda filename: (tf.data.TFRecordDataset(filename)))
+            # TODO: this is very specific at the moment
+            self.dataset = self.dataset.map(functools.partial(read_and_decode_image,
+                                                              num_pixels=input_dimension,
+                                                              num_classes=output_dimension))
+        else:
+            print("Unknown filetype")
+            sys.exit(255)
         if shuffle:
             self.dataset = self.dataset.shuffle(seed=seed)
         self.dataset = self.dataset.batch(batch_size)

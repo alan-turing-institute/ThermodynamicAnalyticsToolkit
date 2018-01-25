@@ -8,6 +8,7 @@ class MockFlags:
 
     def __init__(self,
                  batch_data_files=[],
+                 batch_data_file_type="csv",
                  batch_size=10,
                  dropout=0.9,
                  every_nth=1,
@@ -42,6 +43,7 @@ class MockFlags:
         """ Init function to set various default values.
 
         :param batch_data_files: set of files to read input from
+        :param batch_data_file_type: type of the files to read input from
         :param batch_size: The number of samples used to divide sample set into batches in one sampleing step.
         :param dropout: Keep probability for sampleing dropout, e.g. 0.9
         :param every_nth: Store only every nth trajectory (and run) point to files, e.g. 10
@@ -74,6 +76,7 @@ class MockFlags:
         :param trajectory_file: CSV file name to output trajectories of sampling, i.e. weights and evaluated loss function.
         """
         self.batch_data_files = batch_data_files
+        self.batch_data_file_type = batch_data_file_type
         self.batch_size = batch_size
         self.dimension = 0 # keeps the input dimension later
         self.dropout = dropout

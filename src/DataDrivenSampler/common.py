@@ -124,7 +124,9 @@ def add_data_options_to_parser(parser):
     """
     # please adhere to alphabetical ordering
     parser.add_argument('--batch_data_files', type=str, nargs='+', default=[],
-        help='Names of CSV files to parse input data from')
+        help='Names of files to parse input data from')
+    parser.add_argument('--batch_data_file_type', type=str, default="csv",
+        help='Type of the input files: csv (default), tfrecord')
     parser.add_argument('--input_dimension', type=int, default=2,
         help='Number of input nodes, i.e. dimensionality of provided dataset')
     parser.add_argument('--output_dimension', type=int, default=1,
@@ -246,6 +248,36 @@ def read_from_csv(filename_queue):
     features = tf.stack([col_x1, col_x2])
     label = tf.stack([col_label])
     return features, label
+
+
+def read_and_decode_image(serialized_example, num_pixels, num_classes):
+  features = tf.parse_single_example(
+      serialized_example,
+      # Defaults are not specified since both keys are required.
+      features={
+          'image_raw': tf.FixedLenFeature([], tf.string),
+          'label': tf.FixedLenFeature([], tf.int64),
+      })
+
+  # Convert from a scalar string tensor (whose single string has
+  # length mnist.IMAGE_PIXELS) to a uint8 tensor with shape
+  # [mnist.IMAGE_PIXELS].
+  image = tf.decode_raw(features['image_raw'], tf.uint8)
+  image.set_shape(num_pixels)
+
+  # OPTIONAL: Could reshape into a 28x28 image and apply distortions
+  # here.  Since we are not applying any distortions in this
+  # example, and the next step expects the image to be flattened
+  # into a vector, we don't bother.
+
+  # Convert from [0, 255] -> [-0.5, 0.5] floats.
+  image = tf.cast(image, tf.float32) * (1. / 255) - 0.5
+
+  # Convert label from a scalar uint8 tensor to an int32 tensor.
+  label = tf.cast(features['label'], tf.int32)
+  label = tf.one_hot(label, num_classes)
+
+  return image, label
 
 
 def decode_csv_line(line, defaults):

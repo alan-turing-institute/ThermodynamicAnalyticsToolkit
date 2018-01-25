@@ -38,10 +38,16 @@ class model:
         if len(FLAGS.batch_data_files) > 0:
             self.input_dimension = self.FLAGS.input_dimension
             self.output_dimension = self.FLAGS.output_dimension
-            self.FLAGS.dimension = sum([file_length(filename)
-                                        for filename in FLAGS.batch_data_files]) \
-                                   - len(FLAGS.batch_data_files)
-            self._check_valid_batch_size()
+            if FLAGS.batch_data_file_type == "csv":
+                self.FLAGS.dimension = sum([file_length(filename)
+                                            for filename in FLAGS.batch_data_files]) \
+                                       - len(FLAGS.batch_data_files)
+                self._check_valid_batch_size()
+            elif FLAGS.batch_data_file_type == "tfrecord":
+                self.FLAGS.dimension = self._get_dimension_from_tfrecord(FLAGS.batch_data_files)
+            else:
+                print("Unknown file type")
+                assert(0)
 
             print("Parsing "+str(FLAGS.batch_data_files))
 
@@ -64,6 +70,31 @@ class model:
         # mark writer as to be created
         self.run_writer = None
         self.trajectory_writer = None
+
+    @staticmethod
+    def _get_dimension_from_tfrecord(filenames):
+        ''' Helper function to get the size of the dataset contained in a TFRecord.
+
+        :param filenames: list of tfrecord files
+        :return: total size of dataset
+        '''
+        dimension  = 0
+        for filename in filenames:
+            record_iterator = tf.python_io.tf_record_iterator(path=filename)
+            for string_record in record_iterator:
+            #     example = tf.train.Example()
+            #     example.ParseFromString(string_record)
+            #     height = int(example.features.feature['height']
+            #                  .int64_list
+            #                  .value[0])
+            #
+            #     width = int(example.features.feature['width']
+            #                 .int64_list
+            #                 .value[0])
+            #     print("height is "+str(height)+" and width is "+str(width))
+                dimension += 1
+
+        return dimension
 
     def _check_valid_batch_size(self):
         ''' helper function to check that batch_size does not exceed dimension
@@ -107,7 +138,7 @@ class model:
         :param FLAGS: parameters
         :param shuffle: whether to shuffle dataset or not
         """
-        if FLAGS.in_memory_pipeline:
+        if FLAGS.in_memory_pipeline and (FLAGS.batch_data_file_type == "csv"):
             print("Using in-memory pipeline")
             # at the moment we can only parse a single file
             assert( len(FLAGS.batch_data_files) == 1 )
@@ -119,7 +150,7 @@ class model:
                                                    shuffle=shuffle, seed=FLAGS.seed)
         else:
             print("Using tf.Dataset pipeline")
-            self.input_pipeline = DatasetPipeline(filenames=FLAGS.batch_data_files,
+            self.input_pipeline = DatasetPipeline(filenames=FLAGS.batch_data_files, filetype=FLAGS.batch_data_file_type,
                                                   batch_size=FLAGS.batch_size, dimension=FLAGS.dimension, max_steps=FLAGS.max_steps,
                                                   input_dimension=self.input_dimension, output_dimension=self.output_dimension,
                                                   shuffle=shuffle, seed=FLAGS.seed)
@@ -174,6 +205,7 @@ class model:
     @staticmethod
     def setup_parameters(
             batch_data_files=[],
+            batch_data_file_type="csv",
             batch_size=10,
             dropout=None,
             every_nth=1,
@@ -206,6 +238,7 @@ class model:
             trajectory_file=None):
             return MockFlags(
                 batch_data_files=batch_data_files,
+                batch_data_file_type=batch_data_file_type,
                 batch_size=batch_size,
                 dropout=dropout,
                 every_nth=every_nth,
