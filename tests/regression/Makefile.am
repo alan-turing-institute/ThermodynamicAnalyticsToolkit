@@ -18,6 +18,7 @@ TESTSCRIPTS += \
 	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-inverse_temperature.at \
 	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-sql_db.at \
 	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-step_width.at \
+	$(srcdir)/DataDrivenSampler/Pipelines/testsuite-datadrivensampler-pipelines.at \
 	$(srcdir)/DataDrivenSampler/Prior/testsuite-datadrivensampler-prior.at \
 	$(srcdir)/DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-lower_boundary.at \
 	$(srcdir)/DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-lower_upper_boundary.at \
