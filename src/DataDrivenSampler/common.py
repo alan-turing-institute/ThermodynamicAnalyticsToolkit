@@ -107,29 +107,6 @@ def setup_trajectory_file(filename, no_weights, no_biases, config_map):
     else:
         return None
 
-
-def create_classification_dataset(FLAGS, config_map):
-    """ Creates the dataset object using a classification generator.
-
-    :param FLAGS: FLAGS dictionary with command-line parameters
-    :param config_map: configuration dictionary
-    :return: placeholder node for input, input layer for network, dataset object
-    """
-    print("Generating input data")
-    dsgen=DatasetGenerator()
-    ds = dsgen.generate(
-        dimension=FLAGS.dimension,
-        noise=FLAGS.noise,
-        data_type=FLAGS.data_type)
-    # use all as train set
-    ds.set_test_train_ratio(1)
-    dsgen.setup_config_map(config_map)
-
-    # generate input layer
-    input_columns = get_list_from_string(FLAGS.input_columns)
-    xinput, x = create_input_layer(config_map["input_dimension"], input_columns)
-    return xinput, x, ds
-
 def str2bool(v):
     # this is the answer from stackoverflow https://stackoverflow.com/a/43357954/1967646
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
