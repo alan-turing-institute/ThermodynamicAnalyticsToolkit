@@ -6,8 +6,6 @@ mpl.use('Agg')  # no display
 import matplotlib.pyplot as plt
 import io
 
-from DataDrivenSampler.datasets.dataset import Dataset
-
 
 class ClassificationDatasets:
     """
@@ -68,7 +66,7 @@ class ClassificationDatasets:
         if data_type not in self.func_dict:
             raise NotImplementedError("Unknown input data type desired.")
         self.func_dict[data_type](dimension, noise)
-        return Dataset(self.xs, self.ys)
+        return self.xs, self.ys
 
     def generate_twocircles(self, dimension, noise):
         """
