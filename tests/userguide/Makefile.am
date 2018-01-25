@@ -27,6 +27,7 @@ TESTSCRIPTS += \
 	$(srcdir)/python/testsuite-userguide-python-optimize_sample.at \
 	$(srcdir)/python/testsuite-userguide-python-plot_optimize.at \
 	$(srcdir)/python/testsuite-userguide-python-sample.at \
+	$(srcdir)/python/testsuite-userguide-python-supply_dataset.at \
 	$(srcdir)/python/testsuite-userguide-python-writing_data.at
 
 EXTRA_DIST = \

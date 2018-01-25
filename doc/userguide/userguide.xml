@@ -377,8 +377,6 @@ cost of all necessary servicing, repair, or correction.</remark>
           <title>Writing the "two clusters" dataset to a CSV file</title>
           <programlisting><xi:include  href="python/writing_data.py"  parse="text"  
       xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
-          <programlisting>
-          </programlisting>
         </example>
         <para>After importing some modules we first fix the 
         numpy seed to 426 in order to get the same items reproducibly.
@@ -398,8 +396,6 @@ cost of all necessary servicing, repair, or correction.</remark>
           <title>Optimizing network for two clusters dataset</title>
           <programlisting><xi:include  href="python/optimize.py"  parse="text"  
       xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
-          <programlisting>
-          </programlisting>
         </example>
         <para>
         As you see, all options are set in a struct called <command>FLAGS</command> 
@@ -447,8 +443,6 @@ cost of all necessary servicing, repair, or correction.</remark>
           <title>Plotting the loss and other properties over steps</title>
           <programlisting><xi:include  href="python/plot_optimize.py"  parse="text"  
       xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
-          <programlisting>
-          </programlisting>
         </example>
       <para>Go and have a look athe other columns. Or try to visualize the 
       change in the parameters (weights and biases) in the trajectories
@@ -461,8 +455,6 @@ cost of all necessary servicing, repair, or correction.</remark>
           <title>Sampling the loss manifold using GLA 2nd</title>
           <programlisting><xi:include  href="python/sample.py"  parse="text"  
       xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
-          <programlisting>
-          </programlisting>
         </example>
         <para>Here, the <emphasis>sampler</emphasis> setting takes the place
         of the <command>optimizer</command> before as it states which sampling 
@@ -471,46 +463,67 @@ cost of all necessary servicing, repair, or correction.</remark>
         and HamiltonianMonteCarlo, where the first refers to 
         StochasticGradientLangevinDynamics [Welling, Teh, 2011]. GLA 2nd or 
         BAOAB is currently recommended to use.</para>
-        <para>Note that you may add a prior to the sampling. At the current 
-        state two kinds of priors as follows are available. In <quote>FLAGS</quote>
-        <command>prior_upper_boundary</command> and 
-        <command>prior_lower_boundary</command> give the admitted interval
-        per parameter. Within a relative distance of 0.01 (with respect to 
-        length of domain) a force increase with the distance where the power
-        is determined by <command>prior_power</command>.
-        In essence, this will constrain the sampling to within the domain. The
-        force is modified by <command>prior_factor</command>.</para>
-        <para>If upper and lower boundary coincide, then we have the case
-        of tethering, where all parameters are pulled inward to the same 
-        point.</para>
-        <note>The prior force is acting directly on the variables. It does not 
-        modify momentum. Moeover, it is a force! In other words, it depends on
-        step width. If the step width is too large and if the repelling force
-        increases too steeply close to the walls with respect to the normal
-        dynamics of the system, it may blow up.
-        </note>
-        <para>We might also concatenate optimize and sample if in between the
-        two we adjust FLAGS as follows:
-        <example xml:id="quickstart.python.sampling.example.combined">
-          <title>Optimizing first and subsequent sampling</title>
-          <programlisting><xi:include  href="python/optimize_sample.py"  parse="text"  
+        <section xml:id="quickstart.python.sampling.supply_dataset">
+          <title  xml:id="quickstart.python.sampling.supply_dataset.title">Provide your own dataset</title>
+          <para>Using the Python API you can directly supply your own dataset, 
+        e.g. from a numpy array residing in memory. See the following example.</para>
+          <example xml:id="quickstart.python.supply_dataset.example">
+            <title>Supplying a dataset in the form of a numpy array (parsed from a CSV file)</title>
+            <programlisting><xi:include  href="python/supply_dataset.py"  parse="text"  
       xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
-          <programlisting>
-          </programlisting>
-        </example>
-        The only thing we change in FLAGS is the number of steps and adding the
-        sampler. However, as the model simply stores a copy of the FLAGS, in 
-        order to update the FLAGS in the model class as well, we need to reset 
-        it. Afterwards, we again  initialize the network which will add only the 
-        sampling nodes and prepare output files differently.
-        We have skipped the following steps that are equivalent to
-        <xref xrefstyle="template:Example %n" linkend="quickstart.python.sampling.example"/>.
-        Again, at the very end we obtain pandas DataFrame containing runtime 
-        information and trajectory.
-        <note>This is actually the <emphasis>recommended</emphasis> way of
-        doing sampling: First make sure that the parameters start in a local 
-        minima and from there we explore the surrounding manifold.</note>
-        </para>
+          </example>
+          <para>The major difference is that <command>batch_data_files</command>
+          is now empty and instead we call the function <command>provide_data</command>
+          in order to provide an in-memory dataset. In this example, we have 
+          parsed the same file as the in the previous section into a numpy 
+          array using the pandas module. Natually, this is just one way of
+          creating a suitable numpy array. Input and output dimensions are
+          directly deduced from the the tuple sizes.</para>
+        </section>
+        <section xml:id="quickstart.python.sampling.priors">
+          <title  xml:id="quickstart.python.sampling.priors.title">Using a prior</title>
+          <para>You may add a prior to the sampling. At the current state two 
+          kinds of priors as follows are available. In <quote>FLAGS</quote>
+          <command>prior_upper_boundary</command> and 
+          <command>prior_lower_boundary</command> give the admitted interval
+          per parameter. Within a relative distance of 0.01 (with respect to 
+          length of domain) a force increase with the distance where the power
+          is determined by <command>prior_power</command>.
+          In essence, this will constrain the sampling to within the domain. The
+          force is modified by <command>prior_factor</command>.</para>
+          <para>If upper and lower boundary coincide, then we have the case
+          of tethering, where all parameters are pulled inward to the same 
+          point.</para>
+          <note>The prior force is acting directly on the variables. It does not 
+          modify momentum. Moeover, it is a force! In other words, it depends on
+          step width. If the step width is too large and if the repelling force
+          increases too steeply close to the walls with respect to the normal
+          dynamics of the system, it may blow up.
+          </note>
+        </section>
+        <section xml:id="quickstart.python.sampling.optimize_then_sample">
+          <title  xml:id="quickstart.python.sampling.optimize_then_sample.title">First optimize, then sample</title>
+          <para>We might also concatenate optimize and sample if in between the
+          two we adjust FLAGS as follows:
+          <example xml:id="quickstart.python.sampling.example.combined">
+            <title>Optimizing first and subsequent sampling</title>
+            <programlisting><xi:include  href="python/optimize_sample.py"  parse="text"  
+        xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
+          </example>
+          The only thing we change in FLAGS is the number of steps and adding the
+          sampler. However, as the model simply stores a copy of the FLAGS, in 
+          order to update the FLAGS in the model class as well, we need to reset 
+          it. Afterwards, we again  initialize the network which will add only the 
+          sampling nodes and prepare output files differently.
+          We have skipped the following steps that are equivalent to
+          <xref xrefstyle="template:Example %n" linkend="quickstart.python.sampling.example"/>.
+          Again, at the very end we obtain pandas DataFrame containing runtime 
+          information and trajectory.
+          <note>This is actually the <emphasis>recommended</emphasis> way of
+          doing sampling: First make sure that the parameters start in a local 
+          minima and from there we explore the surrounding manifold.</note>
+          </para>
+        </section>
       </section>
       <section xml:id="quickstart.python.analysis">
         <title  xml:id="quickstart.python.analysis.title">Analysing trajectories</title>
@@ -524,11 +537,7 @@ cost of all necessary servicing, repair, or correction.</remark>
           <title>Plotting the averages of the parameters over steps</title>
           <programlisting><xi:include  href="python/analyse.py"  parse="text"  
       xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
-          <programlisting>
-          </programlisting>
         </example>
-        <programlisting>
-        </programlisting>
         <para>This would give a plot of the running average for each parameter
         in the trajectory file. In a similar, the run file can be loaded and its
         average quantities such as loss or kinetic energy be analysed and 
@@ -552,8 +561,6 @@ cost of all necessary servicing, repair, or correction.</remark>
           <title>Creating the "two clusters" dataset as CSV file</title>
           <programlisting><xi:include  href="cmdline/write_dataset.sh"  parse="text"  
       xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
-          <programlisting>
-          </programlisting>
         </example>
         <para>This will write 500 datums of the dataset type 2 ("two clusters")
         to a file <quote>testset-twoclusters.csv</quote> using all of the points as we have
@@ -568,8 +575,6 @@ cost of all necessary servicing, repair, or correction.</remark>
           <title>Parsing dataset from CSV file</title>
           <programlisting><xi:include  href="cmdline/parse_dataset.sh"  parse="text"  
       xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
-          <programlisting>
-          </programlisting>
         </example>
         <para>where the <emphasis>seed</emphasis> is used for shuffling the
         dataset.</para>
@@ -583,8 +588,6 @@ cost of all necessary servicing, repair, or correction.</remark>
           <title>Optimizing the network with Gradient Descent on Two Clusters dataset</title>
           <programlisting><xi:include  href="cmdline/optimize.sh"  parse="text"  
       xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
-          <programlisting>
-          </programlisting>
         </example>
         <para>This call will create an internal dataset called "two clusters" with 500 
         points using random number seed 426 (to generate the dataset in a 
@@ -614,8 +617,6 @@ cost of all necessary servicing, repair, or correction.</remark>
           <title>Sampling the loss manifold using on Two Clusters dataset</title>
           <programlisting><xi:include  href="cmdline/sample.sh"  parse="text"  
       xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
-          <programlisting>
-          </programlisting>
         </example>
         <para>This will cause the sampler to prepare the same dataset as before, as
         we still are using the same seed, data_type, dimension, and noise.
@@ -657,8 +658,6 @@ cost of all necessary servicing, repair, or correction.</remark>
             <title>Calculating averages over a sampled trajectory</title>
             <programlisting><xi:include  href="cmdline/analyse_average.sh"  parse="text"  
         xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
-            <programlisting>
-            </programlisting>
           </example>
           <para>This will load both the run file <command>run.csv</command>
           and the trajectory file <command>trajectory.csv</command>and average
@@ -684,8 +683,6 @@ cost of all necessary servicing, repair, or correction.</remark>
             <title>Calculating diffusion maps on a sampled trajectory</title>
             <programlisting><xi:include  href="cmdline/analyse_diffmap.sh"  parse="text"  
         xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
-            <programlisting>
-            </programlisting>
           </example>
           <para>The files ending in <command>..values.csv</command> contains 
           the eigenvalues in two columns, the first is the eigenvalue index,
@@ -708,8 +705,6 @@ cost of all necessary servicing, repair, or correction.</remark>
             <title>Calculating free energy over profiles  over diffusion map eigenvectors on a sampled trajectory</title>
             <programlisting><xi:include  href="cmdline/analyse_free_energy.sh"  parse="text"  
         xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
-            <programlisting>
-            </programlisting>
           </example>
           <para>This will extract landmark points from the trajectory. 
           Basically, the loss manifold is discretized using these landmarks
@@ -853,8 +848,6 @@ cost of all necessary servicing, repair, or correction.</remark>
       <title>Using LossFunctionSampler on a given trajectory</title>
       <programlisting><xi:include  href="cmdline/lossfunctionsampler-trajectory.sh"  parse="text"  
   xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
-      <programlisting>
-      </programlisting>
     </example>
     <para>It takes as input the dataset file <quote>dataset-twoclusters.csv</quote>
     and either a trajectory file <quote>trajectory.csv</quote>. This will
@@ -868,8 +861,6 @@ cost of all necessary servicing, repair, or correction.</remark>
       <title>Using LossFunctionSampler with an equidistant grid</title>
       <programlisting><xi:include  href="cmdline/lossfunctionsampler-grid.sh"  parse="text"  
   xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
-      <programlisting>
-      </programlisting>
     </example>
     <para>Here, sample for each weight in the interval [-5,5] at 11 points 
     (10 + endpoint), and similarly for the weights in the interval [-1,1] at
@@ -882,8 +873,6 @@ cost of all necessary servicing, repair, or correction.</remark>
       <title>Using LossFunctionSampler with an equidistant grid and fixing parameters</title>
       <programlisting><xi:include  href="cmdline/lossfunctionsampler-fix_parameter.sh"  parse="text"  
   xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
-      <programlisting>
-      </programlisting>
     </example>
   </section>
   <section xml:id="reference.network">
@@ -897,8 +886,6 @@ cost of all necessary servicing, repair, or correction.</remark>
       <title>Using InputSpaceSampler with an equidistant grid</title>
       <programlisting><xi:include  href="cmdline/inputspacesampler.sh"  parse="text"  
   xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
-      <programlisting>
-      </programlisting>
     </example>
     <para>Here, <quote>batch_data_files</quote> is an input file but it does
     not need to be present. (Sorry about that abuse of the parameter as
@@ -929,8 +916,6 @@ cost of all necessary servicing, repair, or correction.</remark>
           <title>Fix a parameter using the python interface</title>
           <programlisting><xi:include  href="python/fix_parameter.py"  parse="text"  
       xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
-          <programlisting>
-          </programlisting>
         </example>
       <para>Note that you need to initialize the network without adding training
       or sampling methods, i.e. <quote>setup</quote> is None. Then, we fix the

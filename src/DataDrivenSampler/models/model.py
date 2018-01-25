@@ -30,36 +30,53 @@ class model:
         self.FLAGS = FLAGS
         self.config_map = initialize_config_map()
 
-        # we train only on size batch and need as many epochs as tests
-        self.FLAGS.dimension = sum([file_length(filename)
-                                    for filename in FLAGS.batch_data_files]) \
-                               - len(FLAGS.batch_data_files)
-        print("Parsing "+str(FLAGS.batch_data_files))
         try:
             FLAGS.max_steps
         except AttributeError:
             FLAGS.max_steps = 1
-        # self.batch_features, self.batch_labels = create_input_pipeline(
-        #     FLAGS.batch_data_files,
-        #     batch_size = batch_size,
-        #     shuffle=False,
-        #     num_epochs = max_steps,
-        #     seed = FLAGS.seed)
-        self.input_dimension = 2
-        self.config_map["output_dimension"] = 1
-        self.batch_next = self.create_input_pipeline(FLAGS)
-        input_columns = get_list_from_string(FLAGS.input_columns)
 
-        self.xinput, self.x = create_input_layer(self.input_dimension, input_columns)
+        if len(FLAGS.batch_data_files) > 0:
+            self.FLAGS.dimension = sum([file_length(filename)
+                                        for filename in FLAGS.batch_data_files]) \
+                                   - len(FLAGS.batch_data_files)
+            print("Parsing "+str(FLAGS.batch_data_files))
+            self.number_of_parameters = 0 # number of biases and weights
 
+            self.input_dimension = 2
+            self.config_map["output_dimension"] = 1
+            self.batch_next = self.create_input_pipeline(FLAGS)
+
+        # mark input layer as to be created
+        self.xinput = None
+        self.x = None
+
+        # mark resource variables as to be created
         self.resources_created = None
 
+        # mark neuralnetwork, saver and session objects as to be created
         self.nn = None
         self.saver = None
         self.sess = None
 
+        # mark writer as to be created
         self.run_writer = None
         self.trajectory_writer = None
+
+    def provide_data(self, features, labels, shuffle=False):
+        ''' This function allows to provide an in-memory dataset using the Python
+        API.
+
+        :param features: feature part of dataset
+        :param labels: label part of dataset
+        :param shuffle: whether to shuffle the dataset initially or not
+        '''
+        print("Using in-memory pipeline")
+        self.input_dimension = len(features[0])
+        self.config_map["output_dimension"] = len(labels[0])
+        self.input_pipeline = InMemoryPipeline(dataset=[features, labels],
+                                               batch_size=self.FLAGS.batch_size,
+                                               max_steps=self.FLAGS.max_steps,
+                                               shuffle=shuffle, seed=self.FLAGS.seed)
 
     def create_input_pipeline(self, FLAGS, shuffle=False):
         """ This creates an input pipeline using the tf.Dataset module.
@@ -205,6 +222,14 @@ class model:
 
         :param filename: name of file containing stored model
         """
+        # dataset was provided
+        assert( self.input_dimension is not None )
+
+        # create input layer
+        if self.xinput is None or self.x is None:
+            input_columns = get_list_from_string(self.FLAGS.input_columns)
+            self.xinput, self.x = create_input_layer(self.input_dimension, input_columns)
+
         #if setup == "sample":
         self.create_resource_variables()
 
