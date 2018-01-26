@@ -1,5 +1,6 @@
 LossFunctionSampler \
   --batch_data_files dataset-twoclusters.csv \
+  --batch_size 20 \
   --csv_file LossFunctionSampler-output-SGLD.csv \
   --fix_parameters "output/weights/Variable:0=2.,2." \
   --interval_weights -5 5 \
