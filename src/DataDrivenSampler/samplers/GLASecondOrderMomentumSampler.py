@@ -72,6 +72,12 @@ class GLASecondOrderMomentumSampler(GLAFirstOrderMomentumSampler):
             virial_global = tf.get_variable("virials", dtype=tf.float64)
             virial_global_t = tf.assign_add(virial_global, tf.reduce_sum(tf.multiply(grad, var)))
 
+        # as the loss evaluated with train_step is the "old" (not updated) loss, we
+        # therefore also need to the use the old momentum for the kinetic energy
+        with tf.variable_scope("accumulate", reuse=True):
+            kinetic_energy = tf.get_variable("kinetic", dtype=tf.float64)
+            kinetic_energy_t = tf.assign_add(kinetic_energy, momentum_sq)
+
         # p^{n+1} = p^{n+1/2} − \nabla V (q^{n+1} ) \Delta t/2
         momentum_t = momentum.assign(momentum_noise_step_t - 0.5 * scaled_gradient)
 
@@ -80,7 +86,7 @@ class GLASecondOrderMomentumSampler(GLAFirstOrderMomentumSampler):
         prior_force = step_width_t * (ub_repell + lb_repell)
 
         # make sure virial and gradients are evaluated before we update variables
-        with tf.control_dependencies([virial_global_t, gradient_global_t]):
+        with tf.control_dependencies([virial_global_t, gradient_global_t, kinetic_energy_t]):
             # q=^{n+1} = q^n + M^{-1} p_{n+1/2} ∆t
             var_update = state_ops.assign_add(var, step_width_t * momentum_t - prior_force)
 
@@ -88,12 +94,6 @@ class GLASecondOrderMomentumSampler(GLAFirstOrderMomentumSampler):
         with tf.variable_scope("accumulate", reuse=True):
             momentum_global = tf.get_variable("momenta", dtype=tf.float64)
             momentum_global_t = tf.assign_add(momentum_global, tf.reduce_sum(tf.multiply(momentum_t, momentum_t)))
-
-        # as the loss evaluated with train_step is the "old" (not updated) loss, we
-        # therefore also need to the use the old momentum for the kinetic energy
-        with tf.variable_scope("accumulate", reuse=True):
-            kinetic_energy = tf.get_variable("kinetic", dtype=tf.float64)
-            kinetic_energy_t = tf.assign_add(kinetic_energy, momentum_sq)
 
         # note: these are evaluated in any order, use control_dependencies if required
         return control_flow_ops.group(*[gradient_global_t, virial_global_t, var_update,
