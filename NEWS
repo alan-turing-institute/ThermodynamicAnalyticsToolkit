@@ -1,3 +1,14 @@
+v0.5
+====
+
+- may read TFRecords (as well as CSV) files
+- added example for MNIST optimization
+- input pipelines now depend on tf.Dataset framework. Either in-memory for
+  smaller datasets or file
+- priors have been added for BAOAB and HMC
+- version now always gives a git hash (of the commit)
+- Python API can feed its own in-memory dataset for sampling or optimization
+
 v0.4
 ====
 
