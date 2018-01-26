@@ -22,6 +22,7 @@ TESTSCRIPTS += \
 	$(srcdir)/DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-lower_boundary.at \
 	$(srcdir)/DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-lower_upper_boundary.at \
 	$(srcdir)/DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-lower_upper_boundary-squared.at \
+	$(srcdir)/DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-samplers.at \
 	$(srcdir)/DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-tethering.at \
 	$(srcdir)/DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-tethering-squared.at \
 	$(srcdir)/DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-upper_boundary.at \
@@ -45,6 +46,9 @@ TESTSCRIPTS += \
 	$(srcdir)/DataOptimizer/Options/testsuite-dataoptimizer-options-every_nth.at \
 	$(srcdir)/DataOptimizer/Options/testsuite-dataoptimizer-options-sql_db.at \
 	$(srcdir)/DataOptimizer/Options/testsuite-dataoptimizer-options-step_width.at \
+	$(srcdir)/DataOptimizer/Prior/testsuite-dataoptimizer-prior.at \
+	$(srcdir)/DataOptimizer/Prior/testsuite-dataoptimizer-prior-lower_upper_boundary.at \
+	$(srcdir)/DataOptimizer/Prior/testsuite-dataoptimizer-prior-tethering.at \
 	$(srcdir)/DataOptimizer/Reproducibility/testsuite-dataoptimizer-reproducibility-given_seeds.at \
 	$(srcdir)/DataOptimizer/Reproducibility/testsuite-dataoptimizer-reproducibility-no_seeds.at \
 	$(srcdir)/DataOptimizer/SavingRestoring/testsuite-dataoptimizer-saving_restoring.at \

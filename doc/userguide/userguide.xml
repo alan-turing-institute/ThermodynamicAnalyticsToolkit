@@ -483,12 +483,21 @@ cost of all necessary servicing, repair, or correction.</remark>
         <para>If upper and lower boundary coincide, then we have the case
         of tethering, where all parameters are pulled inward to the same 
         point.</para>
+        <para>The prior can also be using during optimization. However, then
+        parameters may oscillate between two values if the minimum is not
+        contained in the domain set by the prior or if does not coincide with
+        the tethered position.</para>
         <note>The prior force is acting directly on the variables. It does not 
         modify momentum. Moeover, it is a force! In other words, it depends on
         step width. If the step width is too large and if the repelling force
         increases too steeply close to the walls with respect to the normal
         dynamics of the system, it may blow up.
         </note>
+        <note>The samplers react differently to the prior: This is important 
+        if high temperatures are used. Some are more unstable than others, 
+        i.e. require smaller step widths, such that the boundary is actually 
+        maintained. This is especially so for SGLD and to some extent HMC. 
+        BAOAB and the GLA are very well-behaved.</note>
         <para>We might also concatenate optimize and sample if in between the
         two we adjust FLAGS as follows:
         <example xml:id="quickstart.python.sampling.example.combined">

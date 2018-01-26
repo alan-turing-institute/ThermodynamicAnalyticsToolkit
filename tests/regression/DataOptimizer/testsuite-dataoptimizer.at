@@ -37,3 +37,6 @@ m4_include([DataOptimizer/Options/testsuite-dataoptimizer-options-step_width.at]
 
 # Saving and restoring models
 m4_include([DataOptimizer/SavingRestoring/testsuite-dataoptimizer-saving_restoring.at])
+
+# tests on priors
+m4_include([DataOptimizer/Prior/testsuite-dataoptimizer-prior.at])

@@ -244,11 +244,14 @@ class NeuralNetwork(object):
             # only after minimize was .._apply_dense() called and the nodes are ready
             self.summary_nodes['sample_step'] = train_step
 
-    def add_train_method(self, loss, optimizer_method):
+    def add_train_method(self, loss, optimizer_method,
+                          prior):
         """ Adds nodes for training the neural network using an optimizer.
 
         :param loss: node for the desired loss function to minimize during training
         :param optimizer_method: name of the optimizer method, e.g. GradientDescent
+        :param prior: dict with keys factor, lower_boundary and upper_boundary that
+                specifies a wall-repelling force to ensure a prior on the parameters
         """
         with tf.name_scope('train'):
             # DON'T add placeholders only sometimes, e.g. when only a specific optimizer
@@ -264,6 +267,8 @@ class NeuralNetwork(object):
                 optimizer = GradientDescent(step_width)
             else:
                 raise NotImplementedError("Unknown optimizer_method")
+            if len(prior) != 0:
+                optimizer.set_prior(prior)
             trainables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
             train_step = optimizer.minimize(loss, global_step=global_step, var_list=trainables)
 

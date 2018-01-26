@@ -1,6 +1,6 @@
 #
 #    DataDrivenSampler - explore high-dimensional manifold of neural networks
-#    Copyright (C) 2017 The University of Edinburgh
+#    Copyright (C) 2018 The University of Edinburgh
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -17,16 +17,10 @@
 #
 ### tests on sampling with prior
 
-AT_BANNER([DataDrivenSampler - Priors])
+AT_BANNER([Optimizer - Priors])
 
 # tests on wall-repelling
-m4_include([DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-lower_boundary.at])
-m4_include([DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-lower_upper_boundary.at])
-m4_include([DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-upper_boundary.at])
-m4_include([DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-lower_upper_boundary-squared.at])
+m4_include([DataOptimizer/Prior/testsuite-dataoptimizer-prior-lower_upper_boundary.at])
 
 # tests on tethering
-m4_include([DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-tethering.at])
-m4_include([DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-tethering-squared.at])
-
-m4_include([DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-samplers.at])
+m4_include([DataOptimizer/Prior/testsuite-dataoptimizer-prior-tethering.at])

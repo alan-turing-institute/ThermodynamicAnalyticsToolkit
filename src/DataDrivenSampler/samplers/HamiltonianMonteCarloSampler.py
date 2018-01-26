@@ -182,8 +182,12 @@ class HamiltonianMonteCarloSampler(SGLDSampler):
                 tf.greater(p_accept, uniform_random_t),
                 accept_block, reject_block)
 
+        # prior force act directly on var
+        ub_repell, lb_repell = self._apply_prior(var)
+        prior_force = step_width_t * (ub_repell + lb_repell)
+
         # update variables
-        scaled_momentum = step_width_t * momentum_criterion_block_t
+        scaled_momentum = step_width_t * momentum_criterion_block_t - prior_force
 
         # DONT use nodes in the control_dependencies, always functions!
         def step_block():

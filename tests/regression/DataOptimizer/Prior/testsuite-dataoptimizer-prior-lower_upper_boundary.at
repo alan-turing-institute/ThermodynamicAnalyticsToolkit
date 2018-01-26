@@ -15,35 +15,30 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-### test on different samplers
+### test on prior by wall-repelling force
 
-AT_SETUP([Samplers - SGLD])
-AT_KEYWORDS([samplers ddsampler sgld])
+AT_SETUP([Optimizer - Prior through wall-repelling force])
+AT_KEYWORDS([ddsoptimizer prior wall_repelling lower_boundary upper_boundary])
 
 # dataset prepared as follows:
 # DatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
 
-# run 1
-AT_CHECK([../../../DDSampler \
-    --batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/pre/dataset-twoclusters.csv \
-    --batch_size 20 \
-	--inverse_temperature 1 \
+AT_CHECK([../../../DDSOptimizer \
+    --batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Prior/pre/dataset-twoclusters.csv \
+	--batch_size 20 \
 	--max_steps 20 \
-	--run_file run-SGLD.csv \
-	--sampler StochasticGradientLangevinDynamics\
+	--prior_factor .1 \
+	--prior_lower_boundary .0 \
+	--prior_upper_boundary 1.0 \
+	--optimizer GradientDescent \
 	--seed 426 \
-	--step_width 1e-2 \
-	--trajectory_file trajectory-SGLD.csv
+	--step_width 1e-1 \
+	--trajectory_file trajectory.csv
 ], 0, [stdout], [stderr])
 
-# now compare (exclude time_per_nth_step column)
-AT_CHECK([../../../NumericalDiff \
-    --general_threshold 2e-7 relative \
-    --column_threshold time_per_nth_step 1e16 absolute -- \
-    run-SGLD.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-SGLD.csv], 0, [ignore], [ignore])
-AT_CHECK([../../../NumericalDiff \
-    --general_threshold 2e-7 relative -- \
-    trajectory-SGLD.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-SGLD.csv], 0, [ignore], [ignore])
+# except for initial step check we remain within bounds
+for col in `seq 3 5`; do
+    AT_CHECK([tail -n 19 trajectory.csv | awk -F"," -v col=$col '{if (($col > 1.2) || ($col < -0.2)) { print NR","col": "$col; exit 255} }'], 0, [stdout], [ignore])
+done
 
 AT_CLEANUP
-
