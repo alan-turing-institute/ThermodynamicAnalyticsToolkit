@@ -22,5 +22,5 @@ AT_BANNER([InputSpaceSampler - InputSpaceSampler])
 # tests on simple behavior
 m4_include([InputSpaceSampler/testsuite-inputspacesampler-simple.at])
 
-# tests on trajectory
-m4_include([InputSpaceSampler/testsuite-inputspacesampler-sgld-trajectory.at])
+# tests on grid for two clusters dataset
+m4_include([InputSpaceSampler/testsuite-inputspacesampler-two_clusters_grid.at])
