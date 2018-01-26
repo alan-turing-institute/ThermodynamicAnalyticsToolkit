@@ -41,15 +41,6 @@ class ClassificationDatasets:
             self.SPIRAL: self.generate_spiral,
         }
 
-    @staticmethod
-    def setup_config_map(config_map):
-        """ Place information about input and output dimension into configuration dictionary.
-
-        :param config_map: configuration dictionary
-        """
-        config_map["input_dimension"] = 2
-        config_map["output_dimension"] = 1
-
     def generate(self, dimension, noise, data_type=SPIRAL):
         """ Generates dataset.
 

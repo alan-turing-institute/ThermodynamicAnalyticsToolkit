@@ -125,6 +125,10 @@ def add_data_options_to_parser(parser):
     # please adhere to alphabetical ordering
     parser.add_argument('--batch_data_files', type=str, nargs='+', default=[],
         help='Names of CSV files to parse input data from')
+    parser.add_argument('--input_dimension', type=int, default=2,
+        help='Number of input nodes, i.e. dimensionality of provided dataset')
+    parser.add_argument('--output_dimension', type=int, default=1,
+        help='Number of output nodes, e.g. classes in a classification problem')
 
 
 def add_model_options_to_parser(parser):

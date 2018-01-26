@@ -36,6 +36,8 @@ class model:
             FLAGS.max_steps = 1
 
         if len(FLAGS.batch_data_files) > 0:
+            self.input_dimension = self.FLAGS.input_dimension
+            self.output_dimension = self.FLAGS.output_dimension
             self.FLAGS.dimension = sum([file_length(filename)
                                         for filename in FLAGS.batch_data_files]) \
                                    - len(FLAGS.batch_data_files)
@@ -45,8 +47,6 @@ class model:
 
             self.number_of_parameters = 0 # number of biases and weights
 
-            self.input_dimension = 2
-            self.config_map["output_dimension"] = 1
             self.batch_next = self.create_input_pipeline(FLAGS)
 
         # mark input layer as to be created
@@ -92,7 +92,7 @@ class model:
         '''
         print("Using in-memory pipeline")
         self.input_dimension = len(features[0])
-        self.config_map["output_dimension"] = len(labels[0])
+        self.output_dimension = len(labels[0])
         assert( len(features) == len(labels) )
         self.FLAGS.dimension = len(features)
         self._check_valid_batch_size()
@@ -107,15 +107,13 @@ class model:
         :param FLAGS: parameters
         :param shuffle: whether to shuffle dataset or not
         """
-        input_dimension = self.input_dimension
-        output_dimension = self.config_map["output_dimension"]
         if FLAGS.in_memory_pipeline:
             print("Using in-memory pipeline")
             # at the moment we can only parse a single file
             assert( len(FLAGS.batch_data_files) == 1 )
             csv_dataset = pd.read_csv(FLAGS.batch_data_files[0], sep=',', header=0)
-            xs = np.asarray(csv_dataset.iloc[:, 0:input_dimension])
-            ys = np.asarray(csv_dataset.iloc[:, input_dimension:input_dimension+output_dimension])
+            xs = np.asarray(csv_dataset.iloc[:, 0:self.input_dimension])
+            ys = np.asarray(csv_dataset.iloc[:, self.input_dimension:self.input_dimension+self.output_dimension])
             self.input_pipeline = InMemoryPipeline(dataset=[xs,ys], batch_size=FLAGS.batch_size,
                                                    max_steps=FLAGS.max_steps,
                                                    shuffle=shuffle, seed=FLAGS.seed)
@@ -123,7 +121,7 @@ class model:
             print("Using tf.Dataset pipeline")
             self.input_pipeline = DatasetPipeline(filenames=FLAGS.batch_data_files,
                                                   batch_size=FLAGS.batch_size, dimension=FLAGS.dimension, max_steps=FLAGS.max_steps,
-                                                  input_dimension=input_dimension, output_dimension=output_dimension,
+                                                  input_dimension=self.input_dimension, output_dimension=self.output_dimension,
                                                   shuffle=shuffle, seed=FLAGS.seed)
 
     def reset_parameters(self, FLAGS):
@@ -185,6 +183,7 @@ class model:
             hidden_dimension="",
             in_memory_pipeline=False,
             input_columns="1 2",
+            input_dimension=2,
             inter_ops_threads=1,
             intra_ops_threads=None,
             inverse_temperature=1.,
@@ -193,6 +192,7 @@ class model:
             hamiltonian_dynamics_steps=10,
             optimizer="GradientDescent",
             output_activation="tanh",
+            output_dimension=1,
             prior_factor=1.,
             prior_lower_boundary=None,
             prior_power=1.,
@@ -215,6 +215,7 @@ class model:
                 hidden_dimension=hidden_dimension,
                 in_memory_pipeline=in_memory_pipeline,
                 input_columns=input_columns,
+                input_dimension=input_dimension,
                 inter_ops_threads=inter_ops_threads,
                 intra_ops_threads=intra_ops_threads,
                 inverse_temperature=inverse_temperature,
@@ -223,6 +224,7 @@ class model:
                 hamiltonian_dynamics_steps=hamiltonian_dynamics_steps,
                 optimizer=optimizer,
                 output_activation=output_activation,
+                output_dimension=output_dimension,
                 prior_factor=prior_factor,
                 prior_lower_boundary=prior_lower_boundary,
                 prior_power=prior_power,
@@ -261,7 +263,7 @@ class model:
             hidden_dimension = [int(i) for i in get_list_from_string(self.FLAGS.hidden_dimension)]
             activations = NeuralNetwork.get_activations()
             loss = self.nn.create(
-                self.x, hidden_dimension, self.config_map["output_dimension"],
+                self.x, hidden_dimension, self.output_dimension,
                 seed=self.FLAGS.seed,
                 add_dropped_layer=(self.FLAGS.dropout is not None),
                 hidden_activation=activations[self.FLAGS.hidden_activation],
