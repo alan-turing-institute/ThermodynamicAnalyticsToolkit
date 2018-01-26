@@ -256,7 +256,7 @@ class BAOABSampler(GLAFirstOrderMomentumSampler):
         position_full_step_t = position_half_step_t + 0.5 * step_width_t * momentum_noise_step_t
 
         # make sure virial and gradients are evaluated before we update variables
-        with tf.control_dependencies([virial_global_t, gradient_global_t]):
+        with tf.control_dependencies([virial_global_t, gradient_global_t, kinetic_energy_t]):
             # assign parameters
             var_update = state_ops.assign(var, position_full_step_t)
 
