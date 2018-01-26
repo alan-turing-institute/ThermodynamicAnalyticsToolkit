@@ -1,6 +1,6 @@
 #
 #    DataDrivenSampler - explore high-dimensional manifold of neural networks
-#    Copyright (C) 2017 The University of Edinburgh
+#    Copyright (C) 2018 The University of Edinburgh
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -15,27 +15,31 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-### test on classification problem: four squares
+### test on classification problem: MNIST
 
-# dataset prepared as follows:
-# DatasetWriter --data_type 1 --dimension 10 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+# dataset prepared as follows (this downloads mnist images):
+# util/convert_mnist_to_records.py --directory .
+# cp validation.tfrecords dataset-mnist.tfrecords
 
-AT_SETUP([Optimizer Datasets - four squares])
-AT_KEYWORDS([foursquares ddsoptimizer])
+AT_SETUP([Optimizer Datasets - mnist])
+AT_KEYWORDS([mnist ddsoptimizer])
 
 AT_CHECK([../../../DDSOptimizer \
-    --batch_data_files ${abs_top_srcdir}/tests/regression/DataOptimizer/Datasets/pre/dataset-foursquares.csv \
-    --batch_size 10 \
-	--hidden_dimension 4 \
-	--max_steps 100 \
+    --batch_data_files ${abs_top_srcdir}/tests/regression/DataOptimizer/Datasets/pre/dataset-mnist.tfrecords \
+    --batch_data_file_type tfrecord \
+    --batch_size 50 \
+	--max_steps 1000 \
+	--in_memory_pipeline 0 \
+	--input_dimension 784 \
+	--output_dimension 10 \
 	--optimizer GradientDescent \
 	--run_file run.csv \
 	--seed 426 \
-	--step_width 0.03
+	--step_width 0.1
 ], 0, [stdout], [stderr])
 
 # and compare (exclude time_per_nth_step column)
-AT_CHECK([../../../NumericalDiff --column_threshold time_per_nth_step 1e16 absolute -- run.csv ${abs_top_srcdir}/tests/regression/DataOptimizer/Datasets/post/run-foursquares.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff --column_threshold time_per_nth_step 1e16 absolute -- run.csv ${abs_top_srcdir}/tests/regression/DataOptimizer/Datasets/post/run-mnist.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
 

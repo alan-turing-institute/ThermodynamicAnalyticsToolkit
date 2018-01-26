@@ -30,3 +30,6 @@ m4_include([DataOptimizer/Datasets/testsuite-dataoptimizer-datasets-twocircles.a
 
 # two spirals
 m4_include([DataOptimizer/Datasets/testsuite-dataoptimizer-datasets-twospirals.at])
+
+# subset of MNIST
+m4_include([DataOptimizer/Datasets/testsuite-dataoptimizer-datasets-mnist.at])

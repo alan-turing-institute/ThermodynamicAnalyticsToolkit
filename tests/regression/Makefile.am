@@ -39,6 +39,7 @@ TESTSCRIPTS += \
 	$(srcdir)/DataOptimizer/testsuite-dataoptimizer-simple.at \
 	$(srcdir)/DataOptimizer/Datasets/testsuite-dataoptimizer-datasets.at \
 	$(srcdir)/DataOptimizer/Datasets/testsuite-dataoptimizer-datasets-foursquares.at \
+	$(srcdir)/DataOptimizer/Datasets/testsuite-dataoptimizer-datasets-mnist.at \
 	$(srcdir)/DataOptimizer/Datasets/testsuite-dataoptimizer-datasets-twocircles.at \
 	$(srcdir)/DataOptimizer/Datasets/testsuite-dataoptimizer-datasets-twoclusters.at \
 	$(srcdir)/DataOptimizer/Datasets/testsuite-dataoptimizer-datasets-twospirals.at \
