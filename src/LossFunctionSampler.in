@@ -70,10 +70,11 @@ def main(_):
         # sum up weight nodes
         FLAGS.max_steps = sum([full_dimensions[i]*full_dimensions[i+1]
                                 for i in range(len(full_dimensions)-1)])
-        FLAGS.max_steps *= FLAGS.samples_weights
+        FLAGS.max_steps = math.pow(FLAGS.samples_weights+1, FLAGS.max_steps)
 
         # sum up bias nodes
-        FLAGS.max_steps += (sum(hidden_dimension)+1) * FLAGS.samples_biases
+        FLAGS.max_steps *= math.pow(FLAGS.samples_biases+1, (sum(hidden_dimension)+1))
+        FLAGS.max_steps = int(FLAGS.max_steps)
     print("There are "+str(FLAGS.max_steps)+" points to sample.")
 
     network_model = model(FLAGS)
