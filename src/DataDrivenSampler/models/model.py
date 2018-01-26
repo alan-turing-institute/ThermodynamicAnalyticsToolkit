@@ -1,17 +1,20 @@
 from builtins import staticmethod
 
-import tensorflow as tf
+import functools
 import numpy as np
-import sys
-import time
 import pandas as pd
+import sys
+import tensorflow as tf
+import time
 
-from math import sqrt, floor
+from math import sqrt, floor, ceil
 
-from DataDrivenSampler.common import create_input_layer, file_length, \
-    get_filename_from_fullpath, get_list_from_string, get_trajectory_header, \
-    initialize_config_map, create_input_pipeline, setup_run_file, setup_trajectory_file
-from DataDrivenSampler.datasets.classificationdatasets import ClassificationDatasets
+from DataDrivenSampler.common import create_input_layer, decode_csv_line, file_length, \
+    get_csv_defaults, get_list_from_string, get_trajectory_header, \
+    initialize_config_map, \
+    setup_run_file, setup_trajectory_file
+from DataDrivenSampler.models.input.datasetpipeline import DatasetPipeline
+from DataDrivenSampler.models.input.inmemorypipeline import InMemoryPipeline
 from DataDrivenSampler.models.mock_flags import MockFlags
 from DataDrivenSampler.models.neuralnet_parameters import neuralnet_parameters
 from DataDrivenSampler.models.neuralnetwork import NeuralNetwork
@@ -27,39 +30,130 @@ class model:
         self.FLAGS = FLAGS
         self.config_map = initialize_config_map()
 
-        # we train only on size batch and need as many epochs as tests
-        print("Parsing "+str(FLAGS.batch_data_files))
-        self.FLAGS.dimension = sum([file_length(filename)
-                                    for filename in FLAGS.batch_data_files]) \
-                               - len(FLAGS.batch_data_files)
         try:
-            max_steps = FLAGS.max_steps
+            FLAGS.max_steps
         except AttributeError:
-            max_steps = 1
-        if FLAGS.batch_size is not None:
-            batch_size = FLAGS.batch_size
-        else:
-            batch_size = 1
-        self.batch_features, self.batch_labels = create_input_pipeline(
-            FLAGS.batch_data_files,
-            batch_size = batch_size,
-            shuffle=False,
-            num_epochs = max_steps,
-            seed = FLAGS.seed)
-        input_dimension = 2
-        self.config_map["output_dimension"] = 1
-        input_columns = get_list_from_string(FLAGS.input_columns)
+            FLAGS.max_steps = 1
 
-        self.xinput, self.x = create_input_layer(input_dimension, input_columns)
+        if len(FLAGS.batch_data_files) > 0:
+            self.input_dimension = self.FLAGS.input_dimension
+            self.output_dimension = self.FLAGS.output_dimension
+            if FLAGS.batch_data_file_type == "csv":
+                self.FLAGS.dimension = sum([file_length(filename)
+                                            for filename in FLAGS.batch_data_files]) \
+                                       - len(FLAGS.batch_data_files)
+                self._check_valid_batch_size()
+            elif FLAGS.batch_data_file_type == "tfrecord":
+                self.FLAGS.dimension = self._get_dimension_from_tfrecord(FLAGS.batch_data_files)
+            else:
+                print("Unknown file type")
+                assert(0)
 
+            print("Parsing "+str(FLAGS.batch_data_files))
+
+            self.number_of_parameters = 0 # number of biases and weights
+
+            self.batch_next = self.create_input_pipeline(FLAGS)
+
+        # mark input layer as to be created
+        self.xinput = None
+        self.x = None
+
+        # mark resource variables as to be created
         self.resources_created = None
 
+        # mark neuralnetwork, saver and session objects as to be created
         self.nn = None
         self.saver = None
         self.sess = None
 
+        # mark writer as to be created
         self.run_writer = None
         self.trajectory_writer = None
+
+    @staticmethod
+    def _get_dimension_from_tfrecord(filenames):
+        ''' Helper function to get the size of the dataset contained in a TFRecord.
+
+        :param filenames: list of tfrecord files
+        :return: total size of dataset
+        '''
+        dimension  = 0
+        for filename in filenames:
+            record_iterator = tf.python_io.tf_record_iterator(path=filename)
+            for string_record in record_iterator:
+            #     example = tf.train.Example()
+            #     example.ParseFromString(string_record)
+            #     height = int(example.features.feature['height']
+            #                  .int64_list
+            #                  .value[0])
+            #
+            #     width = int(example.features.feature['width']
+            #                 .int64_list
+            #                 .value[0])
+            #     print("height is "+str(height)+" and width is "+str(width))
+                dimension += 1
+
+        return dimension
+
+    def _check_valid_batch_size(self):
+        ''' helper function to check that batch_size does not exceed dimension
+        of dataset. After which it will be valid.
+
+        :return: True - is smaller or equal, False - exceeded and capped batch_size
+        '''
+        if self.FLAGS.batch_size is None:
+            print("batch_size not set, setting to dimension of dataset.")
+            self.FLAGS.batch_size = self.FLAGS.dimension
+            return True
+        if self.FLAGS.batch_size > self.FLAGS.dimension:
+            print("WARNING: batch_size exceeds number of data items, capping.")
+            self.FLAGS.batch_size = self.FLAGS.dimension
+            return False
+        else:
+            return True
+
+    def provide_data(self, features, labels, shuffle=False):
+        ''' This function allows to provide an in-memory dataset using the Python
+        API.
+
+        :param features: feature part of dataset
+        :param labels: label part of dataset
+        :param shuffle: whether to shuffle the dataset initially or not
+        '''
+        print("Using in-memory pipeline")
+        self.input_dimension = len(features[0])
+        self.output_dimension = len(labels[0])
+        assert( len(features) == len(labels) )
+        self.FLAGS.dimension = len(features)
+        self._check_valid_batch_size()
+        self.input_pipeline = InMemoryPipeline(dataset=[features, labels],
+                                               batch_size=self.FLAGS.batch_size,
+                                               max_steps=self.FLAGS.max_steps,
+                                               shuffle=shuffle, seed=self.FLAGS.seed)
+
+    def create_input_pipeline(self, FLAGS, shuffle=False):
+        """ This creates an input pipeline using the tf.Dataset module.
+
+        :param FLAGS: parameters
+        :param shuffle: whether to shuffle dataset or not
+        """
+        if FLAGS.in_memory_pipeline and (FLAGS.batch_data_file_type == "csv"):
+            print("Using in-memory pipeline")
+            # at the moment we can only parse a single file
+            assert( len(FLAGS.batch_data_files) == 1 )
+            csv_dataset = pd.read_csv(FLAGS.batch_data_files[0], sep=',', header=0)
+            xs = np.asarray(csv_dataset.iloc[:, 0:self.input_dimension])
+            ys = np.asarray(csv_dataset.iloc[:, self.input_dimension:self.input_dimension+self.output_dimension])
+            self.input_pipeline = InMemoryPipeline(dataset=[xs,ys], batch_size=FLAGS.batch_size,
+                                                   max_steps=FLAGS.max_steps,
+                                                   shuffle=shuffle, seed=FLAGS.seed)
+        else:
+            print("Using tf.Dataset pipeline")
+            self.input_pipeline = DatasetPipeline(filenames=FLAGS.batch_data_files, filetype=FLAGS.batch_data_file_type,
+                                                  batch_size=FLAGS.batch_size, dimension=FLAGS.dimension, max_steps=FLAGS.max_steps,
+                                                  input_dimension=self.input_dimension, output_dimension=self.output_dimension,
+                                                  shuffle=shuffle, seed=FLAGS.seed)
 
     def reset_parameters(self, FLAGS):
         """ Use to pass a different set of FLAGS controlling training or sampling.
@@ -111,6 +205,7 @@ class model:
     @staticmethod
     def setup_parameters(
             batch_data_files=[],
+            batch_data_file_type="csv",
             batch_size=10,
             dropout=None,
             every_nth=1,
@@ -118,7 +213,9 @@ class model:
             friction_constant=0.,
             hidden_activation="relu",
             hidden_dimension="",
+            in_memory_pipeline=False,
             input_columns="1 2",
+            input_dimension=2,
             inter_ops_threads=1,
             intra_ops_threads=None,
             inverse_temperature=1.,
@@ -127,6 +224,7 @@ class model:
             hamiltonian_dynamics_steps=10,
             optimizer="GradientDescent",
             output_activation="tanh",
+            output_dimension=1,
             prior_factor=1.,
             prior_lower_boundary=None,
             prior_power=1.,
@@ -140,6 +238,7 @@ class model:
             trajectory_file=None):
             return MockFlags(
                 batch_data_files=batch_data_files,
+                batch_data_file_type=batch_data_file_type,
                 batch_size=batch_size,
                 dropout=dropout,
                 every_nth=every_nth,
@@ -147,7 +246,9 @@ class model:
                 friction_constant=friction_constant,
                 hidden_activation=hidden_activation,
                 hidden_dimension=hidden_dimension,
+                in_memory_pipeline=in_memory_pipeline,
                 input_columns=input_columns,
+                input_dimension=input_dimension,
                 inter_ops_threads=inter_ops_threads,
                 intra_ops_threads=intra_ops_threads,
                 inverse_temperature=inverse_temperature,
@@ -156,6 +257,7 @@ class model:
                 hamiltonian_dynamics_steps=hamiltonian_dynamics_steps,
                 optimizer=optimizer,
                 output_activation=output_activation,
+                output_dimension=output_dimension,
                 prior_factor=prior_factor,
                 prior_lower_boundary=prior_lower_boundary,
                 prior_power=prior_power,
@@ -168,20 +270,33 @@ class model:
                 step_width=step_width,
                 trajectory_file=trajectory_file)
 
+    def reset_dataset(self):
+        """ Re-initializes the dataset for a new run
+        """
+        self.input_pipeline.reset(self.sess)
+
     def init_network(self, filename = None, setup = None):
         """ Initializes the graph, from a stored model if filename is not None.
 
         :param filename: name of file containing stored model
         """
+        # dataset was provided
+        assert( self.input_dimension is not None )
+
+        # create input layer
+        if self.xinput is None or self.x is None:
+            input_columns = get_list_from_string(self.FLAGS.input_columns)
+            self.xinput, self.x = create_input_layer(self.input_dimension, input_columns)
+
         #if setup == "sample":
         self.create_resource_variables()
 
         if self.nn is None:
             self.nn = NeuralNetwork()
-            hidden_dimension = get_list_from_string(self.FLAGS.hidden_dimension)
+            hidden_dimension = [int(i) for i in get_list_from_string(self.FLAGS.hidden_dimension)]
             activations = NeuralNetwork.get_activations()
             loss = self.nn.create(
-                self.x, hidden_dimension, self.config_map["output_dimension"],
+                self.x, hidden_dimension, self.output_dimension,
                 seed=self.FLAGS.seed,
                 add_dropped_layer=(self.FLAGS.dropout is not None),
                 hidden_activation=activations[self.FLAGS.hidden_activation],
@@ -225,7 +340,11 @@ class model:
                     intra_op_parallelism_threads=self.FLAGS.intra_ops_threads,
                     inter_op_parallelism_threads=self.FLAGS.inter_ops_threads))
 
+        # initialize constants in graph
         self.nn.init_graph(self.sess)
+
+        # initialize dataset
+        self.input_pipeline.reset(self.sess)
 
         if self.FLAGS.fix_parameters is not None:
             self.assign_parameters(fixed_variables, values)
@@ -379,10 +498,6 @@ class model:
                              old_kinetic_energy_t.assign(var_kin_t)]
             HMC_set_all_nodes = [total_energy_t.assign(var_total_t)]+HMC_set_nodes
 
-        # Start populating the filename queue.
-        coord = tf.train.Coordinator()
-        threads = tf.train.start_queue_runners(coord=coord, sess=self.sess)
-
         # zero rejection rate before sampling start
         check_accepted, check_rejected = self.sess.run([zero_accepted, zero_rejected])
         assert(check_accepted == 0)
@@ -392,16 +507,13 @@ class model:
         print_intervals = max(1, int(self.FLAGS.max_steps / 100))
         last_time = time.process_time()
         for i in range(self.FLAGS.max_steps):
-            # fetch next batch of data
-            try:
-                batch_xs, batch_ys = self.sess.run([self.batch_features, self.batch_labels])
-            except tf.errors.OutOfRangeError:
-                print('End of epoch reached too early!')
-                sys.exit(255)
+            # get next batch of data
+            features, labels = self.input_pipeline.next_batch(self.sess)
 
             # place in feed dict
             feed_dict = {
-                self.xinput: batch_xs, placeholder_nodes["y_"]: batch_ys,
+                self.xinput: features,
+                placeholder_nodes["y_"]: labels,
                 placeholder_nodes["step_width"]: self.FLAGS.step_width,
                 placeholder_nodes["inverse_temperature"]: self.FLAGS.inverse_temperature,
                 placeholder_nodes["friction_constant"]: self.FLAGS.friction_constant,
@@ -426,7 +538,7 @@ class model:
                 else:
                     self.sess.run(HMC_set_nodes, feed_dict=HMC_set_dict)
                 loss_eval, total_eval, kin_eval = self.sess.run(HMC_eval_nodes, feed_dict=feed_dict)
-                print("#%d: loss is %lg, total is %lg, kinetic is %lg" % (i, loss_eval, total_eval, kin_eval))
+                #print("#%d: loss is %lg, total is %lg, kinetic is %lg" % (i, loss_eval, total_eval, kin_eval))
 
             # zero kinetic energy
             if self.FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder",
@@ -557,9 +669,6 @@ class model:
                 # print('y at step %s: %s' % (i, str(y_eval[0:9].transpose())))
         print("SAMPLED.")
 
-        coord.request_stop()
-        coord.join(threads)
-
         return run_info, trajectory
 
     def train(self, return_run_info = False, return_trajectories = False):
@@ -610,25 +719,18 @@ class model:
                 np.zeros((steps, no_params)),
                 columns=header)
 
-        # Start populating the filename queue.
-        coord = tf.train.Coordinator()
-        threads = tf.train.start_queue_runners(coord=coord, sess=self.sess)
-
         print("Starting to train")
         last_time = time.process_time()
         for i in range(self.FLAGS.max_steps):
-            print("Current step is " + str(i))
+            #print("Current step is " + str(i))
 
-            # fetch next batch of data
-            try:
-                batch_xs, batch_ys = self.sess.run([self.batch_features, self.batch_labels])
-            except tf.errors.OutOfRangeError:
-                print('End of epoch reached too early!')
-                sys.exit(255)
+            # get next batch of data
+            features, labels = self.input_pipeline.next_batch(self.sess)
 
             # place in feed dict
             feed_dict = {
-                self.xinput: batch_xs, placeholder_nodes["y_"]: batch_ys,
+                self.xinput: features,
+                placeholder_nodes["y_"]: labels,
                 placeholder_nodes["step_width"]: self.FLAGS.step_width
             }
             if self.FLAGS.dropout is not None:
@@ -688,8 +790,6 @@ class model:
             # print('y_ at step %s: %s' % (i, str(y_true_eval[0:9].transpose())))
             # print('y at step %s: %s' % (i, str(y_eval[0:9].transpose())))
         print("TRAINED down to loss %s and accuracy %s." % (loss_eval, acc))
-        coord.request_stop()
-        coord.join(threads)
 
         return run_info, trajectory
 

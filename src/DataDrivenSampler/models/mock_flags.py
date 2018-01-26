@@ -8,6 +8,7 @@ class MockFlags:
 
     def __init__(self,
                  batch_data_files=[],
+                 batch_data_file_type="csv",
                  batch_size=10,
                  dropout=0.9,
                  every_nth=1,
@@ -15,7 +16,9 @@ class MockFlags:
                  friction_constant=0.,
                  hidden_activation="relu",
                  hidden_dimension="",
-                 input_columns="1 2",
+                 in_memory_pipeline=True,
+                 input_columns="",
+                 input_dimension=2,
                  inter_ops_threads=1,
                  intra_ops_threads=None,
                  inverse_temperature=1.,
@@ -24,6 +27,7 @@ class MockFlags:
                  hamiltonian_dynamics_steps=10,
                  optimizer="GradientDescent",
                  output_activation="tanh",
+                 output_dimension=1,
                  prior_factor=1.,
                  prior_lower_boundary=None,
                  prior_power=1.,
@@ -39,6 +43,7 @@ class MockFlags:
         """ Init function to set various default values.
 
         :param batch_data_files: set of files to read input from
+        :param batch_data_file_type: type of the files to read input from
         :param batch_size: The number of samples used to divide sample set into batches in one sampleing step.
         :param dropout: Keep probability for sampleing dropout, e.g. 0.9
         :param every_nth: Store only every nth trajectory (and run) point to files, e.g. 10
@@ -46,7 +51,9 @@ class MockFlags:
         :param friction_constant: friction to scale the influence of momenta
         :param hidden_activation: Activation function to use for hidden layer: tanh, relu, linear
         :param hidden_dimension: Dimension of each hidden layer, e.g. 8 8 for two hidden layers each with 8 nodes fully connected
+        :param in_memory_pipeline: whether to feed the dataset from file in-memory (True) or not (False)
         :param input_columns: Pick a list of the following: (1) x1, (2) x2, (3) x1^2, (4) x2^2, (5) sin(x1), (6) sin(x2).
+        :param input_dimension: number of input nodes/number of features
         :param inter_ops_threads: size of thread pool used for independent ops
         :param intra_ops_threads: size of thread pool used for parallelizing an op
         :param inverse_temperature: Inverse temperature that scales the gradients
@@ -55,6 +62,7 @@ class MockFlags:
         :param hamiltonian_dynamics_steps: number of steps in HMC sampler for checking acceptance criterion
         :param optimizer: Choose the optimizer to use for sampling: GradientDescent
         :param output_activation: Activation function to use for output layer: tanh, relu, linear
+        :param output_dimension: number of output nodes/number of classes
         :param prior_factor: factor for scaling prior force
         :param prior_lower_boundary: lower boundary for wall-repelling prior force
         :param prior_power: power of distance used in calculating force
@@ -68,6 +76,7 @@ class MockFlags:
         :param trajectory_file: CSV file name to output trajectories of sampling, i.e. weights and evaluated loss function.
         """
         self.batch_data_files = batch_data_files
+        self.batch_data_file_type = batch_data_file_type
         self.batch_size = batch_size
         self.dimension = 0 # keeps the input dimension later
         self.dropout = dropout
@@ -76,7 +85,9 @@ class MockFlags:
         self.friction_constant = friction_constant
         self.hidden_activation = hidden_activation
         self.hidden_dimension = hidden_dimension
+        self.in_memory_pipeline = in_memory_pipeline
         self.input_columns = input_columns
+        self.input_dimension = input_dimension
         self.inter_ops_threads = inter_ops_threads
         self.intra_ops_threads = intra_ops_threads
         self.inverse_temperature = inverse_temperature
@@ -85,6 +96,7 @@ class MockFlags:
         self.hamiltonian_dynamics_steps = hamiltonian_dynamics_steps
         self.optimizer = optimizer
         self.output_activation = output_activation
+        self.output_dimension = output_dimension
         self.prior_factor = prior_factor
         self.prior_lower_boundary = prior_lower_boundary
         self.prior_power = prior_power

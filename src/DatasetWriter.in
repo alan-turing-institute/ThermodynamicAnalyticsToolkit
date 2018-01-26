@@ -50,10 +50,16 @@ if __name__ == '__main__':
 
     print("Generating input data")
     dataset_generator=DatasetGenerator()
-    ds = dataset_generator.generate(
+    xs, ys = dataset_generator.generate(
         dimension=FLAGS.dimension,
         noise=FLAGS.noise,
         data_type=FLAGS.data_type)
+
+    randomize = np.arange(len(xs))
+    #print("Randomized set is "+str(randomize))
+    np.random.shuffle(randomize)
+    xs[:] = np.array(xs)[randomize]
+    ys[:] = np.array(ys)[randomize]
 
     slice_index = int(FLAGS.dimension * FLAGS.train_test_ratio)
 
@@ -62,7 +68,7 @@ if __name__ == '__main__':
         with open(FLAGS.train_data_file, 'w', newline='') as train_data_file:
             csv_writer = csv.writer(train_data_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
             csv_writer.writerow(['x1', 'x2', 'label'])
-            for x,y in zip(ds.xs[:slice_index], ds.ys[:slice_index]):
+            for x,y in zip(xs[:slice_index], ys[:slice_index]):
                 csv_writer.writerow([x[0], x[1], y[0]])
             train_data_file.close()
 
@@ -71,6 +77,6 @@ if __name__ == '__main__':
         with open(FLAGS.test_data_file, 'w', newline='') as test_data_file:
             csv_writer = csv.writer(test_data_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
             csv_writer.writerow(['x1', 'x2', 'label'])
-            for x,y in zip(ds.xs[slice_index:], ds.ys[slice_index:]):
+            for x,y in zip(xs[slice_index:], ys[slice_index:]):
                 csv_writer.writerow([x[0], x[1], y[0]])
             test_data_file.close()

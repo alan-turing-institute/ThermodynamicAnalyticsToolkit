@@ -52,7 +52,7 @@ class runtime(object):
                     (batch_size,dimension,hidden_num_layers,hidden_min_nodes,hidden_max_nodes,seed,step_width,init_time,train_time, overall_time)
                     VALUES ({batch_size}, {dimension}, {hidden_num_layers}, {hidden_min_nodes}, {hidden_max_nodes}, {seed}, {step_width}, {init_time}, {train_time}, {overall_time});
                 """
-                hidden_dimension = get_list_from_string(self.FLAGS.hidden_dimension)
+                hidden_dimension = [int(i) for i in get_list_from_string(self.FLAGS.hidden_dimension)]
                 min_nodes = 0
                 max_nodes = 0
                 if len(hidden_dimension) != 0:

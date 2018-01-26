@@ -39,11 +39,9 @@ AT_CHECK([../../../DDSampler \
 
 # now compare (exclude time_per_nth_step column)
 AT_CHECK([../../../NumericalDiff \
-    --general_threshold 2e-7 relative \
     --column_threshold time_per_nth_step 1e16 absolute -- \
     run-BAOAB.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-BAOAB.csv], 0, [ignore], [ignore])
 AT_CHECK([../../../NumericalDiff \
-    --general_threshold 2e-7 relative -- \
     trajectory-BAOAB.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-BAOAB.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP

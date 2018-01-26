@@ -79,6 +79,8 @@ def main(_):
 
     network_model = model(FLAGS)
 
+    print(FLAGS)
+
     network_model.init_network(FLAGS.restore_model, setup=None)
 
     loss = network_model.nn.get_list_of_nodes(["loss"])
@@ -102,24 +104,20 @@ def main(_):
 
     current_step = 0
 
-    # Start populating the filename queue.
-    coord = tf.train.Coordinator()
-    threads = tf.train.start_queue_runners(coord=coord, sess=network_model.sess)
-
     ## function to evaluate the loss
 
     def evaluate_loss():
         # fetch next batch of data
         try:
-            batch_xs, batch_ys = sess.run([network_model.batch_features,
-                                           network_model.batch_labels])
+            batch_data = network_model.sess.run(network_model.input_pipeline.batch_next)
         except tf.errors.OutOfRangeError:
-            print('End of epoch reached too early!')
+            print('Max_steps or batch_size was not chosen right, dataset should always have right size.')
             sys.exit(255)
 
+        # place in feed dict
         feed_dict = {
-            network_model.xinput: batch_xs,
-            network_model.nn.placeholder_nodes["y_"]: batch_ys
+            network_model.xinput: batch_data[0],
+            network_model.nn.placeholder_nodes["y_"]: batch_data[1]
         }
 
         nn_weights.assign(sess, weights_vals)
@@ -234,9 +232,6 @@ def main(_):
                 biases_vals[:biases_vals.size] = row[(weights_vals.size+2):row_length]
                 loss_eval = evaluate_loss()
                 #assert( math.fabs( loss_eval - float(loss_check) ) < 1e-6 )
-
-    coord.request_stop()
-    coord.join(threads)
 
     network_model.finish()
 

@@ -9,6 +9,7 @@ import numpy as np
 import scipy.sparse as sps
 import sys
 
+from DataDrivenSampler.common import str2bool
 import DataDrivenSampler.diffusion_maps.diffusionmap as dm
 
 try:
@@ -59,7 +60,7 @@ def parse_parameters():
         help='How many evaluation steps for averages to take')
     parser.add_argument('--trajectory_file', type=str, default=None,
         help='CSV trajectory file name to read trajectories from and compute diffusion maps on.')
-    parser.add_argument('--use_reweighting', type=bool, default=False,
+    parser.add_argument('--use_reweighting', type=str2bool, default=False,
         help='Use reweighting of the kernel matrix of diffusion maps by the target distribution.')
     parser.add_argument('--version', '-V', action="store_true",
         help='Gives version information')

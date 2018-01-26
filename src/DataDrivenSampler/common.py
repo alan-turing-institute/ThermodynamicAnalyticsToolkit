@@ -1,8 +1,11 @@
+import argparse
+import collections
 import csv
+import numpy as np
 import os
+import pandas as pd
 import sys
 import tensorflow as tf
-import pandas as pd
 
 from DataDrivenSampler.datasets.classificationdatasets import ClassificationDatasets as DatasetGenerator
 from DataDrivenSampler.version import get_package_version, get_build_hash
@@ -17,10 +20,10 @@ def get_filename_from_fullpath(fullpath):
     return os.path.basename(fullpath)
 
 def get_list_from_string(str_or_list_of_str):
-    """ Extracts list of ints from any string (or list of strings).
+    """ Extracts list of strings from any string (or list of strings).
 
     :param str_or_list_of_str: string
-    :return: list of ints
+    :return: list of str
     """
     tmpstr=str_or_list_of_str
     if str_or_list_of_str is not str:
@@ -28,7 +31,7 @@ def get_list_from_string(str_or_list_of_str):
             tmpstr=" ".join(str_or_list_of_str)
         except(TypeError):
             tmpstr=" ".join([item for sublist in str_or_list_of_str for item in sublist])
-    return [int(item) for item in tmpstr.split()]
+    return [item for item in tmpstr.split()]
 
 
 def initialize_config_map():
@@ -104,29 +107,14 @@ def setup_trajectory_file(filename, no_weights, no_biases, config_map):
     else:
         return None
 
-
-def create_classification_dataset(FLAGS, config_map):
-    """ Creates the dataset object using a classification generator.
-
-    :param FLAGS: FLAGS dictionary with command-line parameters
-    :param config_map: configuration dictionary
-    :return: placeholder node for input, input layer for network, dataset object
-    """
-    print("Generating input data")
-    dsgen=DatasetGenerator()
-    ds = dsgen.generate(
-        dimension=FLAGS.dimension,
-        noise=FLAGS.noise,
-        data_type=FLAGS.data_type)
-    # use all as train set
-    ds.set_test_train_ratio(1)
-    dsgen.setup_config_map(config_map)
-
-    # generate input layer
-    input_columns = get_list_from_string(FLAGS.input_columns)
-    xinput, x = create_input_layer(config_map["input_dimension"], input_columns)
-    return xinput, x, ds
-
+def str2bool(v):
+    # this is the answer from stackoverflow https://stackoverflow.com/a/43357954/1967646
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
 
 def add_data_options_to_parser(parser):
     """ Adding options common to both sampler and optimizer to argparse
@@ -136,7 +124,13 @@ def add_data_options_to_parser(parser):
     """
     # please adhere to alphabetical ordering
     parser.add_argument('--batch_data_files', type=str, nargs='+', default=[],
-        help='Names of CSV files to parse input data from')
+        help='Names of files to parse input data from')
+    parser.add_argument('--batch_data_file_type', type=str, default="csv",
+        help='Type of the input files: csv (default), tfrecord')
+    parser.add_argument('--input_dimension', type=int, default=2,
+        help='Number of input nodes, i.e. dimensionality of provided dataset')
+    parser.add_argument('--output_dimension', type=int, default=1,
+        help='Number of output nodes, e.g. classes in a classification problem')
 
 
 def add_prior_options_to_parser(parser):
@@ -171,7 +165,9 @@ def add_model_options_to_parser(parser):
         help='Activation function to use for hidden layer: tanh, relu, linear')
     parser.add_argument('--hidden_dimension', type=str, nargs='+', default=[],
         help='Dimension of each hidden layer, e.g. 8 8 for two hidden layers each with 8 nodes fully connected')
-    parser.add_argument('--input_columns', type=str, nargs='+', default="1 2",
+    parser.add_argument('--in_memory_pipeline', type=str2bool, default=True,
+        help='Whether to use an in-memory input pipeline (for small datasets) or the tf.Dataset module.')
+    parser.add_argument('--input_columns', type=str, nargs='+', default="",
         help='Pick a list of the following: (1) x1, (2) x2, (3) x1^2, (4) x2^2, (5) sin(x1), (6) sin(x2).')
     parser.add_argument('--loss', type=str, default="mean_squared",
         help='Set the loss to be measured during sampling, e.g. mean_squared, log_loss, ...')
@@ -269,70 +265,78 @@ def read_from_csv(filename_queue):
     return features, label
 
 
-def create_input_pipeline(filenames, batch_size, shuffle=False, num_epochs=None, seed=None):
-    """ creates a Tensorflow input pipeline given some files and
-    a batch_size
+def read_and_decode_image(serialized_example, num_pixels, num_classes):
+  features = tf.parse_single_example(
+      serialized_example,
+      # Defaults are not specified since both keys are required.
+      features={
+          'image_raw': tf.FixedLenFeature([], tf.string),
+          'label': tf.FixedLenFeature([], tf.int64),
+      })
 
-    :param filenames: name of file
-    :param batch_size: size of each batch to be delivered
-    :param shuffle: whether to shuffle dataset or not
-    :param num_epochs: number of maximum epochs, None means no limit
-    :param seed: random number seed used for reshuffling
-    :return: Tensorflow nodes to receive features and labels
+  # Convert from a scalar string tensor (whose single string has
+  # length mnist.IMAGE_PIXELS) to a uint8 tensor with shape
+  # [mnist.IMAGE_PIXELS].
+  image = tf.decode_raw(features['image_raw'], tf.uint8)
+  image.set_shape(num_pixels)
+
+  # OPTIONAL: Could reshape into a 28x28 image and apply distortions
+  # here.  Since we are not applying any distortions in this
+  # example, and the next step expects the image to be flattened
+  # into a vector, we don't bother.
+
+  # Convert from [0, 255] -> [-0.5, 0.5] floats.
+  image = tf.cast(image, tf.float32) * (1. / 255) - 0.5
+
+  # Convert label from a scalar uint8 tensor to an int32 tensor.
+  label = tf.cast(features['label'], tf.int32)
+  label = tf.one_hot(label, num_classes)
+
+  return image, label
+
+
+def decode_csv_line(line, defaults):
+    """Convert a csv line into a (features_dict,label) pair."""
+    # Decode the line to a tuple of items based on the types of
+    # csv_header.values().
+    items = tf.decode_csv(line, list(defaults.values()))
+
+    # reshape into proper tensors
+    features = items[0:-1]
+    label = tf.reshape(tf.convert_to_tensor(items[-1], dtype=tf.int32), [1])
+
+    # return last element as label, rest as features
+    return features, label
+
+
+def get_csv_defaults(input_dimension, output_dimension=1):
+    """ Return the defaults for a csv line with input features and output labels.
+
+    :param input_dimension: number of features
+    :param output_dimension: number of labels
     """
-    filesize=sum([file_length(filename) for filename in filenames])
-    if filesize < 1e6 and len(filenames) == 1:
-        # parse file and have dataset in memory
-        df = pd.read_csv(filenames[0], sep=',', header=0)
-        feature_header = list(df)
-        assert( 'label' in feature_header )
-        feature_header.remove('label')
-        features=df.loc[:,feature_header].values
-        labels=df.loc[:,['label']].values #np.asarray
-
-        # Tell TensorFlow that the model will be built into the default Graph.
-        with tf.name_scope('input'):
-            # Input data, pin to CPU because rest of pipeline is CPU-only
-            with tf.device('/cpu:0'):
-                input_features = tf.constant(features)
-                input_labels = tf.constant(labels)
-
-            feature, label = tf.train.slice_input_producer(
-                [input_features, input_labels], shuffle=shuffle,
-                num_epochs=num_epochs)
+    defaults = collections.OrderedDict([])
+    for i in range(input_dimension):
+        defaults.update({"x"+str(i+1): [0.]})
+    if output_dimension > 1:
+        for i in range(input_dimension):
+            defaults.update({"label"+str(i+1): [0]})
     else:
-        filename_queue = tf.train.string_input_producer(filenames,
-                                                        num_epochs=num_epochs,
-                                                        shuffle=shuffle,
-                                                        seed=seed)
-        feature, label = read_from_csv(filename_queue)
-
-    print("Using batch size %d" % (batch_size))
-    if shuffle:
-        min_after_dequeue = 30
-        capacity = min_after_dequeue + 10*batch_size
-        feature_batch, label_batch = tf.train.shuffle_batch(
-            [feature, label], batch_size=batch_size, capacity=capacity,
-            min_after_dequeue=min_after_dequeue, seed=seed)
-    else:
-        capacity = batch_size
-        feature_batch, label_batch = tf.train.batch(
-            [feature, label], batch_size=batch_size, capacity=capacity)
-    return feature_batch, label_batch
+        defaults.update({"label": [0]})
+    return defaults
 
 
 def create_input_layer(input_dimension, input_list):
     """ Creates the input layer of TensorFlow's neural network.
 
-     As the input nodes are directly connected to the type of data we feed
+    As the input nodes are directly connected to the type of data we feed
      into the network, the function is associated with the dataset generator
      class.
 
-     As the datasets all have two-dimensional input, several expression may
-     be derived from this: first coordinate, second coordinate, squared first,
-     squared second, sine of first, sine of second.
+    For arbitrary input dimension we support taking powers, sine or cosine
+     of the argument.
 
-     All data resides in the domain [-r,r]^2.
+    All data resides in the domain [-r,r]^2.
 
     :param input_dimension: number of nodes for the input layer
     :param input_list: Pick of derived arguments to
@@ -344,17 +348,35 @@ def create_input_layer(input_dimension, input_list):
         xinput = tf.placeholder(tf.float64, [None, input_dimension], name='x-input')
         # print("xinput is "+str(xinput.get_shape()))
 
-        # pick from the various available input columns
-        arg_list_names = ["x1", "x2", "x1^2", "x2^2", "sin(x1)", "sin(x2)"]
-        picked_list_names = list(map(lambda i: arg_list_names[i - 1], input_list))
-        print("Picking as input columns: " + str(picked_list_names))
-        arg_list = [xinput[:, 0], xinput[:, 1]]
-        arg_list += [arg_list[0] * arg_list[0],
-                     arg_list[1] * arg_list[1],
-                     tf.sin(arg_list[0]),
-                     tf.sin(arg_list[1])]
-        picked_list = list(map(lambda i: arg_list[i - 1], input_list))
-        x = tf.transpose(tf.stack(picked_list))
+        # parse input columns
+        picked_list = []
+        for token in input_list:
+            # get the argument
+            x_index = token.find('x')
+            if x_index != -1:
+                arg_name = None
+                for i in range(x_index, len(token)):
+                    if (token[i] < "0") or (token[i] > "9"):
+                        arg_name = token[x_index:i]
+                        break
+                assert( arg_name is not None )
+                arg = xinput[:, (int(arg_name[1:])-1)]
+                if "sin" in token:
+                    picked_list.append(tf.sin(arg))
+                elif "cos" in token:
+                    picked_list.append(tf.cos(arg))
+                elif "^" in token:
+                    power = int(token[(token.find('^')+1):])
+                    picked_list.append(tf.pow(arg, power))
+                else:
+                    picked_list.append(arg)
+            else:
+                picked_list.append(xinput[:, (int(token) - 1)])
+        # if no specific input columns are desired, take all
+        if len(input_list) == 0:
+            x = tf.identity(xinput)
+        else:
+            x = tf.transpose(tf.stack(picked_list))
         print("x is " + str(x.get_shape()))
     return xinput, x
 
