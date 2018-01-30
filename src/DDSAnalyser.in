@@ -3,10 +3,11 @@
 import sys, getopt
 sys.path.insert(1, '@pythondir@')
 
-import tensorflow as tf
-import pandas as pd
+import logging
 import numpy as np
+import pandas as pd
 import scipy
+import tensorflow as tf
 
 from DataDrivenSampler.version import get_package_version, get_build_hash
 from DataDrivenSampler.common import get_filename_from_fullpath, setup_csv_file
@@ -229,6 +230,9 @@ def main(_):
 
 
 if __name__ == '__main__':
+    # setup logging
+    logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
+
     FLAGS, unparsed = parse_parameters()
 
     if FLAGS.version:

@@ -1,3 +1,4 @@
+import logging
 import sqlite3
 
 from DataDrivenSampler.common import get_list_from_string
@@ -44,7 +45,7 @@ class runtime(object):
                     overall_time FLOAT
                     );
                 """
-                #print(add_table_command)
+                logging.debug(add_table_command)
                 cursor.execute(add_table_command)
                 # add values
                 add_values_format = """
@@ -69,6 +70,6 @@ class runtime(object):
                     init_time=self.time_init_network,
                     train_time=self.time_train_network,
                     overall_time=self.time_overall)
-                #print(add_values_command)
+                logging.debug(add_values_command)
                 cursor.execute(add_values_command)
                 connection.commit()

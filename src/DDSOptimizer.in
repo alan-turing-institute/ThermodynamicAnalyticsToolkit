@@ -3,10 +3,10 @@
 import sys, getopt
 sys.path.insert(1, '@pythondir@')
 
-import tensorflow as tf
-import numpy as np
-
 import argparse
+import logging
+import numpy as np
+import tensorflow as tf
 import time
 
 from DataDrivenSampler.common import add_common_options_to_parser, add_data_options_to_parser, \
@@ -62,6 +62,9 @@ def main(_):
     rt.set_overall_time(time.process_time() - time_zero)
 
 if __name__ == '__main__':
+    # setup logging
+    logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
+
     FLAGS, unparsed = parse_parameters()
 
     react_to_common_options(FLAGS, unparsed)

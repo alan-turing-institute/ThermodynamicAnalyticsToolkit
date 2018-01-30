@@ -63,14 +63,12 @@ class SGLDSampler(optimizer.Optimizer):
         """
         step_width_t = math_ops.cast(self._step_width_t, var.dtype.base_dtype)
         inverse_temperature_t = math_ops.cast(self._inverse_temperature_t, var.dtype.base_dtype)
-        #print("lr_t is "+str(self._lr))
         if self._seed is None:
             random_noise_t = tf.random_normal(grad.get_shape(), mean=0.,stddev=1., dtype=tf.float64)
         else:
             # increment such that we use different seed for each random tensor
             self._seed += 1
             random_noise_t = tf.random_normal(grad.get_shape(), mean=0., stddev=1., dtype=tf.float64, seed=self._seed)
-        #print("random_noise_t has shape "+str(random_noise_t.get_shape())+" with seed "+str(self._seed))
         return step_width_t, inverse_temperature_t, random_noise_t
 
     def set_prior(self, prior):

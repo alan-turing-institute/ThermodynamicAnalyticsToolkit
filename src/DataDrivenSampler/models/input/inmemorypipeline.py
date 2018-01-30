@@ -1,8 +1,8 @@
-from DataDrivenSampler.models.input.datasetpipeline import DatasetPipeline
-
-import tensorflow as tf
+import logging
 from math import ceil
-import sys
+import tensorflow as tf
+
+from DataDrivenSampler.models.input.datasetpipeline import DatasetPipeline
 
 class InMemoryPipeline(DatasetPipeline):
     """ This specific input pipeline uses a numpy array as an in-memory dataset
@@ -34,8 +34,8 @@ class InMemoryPipeline(DatasetPipeline):
             self.dataset = self.dataset.shuffle(seed=seed)
         self.dataset = self.dataset.batch(batch_size)
         self.dataset = self.dataset.repeat(ceil(max_steps*batch_size/dimension))
-        print(self.dataset.output_shapes)
-        print(self.dataset.output_types)
+        logging.info(self.dataset.output_shapes)
+        logging.info(self.dataset.output_types)
 
         self.iterator = self.dataset.make_initializable_iterator()
         self.batch_next = self.iterator.get_next()

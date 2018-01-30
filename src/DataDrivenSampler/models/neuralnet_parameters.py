@@ -1,6 +1,6 @@
-import tensorflow as tf
+import logging
 import numpy as np
-
+import tensorflow as tf
 from tensorflow.python.ops import control_flow_ops
 
 class neuralnet_parameters:
@@ -27,7 +27,7 @@ class neuralnet_parameters:
         :return: zero-filled vector of right dimension
         """
         total_dof = self.get_total_dof_from_list(self.parameters)
-        print("Number of dof: " + str(total_dof))
+        logging.info("Number of dof: " + str(total_dof))
 
         # setup flat np array
         return np.zeros([total_dof])
@@ -39,7 +39,7 @@ class neuralnet_parameters:
         """
         # evaluate all
         weights_eval = _sess.run(self.parameters)
-        #print(weights_eval)
+        #logging.debug(weights_eval)
 
         # convert to flat array
         return self.flatten_list_of_arrays(weights_eval)
@@ -79,8 +79,8 @@ class neuralnet_parameters:
             weights_placeholder_list.append(
                 tf.placeholder(shape=tensor.get_shape(), dtype=tf.float64)
             )
-            print("Weight: " + str(tensor))
-            print("Placeholder: " + str(weights_placeholder_list[-1]))
+            logging.debug("Weight: " + str(tensor))
+            logging.debug("Placeholder: " + str(weights_placeholder_list[-1]))
         return weights_placeholder_list
 
     @staticmethod

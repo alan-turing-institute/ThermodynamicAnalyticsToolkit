@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 import scipy
 
@@ -34,7 +35,7 @@ class TrajectoryJob_analyze(TrajectoryJob):
         # analyze full trajectory
         trajectory = _data.parameters
         losses = _data.losses
-        print("Computing diffusion map")
+        logging.debug("Computing diffusion map")
         try:
             vectors, values, q = compute_diffusion_maps( \
                 traj=trajectory, \
@@ -44,7 +45,7 @@ class TrajectoryJob_analyze(TrajectoryJob):
                 method=self.parameters.diffusion_map_method,
                 use_reweighting=self.parameters.use_reweighting)
         except scipy.sparse.linalg.eigen.arpack.ArpackNoConvergence:
-            print("ERROR: Vectors were non-convergent.")
+            logging.error(": Vectors were non-convergent.")
             vectors = np.zeros((np.shape(trajectory)[0], self.parameters.number_of_eigenvalues))
             values = np.zeros((self.parameters.number_of_eigenvalues))
             q = np.zeros((np.shape(trajectory)[0], np.shape(trajectory)[0]))
@@ -53,7 +54,7 @@ class TrajectoryJob_analyze(TrajectoryJob):
         # append vectors and values to data
         _data.diffmap_eigenvectors.append(vectors)
         _data.diffmap_eigenvalues.append(values)
-        print("eigenvalues is "+str(values))
+        logging.debug("eigenvalues is "+str(values))
 
         # check whether converged w.r.t to previous eigenvalues
         if len(_data.diffmap_eigenvalues) > 1:
@@ -64,6 +65,6 @@ class TrajectoryJob_analyze(TrajectoryJob):
                     evs_converged = False
         else:
             evs_converged = False
-        print("Has eigendecompostion converged? "+str(evs_converged))
+        logging.debug("Has eigendecompostion converged? "+str(evs_converged))
 
         return _data, ((not evs_converged) and (self.continue_flag))

@@ -1,10 +1,12 @@
+import io
+import logging
 import math
 import numpy as np
 import tensorflow as tf
+
 import matplotlib as mpl
 mpl.use('Agg')  # no display
 import matplotlib.pyplot as plt
-import io
 
 
 class ClassificationDatasets:
@@ -81,7 +83,7 @@ class ClassificationDatasets:
                 norm = (coords[0]+noisecoords[0])*(coords[0]+noisecoords[0])+(coords[1]+noisecoords[1])*(coords[1]+noisecoords[1])
                 self.xs.append(coords)
                 self.ys.append([1] if (norm < self.r*self.r*.25) else [-1])
-                #print(str(returndata[-1])+" with norm "+str(norm)+" and radius "+str(radius)+": "+str(labels[-1]))
+                logging.debug(str(self.xs[-1])+" with norm "+str(norm)+" and radius "+str(radius)+": "+str(self.ys[-1]))
                 
     def generate_squares(self, dimension, noise):
         """
@@ -171,7 +173,7 @@ class ClassificationDatasets:
         :return: placeholder for feeding in string encoded PNG image, summary
             node for writing image to
         """
-        # print("Adding graphing nodes")
+        logging.debug("Adding graphing nodes")
         plot_buf_test = tf.placeholder(tf.string)
         image_test = tf.image.decode_png(plot_buf_test, channels=4)
         image_test = tf.expand_dims(image_test, 0) # make it batched

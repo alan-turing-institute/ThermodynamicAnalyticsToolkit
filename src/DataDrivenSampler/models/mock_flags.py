@@ -1,5 +1,3 @@
-from DataDrivenSampler.datasets.classificationdatasets import ClassificationDatasets
-
 
 class MockFlags:
     """ This class mimicks a parsed arguments structure returned from the module
@@ -41,7 +39,8 @@ class MockFlags:
                  seed=None,
                  step_width=0.03,
                  trajectory_file=None,
-                 use_reweighting=False
+                 use_reweighting=False,
+                 verbose=0
     ):
         """ Init function to set various default values.
 
@@ -80,6 +79,7 @@ class MockFlags:
         :param step_width: step width \Delta t to use, e.g. 0.01
         :param trajectory_file: CSV file name to output trajectories of sampling, i.e. weights and evaluated loss function.
         :param use_reweighting:
+        :param verbose: how much (debugging) information to print
         """
         self.batch_data_files = batch_data_files
         self.batch_data_file_type = batch_data_file_type
@@ -117,3 +117,4 @@ class MockFlags:
         self.step_width = step_width
         self.trajectory_file = trajectory_file
         self.use_reweighting = use_reweighting
+        self.verbose = verbose

@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 
 from DataDrivenSampler.exploration.trajectoryjob import TrajectoryJob
@@ -33,10 +34,10 @@ class TrajectoryJob_prune(TrajectoryJob):
         :return: updated data object
         """
         def metropolis(old_energy, new_energy):
-            #print("Comparing "+str(old_energy)+" with "+str(new_energy))
+            logging.debug("Comparing "+str(old_energy)+" with "+str(new_energy))
             p_accept = min(1.0, np.exp(-abs(old_energy-new_energy)))
             die_roll = np.random.uniform(0.,1.)
-            #print("\tHaving "+str(p_accept)+" as threshold, rolled "+str(die_roll))
+            logging.debug("\tHaving "+str(p_accept)+" as threshold, rolled "+str(die_roll))
             return p_accept > die_roll
 
         num_dof = self.network_model.number_of_parameters
@@ -65,8 +66,8 @@ class TrajectoryJob_prune(TrajectoryJob):
 
             keep_indices_global.extend([i+_data.index_at_leg[leg_nr] for i in keep_indices])
 
-        print("Keeping "+str(len(keep_indices_global))+" of " \
-              +str(len(_data.parameters))+" indices in total.")
+        logging.debug("Keeping "+str(len(keep_indices_global))+" of " \
+            +str(len(_data.parameters))+" indices in total.")
         _data.parameters[:] = [_data.parameters[i] for i in keep_indices_global]
         _data.losses[:] = [_data.losses[i] for i in keep_indices_global]
         _data.gradients[:] = [_data.gradients[i] for i in keep_indices_global]

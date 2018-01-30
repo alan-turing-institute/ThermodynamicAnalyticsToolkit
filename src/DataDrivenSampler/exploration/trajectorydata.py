@@ -1,3 +1,5 @@
+import logging
+
 class TrajectoryData(object):
     ''' This class contains all data associated with a single trajectory.
     Trajectory steps are bundled into consecutive legs. Over these legs
@@ -67,7 +69,7 @@ class TrajectoryData(object):
         self.gradients.extend(_gradients)
         # trajectories need to append continuously w.r.t steps
         if (len(self.legs_at_step) > 0):
-            print("Last leg ended at "+str(self.legs_at_step[-1])+", next starts at "+str(_steps[0]))
+            logging.debug("Last leg ended at "+str(self.legs_at_step[-1])+", next starts at "+str(_steps[0]))
             assert( (len(self.legs_at_step) == 0) or (self.legs_at_step[-1] < _steps[0]) )
         self.legs_at_step.append(_steps[-1])
         if _run_lines is not None:

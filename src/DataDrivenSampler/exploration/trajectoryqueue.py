@@ -1,3 +1,5 @@
+from collections import deque
+import logging
 import tensorflow as tf
 
 from DataDrivenSampler.models.neuralnet_parameters import neuralnet_parameters
@@ -6,7 +8,6 @@ from DataDrivenSampler.exploration.trajectoryjob_check_minima import TrajectoryJ
 from DataDrivenSampler.exploration.trajectoryjob_extract_minimum_candidates import TrajectoryJob_extract_minimium_candidates
 from DataDrivenSampler.exploration.trajectoryjob_prune import TrajectoryJob_prune
 from DataDrivenSampler.exploration.trajectoryjob_run import TrajectoryJob_run
-from collections import deque
 
 class TrajectoryQueue(object):
     ''' This class is a queue of trajectory jobs (of type run and analyze)
@@ -121,25 +122,25 @@ class TrajectoryQueue(object):
         :param analyze_object: parameter object for analysis
         '''
         current_job = self.queue.popleft()
-        print("Current job #"+str(current_job.get_job_id())+": "+current_job.job_type)
+        logging.info("Current job #"+str(current_job.get_job_id())+": "+current_job.job_type)
         data_id = current_job.get_data_id()
         data_object = self.data_container.get_data(data_id)
         updated_data, continue_flag = current_job.run(data_object)
-        print("Continue? "+str(continue_flag))
+        logging.info("Continue? "+str(continue_flag))
         self.data_container.update_data(updated_data)
         if continue_flag and current_job.job_type == "run":
             self.add_analyze_job(data_id, analyze_object, current_job.continue_flag)
-            print("Added analyze job")
+            logging.info("Added analyze job")
         elif current_job.job_type == "analyze":
             if len(updated_data.legs_at_step) >= self.max_legs:
-                print("Maximum number of legs exceeded, stopping anyway.")
+                logging.info("Maximum number of legs exceeded, stopping anyway.")
                 continue_flag = False
             if continue_flag:
                 self.add_run_job(data_id, run_object,
                                  data_object.legs_at_step[-1],
                                  data_object.parameters[-1],
                                  current_job.continue_flag)
-                print("Added run job")
+                logging.debug("Added run job")
             elif not updated_data.is_pruned:
                 for i in range(self.number_pruning):
                     self.add_prune_job(data_id, run_object, False)
@@ -148,15 +149,15 @@ class TrajectoryQueue(object):
                     updated_data.is_pruned = True
                 else:
                     self.add_analyze_job(data_id, analyze_object, False)
-                    print("Added prune job and post analysis")
+                    logging.info("Added prune job and post analysis")
             else:
                 if len(updated_data.minimum_candidates) > 0:
                     self.add_check_minima_job(data_id, run_object, False)
-                    print("Added check minima jobs")
+                    logging.info("Added check minima jobs")
                 else:
-                    print("No minimum candidates on this trajectory.")
+                    logging.info("No minimum candidates on this trajectory.")
         else:
-            print("Not adding.")
+            logging.info("Not adding.")
 
 
     def is_empty(self):

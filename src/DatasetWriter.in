@@ -13,6 +13,7 @@ sys.path.insert(1, '@pythondir@')
 
 import argparse
 import csv
+import logging
 import numpy as np
 
 from DataDrivenSampler.datasets.classificationdatasets import ClassificationDatasets as DatasetGenerator
@@ -22,6 +23,9 @@ FLAGS = None
 
 
 if __name__ == '__main__':
+    # setup logging
+    logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
+
     parser = argparse.ArgumentParser()
     # please adhere to alphabetical ordering
     parser.add_argument('--data_type', type=int, default=DatasetGenerator.SPIRAL,
@@ -38,6 +42,8 @@ if __name__ == '__main__':
         help='ratio in [0,1] to split dataset into training and test part.')
     parser.add_argument('--test_data_file', type=str,
         help='testing CSV file name.')
+    parser.add_argument('--verbose', '-v', action='count',
+        help='Level of verbosity during compare')
     parser.add_argument('--version', action="store_true",
         help='Gives version information')
     FLAGS, unparsed = parser.parse_known_args()

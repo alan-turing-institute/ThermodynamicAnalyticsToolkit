@@ -1,9 +1,8 @@
 import argparse
 import collections
 import csv
-import numpy as np
+import logging
 import os
-import pandas as pd
 import sys
 import tensorflow as tf
 
@@ -200,6 +199,8 @@ def add_common_options_to_parser(parser):
         help='Supply file for writing timing information to sqlite database')
     parser.add_argument('--trajectory_file', type=str, default=None,
         help='CSV file name to output trajectories of sampling, i.e. weights and evaluated loss function.')
+    parser.add_argument('--verbose', '-v', action='count', default=1,
+        help='Level of verbosity during compare')
     parser.add_argument('--version', '-V', action="store_true",
         help='Gives version information')
 
@@ -240,10 +241,18 @@ def react_to_common_options(FLAGS, unparsed):
         print(get_filename_from_fullpath(sys.argv[0])+" "+get_package_version()+" -- version "+get_build_hash())
         sys.exit(0)
 
-    print("Using parameters: "+str(FLAGS))
+    # setup log level
+    if FLAGS.verbose == None:
+        FLAGS.verbose = 0
+    FLAGS.verbose = min(3, FLAGS.verbose)
+    verbosity = [logging.WARNING, logging.INFO, logging.DEBUG, logging.NOTSET]
+    logging.getLogger().setLevel(verbosity[FLAGS.verbose])
+    # sys.stdout.write('Logging is at '+str(verbosity[arguments.verbose])+' level\n')
+
+    logging.info("Using parameters: "+str(FLAGS))
 
     if len(unparsed) != 0:
-        print("There are unparsed parameters '"+str(unparsed)+"', have you misspelled some?")
+        logging.error("There are unparsed parameters '"+str(unparsed)+"', have you misspelled some?")
         sys.exit(255)
 
 
@@ -256,7 +265,7 @@ def react_to_sampler_options(FLAGS, unparsed):
     if (FLAGS.sampler == "StochasticGradientLangevinDynamics"
         or FLAGS.sampler == "HamiltonianMonteCarlo") \
         and FLAGS.friction_constant != 0.:
-        print("You set friction_constant but only BAOAB, GLA 1st and 2nd order use it.")
+        logging.info("You set friction_constant but only BAOAB, GLA 1st and 2nd order use it.")
         sys.exit(1)
 
 
@@ -383,7 +392,7 @@ def create_input_layer(input_dimension, input_list):
     # Input placeholders
     with tf.name_scope('input'):
         xinput = tf.placeholder(tf.float64, [None, input_dimension], name='x-input')
-        # print("xinput is "+str(xinput.get_shape()))
+        logging.debug("xinput is "+str(xinput.get_shape()))
 
         # parse input columns
         picked_list = []
@@ -414,6 +423,6 @@ def create_input_layer(input_dimension, input_list):
             x = tf.identity(xinput)
         else:
             x = tf.transpose(tf.stack(picked_list))
-        print("x is " + str(x.get_shape()))
+        logging.info("x is " + str(x.get_shape()))
     return xinput, x
 

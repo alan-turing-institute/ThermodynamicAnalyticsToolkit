@@ -1,13 +1,11 @@
 from builtins import staticmethod
 
-import functools
+import logging
+from math import sqrt, floor, ceil
 import numpy as np
 import pandas as pd
-import sys
 import tensorflow as tf
 import time
-
-from math import sqrt, floor, ceil
 
 from DataDrivenSampler.common import create_input_layer, decode_csv_line, file_length, \
     get_csv_defaults, get_list_from_string, get_trajectory_header, \
@@ -53,10 +51,10 @@ class model:
             elif FLAGS.batch_data_file_type == "tfrecord":
                 self.FLAGS.dimension = self._get_dimension_from_tfrecord(FLAGS.batch_data_files)
             else:
-                print("Unknown file type")
+                logging.info("Unknown file type")
                 assert(0)
 
-            print("Parsing "+str(FLAGS.batch_data_files))
+            logging.info("Parsing "+str(FLAGS.batch_data_files))
 
             self.number_of_parameters = 0 # number of biases and weights
 
@@ -96,16 +94,17 @@ class model:
         for filename in filenames:
             record_iterator = tf.python_io.tf_record_iterator(path=filename)
             for string_record in record_iterator:
-            #     example = tf.train.Example()
-            #     example.ParseFromString(string_record)
-            #     height = int(example.features.feature['height']
-            #                  .int64_list
-            #                  .value[0])
-            #
-            #     width = int(example.features.feature['width']
-            #                 .int64_list
-            #                 .value[0])
-            #     print("height is "+str(height)+" and width is "+str(width))
+                if logging.getLogger(__name__).isEnabledFor(logging.DEBUG):
+                    example = tf.train.Example()
+                    example.ParseFromString(string_record)
+                    height = int(example.features.feature['height']
+                                 .int64_list
+                                 .value[0])
+
+                    width = int(example.features.feature['width']
+                                .int64_list
+                                .value[0])
+                    logging.debug("height is "+str(height)+" and width is "+str(width))
                 dimension += 1
 
         return dimension
@@ -117,11 +116,11 @@ class model:
         :return: True - is smaller or equal, False - exceeded and capped batch_size
         '''
         if self.FLAGS.batch_size is None:
-            print("batch_size not set, setting to dimension of dataset.")
+            logging.info("batch_size not set, setting to dimension of dataset.")
             self.FLAGS.batch_size = self.FLAGS.dimension
             return True
         if self.FLAGS.batch_size > self.FLAGS.dimension:
-            print("WARNING: batch_size exceeds number of data items, capping.")
+            logging.warning(" batch_size exceeds number of data items, capping.")
             self.FLAGS.batch_size = self.FLAGS.dimension
             return False
         else:
@@ -135,7 +134,7 @@ class model:
         :param labels: label part of dataset
         :param shuffle: whether to shuffle the dataset initially or not
         '''
-        print("Using in-memory pipeline")
+        logging.info("Using in-memory pipeline")
         self.input_dimension = len(features[0])
         self.output_dimension = len(labels[0])
         assert( len(features) == len(labels) )
@@ -153,7 +152,7 @@ class model:
         :param shuffle: whether to shuffle dataset or not
         """
         if FLAGS.in_memory_pipeline and (FLAGS.batch_data_file_type == "csv"):
-            print("Using in-memory pipeline")
+            logging.info("Using in-memory pipeline")
             # at the moment we can only parse a single file
             assert( len(FLAGS.batch_data_files) == 1 )
             csv_dataset = pd.read_csv(FLAGS.batch_data_files[0], sep=',', header=0)
@@ -163,7 +162,7 @@ class model:
                                                    max_steps=FLAGS.max_steps,
                                                    shuffle=shuffle, seed=FLAGS.seed)
         else:
-            print("Using tf.Dataset pipeline")
+            logging.info("Using tf.Dataset pipeline")
             self.input_pipeline = DatasetPipeline(filenames=FLAGS.batch_data_files, filetype=FLAGS.batch_data_file_type,
                                                   batch_size=FLAGS.batch_size, dimension=FLAGS.dimension, max_steps=FLAGS.max_steps,
                                                   input_dimension=self.input_dimension, output_dimension=self.output_dimension,
@@ -252,7 +251,8 @@ class model:
             seed=None,
             step_width=0.03,
             trajectory_file=None,
-            use_reweighting=False):
+            use_reweighting=False,
+            verbose=0):
             return MockFlags(
                 batch_data_files=batch_data_files,
                 batch_data_file_type=batch_data_file_type,
@@ -288,7 +288,8 @@ class model:
                 seed=seed,
                 step_width=step_width,
                 trajectory_file=trajectory_file,
-                use_reweighting=use_reweighting)
+                use_reweighting=use_reweighting,
+                verbose=verbose)
 
     def reset_dataset(self):
         """ Re-initializes the dataset for a new run
@@ -357,7 +358,7 @@ class model:
         elif setup == "sample":
             self.nn.add_sample_method(loss, sampling_method=self.FLAGS.sampler, seed=self.FLAGS.seed, prior=prior)
         else:
-            print("Not adding sample or train method.")
+            logging.info("Not adding sample or train method.")
 
         if "step_placeholder" not in self.nn.placeholder_nodes.keys():
             step_placeholder = tf.placeholder(shape=(), dtype=tf.int32)
@@ -372,7 +373,7 @@ class model:
                                    tf.get_collection(tf.GraphKeys.BIASES) + \
                                    tf.get_collection("Variables_to_Save"))
         if self.sess is None:
-            #print("Using %s, %s threads " % (str(self.FLAGS.intra_ops_threads), str(self.FLAGS.inter_ops_threads)))
+            logging.debug("Using %s, %s threads " % (str(self.FLAGS.intra_ops_threads), str(self.FLAGS.inter_ops_threads)))
             self.sess = tf.Session(
                 config=tf.ConfigProto(
                     intra_op_parallelism_threads=self.FLAGS.intra_ops_threads,
@@ -394,10 +395,10 @@ class model:
 
             restore_path = filename.replace('.meta', '')
             self.saver.restore(self.sess, restore_path)
-            print("Model restored from file: %s" % restore_path)
+            logging.info("Model restored from file: %s" % restore_path)
 
         header = None
-        print("Setting up output files for "+str(setup))
+        logging.info("Setting up output files for "+str(setup))
         if setup == "sample":
             header = self.get_sample_header()
         elif setup == "train":
@@ -407,8 +408,6 @@ class model:
             self.weights = neuralnet_parameters(tf.get_collection(tf.GraphKeys.WEIGHTS))
         if self.biases is None:
             self.biases = neuralnet_parameters(tf.get_collection(tf.GraphKeys.BIASES))
-        #print("There are %d weights and %d biases in the network"
-        #      % (self.length_weights, self.length_biases))
 
         try:
             if self.run_writer is None:
@@ -525,7 +524,7 @@ class model:
                 placeholder_nodes["current_step"]: 0,
                 placeholder_nodes["num_steps"]: self.FLAGS.hamiltonian_dynamics_steps
             })
-            print("Sampler parameters: current_step = %lg, num_mc_steps = %lg, delta t = %lg" %
+            logging.info("Sampler parameters: current_step = %lg, num_mc_steps = %lg, delta t = %lg" %
                   (current_step, num_mc_steps, deltat))
 
         # create extra nodes for HMC
@@ -543,8 +542,8 @@ class model:
         assert(check_accepted == 0)
         assert(check_rejected == 0)
 
-        print("Starting to sample")
-        print_intervals = max(1, int(self.FLAGS.max_steps / 100))
+        logging.info("Starting to sample")
+        logging.info_intervals = max(1, int(self.FLAGS.max_steps / 100))
         last_time = time.process_time()
         for i in range(self.FLAGS.max_steps):
             # get next batch of data
@@ -562,8 +561,7 @@ class model:
             }
             if self.FLAGS.dropout is not None:
                 feed_dict.update({placeholder_nodes["keep_prob"] : self.FLAGS.dropout})
-            # print("Testset is x: "+str(test_xs[:])+", y: "+str(test_ys[:]))
-            # print("Testset is x: "+str(test_xs[:])+", y: "+str(test_ys[:]))
+            #logging.debug("batch is x: "+str(features[:])+", y: "+str(labels[:]))
 
             # set global variable used in HMC sampler for criterion to initial loss
             if self.FLAGS.sampler == "HamiltonianMonteCarlo":
@@ -578,7 +576,7 @@ class model:
                 else:
                     self.sess.run(HMC_set_nodes, feed_dict=HMC_set_dict)
                 loss_eval, total_eval, kin_eval = self.sess.run(HMC_eval_nodes, feed_dict=feed_dict)
-                #print("#%d: loss is %lg, total is %lg, kinetic is %lg" % (i, loss_eval, total_eval, kin_eval))
+                logging.debug("#%d: loss is %lg, total is %lg, kinetic is %lg" % (i, loss_eval, total_eval, kin_eval))
 
             # zero kinetic energy
             if self.FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder",
@@ -600,8 +598,8 @@ class model:
                 if self.config_map["do_write_trajectory_file"] or return_trajectories:
                     weights_eval = self.weights.evaluate(self.sess)
                     biases_eval = self.biases.evaluate(self.sess)
-                    #[print(str(item)) for item in weights_eval]
-                    #[print(str(item)) for item in biases_eval]
+                    #[logging.info(str(item)) for item in weights_eval]
+                    #[logging.info(str(item)) for item in biases_eval]
 
             # NOTE: All values from nodes contained in the same call to tf.run() with train_step
             # will be evaluated as if before train_step. Nodes that are changed in the update due to
@@ -637,7 +635,7 @@ class model:
                 current_time = time.process_time()
                 time_elapsed_per_nth_step = current_time - last_time
                 last_time = current_time
-                #print("Output at step #" + str(i) + ", time elapsed till last is " + str(time_elapsed_per_nth_step))
+                logging.debug("Output at step #" + str(i) + ", time elapsed till last is " + str(time_elapsed_per_nth_step))
 
                 if self.config_map["do_write_trajectory_file"] or return_trajectories:
                     trajectory_line = [0, global_step] \
@@ -702,12 +700,12 @@ class model:
                         run_info.loc[written_row] = run_line
                 written_row+=1
 
-            #if (i % print_intervals) == 0:
-                #print('Accuracy at step %s (%s): %s' % (i, global_step, acc))
-                # print('Loss at step %s: %s' % (i, loss_eval))
-                # print('y_ at step %s: %s' % (i, str(y_true_eval[0:9].transpose())))
-                # print('y at step %s: %s' % (i, str(y_eval[0:9].transpose())))
-        print("SAMPLED.")
+            #if (i % logging.info_intervals) == 0:
+                #logging.debug('Accuracy at step %s (%s): %s' % (i, global_step, acc))
+                #logging.debug('Loss at step %s: %s' % (i, loss_eval))
+                #logging.debug('y_ at step %s: %s' % (i, str(y_true_eval[0:9].transpose())))
+                #logging.debug('y at step %s: %s' % (i, str(y_eval[0:9].transpose())))
+        logging.info("SAMPLED.")
 
         return run_info, trajectory
 
@@ -759,10 +757,10 @@ class model:
                 np.zeros((steps, no_params)),
                 columns=header)
 
-        print("Starting to train")
+        logging.info("Starting to train")
         last_time = time.process_time()
         for i in range(self.FLAGS.max_steps):
-            #print("Current step is " + str(i))
+            logging.debug("Current step is " + str(i))
 
             # get next batch of data
             features, labels = self.input_pipeline.next_batch(self.sess)
@@ -775,6 +773,7 @@ class model:
             }
             if self.FLAGS.dropout is not None:
                 feed_dict.update({placeholder_nodes["keep_prob"] : self.FLAGS.dropout})
+            #logging.debug("batch is x: "+str(features[:])+", y: "+str(labels[:]))
 
             # zero accumulated gradient
             check_gradients, check_virials = self.sess.run([zero_gradients, zero_virials])
@@ -791,7 +790,7 @@ class model:
                 current_time = time.process_time()
                 time_elapsed_per_nth_step = current_time - last_time
                 last_time = current_time
-                #print("Output at step #" + str(i) + ", time elapsed till last is " + str(time_elapsed_per_nth_step))
+                logging.debug("Output at step #" + str(i) + ", time elapsed till last is " + str(time_elapsed_per_nth_step))
 
                 run_line = [0, global_step, i] + ['{:1.3f}'.format(acc)] \
                            + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
@@ -825,11 +824,11 @@ class model:
                         trajectory.loc[written_row] = trajectory_line
                 written_row+=1
 
-            #print('Accuracy at step %s (%s): %s' % (i, global_step, acc))
-            # print('Loss at step %s: %s' % (i, loss_eval))
-            # print('y_ at step %s: %s' % (i, str(y_true_eval[0:9].transpose())))
-            # print('y at step %s: %s' % (i, str(y_eval[0:9].transpose())))
-        print("TRAINED down to loss %s and accuracy %s." % (loss_eval, acc))
+            logging.debug('Accuracy at step %s (%s): %s' % (i, global_step, acc))
+            logging.debug('Loss at step %s: %s' % (i, loss_eval))
+            #logging.debug('y_ at step %s: %s' % (i, str(y_true_eval[0:9].transpose())))
+            #logging.debug('y at step %s: %s' % (i, str(y_eval[0:9].transpose())))
+        logging.info("TRAINED down to loss %s and accuracy %s." % (loss_eval, acc))
 
         return run_info, trajectory
 
@@ -855,7 +854,7 @@ class model:
         try:
             if self.FLAGS.save_model is not None:
                 save_path = self.saver.save(self.sess, self.FLAGS.save_model.replace('.meta', ''))
-                print("Model saved in file: %s" % save_path)
+                logging.info("Model saved in file: %s" % save_path)
         except AttributeError:
             pass
 
@@ -874,7 +873,7 @@ class model:
         elif "bias" in _name:
             other_collection = tf.get_collection_ref(tf.GraphKeys.BIASES)
         else:
-            print("Unknown parameter category, removing only from trainables.")
+            logging.info("Unknown parameter category, removing only from trainables.")
         for i in range(len(trainable_collection)):
             if trainable_collection[i].name == _name:
                 trainable_variable = trainable_collection[i]
@@ -885,7 +884,7 @@ class model:
                 variable = other_collection[i]
                 del other_collection[i]
                 break
-        print("Comparing %s and %s" % (trainable_variable, variable))
+        logging.info("Comparing %s and %s" % (trainable_variable, variable))
         assert(trainable_variable is variable)
         return variable
 

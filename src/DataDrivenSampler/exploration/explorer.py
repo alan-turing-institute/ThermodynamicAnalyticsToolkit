@@ -2,6 +2,8 @@ from DataDrivenSampler.exploration.trajectorydatacontainer import TrajectoryData
 from DataDrivenSampler.exploration.trajectoryqueue import TrajectoryQueue
 from DataDrivenSampler.TrajectoryAnalyser import compute_diffusion_maps
 
+import logging
+
 import numpy as np
 
 import scipy.sparse
@@ -61,7 +63,8 @@ class Explorer(object):
         # d. spawn new trajectories from these points
         cornerpoints = []
         for i in range(len(idx_corner)):
-            print("Current corner point is (first and last five shown):"+str(parameters[idx_corner[i]][:5])+" ... "+str(parameters[idx_corner[i]][-5:]))
+            logging.debug("Current corner point is (first and last five shown):" \
+                          +str(parameters[idx_corner[i]][:5])+" ... "+str(parameters[idx_corner[i]][-5:]))
             current_id = self.container.add_empty_data()
             data_object = self.container.data[current_id]
             data_object.steps[:] = [steps[idx_corner[i]]]
@@ -118,8 +121,8 @@ class Explorer(object):
         else:
             assert (False)
 
-        # print('idx_corner ')
-        # print(idx_corner)
+        logging.debug('idx_corner ')
+        logging.debug(idx_corner)
         # iteration to find the other cornerstones
         for k in np.arange(1, number_corner_points):
             # update minimum distance to existing cornerstones
@@ -151,13 +154,13 @@ class Explorer(object):
                 method=parameters.diffusion_map_method,
                 use_reweighting=parameters.use_reweighting)
         except scipy.sparse.linalg.eigen.arpack.ArpackNoConvergence:
-            print("ERROR: Vectors were non-convergent.")
+            logging.error(": Vectors were non-convergent.")
             dmap_eigenvectors = np.zeros( (np.shape(parameters)[0], parameters.number_of_eigenvalues) )
             dmap_eigenvalues = np.zeros( (parameters.number_of_eigenvalues) )
             dmap_kernel = np.zeros( (np.shape(parameters)[0], np.shape(trajectory)[0]) )
             # override landmarks to skip computation
             parameters.landmarks = 0
-        print("Global diffusion map eigenvalues: "+str(dmap_eigenvalues))
+        logging.info("Global diffusion map eigenvalues: "+str(dmap_eigenvalues))
 
         # c. find number of points maximally apart
         idx_corner = self.find_corner_points(

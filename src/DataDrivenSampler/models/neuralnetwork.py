@@ -1,4 +1,7 @@
+import logging
+import numpy as np
 import tensorflow as tf
+
 from DataDrivenSampler.samplers.BAOAB import BAOABSampler
 from DataDrivenSampler.samplers.GLAFirstOrderMomentumSampler import GLAFirstOrderMomentumSampler
 from DataDrivenSampler.samplers.GLASecondOrderMomentumSampler import GLASecondOrderMomentumSampler
@@ -6,7 +9,6 @@ from DataDrivenSampler.samplers.HamiltonianMonteCarloSampler import HamiltonianM
 from DataDrivenSampler.samplers.GradientDescent import GradientDescent
 from DataDrivenSampler.samplers.sgldsampler import SGLDSampler
 
-import numpy as np
 
 class NeuralNetwork(object):
     """ This class encapsulates the construction of the neural network.
@@ -64,7 +66,7 @@ class NeuralNetwork(object):
         elif keyname in self.placeholder_nodes:
             return self.placeholder_nodes[keyname]
         else:
-            print("WARNING: Could not find node "+keyname+" in dictionary.")
+            logging.warning(" Could not find node "+keyname+" in dictionary.")
             return None
 
     def get_list_of_nodes(self, keys):
@@ -78,7 +80,7 @@ class NeuralNetwork(object):
         test_nodes = list(map(lambda key: self.get(key), keys))
         for key, node in zip(keys, test_nodes):
             if node is None:
-                print ("Node " + key + " could not be retrieved from dict or is None.")
+                logging.info ("Node " + key + " could not be retrieved from dict or is None.")
                 raise AssertionError
         return test_nodes
 
@@ -140,7 +142,7 @@ class NeuralNetwork(object):
                                       seed=output_seed)
         self.placeholder_nodes["y"] = y
 
-        # print ("Creating summaries")
+        logging.debug ("Creating summaries")
         self.add_losses(y, y_)
         loss = self.set_loss_function(loss_name)
         self.add_accuracy_summary(y, y_)
@@ -157,7 +159,7 @@ class NeuralNetwork(object):
         :return: reference to created output layer
         """
         y_ = tf.placeholder(tf.float64, [None, output_dimension], name='y-input')
-        # print("y_ is "+str(y_.get_shape()))
+        logging.debug("y_ is "+str(y_.get_shape()))
         self.placeholder_nodes['y_'] = y_
         return y_
 
@@ -342,7 +344,7 @@ class NeuralNetwork(object):
         y = self.nn_layer(current_hidden_layer, hidden_out_dimension, output_dimension, 'output',
                           seed=seed, act=activation)
         self.summary_nodes['y'] = y
-        # print("y is " + str(y.get_shape()))
+        logging.debug("y is " + str(y.get_shape()))
         return y
 
     def add_hidden_layers(self,input_layer, input_dimension, layer_dimensions, keep_prob = None,
@@ -374,14 +376,14 @@ class NeuralNetwork(object):
             layer_name = "layer" + number
             current_hidden = self.nn_layer(last_layer, in_dimension, out_dimension, layer_name,
                                            seed=current_seed, act=activation)
-            # print(layer_name + " is " + str(current_hidden.get_shape()))
+            logging.debug(layer_name + " is " + str(current_hidden.get_shape()))
 
             if keep_prob is not None:
                 with tf.name_scope('dropout'):
                     last_layer = tf.nn.dropout(current_hidden, keep_prob)
             else:
                 last_layer = current_hidden
-            # print("dropped" + number + " is " + str(last_layer.get_shape()))
+            logging.debug("dropped" + number + " is " + str(last_layer.get_shape()))
 
         return last_layer
 
@@ -419,7 +421,7 @@ class NeuralNetwork(object):
 
         :param sess: Tensorflow Session
         """
-        # print ("Initializing global variables")
+        logging.debug ("Initializing global variables")
         sess.run([tf.global_variables_initializer(),
                   tf.local_variables_initializer()]
         )
@@ -476,7 +478,7 @@ class NeuralNetwork(object):
         :param seed: random number seed for initializing weights
         :return: reference to the created layer
         """
-        print("Creating nn layer %s with %d, %d" % (layer_name, input_dim, output_dim))
+        logging.info("Creating nn layer %s with %d, %d" % (layer_name, input_dim, output_dim))
         # Adding a name scope ensures logical grouping of the layers in the graph.
         with tf.name_scope(layer_name):
             # This Variable will hold the state of the weights for the layer

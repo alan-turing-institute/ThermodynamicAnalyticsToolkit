@@ -3,14 +3,13 @@
 import sys, getopt
 sys.path.insert(1, '@pythondir@')
 
+import argparse
+import csv
+import logging
+import math
+import numpy as np
 import tensorflow as tf
 
-import numpy as np
-
-import argparse
-import math
-
-import csv
 
 from DataDrivenSampler.datasets.classificationdatasets import ClassificationDatasets
 
@@ -54,6 +53,8 @@ def parse_parameters():
         help='At which steps of the loaded trajectory to sample the input space.')
     parser.add_argument('--trajectory_file', type=str, default=None,
         help='Input trajectory file')
+    parser.add_argument('--verbose', '-v', action='count',
+        help='Level of verbosity during compare')
     parser.add_argument('--version', '-V', action="store_true",
         help='Gives version information')
     return parser.parse_known_args()
@@ -219,6 +220,9 @@ def main(_):
         csv_file.close()
 
 if __name__ == '__main__':
+    # setup logging
+    logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
+
     FLAGS, unparsed = parse_parameters()
 
     react_to_common_options(FLAGS, unparsed)

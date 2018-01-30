@@ -43,14 +43,6 @@ if __name__ == '__main__':
         help='Gives version information')
     FLAGS, unparsed = parser.parse_known_args()
 
-    # setup log level
-    if FLAGS.verbose == None:
-        FLAGS.verbose = 0
-    FLAGS.verbose = min(3, FLAGS.verbose)
-    verbosity = [logging.WARNING, logging.INFO, logging.DEBUG, logging.NOTSET]
-    logging.getLogger().setLevel(verbosity[FLAGS.verbose])
-    # sys.stdout.write('Logging is at '+str(verbosity[arguments.verbose])+' level\n')
-
     react_to_common_options(FLAGS, unparsed)
 
     if (len(FLAGS.general_threshold) != 2):
@@ -123,7 +115,7 @@ if __name__ == '__main__':
             differing_lines = sum(abs(error) > thresholds[col])
             for i in range(len(error)):
                 if abs(error[i]) > thresholds[col]:
-                    print(str(i)+","+str(col)+": "+str(dataframes[0][ col_name ][i]) \
+                    logging.warning(str(i)+","+str(col)+": "+str(dataframes[0][ col_name ][i]) \
                           +" != "+str(dataframes[1][ col_name ][i])+" by "+str(abs(error[i])))
 
     if status:

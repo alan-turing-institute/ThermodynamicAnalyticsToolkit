@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 import tensorflow as tf
 
@@ -33,7 +34,7 @@ class TrajectoryJob_run(TrajectoryJob):
         """
         # set parameters to ones from old leg (if exists)
         if self.parameters is not None:
-            print("Setting initial parameters to (first ten shown) "+str(self.parameters[0:10]))
+            logging.debug("Setting initial parameters to (first ten shown) "+str(self.parameters[0:10]))
             sess = self.network_model.sess
             weights_dof = self.network_model.weights.get_total_dof()
             self.network_model.weights.assign(sess, self.parameters[0:weights_dof])
@@ -43,7 +44,7 @@ class TrajectoryJob_run(TrajectoryJob):
         sample_step_placeholder = self.network_model.nn.get("step_placeholder")
         feed_dict = {sample_step_placeholder: self.initial_step}
         set_step = self.network_model.sess.run(self.network_model.global_step_assign_t, feed_dict=feed_dict)
-        print("Set initial step to " + str(set_step))
+        logging.debug("Set initial step to " + str(set_step))
 
         # run graph here
         run_info, trajectory = self.network_model.sample(
@@ -55,10 +56,10 @@ class TrajectoryJob_run(TrajectoryJob):
         assert ("weight" not in trajectory.columns[2])
         assert ("weight" in trajectory.columns[3])
         parameters=np.asarray(trajectory)[:,3:]
-        print("Steps (first and last five): "+str(steps[:5])+"\n ... \n"+str(steps[-5:]))
-        print("Losses (first and last five): "+str(losses[:5])+"\n ... \n"+str(losses[-5:]))
-        print("Gradients (first and last five): "+str(gradients[:5])+"\n ... \n"+str(gradients[-5:]))
-        print("Parameters (first and last five, first ten component shown): "+str(parameters[:5,0:10])+"\n ... \n"+str(parameters[-5:,0:10]))
+        logging.debug("Steps (first and last five): "+str(steps[:5])+"\n ... \n"+str(steps[-5:]))
+        logging.debug("Losses (first and last five): "+str(losses[:5])+"\n ... \n"+str(losses[-5:]))
+        logging.debug("Gradients (first and last five): "+str(gradients[:5])+"\n ... \n"+str(gradients[-5:]))
+        logging.debug("Parameters (first and last five, first ten component shown): "+str(parameters[:5,0:10])+"\n ... \n"+str(parameters[-5:,0:10]))
 
         # append parameters to data
         _data.add_run_step(_steps=steps,

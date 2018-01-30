@@ -3,12 +3,9 @@
 # Author: Zofia
 # License:
 
+import logging
 
 import numpy as np
-
-import math
-from scipy.sparse import csr_matrix
-import scipy.sparse.linalg as SLA
 
 import sklearn.neighbors as neigh_search
 from sklearn.neighbors import NearestNeighbors
@@ -80,7 +77,7 @@ def compute_target_distribution(number_of_steps, beta, loss):
 
     for i in range(0, number_of_steps):
         qTargetDistribution[i] = np.exp(-(loss[i] * beta))
-        #print("#"+str(i)+": Loss "+str(loss[i])+" beta "+str(beta)+": qTarget "+str(qTargetDistribution[i]))
+        logging.debug("#"+str(i)+": Loss "+str(loss[i])+" beta "+str(beta)+": qTarget "+str(qTargetDistribution[i]))
 
     return qTargetDistribution
 
@@ -94,7 +91,6 @@ def compute_TMDMap(X, epsilon, qTargetDistribution):
     :return:
     """
 
-    #print('Unweighting according to temperature '+repr(temperature))
     m = np.shape(X)[0]
 
     kernel = compute_kernel(X, epsilon)
@@ -105,7 +101,7 @@ def compute_TMDMap(X, epsilon, qTargetDistribution):
     weights = np.zeros(m)
     for i in range(0,len(X)):
         weights[i] = np.sqrt(qTargetDistribution[i]) / qEmp[i]
-    #print("Weights for targetted mean: "+str(weights[0:10]))
+    logging.debug("Weights for targetted mean: "+str(weights[0:10]))
     D = sps.spdiags(weights, 0, m, m)
     Ktilde =  kernel * D
 
@@ -257,13 +253,13 @@ def get_levelsets(data, K, q, V1):
 
                 levelset_k = np.where(np.abs(V1 - levels[k]) < delta)
                 levelsetLength=len(levelset_k)
-                #print levelsetLength
+                logging.debug(levelsetLength)
 
                 delta=delta*1.001
 
                 if delta>deltaMax:
                     levelset_k=range(0,len(V1))
-                    #print("In get_landmarks: Levelset chosen as V1")
+                    logging.debug("In get_landmarks: Levelset chosen as V1")
 
                 levelsets.append(levelset_k[0])
 
@@ -290,7 +286,7 @@ def computeFreeEnergyAtEveryPoint(X, V1, width, qTarget, qEmp, method='weighted'
 
     for k in range(0,len(X)):
         levelset = get_levelset_onePoint(k, width, V1)
-        #print(len(levelset))
+        logging.debug(len(levelset))
 
         # simple histogram
         if(method == 'raw'):
@@ -324,7 +320,7 @@ def get_levelset_onePoint(idx, width, V1):
     """
     #deltaMax=2*width
 
-    #print(np.abs(V1 - V1[idx]))
+    logging.debug(np.abs(V1 - V1[idx]))
 
     if V1[idx] == 0:
         tmp=( np.where(np.abs(V1 - V1[idx]) < width))

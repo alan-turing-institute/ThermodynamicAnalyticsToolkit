@@ -78,7 +78,6 @@ class HamiltonianMonteCarloSampler(SGLDSampler):
         num_steps_t = math_ops.cast(self._num_steps_t, tf.int64)
 
         uniform_random_t = tf.random_uniform(shape=[], minval=0., maxval=1., dtype=tf.float64, seed=self._accept_seed)
-        #print("random_noise_t has shape "+str(random_noise_t.get_shape())+" with seed "+str(self._seed))
         return step_width_t, inverse_temperature_t, current_step_t, num_steps_t, random_noise_t, uniform_random_t
 
     def _apply_dense(self, grad, var):

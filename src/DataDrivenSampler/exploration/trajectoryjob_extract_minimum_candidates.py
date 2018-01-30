@@ -1,4 +1,4 @@
-import numpy as np
+import logging
 
 from DataDrivenSampler.exploration.trajectoryjob import TrajectoryJob
 
@@ -8,7 +8,7 @@ class TrajectoryJob_extract_minimium_candidates(TrajectoryJob):
     This is done by looking at the gradients along the trajectory.
     '''
 
-    TOLERANCE = 1e-5        # tolerance for gradients being small
+    TOLERANCE = 1e-1        # tolerance for gradients being small
 
     def __init__(self, data_id, parameters, continue_flag = True):
         """ Initializes a extracting minimum candidates job.
@@ -68,7 +68,7 @@ class TrajectoryJob_extract_minimium_candidates(TrajectoryJob):
             smallest_val_index = find_smallest_gradient_index(small_gradient_start, -1)
             _data.minimum_candidates.append(smallest_val_index)
 
-        print("Found minima candidates: "+str(_data.minimum_candidates))
+        logging.info("Found minima candidates: "+str(_data.minimum_candidates))
 
         # after extract there is no other job (on that trajectory)
         return _data, False

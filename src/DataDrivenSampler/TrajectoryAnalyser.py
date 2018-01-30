@@ -5,6 +5,7 @@
 # (C) Frederik Heber 2017-10-04
 
 import argparse
+import logging
 import numpy as np
 import scipy.sparse as sps
 import sys
@@ -91,7 +92,7 @@ def compute_diffusion_maps(traj, beta, loss, nrOfFirstEigenVectors,
             X_se = mydmap.evecs
             lambdas = mydmap.evals
         else:
-            print("Cannot use " + method + " as package not found on import.")
+            logging.info("Cannot use " + method + " as package not found on import.")
             sys.exit(255)
     elif method == 'vanilla' or method == 'TMDMap':
         epsilon = 0.1  # try 1 (i.e. make it bigger, then reduce to average distance)
@@ -109,14 +110,14 @@ def compute_diffusion_maps(traj, beta, loss, nrOfFirstEigenVectors,
         X_se = np.real(eigenvectors[:, ix[1:]])
         lambdas = np.real(lambdas[ix[1:]])
     else:
-        print("Unknown diffusion map method "+method)
+        logging.info("Unknown diffusion map method "+method)
         sys.exit(255)
 
     # flip signs of ev to maximize non-negative entries (does not change ev property)
     for index in range(len(lambdas)):
         neg_signs = (X_se[:, index] < 0).sum()
         if neg_signs > X_se[:, index].size / 2:
-            # print("Negative signs: " + str(neg_signs) + ", dim: " + str(X_se[:, index].size)+", flipping.")
+            logging.debug("Negative signs: " + str(neg_signs) + ", dim: " + str(X_se[:, index].size)+", flipping.")
             X_se[:, index] = np.negative(X_se[:, index])
         if neg_signs == X_se[:, index].size / 2:
             # exactly half is negative, half is positive, then decide on first comp
@@ -162,7 +163,7 @@ def get_landmarks_over_vectors(data, K, q, vectors, energies):
 
 
 def write_landmarks(traj, landmarks, csv_filename, header):
-    # landmarks are just points on the trajectory that stand out, hence, print the
+    # landmarks are just points on the trajectory that stand out, hence, logging.info the
     # trajectory at these points
     if csv_filename is not None:
         csv_writer, csv_file = setup_csv_file(csv_filename, header)
@@ -178,7 +179,7 @@ def compute_free_energy_using_histograms(radius,   weights=None, nrbins=100, kBT
     #free_energy+=0.0001
     free_energy= - np.log(free_energy)
 
-    #print(edges.shape)
+    logging.debug(edges.shape)
 
     return free_energy, edges[:-1]
 

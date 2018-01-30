@@ -1,8 +1,8 @@
-import tensorflow as tf
-
 import functools
+import logging
 from math import ceil
 import sys
+import tensorflow as tf
 
 from DataDrivenSampler.common import decode_csv_line, read_and_decode_image, get_csv_defaults
 from DataDrivenSampler.models.input.inputpipeline import InputPipeline
@@ -34,7 +34,7 @@ class DatasetPipeline(InputPipeline):
         defaults = get_csv_defaults(
             input_dimension=input_dimension,
             output_dimension=output_dimension)
-        #print(defaults)
+        logging.debug(defaults)
         self.dataset = tf.data.Dataset.from_tensor_slices(filenames)
         if filetype == "csv":
             self.dataset = self.dataset.flat_map(
@@ -52,14 +52,14 @@ class DatasetPipeline(InputPipeline):
                                                               num_pixels=input_dimension,
                                                               num_classes=output_dimension))
         else:
-            print("Unknown filetype")
+            logging.info("Unknown filetype")
             sys.exit(255)
         if shuffle:
             self.dataset = self.dataset.shuffle(seed=seed)
         self.dataset = self.dataset.batch(batch_size)
         self.dataset = self.dataset.repeat(ceil(max_steps*batch_size/dimension))
-        print(self.dataset.output_shapes)
-        print(self.dataset.output_types)
+        logging.info(self.dataset.output_shapes)
+        logging.info(self.dataset.output_types)
 
         self.iterator = self.dataset.make_initializable_iterator()
         self.batch_next = self.iterator.get_next()
@@ -79,7 +79,7 @@ class DatasetPipeline(InputPipeline):
             try:
                 batch_data = session.run(self.batch_next)
             except tf.errors.OutOfRangeError:
-                print('Dataset is too small for one batch!')
+                logging.info('Dataset is too small for one batch!')
                 sys.exit(255)
         return batch_data[0], batch_data[1]
 
@@ -98,7 +98,7 @@ class DatasetPipeline(InputPipeline):
         :param session: session object as input might be retrieved through the
                 computational graph
         '''
-        print("WARNING: Needing to reset the iterator running over the dataset.")
+        logging.warning(" Needing to reset the iterator running over the dataset.")
         session.run(self.iterator.initializer)
 
     def shuffle(self, seed):

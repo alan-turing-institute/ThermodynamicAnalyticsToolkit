@@ -12,8 +12,9 @@ sys.path.insert(1, '@pythondir@')
 
 import argparse
 import functools
-import tensorflow as tf
+import logging
 import numpy as np
+import tensorflow as tf
 
 import collections
 
@@ -47,6 +48,9 @@ def main(_):
         print('Done training, epoch reached')
 
 if __name__ == '__main__':
+    # setup logging
+    logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
+
     parser = argparse.ArgumentParser()
     # please adhere to alphabetical ordering
     parser.add_argument('--batch_data_files', type=str, nargs='+', default=[],
@@ -55,6 +59,8 @@ if __name__ == '__main__':
         help='The number of samples used to divide sample set into batches in one training step.')
     parser.add_argument('--seed', type=int, default=None,
         help='Seed to use for random number generators.')
+    parser.add_argument('--verbose', '-v', action='count',
+        help='Level of verbosity during compare')
     parser.add_argument('--version', action="store_true",
         help='Gives version information')
     FLAGS, unparsed = parser.parse_known_args()
