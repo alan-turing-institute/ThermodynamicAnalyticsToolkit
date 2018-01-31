@@ -29,6 +29,8 @@ if __name__ == '__main__':
         help='CSV files to compare')
 
     # please adhere to alphabetical ordering
+    parser.add_argument('--column_drop', type=str, nargs='+', default=[],
+        help='Names of columns that are not taken into account, i.e. may be contained in one file but not the other')
     parser.add_argument('--column_ignore_sign', type=str, nargs='+', default=[],
         help='Names of columns where flip of sign is ignored, i.e. only absolute values are compared')
     parser.add_argument('--column_threshold', type=str, nargs='+', default=[],
@@ -65,6 +67,14 @@ if __name__ == '__main__':
     # parse all files into pandas dataframes
     dataframes = [pd.read_csv(filename, sep=',', header=0) \
                   for filename in [FLAGS.first_file, FLAGS.second_file]]
+
+    # remove drop columns if present
+    for name in FLAGS.column_drop:
+        for i in range(2):
+            if name in dataframes[i].columns:
+                logging.info("Dropping column "+name+" from " \
+                    +("first" if i==0 else "second")+" file.")
+                dataframes[i].pop(name)
 
     # compare headers
     if dataframes[0].shape[1] != dataframes[1].shape[1]:

@@ -15,15 +15,25 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-### all tests on NumericalDiff
+### test on additional column in just one file
 
-AT_BANNER([NumericalDiff - NumericalDiff])
+AT_SETUP([NumericalDiff - drop column])
+AT_KEYWORDS([numericaldiff column_drop])
 
-# tests on simple behavior
-m4_include([NumericalDiff/testsuite-numericaldiff-simple.at])
+AT_CHECK([../../../NumericalDiff \
+	${abs_top_srcdir}/tests/regression/NumericalDiff/Options/pre/test.csv \
+	${abs_top_srcdir}/tests/regression/NumericalDiff/Options/pre/column_drop.csv \
+	--general_threshold 1e-8 "relative" \
+	-vv
+], 1, [stdout], [stderr])
 
-# tests on comparison of different files
-m4_include([NumericalDiff/Comparisons/testsuite-numericaldiff-comparisons.at])
+AT_CHECK([../../../NumericalDiff \
+	${abs_top_srcdir}/tests/regression/NumericalDiff/Options/pre/test.csv \
+	${abs_top_srcdir}/tests/regression/NumericalDiff/Options/pre/column_drop.csv \
+	--general_threshold 1e-8 "relative" \
+	--column_drop "x2" \
+	-vv
+], 0, [stdout], [stderr])
 
-# tests on options
-m4_include([NumericalDiff/Options/testsuite-numericaldiff-options.at])
+AT_CLEANUP
+

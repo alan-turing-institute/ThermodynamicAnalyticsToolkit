@@ -15,15 +15,6 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-### all tests on NumericalDiff
+### tests on NumericalDiff's options
 
-AT_BANNER([NumericalDiff - NumericalDiff])
-
-# tests on simple behavior
-m4_include([NumericalDiff/testsuite-numericaldiff-simple.at])
-
-# tests on comparison of different files
-m4_include([NumericalDiff/Comparisons/testsuite-numericaldiff-comparisons.at])
-
-# tests on options
-m4_include([NumericalDiff/Options/testsuite-numericaldiff-options.at])
+m4_include([NumericalDiff/Options/testsuite-numericaldiff-options-column_drop.at])

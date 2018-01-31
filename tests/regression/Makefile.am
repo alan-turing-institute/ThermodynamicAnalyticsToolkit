@@ -83,6 +83,8 @@ TESTSCRIPTS += \
 	$(srcdir)/NumericalDiff/Comparisons/testsuite-numericaldiff-comparisons-different_length.at \
 	$(srcdir)/NumericalDiff/Comparisons/testsuite-numericaldiff-comparisons-different_sign.at \
 	$(srcdir)/NumericalDiff/Comparisons/testsuite-numericaldiff-comparisons-different_values.at \
+	$(srcdir)/NumericalDiff/Options/testsuite-numericaldiff-options.at \
+	$(srcdir)/NumericalDiff/Options/testsuite-numericaldiff-options-column_drop.at \
 	$(srcdir)/TrajectoryAnalyser/testsuite-trajectoryanalyser.at \
 	$(srcdir)/TrajectoryAnalyser/testsuite-trajectoryanalyser-simple.at \
 	$(srcdir)/TrajectoryAnalyser/Averages/testsuite-trajectoryanalyser-averages.at \
