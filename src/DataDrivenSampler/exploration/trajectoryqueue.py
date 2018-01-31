@@ -71,15 +71,19 @@ class TrajectoryQueue(object):
                                         continue_flag=False)
         self._enqueue_job(prune_job)
 
-    def add_run_job(self, data_id, network_model, continue_flag):
+    def add_run_job(self, data_id, network_model, initial_step, parameters=None, continue_flag=False):
         """ Adds a run job to the queue.
 
         :param _data_id: id associated with data object for the job
         :param network_model: neural network object for running the graph
+        :param initial_step: number of first step (for continuing a trajectory)
+        :param parameters: parameters of the neural net to set. If None, keep random ones
         :param continue_flag: flag whether job should spawn more jobs or not
         """
         run_job = TrajectoryJob_run(data_id=data_id,
                                     network_model=network_model,
+                                    initial_step=initial_step,
+                                    parameters=parameters,
                                     continue_flag=continue_flag)
         self._enqueue_job(run_job)
 
@@ -125,7 +129,10 @@ class TrajectoryQueue(object):
         elif current_job.job_type == "analyze":
             if continue_flag:
                 print("Adding run job")
-                self.add_run_job(data_id, run_object, current_job.continue_flag)
+                self.add_run_job(data_id, run_object,
+                                 data_object.legs_at_step[-1],
+                                 data_object.parameters[-1],
+                                 current_job.continue_flag)
             elif not updated_data.is_pruned:
                 print("Adding prune job and post analysis")
                 self.add_prune_job(data_id, run_object, False)

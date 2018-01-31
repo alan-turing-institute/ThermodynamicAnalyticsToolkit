@@ -60,6 +60,12 @@ class TrajectoryJob_check_minima(TrajectoryJob):
             self.network_model.weights.assign(sess, parameters[0:weights_dof])
             self.network_model.biases.assign(sess, parameters[weights_dof:])
 
+            # set step
+            train_step_placeholder = self.network_model.nn.get("step_placeholder")
+            feed_dict = {train_step_placeholder: candidates[i] }
+            set_step = self.network_model.sess.run(self.network_model.global_step_assign_t, feed_dict=feed_dict)
+            print("Set initial step to " + str(set_step))
+
             # run graph here
             run_info, trajectory = self.network_model.train(
                 return_run_info=True, return_trajectories=True)

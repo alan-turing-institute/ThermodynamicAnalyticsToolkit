@@ -8,16 +8,20 @@ class TrajectoryJob_run(TrajectoryJob):
 
     '''
 
-    def __init__(self, data_id, network_model, continue_flag = True):
+    def __init__(self, data_id, network_model, initial_step, parameters=None, continue_flag = True):
         """ Initializes a run job.
 
         :param data_id: id associated with data object
         :param network_model: network model containing the computational graph and session
+        :param initial_step: number of first step (for continuing a trajectory)
+        :param parameters: parameters of the neural net to set. If None, keep random ones
         :param continue_flag: flag allowing to override spawning of subsequent job
         """
         super(TrajectoryJob_run, self).__init__(data_id)
         self.job_type = "run"
         self.network_model = network_model
+        self.initial_step = initial_step
+        self.parameters = parameters
         self.continue_flag = continue_flag
 
     def run(self, _data):
@@ -28,11 +32,17 @@ class TrajectoryJob_run(TrajectoryJob):
         :return: updated data object
         """
         # set parameters to ones from old leg (if exists)
-        if len(_data.parameters) != 0:
+        if self.parameters is not None:
             sess = self.network_model.sess
             weights_dof = self.network_model.weights.get_total_dof()
-            self.network_model.weights.assign(sess, _data.parameters[-1][0:weights_dof])
-            self.network_model.biases.assign(sess, _data.parameters[-1][weights_dof:])
+            self.network_model.weights.assign(sess, self.parameters[0:weights_dof])
+            self.network_model.biases.assign(sess, self.parameters[weights_dof:])
+
+        # set step
+        sample_step_placeholder = self.network_model.nn.get("step_placeholder")
+        feed_dict = {sample_step_placeholder: self.initial_step}
+        set_step = self.network_model.sess.run(self.network_model.global_step_assign_t, feed_dict=feed_dict)
+        print("Set initial step to " + str(set_step))
 
         # run graph here
         run_info, trajectory = self.network_model.sample(

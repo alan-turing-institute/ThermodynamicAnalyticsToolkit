@@ -81,6 +81,8 @@ def main(_):
         queue.add_run_job(
             data_id=current_id,
             network_model=network_model,
+            initial_step=0,
+            parameters=None,
             continue_flag=(i == INITIAL_LEGS))
 
     # b. continue until queue has run dry
@@ -106,6 +108,8 @@ def main(_):
             queue.add_run_job(
                 data_id=current_id,
                 network_model=network_model,
+                initial_step=container.data[current_id].steps[-1],
+                parameters=container.data[current_id].parameters[-1],
                 continue_flag=True)
 
         # d. run all trajectories till terminated

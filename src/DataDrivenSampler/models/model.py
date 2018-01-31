@@ -78,6 +78,9 @@ class model:
         self.weights = None
         self.biases = None
 
+        # mark step assign op as to be created
+        self.global_step_assign_t = None
+
         # mark writer as to be created
         self.run_writer = None
         self.trajectory_writer = None
@@ -328,6 +331,7 @@ class model:
             names, values = self.split_parameters_as_names_values(self.FLAGS.fix_parameters)
             fixed_variables = self.fix_parameters(names)
 
+        # setup priors
         prior = {}
         try:
             if self.FLAGS.prior_factor is not None:
@@ -340,6 +344,8 @@ class model:
                 prior["upper_boundary"] = self.FLAGS.prior_upper_boundary
         except AttributeError:
             pass
+
+        # setup training/sampling
         if setup == "train":
             self.nn.add_train_method(loss, optimizer_method=self.FLAGS.optimizer, prior=prior)
         elif setup == "sample":
@@ -347,6 +353,14 @@ class model:
         else:
             print("Not adding sample or train method.")
 
+        if "step_placeholder" not in self.nn.placeholder_nodes.keys():
+            step_placeholder = tf.placeholder(shape=(), dtype=tf.int32)
+            self.nn.placeholder_nodes["step_placeholder"] = step_placeholder
+        if (self.global_step_assign_t is None) and ('global_step' in self.nn.summary_nodes.keys()):
+            self.global_step_assign_t = tf.assign(self.nn.summary_nodes['global_step'],
+                                                  self.nn.placeholder_nodes["step_placeholder"])
+
+        # setup model saving/recovering
         if self.saver is None:
             self.saver = tf.train.Saver(tf.get_collection(tf.GraphKeys.WEIGHTS) +
                                    tf.get_collection(tf.GraphKeys.BIASES) + \
