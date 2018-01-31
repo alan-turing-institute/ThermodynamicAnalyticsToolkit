@@ -37,7 +37,7 @@ AT_CHECK([../../../DDSOptimizer \
 ], 0, [stdout], [stderr])
 
 # except for initial step check we remain within bounds
-for col in `seq 3 5`; do
+for col in `seq 4 6`; do
     AT_CHECK([tail -n 19 trajectory.csv | awk -F"," -v col=$col '{if (($col > 0.5) || ($col < -0.5)) { print NR","col": "$col; exit 255} }'], 0, [stdout], [ignore])
 done
 

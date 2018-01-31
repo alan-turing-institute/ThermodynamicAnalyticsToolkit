@@ -39,9 +39,10 @@ AT_CHECK([../../../DDSampler \
 
 # now compare (exclude time_per_nth_step column)
 AT_CHECK([../../../NumericalDiff \
-    --column_drop time_per_nth_step -- \
+    --column_drop time_per_nth_step id -- \
     run-BAOAB.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-BAOAB.csv], 0, [ignore], [ignore])
 AT_CHECK([../../../NumericalDiff \
+    --column_drop id -- \
     trajectory-BAOAB.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-BAOAB.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP

@@ -418,7 +418,7 @@ class model:
     def get_sample_header(self):
         """ Prepares the distinct header for the run file for sampling
         """
-        header = ['step', 'epoch', 'accuracy', 'loss', 'time_per_nth_step']
+        header = ['id', 'step', 'epoch', 'accuracy', 'loss', 'time_per_nth_step']
         if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
             header += ['scaled_gradient', 'virial', 'scaled_noise',
                       'average_virials']
@@ -437,7 +437,7 @@ class model:
     def get_train_header(self):
         """ Prepares the distinct header for the run file for training
         """
-        return ['step', 'epoch', 'accuracy', 'loss', 'time_per_nth_step', 'scaled_gradient', 'virial', 'average_virials']
+        return ['id', 'step', 'epoch', 'accuracy', 'loss', 'time_per_nth_step', 'scaled_gradient', 'virial', 'average_virials']
 
     def sample(self, return_run_info = False, return_trajectories = False):
         """ Performs the actual sampling of the neural network `nn` given a dataset `ds` and a
@@ -497,7 +497,7 @@ class model:
             header = get_trajectory_header(
                 self.weights.get_total_dof(),
                 self.biases.get_total_dof())
-            no_params = self.weights.get_total_dof()+self.biases.get_total_dof()+2
+            no_params = self.weights.get_total_dof()+self.biases.get_total_dof()+3
             trajectory = pd.DataFrame(
                 np.zeros((steps, no_params)),
                 columns=header)
@@ -634,7 +634,7 @@ class model:
                 #print("Output at step #" + str(i) + ", time elapsed till last is " + str(time_elapsed_per_nth_step))
 
                 if self.config_map["do_write_trajectory_file"] or return_trajectories:
-                    trajectory_line = [global_step] \
+                    trajectory_line = [0, global_step] \
                                       + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
                                                                           precision=output_precision)] \
                                       + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
@@ -654,7 +654,7 @@ class model:
                                               "GeometricLangevinAlgorithm_2ndOrder",
                                               "HamiltonianMonteCarlo",
                                               "BAOAB"]:
-                        run_line = [global_step, i] + ['{:1.3f}'.format(acc)] \
+                        run_line = [0, global_step, i] + ['{:1.3f}'.format(acc)] \
                                    + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
                                                                        precision=output_precision)] \
                                    + ['{:{width}.{precision}e}'.format(time_elapsed_per_nth_step, width=output_width,
@@ -748,7 +748,7 @@ class model:
             header = get_trajectory_header(
                 self.weights.get_total_dof(),
                 self.biases.get_total_dof())
-            no_params = self.weights.get_total_dof()+self.biases.get_total_dof()+2
+            no_params = self.weights.get_total_dof()+self.biases.get_total_dof()+3
             trajectory = pd.DataFrame(
                 np.zeros((steps, no_params)),
                 columns=header)
@@ -787,7 +787,7 @@ class model:
                 last_time = current_time
                 #print("Output at step #" + str(i) + ", time elapsed till last is " + str(time_elapsed_per_nth_step))
 
-                run_line = [global_step, i] + ['{:1.3f}'.format(acc)] \
+                run_line = [0, global_step, i] + ['{:1.3f}'.format(acc)] \
                            + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
                                                                precision=output_precision)] \
                            + ['{:{width}.{precision}e}'.format(time_elapsed_per_nth_step, width=output_width,
@@ -806,7 +806,7 @@ class model:
                 if return_trajectories or self.config_map["do_write_trajectory_file"]:
                     weights_eval = self.weights.evaluate(self.sess)
                     biases_eval = self.biases.evaluate(self.sess)
-                    trajectory_line = [global_step] \
+                    trajectory_line = [0, global_step] \
                                       + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
                                                                           precision=output_precision)] \
                                       + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)

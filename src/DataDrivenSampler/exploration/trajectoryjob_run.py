@@ -51,7 +51,9 @@ class TrajectoryJob_run(TrajectoryJob):
         steps=[int(i) for i in np.asarray(run_info.loc[:,'step'])]
         losses=[float(i) for i in np.asarray(run_info.loc[:,'loss'])]
         gradients=[float(i) for i in np.asarray(run_info.loc[:,'scaled_gradient'])]
-        parameters=np.asarray(trajectory)[:,2:]
+        assert ("weight" not in trajectory.columns[2])
+        assert ("weight" in trajectory.columns[3])
+        parameters=np.asarray(trajectory)[:,3:]
         print("Steps (last ten): "+str(steps[-10:]))
         print("Losses (last ten): "+str(losses[-10:]))
         print("Gradients (last ten): "+str(gradients[-10:]))

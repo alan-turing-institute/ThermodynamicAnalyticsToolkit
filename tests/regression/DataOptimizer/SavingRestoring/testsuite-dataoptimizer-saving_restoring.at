@@ -51,7 +51,9 @@ AT_CHECK([../../../DDSOptimizer \
 
 AT_CHECK([grep "11," run-restore_model.csv], 0, [ignore], [ignore])
 # and compare (exclude time_per_nth_step column)
-AT_CHECK([../../../NumericalDiff --column_drop time_per_nth_step -- run-restore_model.csv ${abs_top_srcdir}/tests/regression/DataOptimizer/SavingRestoring/post/run-restore_model.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff \
+    --column_drop time_per_nth_step id -- \
+    run-restore_model.csv ${abs_top_srcdir}/tests/regression/DataOptimizer/SavingRestoring/post/run-restore_model.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
 

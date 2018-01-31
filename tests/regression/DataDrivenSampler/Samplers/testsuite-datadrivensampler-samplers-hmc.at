@@ -39,9 +39,10 @@ AT_CHECK([../../../DDSampler \
 
 # now compare (exclude time_per_nth_step column)
 AT_CHECK([../../../NumericalDiff \
-    --column_drop time_per_nth_step -- \
+    --column_drop time_per_nth_step id -- \
     run-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-HMC.csv], 0, [ignore], [ignore])
 AT_CHECK([../../../NumericalDiff \
+    --column_drop id -- \
     trajectory-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-HMC.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
@@ -70,9 +71,10 @@ AT_CHECK([../../../DDSampler \
 
 # now compare
 AT_CHECK([../../../NumericalDiff \
-    --column_drop time_per_nth_step -- \
+    --column_drop time_per_nth_step id -- \
     run-HMC-hidden.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-HMC-hidden.csv], 0, [ignore], [ignore])
 AT_CHECK([../../../NumericalDiff \
+    --column_drop id -- \
     trajectory-HMC-hidden.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-HMC-hidden.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP

@@ -131,6 +131,7 @@ def main(_):
                 run_lines = run_lines_per_leg[leg_nr]
                 for row in range(len(run_lines.index)):
                     run_line = run_lines.iloc[row,:]
+                    run_line[0] = current_id
                     network_model.run_writer.writerow(run_line)
 
 
@@ -143,6 +144,7 @@ def main(_):
                 trajectory_lines = trajectory_lines_per_leg[leg_nr]
                 for row in range(len(trajectory_lines.index)):
                     trajectory_line = trajectory_lines.iloc[row,:]
+                    trajectory_line[0] = current_id
                     network_model.trajectory_writer.writerow(trajectory_line)
 
     # write minima to file
