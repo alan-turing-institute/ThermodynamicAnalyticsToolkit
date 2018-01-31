@@ -39,7 +39,7 @@ AT_CHECK([../../../DDSampler \
 
 # now compare (exclude time_per_nth_step column)
 AT_CHECK([../../../NumericalDiff \
-    --column_threshold time_per_nth_step 1e16 absolute -- \
+    --column_drop time_per_nth_step -- \
     run-GLA_1st.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-GLA_1st.csv], 0, [ignore], [ignore])
 AT_CHECK([../../../NumericalDiff \
     trajectory-GLA_1st.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-GLA_1st.csv], 0, [ignore], [ignore])
