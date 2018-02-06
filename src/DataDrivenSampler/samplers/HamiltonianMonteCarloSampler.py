@@ -126,7 +126,7 @@ class HamiltonianMonteCarloSampler(SGLDSampler):
                 return tf.identity(momentum)
 
         momentum_criterion_block_t = tf.cond(
-            tf.equal(tf.mod(current_step_t, num_steps_t), 0),
+            tf.equal(current_step_t, num_steps_t),
             moment_reinit_block, momentum_step_block)
 
         with tf.variable_scope("accumulate", reuse=True):
@@ -196,7 +196,7 @@ class HamiltonianMonteCarloSampler(SGLDSampler):
         # make sure virial and gradients are evaluated before we update variables
         with tf.control_dependencies([virial_global_t, gradient_global_t]):
             criterion_block_t = tf.cond(
-                tf.equal(tf.mod(current_step_t, num_steps_t), 0),
+                tf.equal(current_step_t, num_steps_t),
                 accept_reject_block, step_block)
 
         # note: these are evaluated in any order, use control_dependencies if required

@@ -545,15 +545,17 @@ class model:
         logging.info("Starting to sample")
         logging.info_intervals = max(1, int(self.FLAGS.max_steps / 100))
         last_time = time.process_time()
+        HMC_steps = 0
         for i in range(self.FLAGS.max_steps):
             # get next batch of data
             features, labels = self.input_pipeline.next_batch(self.sess)
 
-            # convert HD time to a concrete steps number
-            HMC_steps = 0
-            if self.FLAGS.sampler == "HamiltonianMonteCarlo":
-                HMC_steps = max(1,
-                                round(self.FLAGS.hamiltonian_dynamics_time/self.FLAGS.step_width))
+            # pick next evaluation step with a little random variation
+            if self.FLAGS.sampler == "HamiltonianMonteCarlo" and i > HMC_steps:
+                HMC_steps += max(1,
+                                round((0.9 + np.random.uniform(low=0., high=0.2)) \
+                                      * self.FLAGS.hamiltonian_dynamics_time/self.FLAGS.step_width))
+                logging.debug("Next evaluation of HMC criterion at step "+str(HMC_steps))
 
             # place in feed dict
             feed_dict = {
