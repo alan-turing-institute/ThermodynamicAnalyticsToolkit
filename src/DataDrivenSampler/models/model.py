@@ -683,7 +683,7 @@ class model:
                                                                            precision=output_precision)
                                           for x in [kinetic_energy, sqrt(momenta), sqrt(gradients), abs(0.5*virials),
                                                     accumulated_kinetic_energy/float(i+1.), abs(0.5*accumulated_virials)/(float(i+1.))]]\
-                                       + ['{:{width}.{precision}e}'.format(rejection_rate/(float(i)/self.FLAGS.hamiltonian_dynamics_steps+1.), width=output_width,
+                                       + ['{:{width}.{precision}e}'.format(rejection_rate, width=output_width,
                                                                            precision=output_precision)]
                         else:
                             run_line += ['{:{width}.{precision}e}'.format(loss_eval + kinetic_energy,
