@@ -13,7 +13,7 @@ class MockFlags:
                  every_nth=1,
                  fix_parameters=None,
                  friction_constant=0.,
-                 hamiltonian_dynamics_steps=10,
+                 hamiltonian_dynamics_time=10,
                  hidden_activation="relu",
                  hidden_dimension="",
                  in_memory_pipeline=True,
@@ -52,7 +52,7 @@ class MockFlags:
         :param every_nth: Store only every nth trajectory (and run) point to files, e.g. 10
         :param fix_parameters: string formatted as "name=value;..." with name of parameter fixed to value
         :param friction_constant: friction to scale the influence of momenta
-        :param hamiltonian_dynamics_steps: number of steps in HMC sampler for checking acceptance criterion
+        :param hamiltonian_dynamics_time: number of steps in HMC sampler for checking acceptance criterion
         :param hidden_activation: Activation function to use for hidden layer: tanh, relu, linear
         :param hidden_dimension: Dimension of each hidden layer, e.g. 8 8 for two hidden layers each with 8 nodes fully connected
         :param in_memory_pipeline: whether to feed the dataset from file in-memory (True) or not (False)
@@ -101,7 +101,7 @@ class MockFlags:
         self.loss = loss
         self.max_steps = max_steps
         self.number_of_eigenvalues = number_of_eigenvalues
-        self.hamiltonian_dynamics_steps = hamiltonian_dynamics_steps
+        self.hamiltonian_dynamics_time = hamiltonian_dynamics_time
         self.optimizer = optimizer
         self.output_activation = output_activation
         self.output_dimension = output_dimension

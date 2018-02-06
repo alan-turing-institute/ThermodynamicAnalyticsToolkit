@@ -236,7 +236,7 @@ class model:
             loss="mean_squared",
             max_steps=1000,
             number_of_eigenvalues=4,
-            hamiltonian_dynamics_steps=10,
+            hamiltonian_dynamics_time=10,
             optimizer="GradientDescent",
             output_activation="tanh",
             output_dimension=1,
@@ -273,7 +273,7 @@ class model:
                 loss=loss,
                 max_steps=max_steps,
                 number_of_eigenvalues=number_of_eigenvalues,
-                hamiltonian_dynamics_steps=hamiltonian_dynamics_steps,
+                hamiltonian_dynamics_time=hamiltonian_dynamics_time,
                 optimizer=optimizer,
                 output_activation=output_activation,
                 output_dimension=output_dimension,
@@ -522,7 +522,7 @@ class model:
                 ["current_step", "num_steps", "step_width"]), feed_dict={
                 placeholder_nodes["step_width"]: self.FLAGS.step_width,
                 placeholder_nodes["current_step"]: 0,
-                placeholder_nodes["num_steps"]: self.FLAGS.hamiltonian_dynamics_steps
+                placeholder_nodes["num_steps"]: self.FLAGS.hamiltonian_dynamics_time
             })
             logging.info("Sampler parameters: current_step = %lg, num_mc_steps = %lg, delta t = %lg" %
                   (current_step, num_mc_steps, deltat))
@@ -549,6 +549,12 @@ class model:
             # get next batch of data
             features, labels = self.input_pipeline.next_batch(self.sess)
 
+            # convert HD time to a concrete steps number
+            HMC_steps = 0
+            if self.FLAGS.sampler == "HamiltonianMonteCarlo":
+                HMC_steps = max(1,
+                                round(self.FLAGS.hamiltonian_dynamics_time/self.FLAGS.step_width))
+
             # place in feed dict
             feed_dict = {
                 self.xinput: features,
@@ -557,7 +563,7 @@ class model:
                 placeholder_nodes["inverse_temperature"]: self.FLAGS.inverse_temperature,
                 placeholder_nodes["friction_constant"]: self.FLAGS.friction_constant,
                 placeholder_nodes["current_step"]: i,
-                placeholder_nodes["num_steps"]: self.FLAGS.hamiltonian_dynamics_steps
+                placeholder_nodes["num_steps"]: HMC_steps
             }
             if self.FLAGS.dropout is not None:
                 feed_dict.update({placeholder_nodes["keep_prob"] : self.FLAGS.dropout})

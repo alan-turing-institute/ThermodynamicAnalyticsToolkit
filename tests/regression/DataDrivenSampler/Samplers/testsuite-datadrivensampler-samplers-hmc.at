@@ -30,7 +30,7 @@ AT_CHECK([../../../DDSampler \
 	--run_file run-HMC.csv \
 	--inverse_temperature 1e1 \
 	--max_steps 100 \
-	--hamiltonian_dynamics_steps 5 \
+	--hamiltonian_dynamics_time 0.05 \
 	--step_width 1e-2 \
 	--sampler HamiltonianMonteCarlo\
 	--seed 426 \
@@ -62,7 +62,7 @@ AT_CHECK([../../../DDSampler \
 	--hidden_dimension 4 \
 	--inverse_temperature 1e1 \
 	--max_steps 100 \
-	--hamiltonian_dynamics_steps 5 \
+	--hamiltonian_dynamics_time 0.05 \
 	--step_width 1e-2 \
 	--sampler HamiltonianMonteCarlo\
 	--seed 426 \

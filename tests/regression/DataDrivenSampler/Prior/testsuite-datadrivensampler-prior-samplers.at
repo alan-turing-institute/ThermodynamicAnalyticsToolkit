@@ -115,7 +115,7 @@ AT_KEYWORDS([ddsampler samplers prior wall_repelling lower_boundary upper_bounda
 AT_CHECK([../../../DDSampler \
     --batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Prior/pre/dataset-twoclusters.csv \
 	--batch_size 20 \
-	--hamiltonian_dynamics_steps 5 \
+	--hamiltonian_dynamics_time 0.25 \
 	--inverse_temperature 1 \
 	--max_steps 40 \
 	--prior_factor .1 \
