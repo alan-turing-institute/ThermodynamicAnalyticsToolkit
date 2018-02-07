@@ -210,9 +210,9 @@ class NeuralNetwork(object):
             tf.summary.scalar('step_width', step_width)
             self.placeholder_nodes['step_width'] = step_width
 
-            num_steps = tf.placeholder(tf.int64, name="num_steps")
-            tf.summary.scalar('num_steps', num_steps)
-            self.placeholder_nodes['num_steps'] = num_steps
+            next_eval_step = tf.placeholder(tf.int64, name="next_eval_step")
+            tf.summary.scalar('next_eval_step', next_eval_step)
+            self.placeholder_nodes['next_eval_step'] = next_eval_step
 
             current_step = tf.placeholder(tf.int64, name="current_step")
             tf.summary.scalar('current_step', current_step)
@@ -236,7 +236,7 @@ class NeuralNetwork(object):
                 if seed is not None:
                     np.random.seed(seed)
                 accept_seed = np.random.uniform(low=0,high=67108864)
-                sampler = HamiltonianMonteCarloSampler(step_width, inverse_temperature, current_step, num_steps, accept_seed=accept_seed, seed=seed)
+                sampler = HamiltonianMonteCarloSampler(step_width, inverse_temperature, current_step, next_eval_step, accept_seed=accept_seed, seed=seed)
             elif sampling_method == "BAOAB":
                 sampler = BAOABSampler(step_width, inverse_temperature, friction_constant, seed=seed)
             else:

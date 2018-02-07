@@ -16,13 +16,13 @@ class HamiltonianMonteCarloSampler(SGLDSampler):
     in the form of a TensorFlow Optimizer, overriding tensorflow.python.training.Optimizer.
 
     """
-    def __init__(self, step_width, inverse_temperature, current_step, num_steps, accept_seed, seed=None, use_locking=False, name='HamiltonianMonteCarlo'):
+    def __init__(self, step_width, inverse_temperature, current_step, next_eval_step, accept_seed, seed=None, use_locking=False, name='HamiltonianMonteCarlo'):
         """ Init function for this class.
 
         :param step_width: step width for gradient
         :param inverse_temperature: scale for noise
         :param current_step: current step
-        :param num_steps: number of steps in between accept/reject is evaluated
+        :param next_eval_step: step number at which accept/reject is evaluated next
         :param seed: seed value of the random number generator for generating reproducible runs
         :param use_locking: whether to lock in the context of multi-threaded operations
         :param name: internal name of optimizer
@@ -31,7 +31,7 @@ class HamiltonianMonteCarloSampler(SGLDSampler):
                                                            seed, use_locking, name)
         self._accept_seed = accept_seed
         self._current_step = current_step
-        self._num_steps = num_steps
+        self._next_eval_step = next_eval_step
 
     def _prepare(self):
         """ Converts step width into a tensor, if given as a floating-point
@@ -39,7 +39,7 @@ class HamiltonianMonteCarloSampler(SGLDSampler):
         """
         super(HamiltonianMonteCarloSampler, self)._prepare()
         self._current_step_t = ops.convert_to_tensor(self._current_step, name="current_step")
-        self._num_steps_t = ops.convert_to_tensor(self._num_steps, name="num_steps")
+        self._next_eval_step_t = ops.convert_to_tensor(self._next_eval_step, name="next_eval_step")
 
     def _create_slots(self, var_list):
         """ Slots are internal resources for the Optimizer to store values
@@ -75,17 +75,17 @@ class HamiltonianMonteCarloSampler(SGLDSampler):
         step_width_t, inverse_temperature_t, random_noise_t = \
             super(HamiltonianMonteCarloSampler, self)._prepare_dense(grad, var)
         current_step_t = math_ops.cast(self._current_step_t, tf.int64)
-        num_steps_t = math_ops.cast(self._num_steps_t, tf.int64)
+        next_eval_step_t = math_ops.cast(self._next_eval_step_t, tf.int64)
 
         uniform_random_t = tf.random_uniform(shape=[], minval=0., maxval=1., dtype=tf.float64, seed=self._accept_seed)
-        return step_width_t, inverse_temperature_t, current_step_t, num_steps_t, random_noise_t, uniform_random_t
+        return step_width_t, inverse_temperature_t, current_step_t, next_eval_step_t, random_noise_t, uniform_random_t
 
     def _apply_dense(self, grad, var):
         """ Adds nodes to TensorFlow's computational graph in the case of densely
         occupied tensors to perform the actual sampling.
 
         We perform a leap-frog step on a hamiltonian (loss+kinetic energy)
-        and after num_steps passed we check the acceptance criterion,
+        and at step number next_eval_step we check the acceptance criterion,
         either resetting back to the initial parameters or resetting the
         initial parameters to the current ones.
 
@@ -93,7 +93,7 @@ class HamiltonianMonteCarloSampler(SGLDSampler):
         :param var: parameters of the neural network
         :return: a group of operations to be added to the graph
         """
-        step_width_t, inverse_temperature_t, current_step_t, num_steps_t, random_noise_t, uniform_random_t = \
+        step_width_t, inverse_temperature_t, current_step_t, next_eval_step_t, random_noise_t, uniform_random_t = \
             self._prepare_dense(grad, var)
         momentum = self.get_slot(var, "momentum")
         initial_parameters = self.get_slot(var, "initial_parameters")
@@ -126,7 +126,7 @@ class HamiltonianMonteCarloSampler(SGLDSampler):
                 return tf.identity(momentum)
 
         momentum_criterion_block_t = tf.cond(
-            tf.equal(current_step_t, num_steps_t),
+            tf.equal(current_step_t, next_eval_step_t),
             moment_reinit_block, momentum_step_block)
 
         with tf.variable_scope("accumulate", reuse=True):
@@ -196,7 +196,7 @@ class HamiltonianMonteCarloSampler(SGLDSampler):
         # make sure virial and gradients are evaluated before we update variables
         with tf.control_dependencies([virial_global_t, gradient_global_t]):
             criterion_block_t = tf.cond(
-                tf.equal(current_step_t, num_steps_t),
+                tf.equal(current_step_t, next_eval_step_t),
                 accept_reject_block, step_block)
 
         # note: these are evaluated in any order, use control_dependencies if required

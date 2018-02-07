@@ -476,7 +476,7 @@ class model:
             zero_rejected = rejected_t.assign(0)
 
         placeholder_nodes = self.nn.get_dict_of_nodes(
-            ["friction_constant", "inverse_temperature", "step_width", "current_step", "num_steps", "y_"])
+            ["friction_constant", "inverse_temperature", "step_width", "current_step", "next_eval_step", "y_"])
         test_nodes = self.nn.get_list_of_nodes(["merged", "sample_step", "accuracy", "global_step", "loss", "y_", "y"])
 
         output_width = 8
@@ -519,10 +519,10 @@ class model:
             })
         elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
             current_step, num_mc_steps, deltat = self.sess.run(self.nn.get_list_of_nodes(
-                ["current_step", "num_steps", "step_width"]), feed_dict={
+                ["current_step", "next_eval_step", "step_width"]), feed_dict={
                 placeholder_nodes["step_width"]: self.FLAGS.step_width,
                 placeholder_nodes["current_step"]: 0,
-                placeholder_nodes["num_steps"]: self.FLAGS.hamiltonian_dynamics_time
+                placeholder_nodes["next_eval_step"]: self.FLAGS.hamiltonian_dynamics_time
             })
             logging.info("Sampler parameters: current_step = %lg, num_mc_steps = %lg, delta t = %lg" %
                   (current_step, num_mc_steps, deltat))
@@ -565,7 +565,7 @@ class model:
                 placeholder_nodes["inverse_temperature"]: self.FLAGS.inverse_temperature,
                 placeholder_nodes["friction_constant"]: self.FLAGS.friction_constant,
                 placeholder_nodes["current_step"]: i,
-                placeholder_nodes["num_steps"]: HMC_steps
+                placeholder_nodes["next_eval_step"]: HMC_steps
             }
             if self.FLAGS.dropout is not None:
                 feed_dict.update({placeholder_nodes["keep_prob"] : self.FLAGS.dropout})
