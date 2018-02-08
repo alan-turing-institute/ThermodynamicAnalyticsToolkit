@@ -546,12 +546,12 @@ class model:
         logging.info_intervals = max(1, int(self.FLAGS.max_steps / 100))
         last_time = time.process_time()
         HMC_steps = 0
-        for i in range(self.FLAGS.max_steps):
+        for current_step in range(self.FLAGS.max_steps):
             # get next batch of data
             features, labels = self.input_pipeline.next_batch(self.sess)
 
             # pick next evaluation step with a little random variation
-            if self.FLAGS.sampler == "HamiltonianMonteCarlo" and i > HMC_steps:
+            if self.FLAGS.sampler == "HamiltonianMonteCarlo" and current_step > HMC_steps:
                 HMC_steps += max(1,
                                 round((0.9 + np.random.uniform(low=0., high=0.2)) \
                                       * self.FLAGS.hamiltonian_dynamics_time/self.FLAGS.step_width))
@@ -564,7 +564,7 @@ class model:
                 placeholder_nodes["step_width"]: self.FLAGS.step_width,
                 placeholder_nodes["inverse_temperature"]: self.FLAGS.inverse_temperature,
                 placeholder_nodes["friction_constant"]: self.FLAGS.friction_constant,
-                placeholder_nodes["current_step"]: i,
+                placeholder_nodes["current_step"]: current_step,
                 placeholder_nodes["next_eval_step"]: HMC_steps
             }
             if self.FLAGS.dropout is not None:
@@ -584,7 +584,7 @@ class model:
                 else:
                     self.sess.run(HMC_set_nodes, feed_dict=HMC_set_dict)
                 loss_eval, total_eval, kin_eval = self.sess.run(HMC_eval_nodes, feed_dict=feed_dict)
-                logging.debug("#%d: loss is %lg, total is %lg, kinetic is %lg" % (i, loss_eval, total_eval, kin_eval))
+                logging.debug("#%d: loss is %lg, total is %lg, kinetic is %lg" % (current_step, loss_eval, total_eval, kin_eval))
 
             # zero kinetic energy
             if self.FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder",
@@ -602,7 +602,7 @@ class model:
             # get the weights and biases as otherwise the loss won't match
             # tf first computes loss, then gradient, then performs variable update
             # hence, after the sample step, we would have updated variables but old loss
-            if i % self.FLAGS.every_nth == 0:
+            if current_step % self.FLAGS.every_nth == 0:
                 if self.config_map["do_write_trajectory_file"] or return_trajectories:
                     weights_eval = self.weights.evaluate(self.sess)
                     biases_eval = self.biases.evaluate(self.sess)
@@ -639,11 +639,11 @@ class model:
                         self.sess.run([kinetic_energy_t, momenta_t, gradients_t, virials_t, noise_t])
                     accumulated_kinetic_energy += kinetic_energy
                     accumulated_virials += virials
-            if i % self.FLAGS.every_nth == 0:
+            if current_step % self.FLAGS.every_nth == 0:
                 current_time = time.process_time()
                 time_elapsed_per_nth_step = current_time - last_time
                 last_time = current_time
-                logging.debug("Output at step #" + str(i) + ", time elapsed till last is " + str(time_elapsed_per_nth_step))
+                logging.debug("Output at step #" + str(current_step) + ", time elapsed till last is " + str(time_elapsed_per_nth_step))
 
                 if self.config_map["do_write_trajectory_file"] or return_trajectories:
                     trajectory_line = [0, global_step] \
@@ -666,7 +666,7 @@ class model:
                                               "GeometricLangevinAlgorithm_2ndOrder",
                                               "HamiltonianMonteCarlo",
                                               "BAOAB"]:
-                        run_line = [0, global_step, i] + ['{:1.3f}'.format(acc)] \
+                        run_line = [0, global_step, current_step] + ['{:1.3f}'.format(acc)] \
                                    + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
                                                                        precision=output_precision)] \
                                    + ['{:{width}.{precision}e}'.format(time_elapsed_per_nth_step, width=output_width,
@@ -674,7 +674,7 @@ class model:
                         if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
                             run_line += ['{:{width}.{precision}e}'.format(x, width=output_width,
                                                                           precision=output_precision)
-                                         for x in [sqrt(gradients), abs(0.5*virials), sqrt(noise), abs(0.5*accumulated_virials)/float(i+1.)]]
+                                         for x in [sqrt(gradients), abs(0.5*virials), sqrt(noise), abs(0.5*accumulated_virials)/float(current_step+1.)]]
                         elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
                             accepted_eval, rejected_eval  = self.sess.run([accepted_t, rejected_t])
                             if (rejected_eval+accepted_eval) > 0:
@@ -690,7 +690,7 @@ class model:
                                        + ['{:{width}.{precision}e}'.format(x, width=output_width,
                                                                            precision=output_precision)
                                           for x in [kinetic_energy, sqrt(momenta), sqrt(gradients), abs(0.5*virials),
-                                                    accumulated_kinetic_energy/float(i+1.), abs(0.5*accumulated_virials)/(float(i+1.))]]\
+                                                    accumulated_kinetic_energy/float(current_step+1.), abs(0.5*accumulated_virials)/(float(current_step+1.))]]\
                                        + ['{:{width}.{precision}e}'.format(rejection_rate, width=output_width,
                                                                            precision=output_precision)]
                         else:
@@ -700,7 +700,7 @@ class model:
                                        + ['{:{width}.{precision}e}'.format(x, width=output_width,
                                                                            precision=output_precision)
                                           for x in [kinetic_energy, sqrt(momenta), sqrt(gradients), abs(0.5*virials), sqrt(noise),
-                                                    accumulated_kinetic_energy/float(i+1.), abs(0.5*accumulated_virials)/float(i+1.)]]
+                                                    accumulated_kinetic_energy/float(current_step+1.), abs(0.5*accumulated_virials)/float(current_step+1.)]]
 
                     if self.config_map["do_write_run_file"]:
                         self.run_writer.writerow(run_line)
@@ -767,8 +767,8 @@ class model:
 
         logging.info("Starting to train")
         last_time = time.process_time()
-        for i in range(self.FLAGS.max_steps):
-            logging.debug("Current step is " + str(i))
+        for current_step in range(self.FLAGS.max_steps):
+            logging.debug("Current step is " + str(current_step))
 
             # get next batch of data
             features, labels = self.input_pipeline.next_batch(self.sess)
@@ -794,13 +794,13 @@ class model:
             gradients, virials = self.sess.run([gradients_t, virials_t])
             accumulated_virials += virials
 
-            if i % self.FLAGS.every_nth == 0:
+            if current_step % self.FLAGS.every_nth == 0:
                 current_time = time.process_time()
                 time_elapsed_per_nth_step = current_time - last_time
                 last_time = current_time
-                logging.debug("Output at step #" + str(i) + ", time elapsed till last is " + str(time_elapsed_per_nth_step))
+                logging.debug("Output at step #" + str(current_step) + ", time elapsed till last is " + str(time_elapsed_per_nth_step))
 
-                run_line = [0, global_step, i] + ['{:1.3f}'.format(acc)] \
+                run_line = [0, global_step, current_step] + ['{:1.3f}'.format(acc)] \
                            + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
                                                                precision=output_precision)] \
                            + ['{:{width}.{precision}e}'.format(time_elapsed_per_nth_step, width=output_width,
@@ -809,7 +809,7 @@ class model:
                                                                precision=output_precision)] \
                            + ['{:{width}.{precision}e}'.format(abs(0.5*virials),width=output_width,
                                                                precision=output_precision)] \
-                           + ['{:{width}.{precision}e}'.format(abs(0.5*accumulated_virials)/float(i+1.),
+                           + ['{:{width}.{precision}e}'.format(abs(0.5*accumulated_virials)/float(current_step+1.),
                                                                width=output_width,
                                                                precision=output_precision)]
                 if self.config_map["do_write_run_file"]:
@@ -832,8 +832,8 @@ class model:
                         trajectory.loc[written_row] = trajectory_line
                 written_row+=1
 
-            logging.debug('Accuracy at step %s (%s): %s' % (i, global_step, acc))
-            logging.debug('Loss at step %s: %s' % (i, loss_eval))
+            logging.debug('Accuracy at step %s (%s): %s' % (current_step, global_step, acc))
+            logging.debug('Loss at step %s: %s' % (current_step, loss_eval))
             #logging.debug('y_ at step %s: %s' % (i, str(y_true_eval[0:9].transpose())))
             #logging.debug('y at step %s: %s' % (i, str(y_eval[0:9].transpose())))
         logging.info("TRAINED down to loss %s and accuracy %s." % (loss_eval, acc))
