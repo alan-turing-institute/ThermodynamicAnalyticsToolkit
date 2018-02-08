@@ -33,7 +33,7 @@ AT_CHECK([../../../DDSOptimizer \
 	--input_dimension 784 \
 	--output_dimension 10 \
 	--optimizer GradientDescent \
-	--run_file run.csv \
+	--run_file run-mnist.csv \
 	--seed 426 \
 	--step_width 0.1
 ], 0, [stdout], [stderr])
@@ -41,7 +41,7 @@ AT_CHECK([../../../DDSOptimizer \
 # and compare (exclude time_per_nth_step column)
 AT_CHECK([../../../NumericalDiff \
     --column_drop time_per_nth_step id -- \
-    run.csv ${abs_top_srcdir}/tests/regression/DataOptimizer/Datasets/post/run-mnist.csv], 0, [ignore], [ignore])
+    run-mnist.csv ${abs_top_srcdir}/tests/regression/DataOptimizer/Datasets/post/run-mnist.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
 

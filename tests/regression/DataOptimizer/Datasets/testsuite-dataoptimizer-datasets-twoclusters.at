@@ -29,7 +29,7 @@ AT_CHECK([../../../DDSOptimizer \
 	--hidden_dimension 2 \
 	--max_steps 20 \
 	--optimizer GradientDescent \
-	--run_file run.csv \
+	--run_file run-twoclusters.csv \
 	--seed 426 \
 	--step_width 0.03
 ], 0, [stdout], [stderr])
@@ -37,7 +37,7 @@ AT_CHECK([../../../DDSOptimizer \
 # and compare (exclude time_per_nth_step column)
 AT_CHECK([../../../NumericalDiff \
     --column_drop time_per_nth_step id -- \
-    run.csv ${abs_top_srcdir}/tests/regression/DataOptimizer/Datasets/post/run-twoclusters.csv], 0, [ignore], [ignore])
+    run-twoclusters.csv ${abs_top_srcdir}/tests/regression/DataOptimizer/Datasets/post/run-twoclusters.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
 
