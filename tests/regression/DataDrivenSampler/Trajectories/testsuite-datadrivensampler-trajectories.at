@@ -17,8 +17,8 @@
 #
 ### test on saved trajectories
 
-AT_SETUP([Trajectories - Simple])
-AT_KEYWORDS([trajectory])
+AT_SETUP([Sampler Trajectories - Simple])
+AT_KEYWORDS([ddsampler trajectory])
 
 # dataset prepared as follows:
 # DatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv

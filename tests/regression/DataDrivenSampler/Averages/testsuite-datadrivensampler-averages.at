@@ -1,6 +1,6 @@
 #
 #    DataDrivenSampler - explore high-dimensional manifold of neural networks
-#    Copyright (C) 2017 The University of Edinburgh
+#    Copyright (C) 2018 The University of Edinburgh
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -15,35 +15,29 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-### test on different samplers
+### test on saved averages
 
-AT_SETUP([Samplers - SGLD])
-AT_KEYWORDS([samplers ddsampler sgld])
+AT_SETUP([Sampler Averages - Simple])
+AT_KEYWORDS([ddsampler averages])
 
 # dataset prepared as follows:
 # DatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
 
 # run 1
 AT_CHECK([../../../DDSampler \
-    --averages_file averages-SGLD.csv \
-    --batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/pre/dataset-twoclusters.csv \
-    --batch_size 20 \
+	--averages_file averages-twoclusters.csv \
+    --batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Averages/pre/dataset-twoclusters.csv \
+	--batch_size 20 \
+	--friction_constant 1 \
 	--inverse_temperature 1 \
-	--max_steps 20 \
-	--run_file run-SGLD.csv \
-	--sampler StochasticGradientLangevinDynamics\
+	--max_steps 10 \
+	--sampler GeometricLangevinAlgorithm_1stOrder \
 	--seed 426 \
-	--step_width 1e-2 \
-	--trajectory_file trajectory-SGLD.csv
+	--step_width 1e-1
 ], 0, [stdout], [stderr])
 
-# now compare (exclude time_per_nth_step column)
-AT_CHECK([../../../NumericalDiff \
-    --column_drop time_per_nth_step id -- \
-    run-SGLD.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-SGLD.csv], 0, [ignore], [ignore])
-AT_CHECK([../../../NumericalDiff \
-    --column_drop id -- \
-    trajectory-SGLD.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-SGLD.csv], 0, [ignore], [ignore])
+# and compare
+AT_CHECK([../../../NumericalDiff -- \
+    averages-twoclusters.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Averages/post/averages-twoclusters.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
-

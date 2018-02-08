@@ -13,7 +13,7 @@ FLAGS = model.setup_parameters(
 )
 nn = model(FLAGS)
 nn.init_network(None, setup="sample")
-run_info, trajectory = nn.sample(return_run_info=True, \
+run_info, trajectory, _ = nn.sample(return_run_info=True, \
   return_trajectories=True)
 nn.finish()
 

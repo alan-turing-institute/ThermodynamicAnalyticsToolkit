@@ -31,7 +31,7 @@ nn.provide_data(features, labels)
 # create the network
 nn.init_network(None, setup="sample")
 # sample
-run_info, trajectory = nn.sample(return_run_info=True, \
+run_info, trajectory, _ = nn.sample(return_run_info=True, \
   return_trajectories=True)
 nn.finish()
 

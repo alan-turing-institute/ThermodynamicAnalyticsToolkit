@@ -47,8 +47,8 @@ class TrajectoryJob_run(TrajectoryJob):
         logging.debug("Set initial step to " + str(set_step))
 
         # run graph here
-        run_info, trajectory = self.network_model.sample(
-            return_run_info=True, return_trajectories=True)
+        run_info, trajectory, _ = self.network_model.sample(
+            return_run_info=True, return_trajectories=True, return_averages=False)
 
         steps=[int(i) for i in np.asarray(run_info.loc[:,'step'])]
         losses=[float(i) for i in np.asarray(run_info.loc[:,'loss'])]

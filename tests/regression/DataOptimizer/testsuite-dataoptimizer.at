@@ -40,3 +40,6 @@ m4_include([DataOptimizer/SavingRestoring/testsuite-dataoptimizer-saving_restori
 
 # tests on priors
 m4_include([DataOptimizer/Prior/testsuite-dataoptimizer-prior.at])
+
+# tests on averages
+m4_include([DataOptimizer/Averages/testsuite-dataoptimizer-averages.at])

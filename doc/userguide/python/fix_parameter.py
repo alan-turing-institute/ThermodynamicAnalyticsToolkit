@@ -11,7 +11,7 @@ FLAGS = model.setup_parameters(
 
 nn = model(FLAGS)
 nn.init_network(None, setup="train")
-run_info, trajectory = nn.train(return_run_info=True, \
+run_info, trajectory, _ = nn.train(return_run_info=True, \
   return_trajectories=True)
 nn.finish()
 

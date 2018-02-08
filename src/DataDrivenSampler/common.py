@@ -40,7 +40,9 @@ def initialize_config_map():
     """
     # output files
     config_map = {
+        "do_write_averages_file": False,
         "do_write_run_file": False,
+        "averages_file": None,
         "csv_file": None,
         "do_write_trajectory_file": False,
         "trajectory_file": None
@@ -183,6 +185,8 @@ def add_common_options_to_parser(parser):
     :param parser: argparse's parser object
     """
     # please adhere to alphabetical ordering
+    parser.add_argument('--averages_file', type=str, default=None,
+        help='CSV file name to write ensemble averages information such as average kinetic, potential, virial.')
     parser.add_argument('--every_nth', type=int, default=1,
         help='Store only every nth trajectory (and run) point to files, e.g. 10')
     parser.add_argument('--inter_ops_threads', type=int, default=1,

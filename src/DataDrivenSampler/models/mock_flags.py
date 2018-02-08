@@ -5,6 +5,7 @@ class MockFlags:
     """
 
     def __init__(self,
+                 averages_file=None,
                  batch_data_files=[],
                  batch_data_file_type="csv",
                  batch_size=10,
@@ -44,6 +45,7 @@ class MockFlags:
     ):
         """ Init function to set various default values.
 
+        :param averages_file: csv file name to write averages to
         :param batch_data_files: set of files to read input from
         :param batch_data_file_type: type of the files to read input from
         :param batch_size: The number of samples used to divide sample set into batches in one sampleing step.
@@ -81,6 +83,7 @@ class MockFlags:
         :param use_reweighting:
         :param verbose: how much (debugging) information to print
         """
+        self.averages_file = averages_file
         self.batch_data_files = batch_data_files
         self.batch_data_file_type = batch_data_file_type
         self.batch_size = batch_size

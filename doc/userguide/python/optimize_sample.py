@@ -13,7 +13,7 @@ FLAGS = model.setup_parameters(
 )
 nn = model(FLAGS)
 nn.init_network(None, setup="train")
-opt_run_info, opt_trajectory = nn.train( \
+opt_run_info, opt_trajectory, _ = nn.train( \
     return_run_info=True, return_trajectories=True)
 
 FLAGS.max_steps = 1000
@@ -25,7 +25,7 @@ nn.init_network(None, setup="sample")
 # otherwise you get error: epoch ended to early!
 nn.reset_dataset()
 
-sample_run_info, sample_trajectory = nn.sample( \
+sample_run_info, sample_trajectory, _ = nn.sample( \
     return_run_info=True, return_trajectories=True)
 
 nn.finish()

@@ -1,7 +1,7 @@
 from builtins import staticmethod
 
 import logging
-from math import sqrt, floor, ceil
+from math import sqrt, floor, ceil, exp
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -10,7 +10,7 @@ import time
 from DataDrivenSampler.common import create_input_layer, decode_csv_line, file_length, \
     get_csv_defaults, get_list_from_string, get_trajectory_header, \
     initialize_config_map, \
-    setup_run_file, setup_trajectory_file
+    setup_csv_file, setup_run_file, setup_trajectory_file
 from DataDrivenSampler.models.input.datasetpipeline import DatasetPipeline
 from DataDrivenSampler.models.input.inmemorypipeline import InMemoryPipeline
 from DataDrivenSampler.models.mock_flags import MockFlags
@@ -80,6 +80,7 @@ class model:
         self.global_step_assign_t = None
 
         # mark writer as to be created
+        self.averages_writer = None
         self.run_writer = None
         self.trajectory_writer = None
 
@@ -217,6 +218,7 @@ class model:
 
     @staticmethod
     def setup_parameters(
+            averages_file=None,
             batch_data_files=[],
             batch_data_file_type="csv",
             batch_size=10,
@@ -254,6 +256,7 @@ class model:
             use_reweighting=False,
             verbose=0):
             return MockFlags(
+                averages_file=averages_file,
                 batch_data_files=batch_data_files,
                 batch_data_file_type=batch_data_file_type,
                 batch_size=batch_size,
@@ -410,6 +413,10 @@ class model:
             self.biases = neuralnet_parameters(tf.get_collection(tf.GraphKeys.BIASES))
 
         try:
+            if self.averages_writer is None:
+                if self.FLAGS.averages_file is not None:
+                    self.config_map["do_write_averages_file"] = True
+                    self.averages_writer, self.config_map["averages_file"] = setup_csv_file(self.FLAGS.averages_file, self.get_averages_header(setup))
             if self.run_writer is None:
                 self.run_writer = setup_run_file(self.FLAGS.run_file, header, self.config_map)
             if self.trajectory_writer is None:
@@ -420,31 +427,48 @@ class model:
         except AttributeError:
             pass
 
+    def get_averages_header(self, setup=None):
+        """ Prepares the distinct header for the averages file for sampling
+
+        :param setup: sample, train or None
+        """
+        header = ['id', 'step', 'epoch', 'loss']
+        if setup == "train":
+            if self.FLAGS.optimizer == "GradientDescent":
+                header += ['average_virials']
+        elif setup == "sample":
+            if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
+                header += ['ensemble_average_loss', 'average_virials']
+            elif self.FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder",
+                                        "GeometricLangevinAlgorithm_2ndOrder",
+                                        "BAOAB"]:
+                header += ['ensemble_average_loss', 'average_kinetic_energy', 'average_virials']
+            elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
+                header += ['ensemble_average_loss', 'average_kinetic_energy', 'average_virials', 'average_rejection_rate']
+        return header
+
     def get_sample_header(self):
         """ Prepares the distinct header for the run file for sampling
         """
         header = ['id', 'step', 'epoch', 'accuracy', 'loss', 'time_per_nth_step']
         if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
-            header += ['scaled_gradient', 'virial', 'scaled_noise',
-                      'average_virials']
+            header += ['scaled_gradient', 'virial', 'scaled_noise']
         elif self.FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder",
                                     "GeometricLangevinAlgorithm_2ndOrder",
                                     "BAOAB"]:
             header += ['total_energy', 'kinetic_energy', 'scaled_momentum',
-                      'scaled_gradient', 'virial', 'scaled_noise',
-                      'average_kinetic_energy', 'average_virials']
+                      'scaled_gradient', 'virial', 'scaled_noise']
         elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
             header += ['total_energy', 'old_total_energy', 'kinetic_energy', 'scaled_momentum',
-                      'scaled_gradient', 'virial', 'average_kinetic_energy', 'average_virials',
-                      'average_rejection_rate']
+                      'scaled_gradient', 'virial', 'average_rejection_rate']
         return header
 
     def get_train_header(self):
         """ Prepares the distinct header for the run file for training
         """
-        return ['id', 'step', 'epoch', 'accuracy', 'loss', 'time_per_nth_step', 'scaled_gradient', 'virial', 'average_virials']
+        return ['id', 'step', 'epoch', 'accuracy', 'loss', 'time_per_nth_step', 'scaled_gradient', 'virial']
 
-    def sample(self, return_run_info = False, return_trajectories = False):
+    def sample(self, return_run_info = False, return_trajectories = False, return_averages = False):
         """ Performs the actual sampling of the neural network `nn` given a dataset `ds` and a
         Session `session`.
 
@@ -452,6 +476,8 @@ class model:
                 inside a numpy array and returned
         :param return_trajectories: if set to true, trajectories will be accumulated
                 inside a numpy array and returned (adhering to FLAGS.every_nth)
+        :param return_averages: if set to true, accumulated average values will be
+                returned as numpy array
         :return: either twice None or a pandas dataframe depending on whether either
                 parameter has evaluated to True
         """
@@ -485,7 +511,18 @@ class model:
         written_row = 0
 
         accumulated_kinetic_energy = 0.
+        accumulated_loss_nominator = 0.
+        accumulated_loss_denominator = 0.
         accumulated_virials = 0.
+
+        averages = None
+        if return_averages:
+            steps = (self.FLAGS.max_steps % self.FLAGS.every_nth)+1
+            header = self.get_averages_header()
+            no_params = len(header)
+            run_info = pd.DataFrame(
+                np.zeros((steps, no_params)),
+                columns=header)
 
         run_info = None
         if return_run_info:
@@ -639,6 +676,8 @@ class model:
                         self.sess.run([kinetic_energy_t, momenta_t, gradients_t, virials_t, noise_t])
                     accumulated_kinetic_energy += kinetic_energy
                     accumulated_virials += virials
+            accumulated_loss_nominator += loss_eval * exp(- self.FLAGS.inverse_temperature * loss_eval)
+            accumulated_loss_denominator += exp(- self.FLAGS.inverse_temperature * loss_eval)
             if current_step % self.FLAGS.every_nth == 0:
                 current_time = time.process_time()
                 time_elapsed_per_nth_step = current_time - last_time
@@ -659,6 +698,26 @@ class model:
                     if return_trajectories:
                         trajectory.loc[written_row] = trajectory_line
 
+                if self.config_map["do_write_averages_file"] or return_averages:
+                    averages_line = [0, global_step, current_step] \
+                                    + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
+                                                                        precision=output_precision)] \
+                                    + ['{:{width}.{precision}e}'.format(accumulated_loss_nominator/accumulated_loss_denominator, width=output_width,
+                                                                        precision=output_precision)]
+                    if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
+                        averages_line += ['{:{width}.{precision}e}'.format(abs(0.5 * accumulated_virials) / (float(current_step + 1.)), width=output_width,
+                                                                           precision=output_precision)]
+                    else:
+                        averages_line += ['{:{width}.{precision}e}'.format(x, width=output_width,
+                                                                       precision=output_precision)
+                                      for x in [accumulated_kinetic_energy / float(current_step + 1.),
+                                                abs(0.5 * accumulated_virials) / (float(current_step + 1.))]]
+
+                    if self.config_map["do_write_averages_file"]:
+                        self.averages_writer.writerow(averages_line)
+                    if return_averages:
+                        averages.loc[written_row] = averages_line
+
                 if self.config_map["do_write_run_file"] or return_run_info:
                     run_line  = []
                     if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics",
@@ -674,7 +733,7 @@ class model:
                         if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
                             run_line += ['{:{width}.{precision}e}'.format(x, width=output_width,
                                                                           precision=output_precision)
-                                         for x in [sqrt(gradients), abs(0.5*virials), sqrt(noise), abs(0.5*accumulated_virials)/float(current_step+1.)]]
+                                         for x in [sqrt(gradients), abs(0.5*virials), sqrt(noise)]]
                         elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
                             accepted_eval, rejected_eval  = self.sess.run([accepted_t, rejected_t])
                             if (rejected_eval+accepted_eval) > 0:
@@ -689,8 +748,7 @@ class model:
                                                                            precision=output_precision)]\
                                        + ['{:{width}.{precision}e}'.format(x, width=output_width,
                                                                            precision=output_precision)
-                                          for x in [kinetic_energy, sqrt(momenta), sqrt(gradients), abs(0.5*virials),
-                                                    accumulated_kinetic_energy/float(current_step+1.), abs(0.5*accumulated_virials)/(float(current_step+1.))]]\
+                                          for x in [kinetic_energy, sqrt(momenta), sqrt(gradients), abs(0.5*virials)]]\
                                        + ['{:{width}.{precision}e}'.format(rejection_rate, width=output_width,
                                                                            precision=output_precision)]
                         else:
@@ -699,8 +757,7 @@ class model:
                                                                           precision=output_precision)]\
                                        + ['{:{width}.{precision}e}'.format(x, width=output_width,
                                                                            precision=output_precision)
-                                          for x in [kinetic_energy, sqrt(momenta), sqrt(gradients), abs(0.5*virials), sqrt(noise),
-                                                    accumulated_kinetic_energy/float(current_step+1.), abs(0.5*accumulated_virials)/float(current_step+1.)]]
+                                          for x in [kinetic_energy, sqrt(momenta), sqrt(gradients), abs(0.5*virials), sqrt(noise)]]
 
                     if self.config_map["do_write_run_file"]:
                         self.run_writer.writerow(run_line)
@@ -715,9 +772,9 @@ class model:
                 #logging.debug('y at step %s: %s' % (i, str(y_eval[0:9].transpose())))
         logging.info("SAMPLED.")
 
-        return run_info, trajectory
+        return run_info, trajectory, averages
 
-    def train(self, return_run_info = False, return_trajectories = False):
+    def train(self, return_run_info = False, return_trajectories = False, return_averages=False):
         """ Performs the actual training of the neural network `nn` given a dataset `ds` and a
         Session `session`.
 
@@ -725,6 +782,8 @@ class model:
                 inside a numpy array and returned
         :param return_trajectories: if set to true, trajectories will be accumulated
                 inside a numpy array and returned (adhering to FLAGS.every_nth)
+        :param return_averages: if set to true, accumulated average values will be
+                returned as numpy array
         :return: either twice None or a pandas dataframe depending on whether either
                 parameter has evaluated to True
         """
@@ -744,6 +803,15 @@ class model:
         written_row = 0
 
         accumulated_virials = 0.
+
+        averages = None
+        if return_averages:
+            steps = (self.FLAGS.max_steps % self.FLAGS.every_nth)+1
+            header = self.get_averages_header()
+            no_params = len(header)
+            run_info = pd.DataFrame(
+                np.zeros((steps, no_params)),
+                columns=header)
 
         run_info = None
         if return_run_info:
@@ -808,14 +876,25 @@ class model:
                            + ['{:{width}.{precision}e}'.format(sqrt(gradients), width=output_width,
                                                                precision=output_precision)] \
                            + ['{:{width}.{precision}e}'.format(abs(0.5*virials),width=output_width,
-                                                               precision=output_precision)] \
-                           + ['{:{width}.{precision}e}'.format(abs(0.5*accumulated_virials)/float(current_step+1.),
-                                                               width=output_width,
                                                                precision=output_precision)]
                 if self.config_map["do_write_run_file"]:
                     self.run_writer.writerow(run_line)
                 if return_run_info:
+
                     run_info.loc[written_row] = run_line
+                if self.config_map["do_write_averages_file"] or return_averages:
+                    averages_line = [0, global_step, current_step] \
+                                    + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
+                                                                        precision=output_precision)] \
+                                    + ['{:{width}.{precision}e}'.format(abs(0.5 * accumulated_virials) / (float(current_step + 1.)), width=output_width,
+                                                                        precision=output_precision)]
+
+                    if self.config_map["do_write_averages_file"]:
+                        self.averages_writer.writerow(averages_line)
+                    if return_averages:
+                        averages.loc[written_row] = averages_line
+
+
                 if return_trajectories or self.config_map["do_write_trajectory_file"]:
                     weights_eval = self.weights.evaluate(self.sess)
                     biases_eval = self.biases.evaluate(self.sess)
@@ -838,11 +917,16 @@ class model:
             #logging.debug('y at step %s: %s' % (i, str(y_eval[0:9].transpose())))
         logging.info("TRAINED down to loss %s and accuracy %s." % (loss_eval, acc))
 
-        return run_info, trajectory
+        return run_info, trajectory, averages
 
     def close_files(self):
         """ Closes the output files if they have been opened.
         """
+        if self.config_map["do_write_averages_file"]:
+            assert self.config_map["averages_file"] is not None
+            self.config_map["averages_file"].close()
+            self.config_map["averages_file"] = None
+            self.averages_writer = None
         if self.config_map["do_write_run_file"]:
             assert self.config_map["csv_file"] is not None
             self.config_map["csv_file"].close()

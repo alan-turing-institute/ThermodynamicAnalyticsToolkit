@@ -15,6 +15,7 @@ TESTSCRIPTS += \
 	$(srcdir)/DataDrivenExplorer/MultipleTrajectories/testsuite-datadrivenexplorer-multiple_trajectories.at \
 	$(srcdir)/DataDrivenSampler/testsuite-datadrivensampler.at \
 	$(srcdir)/DataDrivenSampler/testsuite-datadrivensampler-simple.at \
+	$(srcdir)/DataDrivenSampler/Averages/testsuite-datadrivensampler-averages.at \
 	$(srcdir)/DataDrivenSampler/FixParameter/testsuite-datadrivensampler-fix_parameter.at \
 	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-batch_size.at \
 	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-every_nth.at \
@@ -43,6 +44,7 @@ TESTSCRIPTS += \
 	$(srcdir)/DataDrivenSampler/Trajectories/testsuite-datadrivensampler-trajectories.at \
  	$(srcdir)/DataOptimizer/testsuite-dataoptimizer.at \
 	$(srcdir)/DataOptimizer/testsuite-dataoptimizer-simple.at \
+	$(srcdir)/DataOptimizer/Averages/testsuite-dataoptimizer-averages.at \
 	$(srcdir)/DataOptimizer/Datasets/testsuite-dataoptimizer-datasets.at \
 	$(srcdir)/DataOptimizer/Datasets/testsuite-dataoptimizer-datasets-foursquares.at \
 	$(srcdir)/DataOptimizer/Datasets/testsuite-dataoptimizer-datasets-mnist.at \
