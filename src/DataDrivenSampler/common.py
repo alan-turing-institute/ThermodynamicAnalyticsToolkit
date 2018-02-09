@@ -266,11 +266,7 @@ def react_to_sampler_options(FLAGS, unparsed):
     :param FLAGS: parsed cmd-line options as produced by argparse.parse_known_args()
     :param unparsed: unparsed cmd-line options as produced by argparse.parse_known_args()
     """
-    if (FLAGS.sampler == "StochasticGradientLangevinDynamics"
-        or FLAGS.sampler == "HamiltonianMonteCarlo") \
-        and FLAGS.friction_constant != 0.:
-        logging.info("You set friction_constant but only BAOAB, GLA 1st and 2nd order use it.")
-        sys.exit(1)
+    pass
 
 
 def file_length(filename):
