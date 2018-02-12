@@ -3,7 +3,15 @@
   <!ENTITY dataset_two_clusters SYSTEM "pictures/dataset_two_clusters.png" NDATA PNG>
   <!ENTITY simple_single_layer_perceptron SYSTEM "pictures/simple_single_layer_perceptron.png" NDATA PNG>
 ]>
-<book xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:svg="http://www.w3.org/2000/svg" xmlns:mml="http://www.w3.org/1998/Math/MathML" xmlns:html="http://www.w3.org/1999/xhtml" xmlns:db="http://docbook.org/ns/docbook" version="5.0">
+<book 
+  xmlns="http://docbook.org/ns/docbook" 
+  xmlns:xlink="http://www.w3.org/1999/xlink" 
+  xmlns:param="http://www.w3.org/1999/param" 
+  xmlns:xi="http://www.w3.org/2001/XInclude" 
+  xmlns:svg="http://www.w3.org/2000/svg" 
+  xmlns:mml="http://www.w3.org/1998/Math/MathML" 
+  xmlns:html="http://www.w3.org/1999/xhtml" 
+  xmlns:db="http://docbook.org/ns/docbook" version="5.0">
 <info>
   <title>DataDrivenSampler</title>
   <subtitle>Manual</subtitle>
@@ -49,6 +57,10 @@
         </itemizedlist>
       </cover>
 </info>
+
+<xi:include href="bibliography.xml"/>
+
+<xi:include href="glossary.xml"/>
 
   <chapter xml:id="introduction">
     <title xml:id="introduction.title">Introduction</title>
@@ -999,6 +1011,35 @@ cost of all necessary servicing, repair, or correction.</remark>
     <note>For anything but trivial input spaces the computational cost quickly 
     becomes prohibitively large.</note>
   </section>
+  <section xml:id="reference.samplers">
+    <title xml:id="reference.samplers.title">Samplers</title>
+    <para>Samplers are at the core of all exploration. In this section we will
+    give a few words on advice on the various samplers implemented in this
+    package.</para>
+    <para>Naturally, not all of them are equivalent. Some are more robust
+    with respect to the choice of the step sizes than others. In general, we
+    recommend BAOAB at the moment as it is the most accurate with second order
+    convergence for average values over the step width size and even fourth
+    order in the high-friction limit.</para>
+    <section xml:id="reference.samplers.sgld">
+      <title xml:id="reference.samplers.sgld.title">Stochastic Gradient Langevin Dynamics</title>
+      <para>The 
+      <firstterm baseform="SGLD" linkend="SGLD">Stochastic Gradient Langevin Dynamics (SGLD)</firstterm> 
+      was proposed by <citation role="REFDB">Welling2011</citation> based on the 
+      <firstterm baseform="SGD"  linkend="SGD">Stochastic Gradient Descent (SGD)</firstterm>, 
+      which is a variant of the 
+      <firstterm baseform="GD"  linkend="GD">Gradient Descent (GD)</firstterm> using only a 
+      subset of the dataset for computing gradients. The central idea behind
+      <glossterm linkend="SGLD">SGLD</glossterm> was to add an additional noise term whose 
+      magnitude then controls the noise induced by the approximate gradients.
+      </para>
+      <note><glossterm linkend="SGLD">SGLD</glossterm> is very much like 
+      <glossterm linkend="SGD">SGD</glossterm> and 
+      <glossterm linkend="GD">GD</glossterm> in terms that the 
+      <command>step_width</command> needs to be small enough with respect
+      to the gradient sizes of your problem.</note>
+      </section>
+  </section>
   <section xml:id="reference.exploring">
     <title xml:id="reference.exploring.title">Exploring the manifold</title>
     <para>still empty</para>
@@ -1039,4 +1080,5 @@ cost of all necessary servicing, repair, or correction.</remark>
     <title>Acknowledgements</title>
     <para>Thanks to all users of the code!</para>
   </chapter>
+
 </book>

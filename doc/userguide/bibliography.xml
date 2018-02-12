@@ -1,0 +1,24 @@
+﻿<bibliography id="_bibliography"
+ version="4.5" 
+  xmlns="http://docbook.org/ns/docbook">
+
+<biblioentry role="article" id="sgld">
+  <abbrev id="sgld.abbrev">Welling2011</abbrev>
+  <biblioset role="article">
+    <author>
+      <firstname>M.</firstname><surname>Welling</surname>
+      <firstname>Y.-W.</firstname><surname>Teh</surname>
+    </author>
+    <title>Bayesian Learning via Stochastic Gradient Langevin Dynamics</title>
+    <pagenums>681-688</pagenums>
+    <bibliosource class="doi">http://doi.acm.org/10.1515/jip-2012-0071</bibliosource>
+  </biblioset>
+    
+  <biblioset role="proceedings">
+    <title>Proceedings of the 28th International Conference on Machine Learning</title>
+    <pubdate>2011</pubdate>
+
+  </biblioset>
+</biblioentry>
+
+</bibliography>

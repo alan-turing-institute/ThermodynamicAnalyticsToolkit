@@ -35,9 +35,12 @@ PYTHON_EXAMPLES = \
 XSLTPROC=xsltproc
 XSLTPROC_FLAGS=@XSLTPROC_FLAGS@ \
 	--stringparam paper.type A4 \
+	--stringparam glossentry.show.acronym 1 \
+	--stringparam glossary.auto.link 1 \
 	--xinclude
 PDF_STYLESHEET=@DOCBOOK_ROOT@/fo/docbook.xsl
 XML_CATALOG_FILES=$(top_builddir)/doc/userguide/catalog.xml
+GLOSSARY_FILE=$(top_srcdir)/doc/userguide/glossary.xml
 FOP=fop
 
 pdfdir = $(prefix)/share/doc/@PACKAGE@
@@ -46,7 +49,7 @@ dist_pdf_DATA = @PACKAGE@.pdf
 if have_fop
 if have_xsltproc
 
-@PACKAGE@.fo: $(top_srcdir)/doc/userguide/userguide.xml $(XML_CATALOG_FILES) $(PYTHON_EXAMPLES)
+@PACKAGE@.fo: $(top_srcdir)/doc/userguide/userguide.xml $(GLOSSARY_FILE) $(XML_CATALOG_FILES) $(PYTHON_EXAMPLES)
 	XML_CATALOG_FILES=$(XML_CATALOG_FILES) $(XSLTPROC) $(XSLTPROC_FLAGS) -o $@ $(PDF_STYLESHEET) $<
 @PACKAGE@.pdf: @PACKAGE@.fo
 	$(FOP) -fo $< -pdf $@
