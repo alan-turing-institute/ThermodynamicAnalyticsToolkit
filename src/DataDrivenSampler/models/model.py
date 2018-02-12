@@ -624,7 +624,8 @@ class model:
                 logging.debug("#%d: loss is %lg, total is %lg, kinetic is %lg" % (current_step, loss_eval, total_eval, kin_eval))
 
             # zero kinetic energy
-            if self.FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder",
+            if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics",
+                                      "GeometricLangevinAlgorithm_1stOrder",
                                       "GeometricLangevinAlgorithm_2ndOrder",
                                       "HamiltonianMonteCarlo",
                                       "BAOAB"]:
