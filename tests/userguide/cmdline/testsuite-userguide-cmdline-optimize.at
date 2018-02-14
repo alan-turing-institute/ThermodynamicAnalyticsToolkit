@@ -27,7 +27,7 @@ AT_CHECK([cp -f ${abs_top_srcdir}/tests/userguide/cmdline/pre/dataset-twocluster
 AT_CHECK([env - PATH=${AUTOTEST_PATH} /bin/bash \
 	${abs_top_srcdir}/doc/userguide/cmdline/optimize.sh
 ], 0, [stdout], [stderr])
-AT_CHECK([grep "loss 0.0019" stdout], 0, [ignore], [ignore])
+AT_CHECK([grep "loss 0.0018" stdout], 0, [ignore], [ignore])
 
 AT_CLEANUP
 

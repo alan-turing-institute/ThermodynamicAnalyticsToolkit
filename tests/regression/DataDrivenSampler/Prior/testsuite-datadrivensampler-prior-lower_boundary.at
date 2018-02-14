@@ -29,7 +29,7 @@ AT_CHECK([../../../DDSampler \
 	--friction_constant 1 \
 	--inverse_temperature 1 \
 	--max_steps 20 \
-	--prior_factor .1 \
+	--prior_factor .2 \
 	--prior_lower_boundary 0. \
 	--sampler GeometricLangevinAlgorithm_1stOrder \
 	--seed 426 \
