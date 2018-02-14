@@ -7,6 +7,7 @@ import sys
 import tensorflow as tf
 
 from DataDrivenSampler.datasets.classificationdatasets import ClassificationDatasets as DatasetGenerator
+from DataDrivenSampler.models.basetype import dds_basetype
 from DataDrivenSampler.version import get_package_version, get_build_hash
 
 
@@ -391,7 +392,7 @@ def create_input_layer(input_dimension, input_list):
     """
     # Input placeholders
     with tf.name_scope('input'):
-        xinput = tf.placeholder(tf.float64, [None, input_dimension], name='x-input')
+        xinput = tf.placeholder(dds_basetype, [None, input_dimension], name='x-input')
         logging.debug("xinput is "+str(xinput.get_shape()))
 
         # parse input columns

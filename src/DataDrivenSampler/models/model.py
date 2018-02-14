@@ -13,6 +13,7 @@ from DataDrivenSampler.common import create_input_layer, decode_csv_line, file_l
     setup_csv_file, setup_run_file, setup_trajectory_file
 from DataDrivenSampler.models.input.datasetpipeline import DatasetPipeline
 from DataDrivenSampler.models.input.inmemorypipeline import InMemoryPipeline
+from DataDrivenSampler.models.basetype import dds_basetype
 from DataDrivenSampler.models.mock_flags import MockFlags
 from DataDrivenSampler.models.neuralnet_parameters import neuralnet_parameters
 from DataDrivenSampler.models.neuralnetwork import NeuralNetwork
@@ -184,29 +185,29 @@ class model:
             # the following are used for HMC
             old_loss_t = tf.get_variable("old_loss", shape=[], trainable=False,
                                                initializer=tf.zeros_initializer,
-                                               use_resource=True, dtype=tf.float64)
+                                               use_resource=True, dtype=dds_basetype)
             old_kinetic_t = tf.get_variable("old_kinetic", shape=[], trainable=False,
                                                initializer=tf.zeros_initializer,
-                                               use_resource=True, dtype=tf.float64)
+                                               use_resource=True, dtype=dds_basetype)
             total_energy_t = tf.get_variable("total_energy", shape=[], trainable=False,
                                                initializer=tf.zeros_initializer,
-                                               use_resource=True, dtype=tf.float64)
+                                               use_resource=True, dtype=dds_basetype)
             # used for Langevin samplers
             kinetic_energy_t = tf.get_variable("kinetic", shape=[], trainable=False,
                                                initializer=tf.zeros_initializer,
-                                               use_resource=True, dtype=tf.float64)
+                                               use_resource=True, dtype=dds_basetype)
             momenta_t = tf.get_variable("momenta", shape=[], trainable=False,
                                         initializer=tf.zeros_initializer,
-                                        use_resource=True, dtype=tf.float64)
+                                        use_resource=True, dtype=dds_basetype)
             gradients_t = tf.get_variable("gradients", shape=[], trainable=False,
                                           initializer=tf.zeros_initializer,
-                                          use_resource=True, dtype=tf.float64)
+                                          use_resource=True, dtype=dds_basetype)
             virials_t = tf.get_variable("virials", shape=[], trainable=False,
                                         initializer=tf.zeros_initializer,
-                                        use_resource=True, dtype=tf.float64)
+                                        use_resource=True, dtype=dds_basetype)
             noise_t = tf.get_variable("noise", shape=[], trainable=False,
                                       initializer=tf.zeros_initializer,
-                                      use_resource=True, dtype=tf.float64)
+                                      use_resource=True, dtype=dds_basetype)
             # the following are used for HMC to measure rejection rate
             rejected_t = tf.get_variable("rejected", shape=[], trainable=False,
                                       initializer=tf.zeros_initializer,
@@ -483,18 +484,18 @@ class model:
         """
         # create global variable to hold kinetic energy
         with tf.variable_scope("accumulate", reuse=True):
-            old_loss_t = tf.get_variable("old_loss", dtype=tf.float64)
-            old_kinetic_energy_t = tf.get_variable("old_kinetic", dtype=tf.float64)
-            kinetic_energy_t = tf.get_variable("kinetic", dtype=tf.float64)
+            old_loss_t = tf.get_variable("old_loss", dtype=dds_basetype)
+            old_kinetic_energy_t = tf.get_variable("old_kinetic", dtype=dds_basetype)
+            kinetic_energy_t = tf.get_variable("kinetic", dtype=dds_basetype)
             zero_kinetic_energy = kinetic_energy_t.assign(0.)
-            total_energy_t = tf.get_variable("total_energy", dtype=tf.float64)
-            momenta_t = tf.get_variable("momenta", dtype=tf.float64)
+            total_energy_t = tf.get_variable("total_energy", dtype=dds_basetype)
+            momenta_t = tf.get_variable("momenta", dtype=dds_basetype)
             zero_momenta = momenta_t.assign(0.)
-            gradients_t = tf.get_variable("gradients", dtype=tf.float64)
+            gradients_t = tf.get_variable("gradients", dtype=dds_basetype)
             zero_gradients = gradients_t.assign(0.)
-            virials_t = tf.get_variable("virials", dtype=tf.float64)
+            virials_t = tf.get_variable("virials", dtype=dds_basetype)
             zero_virials = virials_t.assign(0.)
-            noise_t = tf.get_variable("noise", dtype=tf.float64)
+            noise_t = tf.get_variable("noise", dtype=dds_basetype)
             zero_noise = noise_t.assign(0.)
             accepted_t = tf.get_variable("accepted", dtype=tf.int64)
             zero_accepted = accepted_t.assign(0)
@@ -789,9 +790,9 @@ class model:
                 parameter has evaluated to True
         """
         with tf.variable_scope("accumulate", reuse=True):
-            gradients_t = tf.get_variable("gradients", dtype=tf.float64)
+            gradients_t = tf.get_variable("gradients", dtype=dds_basetype)
             zero_gradients = gradients_t.assign(0.)
-            virials_t = tf.get_variable("virials", dtype=tf.float64)
+            virials_t = tf.get_variable("virials", dtype=dds_basetype)
             zero_virials = virials_t.assign(0.)
 
         placeholder_nodes = self.nn.get_dict_of_nodes(["learning_rate", "y_"])

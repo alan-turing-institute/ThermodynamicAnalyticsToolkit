@@ -3,6 +3,7 @@ from tensorflow.python.framework import ops
 from tensorflow.python.ops import math_ops
 import tensorflow as tf
 
+from DataDrivenSampler.models.basetype import dds_basetype
 
 class GradientDescent(tf.train.GradientDescentOptimizer):
     """ We are extending TensorFlow's GradientDescentOptimizer to access the
@@ -125,9 +126,9 @@ class GradientDescent(tf.train.GradientDescentOptimizer):
         lr_t = math_ops.cast(self._learning_rate_t, var.dtype.base_dtype)
         scaled_gradient = lr_t * grad
         with tf.variable_scope("accumulate", reuse=True):
-            gradient_global = tf.get_variable("gradients", dtype=tf.float64)
+            gradient_global = tf.get_variable("gradients", dtype=dds_basetype)
             gradient_global_t = tf.assign_add(gradient_global, tf.reduce_sum(tf.multiply(scaled_gradient, scaled_gradient)))
-            virial_global = tf.get_variable("virials", dtype=tf.float64)
+            virial_global = tf.get_variable("virials", dtype=dds_basetype)
             virial_global_t = tf.assign_add(virial_global, tf.reduce_sum(tf.multiply(grad, var)))
 
         # prior force act directly on var

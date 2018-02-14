@@ -6,8 +6,7 @@ from tensorflow.python.ops import state_ops
 from tensorflow.python.framework import ops
 import tensorflow as tf
 
-import numpy as np
-
+from DataDrivenSampler.models.basetype import dds_basetype
 from DataDrivenSampler.samplers.sgldsampler import SGLDSampler
 
 
@@ -77,7 +76,7 @@ class HamiltonianMonteCarloSampler(SGLDSampler):
         current_step_t = math_ops.cast(self._current_step_t, tf.int64)
         next_eval_step_t = math_ops.cast(self._next_eval_step_t, tf.int64)
 
-        uniform_random_t = tf.random_uniform(shape=[], minval=0., maxval=1., dtype=tf.float64, seed=self._accept_seed)
+        uniform_random_t = tf.random_uniform(shape=[], minval=0., maxval=1., dtype=dds_basetype, seed=self._accept_seed)
         return step_width_t, inverse_temperature_t, current_step_t, next_eval_step_t, random_noise_t, uniform_random_t
 
     def _apply_dense(self, grad, var):
@@ -102,15 +101,15 @@ class HamiltonianMonteCarloSampler(SGLDSampler):
         scaled_gradient = step_width_t * grad
 
         with tf.variable_scope("accumulate", reuse=True):
-            old_total_energy_t = tf.get_variable("total_energy", dtype=tf.float64)
+            old_total_energy_t = tf.get_variable("total_energy", dtype=dds_basetype)
 
         with tf.variable_scope("accumulate", reuse=True):
-            gradient_global = tf.get_variable("gradients", dtype=tf.float64)
+            gradient_global = tf.get_variable("gradients", dtype=dds_basetype)
             gradient_global_t = tf.assign_add(
                 gradient_global,
                 tf.reduce_sum(tf.multiply(scaled_gradient, scaled_gradient)))
             # configurational temperature
-            virial_global = tf.get_variable("virials", dtype=tf.float64)
+            virial_global = tf.get_variable("virials", dtype=dds_basetype)
             virial_global_t = tf.assign_add(
                 virial_global,
                 tf.reduce_sum(tf.multiply(grad, var)))
@@ -130,19 +129,19 @@ class HamiltonianMonteCarloSampler(SGLDSampler):
             moment_reinit_block, momentum_step_block)
 
         with tf.variable_scope("accumulate", reuse=True):
-            momentum_global = tf.get_variable("momenta", dtype=tf.float64)
+            momentum_global = tf.get_variable("momenta", dtype=dds_basetype)
             momentum_global_t = tf.assign_add(
                 momentum_global,
                 tf.reduce_sum(tf.multiply(momentum_criterion_block_t, momentum_criterion_block_t)))
 
         momentum_sq = 0.5 * tf.reduce_sum(tf.multiply(momentum_criterion_block_t, momentum_criterion_block_t))
         with tf.variable_scope("accumulate", reuse=True):
-            kinetic_energy = tf.get_variable("kinetic", dtype=tf.float64)
+            kinetic_energy = tf.get_variable("kinetic", dtype=dds_basetype)
             kinetic_energy_t = tf.assign_add(kinetic_energy, momentum_sq)
 
         with tf.variable_scope("accumulate", reuse=True):
-            loss = tf.get_variable("old_loss", dtype=tf.float64)
-            kinetic_energy = tf.get_variable("old_kinetic", dtype=tf.float64)
+            loss = tf.get_variable("old_loss", dtype=dds_basetype)
+            kinetic_energy = tf.get_variable("old_kinetic", dtype=dds_basetype)
             current_energy = loss + kinetic_energy
 
         with tf.variable_scope("accumulate", reuse=True):
@@ -173,7 +172,7 @@ class HamiltonianMonteCarloSampler(SGLDSampler):
                                           rejected_t.assign_add(1)]):
                 return tf.identity(old_total_energy_t)
 
-        max_value_t = tf.constant(1.0, dtype=tf.float64)
+        max_value_t = tf.constant(1.0, dtype=dds_basetype)
         p_accept = tf.minimum(max_value_t, tf.exp(old_total_energy_t - current_energy))
 
         def accept_reject_block():

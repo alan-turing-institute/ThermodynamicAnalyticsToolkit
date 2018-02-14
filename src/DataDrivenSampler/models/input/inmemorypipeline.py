@@ -2,6 +2,7 @@ import logging
 from math import ceil
 import tensorflow as tf
 
+from DataDrivenSampler.models.basetype import dds_basetype
 from DataDrivenSampler.models.input.datasetpipeline import DatasetPipeline
 
 class InMemoryPipeline(DatasetPipeline):
@@ -25,8 +26,8 @@ class InMemoryPipeline(DatasetPipeline):
         assert( self.features.shape[0] == self.labels.shape[0] )
         dimension = self.features.shape[0]
 
-        self.features_placeholder = tf.placeholder(self.features.dtype, self.features.shape)
-        self.labels_placeholder = tf.placeholder(self.labels.dtype, self.labels.shape)
+        self.features_placeholder = tf.placeholder(dds_basetype, self.features.shape)
+        self.labels_placeholder = tf.placeholder(dds_basetype, self.labels.shape)
 
         self.dataset = tf.data.Dataset.from_tensor_slices((self.features_placeholder, self.labels_placeholder))
 

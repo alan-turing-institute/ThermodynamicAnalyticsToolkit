@@ -3,6 +3,8 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.python.ops import control_flow_ops
 
+from DataDrivenSampler.models.basetype import dds_basetype
+
 class neuralnet_parameters:
     """ This class wraps methods to get all parameters of a neural network, i.e.
     weights and biases, as a single long vector. And also, the other way round to
@@ -77,7 +79,7 @@ class neuralnet_parameters:
         weights_placeholder_list = []
         for tensor in _list_of_tensors:
             weights_placeholder_list.append(
-                tf.placeholder(shape=tensor.get_shape(), dtype=tf.float64)
+                tf.placeholder(shape=tensor.get_shape(), dtype=dds_basetype)
             )
             logging.debug("Weight: " + str(tensor))
             logging.debug("Placeholder: " + str(weights_placeholder_list[-1]))

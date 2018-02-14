@@ -3,6 +3,7 @@ from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import state_ops
 import tensorflow as tf
 
+from DataDrivenSampler.models.basetype import dds_basetype
 from DataDrivenSampler.samplers.GLAFirstOrderMomentumSampler import GLAFirstOrderMomentumSampler
 
 
@@ -206,18 +207,18 @@ class BAOABSampler(GLAFirstOrderMomentumSampler):
         # 1/2 * p^{n}^t * p^{n}
         momentum_sq = 0.5 * tf.reduce_sum(tf.multiply(momentum_half_step_t, momentum_half_step_t))
         with tf.variable_scope("accumulate", reuse=True):
-            kinetic_energy = tf.get_variable("kinetic", dtype=tf.float64)
+            kinetic_energy = tf.get_variable("kinetic", dtype=dds_basetype)
             kinetic_energy_t = tf.assign_add(kinetic_energy, momentum_sq)
 
         with tf.variable_scope("accumulate", reuse=True):
-            gradient_global = tf.get_variable("gradients", dtype=tf.float64)
+            gradient_global = tf.get_variable("gradients", dtype=dds_basetype)
             gradient_global_t = tf.assign_add(gradient_global, tf.reduce_sum(tf.multiply(scaled_gradient, scaled_gradient)))
             # configurational temperature
-            virial_global = tf.get_variable("virials", dtype=tf.float64)
+            virial_global = tf.get_variable("virials", dtype=dds_basetype)
             virial_global_t = tf.assign_add(virial_global, tf.reduce_sum(tf.multiply(grad, var)))
 
         with tf.variable_scope("accumulate", reuse=True):
-            momentum_global = tf.get_variable("momenta", dtype=tf.float64)
+            momentum_global = tf.get_variable("momenta", dtype=dds_basetype)
             momentum_global_t = tf.assign_add(momentum_global, tf.reduce_sum(tf.multiply(momentum_half_step_t, momentum_half_step_t)))
 
         # half_pn = B(pn, gn, h/2)
@@ -230,7 +231,7 @@ class BAOABSampler(GLAFirstOrderMomentumSampler):
         alpha_t = tf.exp(-friction_constant_t * step_width_t)
         scaled_noise = tf.sqrt((1.-tf.pow(alpha_t, 2))/inverse_temperature_t) * random_noise_t
         with tf.variable_scope("accumulate", reuse=True):
-            noise_global = tf.get_variable("noise", dtype=tf.float64)
+            noise_global = tf.get_variable("noise", dtype=dds_basetype)
             noise_global_t = tf.assign_add(noise_global, tf.pow(alpha_t, -2)*tf.reduce_sum(tf.multiply(scaled_noise, scaled_noise)))
         momentum_noise_step_t = alpha_t * momentum_full_step_t + scaled_noise
 

@@ -2,6 +2,7 @@ import logging
 import numpy as np
 import tensorflow as tf
 
+from DataDrivenSampler.models.basetype import dds_basetype
 from DataDrivenSampler.samplers.BAOAB import BAOABSampler
 from DataDrivenSampler.samplers.GLAFirstOrderMomentumSampler import GLAFirstOrderMomentumSampler
 from DataDrivenSampler.samplers.GLASecondOrderMomentumSampler import GLASecondOrderMomentumSampler
@@ -158,7 +159,7 @@ class NeuralNetwork(object):
         :param output_dimension: number of output nodes
         :return: reference to created output layer
         """
-        y_ = tf.placeholder(tf.float64, [None, output_dimension], name='y-input')
+        y_ = tf.placeholder(dds_basetype, [None, output_dimension], name='y-input')
         logging.debug("y_ is "+str(y_.get_shape()))
         self.placeholder_nodes['y_'] = y_
         return y_
@@ -182,7 +183,7 @@ class NeuralNetwork(object):
                 correct_prediction = tf.equal(tf.sign(y), tf.sign(y_))
                 self.summary_nodes['correct_prediction'] = correct_prediction
             with tf.name_scope('accuracy'):
-                accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float64))
+                accuracy = tf.reduce_mean(tf.cast(correct_prediction, dds_basetype))
                 self.summary_nodes['accuracy'] = accuracy
         tf.summary.scalar('accuracy', accuracy)
 
@@ -206,7 +207,7 @@ class NeuralNetwork(object):
         with tf.name_scope('sample'):
             # DON'T add placeholders only sometimes, e.g. when only a specific sampler
             # requires it. Always add them and only sometimes use them!
-            step_width = tf.placeholder(tf.float64, name="step_width")
+            step_width = tf.placeholder(dds_basetype, name="step_width")
             tf.summary.scalar('step_width', step_width)
             self.placeholder_nodes['step_width'] = step_width
 
@@ -218,11 +219,11 @@ class NeuralNetwork(object):
             tf.summary.scalar('current_step', current_step)
             self.placeholder_nodes['current_step'] = current_step
 
-            inverse_temperature = tf.placeholder(tf.float64, name="inverse_temperature")
+            inverse_temperature = tf.placeholder(dds_basetype, name="inverse_temperature")
             tf.summary.scalar('inverse_temperature', inverse_temperature)
             self.placeholder_nodes['inverse_temperature'] = inverse_temperature
 
-            friction_constant = tf.placeholder(tf.float64, name="friction_constant")
+            friction_constant = tf.placeholder(dds_basetype, name="friction_constant")
             tf.summary.scalar('friction_constant', friction_constant)
             self.placeholder_nodes['friction_constant'] = friction_constant
 
@@ -269,7 +270,7 @@ class NeuralNetwork(object):
         with tf.name_scope('train'):
             # DON'T add placeholders only sometimes, e.g. when only a specific optimizer
             # requires it. Always add them and only sometimes use them!
-            step_width = tf.placeholder(tf.float64, name="learning_rate")
+            step_width = tf.placeholder(dds_basetype, name="learning_rate")
             tf.summary.scalar('learning_rate', step_width)
             self.placeholder_nodes['learning_rate'] = step_width
 
@@ -394,7 +395,7 @@ class NeuralNetwork(object):
 
         :return: reference to created node
         """
-        keep_prob = tf.placeholder(tf.float64, name="keep_probability")
+        keep_prob = tf.placeholder(dds_basetype, name="keep_probability")
         self.placeholder_nodes['keep_prob'] = keep_prob
         with tf.name_scope('dropout'):
             tf.summary.scalar('dropout_keep_probability', keep_prob)
@@ -432,8 +433,8 @@ class NeuralNetwork(object):
 
         :param shape: shape of the weight tensor to create
         """
-        initial = tf.random_uniform(shape, minval=-0.5, maxval=0.5, seed=seed, dtype=tf.float64)
-        return tf.Variable(initial, dtype=tf.float64)
+        initial = tf.random_uniform(shape, minval=-0.5, maxval=0.5, seed=seed, dtype=dds_basetype)
+        return tf.Variable(initial, dtype=dds_basetype)
 
     @staticmethod
     def bias_variable(shape):
@@ -441,8 +442,8 @@ class NeuralNetwork(object):
 
         :param shape: shape of the weight tensor to create
         """
-        initial = tf.constant(0.1, shape=shape, dtype=tf.float64)
-        return tf.Variable(initial, dtype=tf.float64)
+        initial = tf.constant(0.1, shape=shape, dtype=dds_basetype)
+        return tf.Variable(initial, dtype=dds_basetype)
 
     @staticmethod
     def variable_summaries(var):
