@@ -1335,9 +1335,108 @@ sys.path.insert(1,"&lt;path_to_TATi&gt;/lib/python3.5/site-packages/")</programl
     <para>still empty</para>
   </section>
 </chapter>
-  <chapter>
-    <title>Acknowledgements</title>
-    <para>Thanks to all users of the code!</para>
-  </chapter>
 
+<chapter>
+  <title>Tensorflow Flaws</title>
+  <para>It may be thought a little too much to dedicate a whole chapter to the
+  potential flaws in a framework that forms the basis of this software. 
+  However, this particular framework has given me so much hardship and failed
+  in such unexpected ways that I have to make a list.</para>
+  <para>Note that this list is up-to-date with respect to the tests employed in
+  the code and is currently focused at tensorflow version 1.4</para>
+  <para>Most of issues simply made it hard to have reproducible runs which
+  made it diffult to maintain my testsuite. Moreover, most of them are made
+  on purpose for the sake of speed over deterministic behavior. This makes
+  me in turn really wonder whether the tensorflow guys actually have a 
+  testsuite (or whether it justs consists of unit tests).</para>
+  <itemizedlist>
+    <listitem>
+      <para>Non-deterministic <command>reduce_sum</command></para>
+      <para>See the 
+      <ulink url="https://github.com/tensorflow/tensorflow/issues/3103">issue</ulink>
+      at Github. Non-deterministic is obviously faster than deterministic, so
+      that's what they are going for. Sadly, no determinstic alternative for
+      calculating norms of 1-dimensional tensors or scalar products is offered.
+      This is very hurtful for reproducibility. The current workaround is to set
+      <command>inter_op_thread</command> to one, eliminating any 
+      use of multiple cores.</para>
+    </listitem>
+    <listitem>
+      <para><command>tf.set_global_seed</command> not useful</para>
+      <para>This is working as intended: it sets the global seed in such a way
+      that all operations requiring randomness derive their seed in a 
+      deterministic fashion from it. And this is valid as long as it is 
+      <emphasis>exactly</emphasis> the same graph. If just a single node is
+      added that does not even need to be relevant for the operation, all 
+      seeds will change because the derivation of seeds probably depends
+      on some random order of nodes and not on the name of the node or
+      any other unique property.</para>
+    </listitem>
+    <listitem>
+      <para><command>tf.float64</command> is flawed</para>
+      <para>I encountered issues with precision when ascertaining theoretical
+      properties of the samplers. One remedy I though might solve the issue
+      was to switch from tf.float32 to tf.float64, i.e. from 1e-8 to 1e-18
+      internal floating point precision.</para>
+      <para>What I found was that suddenly I could not recover the theoretical
+      properties any more. Even simple sampling (i.e. central limit theorem and
+      expected convergence rates of (1/sqrt(n)) would not bring up slopes of
+      -0.5 as expected in log-log plots but also -0.4.</para>
+      <para>I went to great length to check that all values are tf.float64. 
+      If I had forgotten one, either the internal type checker would
+      admonish it, or the precision should just be the one I had with 
+      tf.float32. However, the quality of the values had changed. My only 
+      guess is that there must be some weird bug hidden deep in the C parts of 
+      the tensorflow code.</para>
+    </listitem>
+    <listitem>
+      <para>Parsing from CSV file despite caching tenfold slower</para>
+      <para>With tensorflow 1.4 the Dataset module arrived (no longer being
+      "contrib") and I happily switched to this as means of constructing my
+      input pipeline. So far, I had just been looking at small test datasets 
+      which fit in memory without issues. As the datasets were so small, I did
+      not expect any much slowing down of my code switching to parsing CSV 
+      files and feeding them.</para>
+      <para>However, both the old "queues" input pipeline and the new "Dataset"
+      pipeline (the latter even with caches) experienced a tenfold decrease of
+      runtime with respect to in/memory.</para>
+      <para>I must admit though that the Dataset module at least made it
+      possible to let the user decide between in-memory storing and file
+      parsing.</para>
+    </listitem>
+    <listitem>
+      <para><command>tf.if</command> conditional working in funny way</para>
+    <para>For the Hamiltonian Monte Carlo sampler and "if" block is required
+    inside the gradient evaluation that decides on whether the current short
+    trajectory run using Hamiltonian Dynamics is accepted or rejected. When
+    I tried make this work, I failed utterly, until I hit this 
+    <ulink url="https://stackoverflow.com/a/37064128">answer</ulink>
+    on stackoverflow. In a comment even one from the tensorflow team admits
+    that he finds this behavior confusing.</para>
+    </listitem>
+    <listitem>
+      <para>Shuffling (in queues) shuffles over all repeated datasets causing
+      duplicate items.</para>
+      <para>I gues this is for speed reasons as well but it is really a pain 
+      in the arse. I guess the reason is a reshuffled dataset in every epoch,
+      hence the reshuffle over all repeated sets instead of reshuffling at the
+      start of the epoch. Probably is simpler to implement with really large
+      datasets in multiple files.</para>
+      <para>However, for small datasets suddenly your gradients change (not
+      using mini-batches) because on element is missing as another is in the
+      set twice. Again, bad for reproducibility.</para>
+    </listitem>
+    <listitem>
+      <para><command>tf.concat</command> dropping variable character</para>
+      <para>This is more of a nuisance. However, you cannot simply concatenate
+      four variable tensors and then set them all using a single placeholder of
+      the right dimension as the "variable" character is lost in the 
+      concatenation. It can only be read.</para>
+    </listitem>
+  </itemizedlist>
+</chapter>
+<chapter>
+  <title>Acknowledgements</title>
+  <para>Thanks to all users of the code!</para>
+</chapter>
 </book>
