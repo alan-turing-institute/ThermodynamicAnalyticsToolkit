@@ -93,7 +93,7 @@ class GLAFirstOrderMomentumSampler(SGLDSampler):
         prior_force = step_width_t * (ub_repell + lb_repell)
 
         # make sure virial and gradients are evaluated before we update variables
-        with tf.control_dependencies([virial_global_t, gradient_global_t, kinetic_energy_t]):
+        with tf.control_dependencies([virial_global_t, gradient_global_t]):
             # q=^{n+1} = q^n + M^{-1} p_{n+1} ∆t
             var_update = state_ops.assign_add(var, step_width_t * momentum_full_step_t - prior_force)
 
@@ -105,7 +105,8 @@ class GLAFirstOrderMomentumSampler(SGLDSampler):
             noise_global_t = tf.assign_add(noise_global, tf.pow(alpha_t, -2) * tf.reduce_sum(tf.multiply(scaled_noise, scaled_noise)))
 
         # p^{n+1} = \alpha_{\Delta t} p^{n+1} + \sqrt{ \frac{1-\alpha^2_{\Delta t}}{\beta} M } G^n
-        momentum_t = momentum.assign(alpha_t * momentum_full_step_t + scaled_noise)
+        with tf.control_dependencies([kinetic_energy_t]):
+            momentum_t = momentum.assign(alpha_t * momentum_full_step_t + scaled_noise)
         with tf.variable_scope("accumulate", reuse=True):
             momentum_global = tf.get_variable("momenta", dtype=dds_basetype)
             momentum_global_t = tf.assign_add(momentum_global, tf.reduce_sum(tf.multiply(momentum_t, momentum_t)))

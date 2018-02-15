@@ -80,14 +80,15 @@ class GLASecondOrderMomentumSampler(GLAFirstOrderMomentumSampler):
             kinetic_energy_t = tf.assign_add(kinetic_energy, momentum_sq)
 
         # p^{n+1} = p^{n+1/2} − \nabla V (q^{n+1} ) \Delta t/2
-        momentum_t = momentum.assign(momentum_noise_step_t - 0.5 * scaled_gradient)
+        with tf.control_dependencies([kinetic_energy_t]):
+            momentum_t = momentum.assign(momentum_noise_step_t - 0.5 * scaled_gradient)
 
         # prior force act directly on var
         ub_repell, lb_repell = self._apply_prior(var)
         prior_force = step_width_t * (ub_repell + lb_repell)
 
         # make sure virial and gradients are evaluated before we update variables
-        with tf.control_dependencies([virial_global_t, gradient_global_t, kinetic_energy_t]):
+        with tf.control_dependencies([virial_global_t, gradient_global_t]):
             # q=^{n+1} = q^n + M^{-1} p_{n+1/2} ∆t
             var_update = state_ops.assign_add(var, step_width_t * momentum_t - prior_force)
 

@@ -243,12 +243,13 @@ class BAOABSampler(GLAFirstOrderMomentumSampler):
         prior_force = step_width_t * (ub_repell + lb_repell)
 
         # make sure virial and gradients are evaluated before we update variables
-        with tf.control_dependencies([virial_global_t, gradient_global_t, kinetic_energy_t]):
+        with tf.control_dependencies([virial_global_t, gradient_global_t]):
             # assign parameters
             var_update = state_ops.assign(var, position_full_step_t - prior_force)
 
         # assign moment to slot
-        momentum_t = momentum.assign(momentum_noise_step_t)
+        with tf.control_dependencies([kinetic_energy_t]):
+            momentum_t = momentum.assign(momentum_noise_step_t)
 
         # note: these are evaluated in any order, use control_dependencies if required
         return control_flow_ops.group(*[gradient_global_t, virial_global_t,
