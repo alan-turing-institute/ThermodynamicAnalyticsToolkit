@@ -224,7 +224,7 @@ def main(_):
             next(csvreader) # skip header
             row_length = weights_vals.size+biases_vals.size+2 # initially, there is step and loss
             for row in csvreader:
-                print("length of row is "+str(len(row))+" and expected length is "+str(row_length))
+                #print("length of row is "+str(len(row))+" and expected length is "+str(row_length))
                 assert( len(row) >= row_length)
                 step = row[0]
                 loss_check = row[0]
@@ -232,6 +232,8 @@ def main(_):
                 biases_vals[:biases_vals.size] = row[(weights_vals.size+2):row_length]
                 loss_eval = evaluate_loss()
                 #assert( math.fabs( loss_eval - float(loss_check) ) < 1e-6 )
+
+                current_step += 1
 
     network_model.finish()
 
