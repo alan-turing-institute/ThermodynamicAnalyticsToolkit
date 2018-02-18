@@ -170,7 +170,7 @@ def add_model_options_to_parser(parser):
     parser.add_argument('--in_memory_pipeline', type=str2bool, default=True,
         help='Whether to use an in-memory input pipeline (for small datasets) or the tf.Dataset module.')
     parser.add_argument('--input_columns', type=str, nargs='+', default="",
-        help='Pick a list of the following: (1) x1, (2) x2, (3) x1^2, (4) x2^2, (5) sin(x1), (6) sin(x2).')
+        help='Pick a list of the following: x1, x1^2, sin(x1), cos(x1) or combinations with x1 representing the input dimension, e.g. x1 x2^2 sin(x3).')
     parser.add_argument('--loss', type=str, default="mean_squared",
         help='Set the loss to be measured during sampling, e.g. mean_squared, log_loss, ...')
     parser.add_argument('--output_activation', type=str, default="tanh",
@@ -399,15 +399,19 @@ def create_input_layer(input_dimension, input_list):
         picked_list = []
         for token in input_list:
             # get the argument
+            logging.debug("token is " + str(token))
             x_index = token.find('x')
             if x_index != -1:
                 arg_name = None
-                for i in range(x_index, len(token)):
+                for i in range(x_index+1, len(token)):
                     if (token[i] < "0") or (token[i] > "9"):
                         arg_name = token[x_index:i]
                         break
-                assert( arg_name is not None )
+                if arg_name is None:
+                    arg_name = token[x_index:]
+                logging.debug("arg_name is "+str(arg_name))
                 arg = xinput[:, (int(arg_name[1:])-1)]
+                logging.debug("arg is "+str(arg))
                 if "sin" in token:
                     picked_list.append(tf.sin(arg))
                 elif "cos" in token:
@@ -418,7 +422,10 @@ def create_input_layer(input_dimension, input_list):
                 else:
                     picked_list.append(arg)
             else:
-                picked_list.append(xinput[:, (int(token) - 1)])
+                arg = xinput[:, (int(token) - 1)]
+                logging.debug("arg is "+str(arg))
+                picked_list.append(arg)
+        logging.debug("picked_list is "+str(picked_list))
         # if no specific input columns are desired, take all
         if len(input_list) == 0:
             x = tf.identity(xinput)
