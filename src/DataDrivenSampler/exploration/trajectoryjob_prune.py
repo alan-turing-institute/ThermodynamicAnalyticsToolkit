@@ -56,7 +56,7 @@ class TrajectoryJob_prune(TrajectoryJob):
             keep_indices = []
             drop_indices = []
             for row in range(len(run_lines.index)):
-                new_energy = run_lines.loc[row, ['kinetic_energy']]
+                new_energy = run_lines.loc[run_lines.index[row], ['kinetic_energy']]
                 if metropolis(average_kinetic_energy, float(np.asarray(new_energy)[0])):
                     keep_indices.append(row)
                 else:
@@ -66,7 +66,7 @@ class TrajectoryJob_prune(TrajectoryJob):
 
             keep_indices_global.extend([i+_data.index_at_leg[leg_nr] for i in keep_indices])
 
-        logging.debug("Keeping "+str(len(keep_indices_global))+" of " \
+        logging.info("Keeping "+str(len(keep_indices_global))+" of " \
             +str(len(_data.parameters))+" indices in total.")
         _data.parameters[:] = [_data.parameters[i] for i in keep_indices_global]
         _data.losses[:] = [_data.losses[i] for i in keep_indices_global]
