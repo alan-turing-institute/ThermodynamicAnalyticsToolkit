@@ -46,31 +46,32 @@ class TrajectoryJob_prune(TrajectoryJob):
         # set a seed such that prunes occur reproducibly
         np.random.seed(self.network_model.FLAGS.seed+_data.get_id())
 
-        # for every point on the trajectory, roll a die and evaluate criterion
+        # prune last leg
         run_lines_per_leg = _data.run_lines
         trajectory_lines_per_leg = _data.trajectory_lines
-        keep_indices_global = []
-        for leg_nr in range(len(run_lines_per_leg)):
-            run_lines = run_lines_per_leg[leg_nr]
-            trajectory_lines = trajectory_lines_per_leg[leg_nr]
-            keep_indices = []
-            drop_indices = []
-            for row in range(len(run_lines.index)):
-                new_energy = run_lines.loc[run_lines.index[row], ['kinetic_energy']]
-                if metropolis(average_kinetic_energy, float(np.asarray(new_energy)[0])):
-                    keep_indices.append(row)
-                else:
-                    drop_indices.append(row)
-            run_lines_per_leg[leg_nr] = run_lines.drop(run_lines.index[ drop_indices ])
-            trajectory_lines_per_leg[leg_nr] = trajectory_lines.drop(trajectory_lines.index[ drop_indices ])
+        leg_nr = -1
+        run_lines = run_lines_per_leg[leg_nr]
+        trajectory_lines = trajectory_lines_per_leg[leg_nr]
+        keep_indices = []
+        drop_indices = []
+        logging.debug("Pruning of "+str(len(run_lines.index))+" steps.")
+        for row in range(len(run_lines.index)):
+            new_energy = run_lines.loc[run_lines.index[row], ['kinetic_energy']]
+            if metropolis(average_kinetic_energy, float(np.asarray(new_energy)[0])):
+                keep_indices.append(row)
+            else:
+                drop_indices.append(row)
+        run_lines_per_leg[leg_nr] = run_lines.drop(run_lines.index[ drop_indices ])
+        trajectory_lines_per_leg[leg_nr] = trajectory_lines.drop(trajectory_lines.index[ drop_indices ])
 
-            keep_indices_global.extend([i+_data.index_at_leg[leg_nr] for i in keep_indices])
+        next_leg_first_index = _data.index_at_leg[leg_nr]
+        keep_indices_global = [i+next_leg_first_index for i in keep_indices]
 
         logging.info("Keeping "+str(len(keep_indices_global))+" of " \
             +str(len(_data.parameters))+" indices in total.")
-        _data.parameters[:] = [_data.parameters[i] for i in keep_indices_global]
-        _data.losses[:] = [_data.losses[i] for i in keep_indices_global]
-        _data.gradients[:] = [_data.gradients[i] for i in keep_indices_global]
+        _data.parameters[next_leg_first_index:] = [_data.parameters[i] for i in keep_indices_global]
+        _data.losses[next_leg_first_index:] = [_data.losses[i] for i in keep_indices_global]
+        _data.gradients[next_leg_first_index:] = [_data.gradients[i] for i in keep_indices_global]
         assert( _data.check_size_consistency() )
 
         _data.is_pruned = True
