@@ -86,8 +86,8 @@ def main(_):
     loss = network_model.nn.get_list_of_nodes(["loss"])
     sess = network_model.sess
 
-    nn_weights = neuralnet_parameters(tf.get_collection(tf.GraphKeys.WEIGHTS))
-    nn_biases = neuralnet_parameters(tf.get_collection(tf.GraphKeys.BIASES))
+    nn_weights = network_model.weights
+    nn_biases = network_model.biases
 
     weights_vals = nn_weights.create_flat_vector()
     biases_vals = nn_biases.create_flat_vector()
@@ -160,10 +160,16 @@ def main(_):
         biases_interval_end = float(FLAGS.interval_biases[1])
         biases_interval_length = biases_interval_end - biases_interval_start
 
-        weights_linspace = np.arange(0,FLAGS.samples_weights+1)*weights_interval_length/float(
-                FLAGS.samples_weights)+weights_interval_start
-        biases_linspace = np.arange(0,FLAGS.samples_biases+1)*biases_interval_length/float(
-                FLAGS.samples_biases)+biases_interval_start
+        if FLAGS.samples_weights > 0:
+            weights_linspace = np.arange(0,FLAGS.samples_weights+1)*weights_interval_length/float(
+                    FLAGS.samples_weights)+weights_interval_start
+        else:
+            weights_linspace =  np.arange(0,FLAGS.samples_weights+1)*weights_interval_length+weights_interval_start
+        if FLAGS.samples_biases > 0:
+            biases_linspace = np.arange(0,FLAGS.samples_biases+1)*biases_interval_length/float(
+                    FLAGS.samples_biases)+biases_interval_start
+        else:
+            biases_linspace = np.arange(0,FLAGS.samples_biases+1)*biases_interval_length+biases_interval_start
         weights_index_grid = np.zeros(weights_vals.size, dtype=int)
         weights_len_grid = FLAGS.samples_weights+1
         biases_index_grid = np.zeros(biases_vals.size, dtype=int)
