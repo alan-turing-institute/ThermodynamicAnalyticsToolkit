@@ -68,6 +68,9 @@ class model:
         # mark resource variables as to be created
         self.resources_created = None
 
+        # mark already fixes variables
+        self.fixed_variables = []
+
         # mark neuralnetwork, saver and session objects as to be created
         self.nn = None
         self.saver = None
@@ -331,16 +334,17 @@ class model:
         else:
             loss = self.nn.get_list_of_nodes(["loss"])[0]
 
+        if self.FLAGS.fix_parameters is not None:
+            names, values = self.split_parameters_as_names_values(self.FLAGS.fix_parameters)
+            fixed_variables = self.fix_parameters(names)
+            logging.debug("Excluded the following degrees of freedom: "+str(fixed_variables))
+
         # set number of degrees of freedom
         self.number_of_parameters = \
             neuralnet_parameters.get_total_dof_from_list(
                 tf.get_collection(tf.GraphKeys.WEIGHTS)) \
             + neuralnet_parameters.get_total_dof_from_list(
                 tf.get_collection(tf.GraphKeys.BIASES))
-
-        if self.FLAGS.fix_parameters is not None:
-            names, values = self.split_parameters_as_names_values(self.FLAGS.fix_parameters)
-            fixed_variables = self.fix_parameters(names)
 
         # setup priors
         prior = {}
@@ -390,6 +394,7 @@ class model:
         self.input_pipeline.reset(self.sess)
 
         if self.FLAGS.fix_parameters is not None:
+            logging.debug("Assigning the following values to fixed degrees of freedom: "+str(values))
             self.assign_parameters(fixed_variables, values)
 
         if filename is not None:
@@ -979,8 +984,10 @@ class model:
                 del other_collection[i]
                 break
         logging.info("Comparing %s and %s" % (trainable_variable, variable))
-        assert(trainable_variable is variable)
-        return variable
+        if trainable_variable is variable:
+            return variable
+        else:
+            return None
 
     @staticmethod
     def _assign_parameter(_var, _value):
@@ -1000,7 +1007,23 @@ class model:
         :param names: list of names
         :return: list of tensorflow variables that are fixed
         """
-        return [self._fix_parameter(name) for name in names]
+        retlist = []
+        for name in names:
+            # look for tensor in already fixed variables
+            variable = None
+            for var in self.fixed_variables:
+                if var.name == name:
+                    variable = var
+                    break
+            # if not found, fix. Otherwise, simply add
+            if variable is None:
+                retvariable = self._fix_parameter(name)
+                if retvariable is not None:
+                    self.fixed_variables.append(retvariable)
+                    retlist.append(retvariable)
+            else:
+                retlist.append(variable)
+        return retlist
 
     def assign_parameters(self, variables, values):
         """ Allows to assign multiple parameters at once.
@@ -1011,10 +1034,9 @@ class model:
         assert( len(variables) == len(values) )
         assigns=[]
         for i in range(len(variables)):
-            value_t, assign_t = self._assign_parameter(variables[i],
-                                                       np.reshape(values[i],
-                                                           newshape=variables[i].shape,
-                                                           ))
+            value_t, assign_t = self._assign_parameter(
+                variables[i],
+                np.reshape(values[i], newshape=variables[i].shape))
             assigns.append(assign_t)
         self.sess.run(assigns)
 
