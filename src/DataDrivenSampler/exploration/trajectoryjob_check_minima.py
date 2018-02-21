@@ -12,7 +12,7 @@ class TrajectoryJob_check_minima(TrajectoryJob):
     '''
 
     EQUILIBRATION_STEPS = 1000 # number of steps for minimum search
-    LEARNING_RATE = 1 # use larger learning rate as we are close to minimum
+    LEARNING_RATE = 1e-1 # use larger learning rate as we are close to minimum
     MAX_CANDIDATES = 3 # dont check more than this number of candidates
     GRADIENT_THRESHOLD = 1e-5 # threshold for accepting minimum
 
