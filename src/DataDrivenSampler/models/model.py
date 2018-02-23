@@ -1050,6 +1050,8 @@ class model:
         names=[]
         values=[]
         for a in _string.split(";"):
+            if len(a) <= 1:
+                continue
             b=a.split("=", 2)
             names.append(b[0])
             values.append(np.fromstring(b[1], dtype=float, sep=","))
