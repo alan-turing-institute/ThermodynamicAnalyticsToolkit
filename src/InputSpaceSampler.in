@@ -134,10 +134,10 @@ def main(_):
     y = network_model.nn.get_list_of_nodes(["y"])
     sess = network_model.sess
 
-    nn_input = neuralnet_parameters(tf.get_collection(tf.GraphKeys.WEIGHTS))
-    nn_biases = neuralnet_parameters(tf.get_collection(tf.GraphKeys.BIASES))
+    nn_weights = network_model.weights
+    nn_biases = network_model.biases
 
-    weights_vals = nn_input.create_flat_vector()
+    weights_vals = nn_weights.create_flat_vector()
     biases_vals = nn_biases.create_flat_vector()
 
     if FLAGS.csv_file is not None:
@@ -148,11 +148,11 @@ def main(_):
         csv_writer, csv_file = setup_csv_file(FLAGS.csv_file, header)
 
     def assign_parameters():
-        nn_input.assign(sess, weights_vals)
+        nn_weights.assign(sess, weights_vals)
         nn_biases.assign(sess, biases_vals)
 
         # get the input and biases to check against what we set
-        weights_eval = nn_input.evaluate(sess)
+        weights_eval = nn_weights.evaluate(sess)
         biases_eval = nn_biases.evaluate(sess)
 
         print("Evaluating at weights "+str(weights_eval[0:10])+", biases "+str(biases_eval[0:10]))
