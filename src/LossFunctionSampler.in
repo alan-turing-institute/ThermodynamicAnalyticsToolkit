@@ -60,29 +60,64 @@ def parse_parameters():
         help='Gives version information')
     return parser.parse_known_args()
 
+
+def countStringInCollection(_string, _collection, _sess):
+    count = 0
+    for var in _collection:
+        if _string in var.name:
+            size = _sess.run(tf.size(var))
+            print("Comparing "+_string+" with "+var.name+" of size "+str(size))
+            count += size
+    return count
+
+
+def getDegreesFromLayerName(name, _sess):
+    return countStringInCollection(name, tf.get_collection(tf.GraphKeys.WEIGHTS), _sess), \
+        countStringInCollection(name, tf.get_collection(tf.GraphKeys.BIASES), _sess),
+
+
 def main(_):
+    network_model = model(FLAGS)
+    network_model.init_network(FLAGS.restore_model, setup=None)
+
     # get trajectory length or number of sampled points
     if FLAGS.trajectory_file is not None:
         FLAGS.max_steps = file_length(FLAGS.trajectory_file)-1
     else:
-        hidden_dimension = get_list_from_string(FLAGS.hidden_dimension)
-        full_dimensions = [2]+hidden_dimension+[1]
-        # sum up weight nodes
-        FLAGS.max_steps = sum([full_dimensions[i]*full_dimensions[i+1]
-                                for i in range(len(full_dimensions)-1)])
-        FLAGS.max_steps = math.pow(FLAGS.samples_weights+1, FLAGS.max_steps)
+        hidden_num = 0
+        do_stop = False
+        weight_degrees = 0
+        bias_degrees = 0
+        while True:
+            hidden_num += 1
+            layer_name = "layer"+str(hidden_num)
 
-        # sum up bias nodes
-        FLAGS.max_steps *= math.pow(FLAGS.samples_biases+1, (sum(hidden_dimension)+1))
+            # get all variables of the current layer
+            weights_dim, bias_dim = getDegreesFromLayerName(layer_name, network_model.sess)
+            print(layer_name+" has "+str(weights_dim)+" weights, and "+str(bias_dim)+" biases.")
+            weight_degrees += weights_dim
+            bias_degrees += bias_dim
+
+            # stop if none were found
+            if weights_dim == 0:
+                layer_name = "output"
+                weights_dim, bias_dim = getDegreesFromLayerName(layer_name, network_model.sess)
+                print(layer_name+" has "+str(weights_dim)+" weights, and "+str(bias_dim)+" biases.")
+                weight_degrees += weights_dim
+                bias_degrees += bias_dim
+                break
+            else:
+                list_dim = weights_dim
+
+        FLAGS.max_steps = math.pow(FLAGS.samples_weights+1, weight_degrees)
+        FLAGS.max_steps *= math.pow(FLAGS.samples_biases+1, bias_degrees)
         FLAGS.max_steps = int(FLAGS.max_steps)
     print("There are "+str(FLAGS.max_steps)+" points to sample.")
+    network_model.reset_parameters(FLAGS)
 
-    network_model = model(FLAGS)
-
+    network_model.init_input_pipeline()
     print(FLAGS)
 
-    network_model.init_network(FLAGS.restore_model, setup=None)
-    network_model.init_input_pipeline()
 
     loss = network_model.nn.get_list_of_nodes(["loss"])
     sess = network_model.sess
