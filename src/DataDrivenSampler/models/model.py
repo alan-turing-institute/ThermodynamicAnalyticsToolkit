@@ -59,8 +59,6 @@ class model:
 
             self.number_of_parameters = 0 # number of biases and weights
 
-            self.batch_next = self.create_input_pipeline(FLAGS)
-
         # mark input layer as to be created
         self.xinput = None
         self.x = None
@@ -87,6 +85,10 @@ class model:
         self.averages_writer = None
         self.run_writer = None
         self.trajectory_writer = None
+
+    def init_input_pipeline(self):
+        self.batch_next = self.create_input_pipeline(self.FLAGS)
+        self.input_pipeline.reset(self.sess)
 
     @staticmethod
     def _get_dimension_from_tfrecord(filenames):
@@ -391,7 +393,7 @@ class model:
         self.nn.init_graph(self.sess)
 
         # initialize dataset
-        self.input_pipeline.reset(self.sess)
+        #self.input_pipeline.reset(self.sess)
 
         if self.FLAGS.fix_parameters is not None:
             logging.debug("Assigning the following values to fixed degrees of freedom: "+str(values))

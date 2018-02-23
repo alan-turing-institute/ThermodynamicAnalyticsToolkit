@@ -50,6 +50,7 @@ def main(_):
     time_init_network_zero = time.process_time()
 
     network_model.init_network(FLAGS.restore_model, setup="train")
+    network_model.init_input_pipeline()
 
     rt.set_init_network_time(time.process_time() - time_init_network_zero)
 

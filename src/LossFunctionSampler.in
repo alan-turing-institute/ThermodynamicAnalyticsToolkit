@@ -82,6 +82,7 @@ def main(_):
     print(FLAGS)
 
     network_model.init_network(FLAGS.restore_model, setup=None)
+    network_model.init_input_pipeline()
 
     loss = network_model.nn.get_list_of_nodes(["loss"])
     sess = network_model.sess

@@ -20,6 +20,7 @@ nn = model(FLAGS)
 # init both sample and train right away
 nn.init_network(None, setup="sample")
 nn.init_network(None, setup="train")
+nn.init_input_pipeline()
 
 explorer = Explorer(max_legs=5, number_pruning=0)
 

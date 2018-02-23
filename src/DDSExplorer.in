@@ -71,6 +71,7 @@ def main(_):
     # prepare for both sampling and training
     network_model.init_network(FLAGS.restore_model, setup="sample")
     network_model.init_network(FLAGS.restore_model, setup="train")
+    network_model.init_input_pipeline()
     rt.set_init_network_time(time.process_time() - time_init_network_zero)
 
     # prevent writing of output files during leg sampling
