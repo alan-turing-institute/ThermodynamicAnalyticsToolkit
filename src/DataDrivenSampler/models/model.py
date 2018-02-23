@@ -974,7 +974,8 @@ class model:
         elif "bias" in _name:
             other_collection = tf.get_collection_ref(tf.GraphKeys.BIASES)
         else:
-            logging.info("Unknown parameter category, removing only from trainables.")
+            logging.warning("Unknown parameter category for "+str(_name) \
+                            +"), removing only from trainables.")
         for i in range(len(trainable_collection)):
             if trainable_collection[i].name == _name:
                 trainable_variable = trainable_collection[i]
