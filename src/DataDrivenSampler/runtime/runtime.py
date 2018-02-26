@@ -38,6 +38,11 @@ class runtime(object):
                     hidden_num_layers INTEGER,
                     hidden_min_nodes INTEGER,
                     hidden_max_nodes INTEGER,
+                    in_memory_pipeline INTEGER,
+                    input_dimension INTEGER,
+                    inter_ops_threads INTEGER,
+                    intra_ops_threads INTEGER,
+                    output_dimension INTEGER,
                     seed INTEGER,
                     step_width FLOAT,
                     init_time FLOAT,
@@ -50,8 +55,12 @@ class runtime(object):
                 # add values
                 add_values_format = """
                     INSERT INTO run_time
-                    (batch_size,dimension,hidden_num_layers,hidden_min_nodes,hidden_max_nodes,seed,step_width,init_time,train_time, overall_time)
-                    VALUES ({batch_size}, {dimension}, {hidden_num_layers}, {hidden_min_nodes}, {hidden_max_nodes}, {seed}, {step_width}, {init_time}, {train_time}, {overall_time});
+                    (batch_size,dimension,hidden_num_layers,hidden_min_nodes,hidden_max_nodes,in_memory_pipeline, \
+                    input_dimension,inter_ops_threads,intra_ops_threads,output_dimension,seed,step_width,init_time, \
+                    train_time, overall_time)
+                    VALUES ({batch_size}, {dimension}, {hidden_num_layers}, {hidden_min_nodes}, {hidden_max_nodes}, \
+                    {in_memory_pipeline}, {input_dimension}, {inter_ops_threads}, {intra_ops_threads}, \
+                    {output_dimension}, {seed}, {step_width}, {init_time}, {train_time}, {overall_time});
                 """
                 hidden_dimension = [int(i) for i in get_list_from_string(self.FLAGS.hidden_dimension)]
                 min_nodes = 0
@@ -59,12 +68,23 @@ class runtime(object):
                 if len(hidden_dimension) != 0:
                     min_nodes = min(hidden_dimension)
                     max_nodes = max(hidden_dimension)
+                inter_ops_threads = self.FLAGS.inter_ops_threads
+                if inter_ops_threads is None:
+                    inter_ops_threads = 0
+                intra_ops_threads = self.FLAGS.inter_ops_threads
+                if intra_ops_threads is None:
+                    intra_ops_threads = 0
                 add_values_command = add_values_format.format(
                     batch_size=self.FLAGS.batch_size,
                     dimension=self.FLAGS.dimension,
                     hidden_num_layers=len(hidden_dimension),
                     hidden_min_nodes=min_nodes,
                     hidden_max_nodes=max_nodes,
+                    in_memory_pipeline=int(self.FLAGS.in_memory_pipeline),
+                    input_dimension=self.FLAGS.input_dimension,
+                    inter_ops_threads=inter_ops_threads,
+                    intra_ops_threads=intra_ops_threads,
+                    output_dimension=self.FLAGS.output_dimension,
                     seed=self.FLAGS.seed,
                     step_width=self.FLAGS.step_width,
                     init_time=self.time_init_network,
