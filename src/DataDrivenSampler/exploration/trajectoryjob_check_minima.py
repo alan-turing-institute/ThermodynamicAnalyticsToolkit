@@ -45,12 +45,26 @@ class TrajectoryJob_check_minima(TrajectoryJob):
 
         # set parameters to ones from old leg (if exists)
         if len(_data.minimum_candidates) > self.MAX_CANDIDATES:
-            # pick MAX_CANDIDATES randomly.
-            candidates = np.random.choice(
-                _data.minimum_candidates,
-                size=self.MAX_CANDIDATES,
-                replace=False)
-            logging.info("Too many candidates, we look at these: "+str(candidates))
+            # sort the losses
+            loss_at_minima_candidates = [_data.losses[i] for i in _data.minimum_candidates]
+            minima_indices = sorted(range(len(loss_at_minima_candidates)), key=lambda k: loss_at_minima_candidates[k])
+            print(minima_indices)
+            assert( loss_at_minima_candidates[ minima_indices[0] ] <= loss_at_minima_candidates[ minima_indices[self.MAX_CANDIDATES] ] )
+            if abs(loss_at_minima_candidates[ minima_indices[0] ] - loss_at_minima_candidates[ minima_indices[self.MAX_CANDIDATES] ]) < 1e-10:
+                same_loss_index = 0
+                for i in range(1,len(minima_indices)):
+                    if abs(loss_at_minima_candidates[ minima_indices[0] ] - loss_at_minima_candidates[ minima_indices[i] ]) < 1e-10:
+                        same_loss_index = minima_indices[i]
+                print(same_loss_index)
+                # pick MAX_CANDIDATES randomly.
+                candidates = [_data.minimum_candidates[i] for i in np.random.choice(
+                    minima_indices[0:same_loss_index],
+                    size=self.MAX_CANDIDATES,
+                    replace=False)]
+                logging.info("Too many candidates with same lowest minima, we look randomly at these: "+str(candidates))
+            else:
+                candidates = [_data.minimum_candidates[i] for i in minima_indices[0:self.MAX_CANDIDATES]]
+                logging.info("Too many candidates, we look at ones with lowest minima: "+str(candidates))
         else:
             candidates = _data.minimum_candidates
         for i in range (len(candidates)):
