@@ -155,9 +155,9 @@ class Explorer(object):
                 use_reweighting=parameters.use_reweighting)
         except scipy.sparse.linalg.eigen.arpack.ArpackNoConvergence:
             logging.error(": Vectors were non-convergent.")
-            dmap_eigenvectors = np.zeros( (np.shape(parameters)[0], parameters.number_of_eigenvalues) )
+            dmap_eigenvectors = np.zeros( (np.shape(trajectory)[0], parameters.number_of_eigenvalues) )
             dmap_eigenvalues = np.zeros( (parameters.number_of_eigenvalues) )
-            dmap_kernel = np.zeros( (np.shape(parameters)[0], np.shape(trajectory)[0]) )
+            dmap_kernel = np.zeros( (np.shape(trajectory)[0], np.shape(trajectory)[0]) )
             # override landmarks to skip computation
             parameters.landmarks = 0
         logging.info("Global diffusion map eigenvalues: "+str(dmap_eigenvalues))
