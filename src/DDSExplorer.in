@@ -146,11 +146,12 @@ def main(_):
         minima_writer, minima_file = setup_csv_file(
             FLAGS.minima_file, header)
         for current_id in explorer.container.data.keys():
-            minima = explorer.container.data[current_id].local_minima
-            losses =  explorer.container.data[current_id].loss_at_minima
-            for row in range(len(minima)):
-                minima_line = [current_id, row, losses[row]]
-                minima_line.extend(np.asarray(minima[row]))
+            if explorer.container.data[current_id].type == "train":
+                step = explorer.container.data[current_id].steps[-1]
+                minima_parameters = explorer.container.data[current_id].parameters[-1]
+                loss =  explorer.container.data[current_id].losses[-1]
+                minima_line = [current_id, step, loss]
+                minima_line.extend(np.asarray(minima_parameters))
                 minima_writer.writerow(minima_line)
         minima_file.close()
 

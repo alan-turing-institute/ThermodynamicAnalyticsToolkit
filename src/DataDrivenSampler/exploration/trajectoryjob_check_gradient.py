@@ -27,9 +27,5 @@ class TrajectoryJob_check_gradient(TrajectoryJob):
         :param _object: FLAGS object that contains sampling parameters
         :return: updated data object
         """
-        # store away found minima
-        if _data.gradients[-1] > self.GRADIENT_THRESHOLD:
-            _data.local_minima.append(_data.parameters[-1])
-            _data.loss_at_minima.append(_data.losses[-1])
         # check whether last gradient is still larger than threshold
         return _data, (_data.gradients[-1] > self.GRADIENT_THRESHOLD) and self.continue_flag
