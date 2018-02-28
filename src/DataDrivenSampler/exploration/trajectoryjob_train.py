@@ -1,6 +1,6 @@
 import logging
 import numpy as np
-import tensorflow as tf
+from tensorflow.python.framework import errors_impl
 
 from DataDrivenSampler.exploration.trajectoryjob_sample import TrajectoryJob_sample
 
@@ -68,10 +68,15 @@ class TrajectoryJob_train(TrajectoryJob_sample):
 
         # run graph here
         self.network_model.reset_dataset()
-        run_info, trajectory, _ = self.network_model.train(
-            return_run_info=True, return_trajectories=True, return_averages=False)
+        try:
+            run_info, trajectory, _ = self.network_model.train(
+                return_run_info=True, return_trajectories=True, return_averages=False)
 
-        self._store_last_step_of_trajectory(_data, run_info, trajectory)
+            self._store_last_step_of_trajectory(_data, run_info, trajectory)
+
+        except errors_impl.InvalidArgumentError:
+            logging.error("The trajectory diverged, aborting.")
+            self.continue_flag = False
 
         # set FLAGS back to old values
         FLAGS.step_width = sampler_step_width
