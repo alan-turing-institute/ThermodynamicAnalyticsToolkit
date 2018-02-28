@@ -33,7 +33,7 @@ class Explorer(object):
         :param network_model: model of neural network with Session for sample and optimize jobs
         """
         for i in range(1,self.INITIAL_LEGS+1):
-            current_id = self.container.add_empty_data()
+            current_id = self.container.add_empty_data(type="sample")
             self.queue.add_sample_job(
                 data_id=current_id,
                 network_model=network_model,
@@ -65,7 +65,7 @@ class Explorer(object):
         for i in range(len(idx_corner)):
             logging.debug("Current corner point is (first and last five shown):" \
                           +str(parameters[idx_corner[i]][:5])+" ... "+str(parameters[idx_corner[i]][-5:]))
-            current_id = self.container.add_empty_data()
+            current_id = self.container.add_empty_data(type="sample")
             data_object = self.container.data[current_id]
             data_object.steps[:] = [steps[idx_corner[i]]]
             data_object.parameters[:] = [parameters[idx_corner[i]]]
@@ -81,7 +81,7 @@ class Explorer(object):
             cornerpoints.append( [data_object.steps[-1], data_object.losses[-1], data_object.parameters[-1]] )
         return cornerpoints
 
-    def combine_trajectories(self):
+    def combine_sampled_trajectories(self):
         """ Combines all trajectories contained in the internal container.
 
         :return: combined parameters and losses for diffusion map analysis
@@ -90,9 +90,10 @@ class Explorer(object):
         parameters = []
         losses = []
         for id in self.container.data.keys():
-            steps.extend( self.container.data[id].steps )
-            parameters.extend( self.container.data[id].parameters )
-            losses.extend( self.container.data[id].losses )
+            if self.container.data[id].type == "sample":
+                steps.extend( self.container.data[id].steps )
+                parameters.extend( self.container.data[id].parameters )
+                losses.extend( self.container.data[id].losses )
         return steps, parameters, losses
 
     @staticmethod

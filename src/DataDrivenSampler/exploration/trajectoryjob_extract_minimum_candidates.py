@@ -83,4 +83,4 @@ class TrajectoryJob_extract_minimium_candidates(TrajectoryJob):
         logging.info("Found minima candidates: "+str(_data.minimum_candidates))
 
         # after extract there is no other job (on that trajectory)
-        return _data, False
+        return _data, len(_data.minimum_candidates) > 0

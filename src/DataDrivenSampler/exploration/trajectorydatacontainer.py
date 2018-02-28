@@ -21,7 +21,7 @@ class TrajectoryDataContainer(object):
         :return: id of the new object
         """
         assert( self.current_data_id not in self.data.keys() )
-        self.data[ self.current_data_id ] = TrajectoryData( self.current_data_id )
+        self.data[ self.current_data_id ] = TrajectoryData( self.current_data_id, type )
         return_id = self.current_data_id
         self.current_data_id += 1
         return return_id
