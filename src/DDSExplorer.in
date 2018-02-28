@@ -159,6 +159,7 @@ def main(_):
         header = get_trajectory_header(
             network_model.weights.get_total_dof(),
             network_model.biases.get_total_dof())
+        header.insert(header.index("loss")+1, "gradient")
         minima_writer, minima_file = setup_csv_file(
             FLAGS.minima_file, header)
         for current_id in explorer.container.data.keys():
@@ -166,7 +167,8 @@ def main(_):
                 step = explorer.container.data[current_id].steps[-1]
                 minima_parameters = explorer.container.data[current_id].parameters[-1]
                 loss =  explorer.container.data[current_id].losses[-1]
-                minima_line = [current_id, step, loss]
+                gradient =  explorer.container.data[current_id].gradients[-1]
+                minima_line = [current_id, step, loss, gradient]
                 minima_line.extend(np.asarray(minima_parameters))
                 minima_writer.writerow(minima_line)
         minima_file.close()
