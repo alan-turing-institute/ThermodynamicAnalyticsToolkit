@@ -519,9 +519,9 @@ class model:
         averages = None
         if return_averages:
             steps = (self.FLAGS.max_steps % self.FLAGS.every_nth)+1
-            header = self.get_averages_header()
+            header = self.get_averages_header(setup="sample")
             no_params = len(header)
-            run_info = pd.DataFrame(
+            averages = pd.DataFrame(
                 np.zeros((steps, no_params)),
                 columns=header)
 
@@ -809,9 +809,9 @@ class model:
         averages = None
         if return_averages:
             steps = (self.FLAGS.max_steps % self.FLAGS.every_nth)+1
-            header = self.get_averages_header()
+            header = self.get_averages_header(setup="train")
             no_params = len(header)
-            run_info = pd.DataFrame(
+            averages = pd.DataFrame(
                 np.zeros((steps, no_params)),
                 columns=header)
 
