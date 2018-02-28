@@ -983,6 +983,18 @@ cost of all necessary servicing, repair, or correction.</remark>
       <programlisting><xi:include  href="cmdline/lossfunctionsampler-fix_parameter.sh"  parse="text"  
   xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
     </example>
+    <para>Alternatively, you can use <quote>exclude_parameters</quote> to
+    remove a specific subset of parameters from the sampling as in the following
+    example.</para>
+    <example xml:id="reference.loss.example.exclude_parameters">
+      <title>Using LossFunctionSampler with an equidistant grid and excluding parameters</title>
+      <programlisting><xi:include  href="cmdline/lossfunctionsampler-exclude_parameters.sh"  parse="text"  
+  xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
+    </example>
+    <para>Here, we have excluded the second weight, named "w1", from the
+    sampling. Note that all weight and all bias degrees of freedom are simply 
+    enumerated one after the other when going from the input layer till the 
+    output layer.</para>
   </section>
   <section xml:id="reference.network">
     <title xml:id="reference.network.title">The learned function</title>

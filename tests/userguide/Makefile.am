@@ -14,6 +14,7 @@ TESTSCRIPTS += \
 	$(srcdir)/cmdline/testsuite-userguide-cmdline-analyse_free_energy.at \
 	$(srcdir)/cmdline/testsuite-userguide-cmdline-exploring.at \
 	$(srcdir)/cmdline/testsuite-userguide-cmdline-inputspacesampler.at \
+	$(srcdir)/cmdline/testsuite-userguide-cmdline-lossfunctionsampler-exclude_parameters.at \
 	$(srcdir)/cmdline/testsuite-userguide-cmdline-lossfunctionsampler-fix_parameter.at \
 	$(srcdir)/cmdline/testsuite-userguide-cmdline-lossfunctionsampler-grid.at \
 	$(srcdir)/cmdline/testsuite-userguide-cmdline-lossfunctionsampler-trajectory.at \

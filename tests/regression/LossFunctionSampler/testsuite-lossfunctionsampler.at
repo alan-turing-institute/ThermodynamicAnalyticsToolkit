@@ -24,3 +24,6 @@ m4_include([LossFunctionSampler/testsuite-lossfunctionsampler-simple.at])
 
 # tests on trajectory
 m4_include([LossFunctionSampler/testsuite-lossfunctionsampler-sgld-trajectory.at])
+
+# tests on option exclude parameter
+m4_include([LossFunctionSampler/testsuite-lossfunctionsampler-exclude_parameters.at])

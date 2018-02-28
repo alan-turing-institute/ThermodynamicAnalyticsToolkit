@@ -17,19 +17,23 @@
 #
 ### test on examples in the userguide
 
-AT_SETUP([Examples cmdline - loss function sampling over grid fixing parameter])
-AT_KEYWORDS([example cmdline lossfunctionsampler grd fix_parameter])
+AT_SETUP([Examples cmdline - loss function sampling over grid excluding parameters])
+AT_KEYWORDS([example cmdline lossfunctionsampler grd exclude_parameters])
 
 # dataset prepared as follows:
 # DatasetWriter --data_type 2 --dimension 500 --seed 426 --noise 0.1 --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
 AT_CHECK([cp -f ${abs_top_srcdir}/tests/userguide/cmdline/pre/dataset-twoclusters.csv .], 0, [ignore], [ignore])
 
 AT_CHECK([env - PATH=${AUTOTEST_PATH} /bin/bash \
-	${abs_top_srcdir}/doc/userguide/cmdline/lossfunctionsampler-fix_parameter.sh
+	${abs_top_srcdir}/doc/userguide/cmdline/lossfunctionsampler-exclude_parameters.sh
 ], 0, [stdout], [stderr])
-AT_CHECK([grep "step,loss,b0" LossFunctionSampler-output-SGLD.csv], 0, [ignore], [ignore])
+# w1 is still in there, only retains a single value!
+AT_CHECK([grep "step,loss,w0,w1,b0" LossFunctionSampler-output-SGLD.csv], 0, [ignore], [ignore])
 AT_CHECK([wc -l LossFunctionSampler-output-SGLD.csv], 0, [stdout], [ignore])
-AT_CHECK([grep "6" stdout], 0, [ignore], [ignore])
+# 11 (w0) * 1 (w1) * 5 (b0) = 55 lines (+1 header)
+AT_CHECK([grep "56" stdout], 0, [ignore], [ignore])
+# check that w1 is at zero
+AT_CHECK([cat LossFunctionSampler-output-SGLD.csv | awk -F"," 'BEGIN { col = -1 } { if (NR == 1) { for(i=1;i<=NF;++i) { if ($i == "w1") { col=i } } } else { if ($col != 0.) exit(1) } }'], 0, [ignore], [ignore])
 
 AT_CLEANUP
 

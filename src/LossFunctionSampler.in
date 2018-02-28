@@ -40,6 +40,8 @@ def parse_parameters():
         help='CSV file name to output sampled values to.')
     parser.add_argument('--interval_biases', type=str, nargs='+', default=[],
         help='Min and max value for each bias.')
+    parser.add_argument('--exclude_parameters', type=str, nargs='+', default=[],
+        help='List of biases, e.g. b0, and weights, e.g. w3, to exclude from sampling.')
     parser.add_argument('--inter_ops_threads', type=int, default=1,
         help='Sets the number of threads to split up ops in between. NOTE: This hurts reproducibility to some extent because of parallelism.')
     parser.add_argument('--interval_weights', type=str, nargs='+', default=[],
@@ -75,43 +77,46 @@ def getDegreesFromLayerName(name, _sess):
     return countStringInCollection(name, tf.get_collection(tf.GraphKeys.WEIGHTS), _sess), \
         countStringInCollection(name, tf.get_collection(tf.GraphKeys.BIASES), _sess),
 
+def getNumberFromParameter(key, name):
+    start = name.index(key)+1
+    return int(name[start:])
 
 def main(_):
     network_model = model(FLAGS)
     network_model.init_network(FLAGS.restore_model, setup=None)
 
+    nn_weights = network_model.weights
+    nn_biases = network_model.biases
+
+    weights_vals = nn_weights.create_flat_vector()
+    biases_vals = nn_biases.create_flat_vector()
+
     # get trajectory length or number of sampled points
     if FLAGS.trajectory_file is not None:
         FLAGS.max_steps = file_length(FLAGS.trajectory_file)-1
     else:
-        hidden_num = 0
-        do_stop = False
-        weight_degrees = 0
-        bias_degrees = 0
-        while True:
-            hidden_num += 1
-            layer_name = "layer"+str(hidden_num)
+        weight_degrees = weights_vals.size
+        bias_degrees = biases_vals.size
 
-            # get all variables of the current layer
-            weights_dim, bias_dim = getDegreesFromLayerName(layer_name, network_model.sess)
-            print(layer_name+" has "+str(weights_dim)+" weights, and "+str(bias_dim)+" biases.")
-            weight_degrees += weights_dim
-            bias_degrees += bias_dim
+        excluded = 0
+        if (len(FLAGS.exclude_parameters) > 0):
+            # subtract every degree to exclude
+            for val in FLAGS.exclude_parameters:
+                if "b" in val and (getNumberFromParameter("b",val) < biases_vals.size):
+                    weight_degrees -= 1
+                    excluded += 1
+            for val in FLAGS.exclude_parameters:
+                if "w" in val and (getNumberFromParameter("w",val) < weights_vals.size):
+                    bias_degrees -= 1
+                    excluded += 1
 
-            # stop if none were found
-            if weights_dim == 0:
-                layer_name = "output"
-                weights_dim, bias_dim = getDegreesFromLayerName(layer_name, network_model.sess)
-                print(layer_name+" has "+str(weights_dim)+" weights, and "+str(bias_dim)+" biases.")
-                weight_degrees += weights_dim
-                bias_degrees += bias_dim
-                break
-            else:
-                list_dim = weights_dim
+        print("Excluded "+str(excluded)+" parameters from max_steps sampling calculation.")
 
         FLAGS.max_steps = math.pow(FLAGS.samples_weights+1, weight_degrees)
         FLAGS.max_steps *= math.pow(FLAGS.samples_biases+1, bias_degrees)
-        FLAGS.max_steps = int(FLAGS.max_steps)
+        FLAGS.max_steps = math.ceil(FLAGS.max_steps)
+
+
     print("There are "+str(FLAGS.max_steps)+" points to sample.")
     network_model.reset_parameters(FLAGS)
 
@@ -121,12 +126,6 @@ def main(_):
 
     loss = network_model.nn.get_list_of_nodes(["loss"])
     sess = network_model.sess
-
-    nn_weights = network_model.weights
-    nn_biases = network_model.biases
-
-    weights_vals = nn_weights.create_flat_vector()
-    biases_vals = nn_biases.create_flat_vector()
 
     ## set up output csv file
     header = ["step", "loss"]
@@ -185,38 +184,68 @@ def main(_):
         return loss_eval[0]
 
     if FLAGS.trajectory_file is None:
-        weights_interval_start = float(FLAGS.interval_weights[0])
-        weights_interval_end = float(FLAGS.interval_weights[1])
-        weights_interval_length = weights_interval_end - weights_interval_start
-        biases_interval_start = float(FLAGS.interval_biases[0])
-        biases_interval_end = float(FLAGS.interval_biases[1])
-        biases_interval_length = biases_interval_end - biases_interval_start
 
-        if FLAGS.samples_weights > 0:
-            weights_linspace = np.arange(0,FLAGS.samples_weights+1)*weights_interval_length/float(
-                    FLAGS.samples_weights)+weights_interval_start
-        else:
-            weights_linspace =  np.arange(0,FLAGS.samples_weights+1)*weights_interval_length+weights_interval_start
-        if FLAGS.samples_biases > 0:
-            biases_linspace = np.arange(0,FLAGS.samples_biases+1)*biases_interval_length/float(
-                    FLAGS.samples_biases)+biases_interval_start
-        else:
-            biases_linspace = np.arange(0,FLAGS.samples_biases+1)*biases_interval_length+biases_interval_start
         weights_index_grid = np.zeros(weights_vals.size, dtype=int)
-        weights_len_grid = FLAGS.samples_weights+1
         biases_index_grid = np.zeros(biases_vals.size, dtype=int)
-        biases_len_grid = FLAGS.samples_biases+1
+
+        weights_linspace = []
+        weights_len_grid = []
+        for i in range(weights_vals.size):
+            weights_interval_start = float(FLAGS.interval_weights[0])
+            weights_interval_end = float(FLAGS.interval_weights[1])
+
+            keyname = "w"+str(i)
+            if keyname in FLAGS.exclude_parameters:
+                weights_interval_length = 0.
+            else:
+                weights_interval_length = weights_interval_end - weights_interval_start
+
+            if (FLAGS.samples_weights > 0) and (weights_interval_length > 0.):
+                weights_linspace.append(np.arange(0,FLAGS.samples_weights+1)*weights_interval_length/float(
+                        FLAGS.samples_weights)+weights_interval_start)
+                weights_len_grid.append(FLAGS.samples_weights+1)
+            else:
+                weights_linspace.append(np.arange(0,1)+(weights_interval_start+weights_interval_end)/2.)
+                weights_len_grid.append(1)
+        assert( len(weights_linspace) == weights_vals.size )
+        assert( len(weights_len_grid) == weights_vals.size )
+        print(weights_linspace)
+        print(weights_len_grid)
+
+        biases_linspace = []
+        biases_len_grid = []
+        for i in range(biases_vals.size):
+            biases_interval_start = float(FLAGS.interval_biases[0])
+            biases_interval_end = float(FLAGS.interval_biases[1])
+
+            keyname = "b"+str(i)
+            if keyname in FLAGS.exclude_parameters:
+                biases_interval_length = 0.
+            else:
+                biases_interval_length = biases_interval_end - biases_interval_start
+
+            if (FLAGS.samples_biases > 0) and (biases_interval_length > 0.):
+                biases_linspace.append(np.arange(0,FLAGS.samples_biases+1)*biases_interval_length/float(
+                        FLAGS.samples_biases)+biases_interval_start)
+                biases_len_grid.append(FLAGS.samples_biases+1)
+            else:
+                biases_linspace.append(np.arange(0,1)+(biases_interval_start+biases_interval_end)/2.)
+                biases_len_grid.append(1)
+        assert( len(biases_linspace) == biases_vals.size )
+        assert( len(biases_len_grid) == biases_vals.size )
+        print(biases_linspace)
+        print(biases_len_grid)
 
 	### functions to iterate over weights and biases
 
         def check_end():
             isend = True
             for i in range(weights_vals.size):
-                if weights_index_grid[i] != weights_len_grid-1:
+                if weights_index_grid[i] != weights_len_grid[i]-1:
                     isend = False
                     break
             for i in range(biases_vals.size):
-                if biases_index_grid[i] != biases_len_grid-1:
+                if biases_index_grid[i] != biases_len_grid[i]-1:
                     isend = False
                     break
             return isend
@@ -224,7 +253,7 @@ def main(_):
         def next_index():
             incremented = False
             for i in range(weights_vals.size):
-                if weights_index_grid[i] != weights_len_grid-1:
+                if weights_index_grid[i] != weights_len_grid[i]-1:
                     weights_index_grid[i] += 1
                     incremented = True
                     for j in range(i):
@@ -232,7 +261,7 @@ def main(_):
                     break
             if not incremented:
                 for i in range(biases_vals.size):
-                    if biases_index_grid[i] != biases_len_grid-1:
+                    if biases_index_grid[i] != biases_len_grid[i]-1:
                         biases_index_grid[i] += 1
                         for j in range(i):
                             biases_index_grid[j]=0
@@ -244,8 +273,8 @@ def main(_):
         while not is_at_end:
             # set the parameters
 
-            weights_vals[:] = [weights_linspace[ weights_index_grid[i] ] for i in range(weights_vals.size)]
-            biases_vals[:] = [biases_linspace[ biases_index_grid[i] ] for i in range(biases_vals.size)]
+            weights_vals[:] = [weights_linspace[i][ weights_index_grid[i] ] for i in range(weights_vals.size)]
+            biases_vals[:] = [biases_linspace[i][ biases_index_grid[i] ] for i in range(biases_vals.size)]
 
             evaluate_loss()
 
