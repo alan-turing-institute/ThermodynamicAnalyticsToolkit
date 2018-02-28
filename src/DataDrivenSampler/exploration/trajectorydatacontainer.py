@@ -26,16 +26,6 @@ class TrajectoryDataContainer(object):
         self.current_data_id += 1
         return return_id
 
-    def update_data(self, _data):
-        """ Updates a present data object in the container
-
-        :param _data: data object
-        """
-        data_id = _data.get_id()
-        assert( data_id in self.data.keys() )
-        del self.data[data_id]
-        self.data[data_id] = _data
-
     def get_data(self, _id):
         """ This returns the datum to a given id
 

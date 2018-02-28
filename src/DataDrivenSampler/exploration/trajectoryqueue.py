@@ -126,8 +126,8 @@ class TrajectoryQueue(object):
         data_id = current_job.get_data_id()
         data_object = self.data_container.get_data(data_id)
         updated_data, continue_flag = current_job.run(data_object)
+
         logging.info("Continue? "+str(continue_flag))
-        self.data_container.update_data(updated_data)
         if continue_flag and current_job.job_type == "sample":
             for i in range(self.number_pruning):
                 self.add_prune_job(data_id, run_object, False)
