@@ -28,7 +28,7 @@ class TrajectoryJob_train(TrajectoryJob_sample):
             continue_flag=continue_flag)
         self.job_type = "train"
 
-    def _store_last_step_of_trajectory(self, _data, run_info, trajectory):
+    def _store_last_step_of_trajectory(self, _data, averages, run_info, trajectory):
         step = [int(np.asarray(run_info.loc[:, 'step'])[-1])]
         loss = [float(np.asarray(run_info.loc[:, 'loss'])[-1])]
         gradient = [float(np.asarray(run_info.loc[:, 'scaled_gradient'])[-1])]
@@ -44,6 +44,7 @@ class TrajectoryJob_train(TrajectoryJob_sample):
                            _losses=loss,
                            _gradients=gradient,
                            _parameters=parameters,
+                           _averages_lines=averages,
                            _run_lines=run_info,
                            _trajectory_lines=trajectory)
 
@@ -69,10 +70,10 @@ class TrajectoryJob_train(TrajectoryJob_sample):
         # run graph here
         self.network_model.reset_dataset()
         try:
-            run_info, trajectory, _ = self.network_model.train(
-                return_run_info=True, return_trajectories=True, return_averages=False)
+            run_info, trajectory, averages = self.network_model.train(
+                return_run_info=True, return_trajectories=True, return_averages=True)
 
-            self._store_last_step_of_trajectory(_data, run_info, trajectory)
+            self._store_last_step_of_trajectory(_data, averages, run_info, trajectory)
 
         except errors_impl.InvalidArgumentError:
             logging.error("The trajectory diverged, aborting.")

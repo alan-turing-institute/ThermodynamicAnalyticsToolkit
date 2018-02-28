@@ -54,14 +54,14 @@ class TrajectoryJob_sample(TrajectoryJob):
 
         # run graph here
         self.network_model.reset_dataset()
-        run_info, trajectory, _ = self.network_model.sample(
-            return_run_info=True, return_trajectories=True, return_averages=False)
+        run_info, trajectory, averages = self.network_model.sample(
+            return_run_info=True, return_trajectories=True, return_averages=True)
 
-        self._store_trajectory(_data, run_info, trajectory)
+        self._store_trajectory(_data, averages, run_info, trajectory)
 
         return _data, self.continue_flag
 
-    def _store_trajectory(self, _data, run_info, trajectory):
+    def _store_trajectory(self, _data, averages, run_info, trajectory):
         steps = [int(i) for i in np.asarray(run_info.loc[:, 'step'])]
         losses = [float(i) for i in np.asarray(run_info.loc[:, 'loss'])]
         gradients = [float(i) for i in np.asarray(run_info.loc[:, 'scaled_gradient'])]
@@ -78,5 +78,6 @@ class TrajectoryJob_sample(TrajectoryJob):
                            _losses=losses,
                            _gradients=gradients,
                            _parameters=parameters,
+                           _averages_lines=averages,
                            _run_lines=run_info,
                            _trajectory_lines=trajectory)

@@ -75,6 +75,7 @@ def main(_):
     rt.set_init_network_time(time.process_time() - time_init_network_zero)
 
     # prevent writing of output files during leg sampling
+    network_model.config_map["do_write_averages_file"] = False
     network_model.config_map["do_write_run_file"] = False
     network_model.config_map["do_write_trajectory_file"] = False
 
@@ -113,30 +114,45 @@ def main(_):
 
     # 3. write final set of values
 
-    # write away run time information
+    # write away averages time information
+    if network_model.config_map["averages_file"] is not None:
+        network_model.config_map["do_write_averages_file"] = True
+        for current_id in explorer.container.data.keys():
+            if explorer.container.data[current_id].type == "sample":
+                averages_lines_per_leg = explorer.container.data[current_id].averages_lines
+                for leg_nr in range(len(averages_lines_per_leg)):
+                    averages_lines = averages_lines_per_leg[leg_nr]
+                    for row in range(len(averages_lines.index)):
+                        averages_line = averages_lines.iloc[row,:]
+                        averages_line[0] = current_id
+                        network_model.averages_writer.writerow(averages_line)
+
+
     if network_model.config_map["csv_file"] is not None:
         network_model.config_map["do_write_run_file"] = True
         for current_id in explorer.container.data.keys():
-            run_lines_per_leg = explorer.container.data[current_id].run_lines
-            for leg_nr in range(len(run_lines_per_leg)):
-                run_lines = run_lines_per_leg[leg_nr]
-                for row in range(len(run_lines.index)):
-                    run_line = run_lines.iloc[row,:]
-                    run_line[0] = current_id
-                    network_model.run_writer.writerow(run_line)
+            if explorer.container.data[current_id].type == "sample":
+                run_lines_per_leg = explorer.container.data[current_id].run_lines
+                for leg_nr in range(len(run_lines_per_leg)):
+                    run_lines = run_lines_per_leg[leg_nr]
+                    for row in range(len(run_lines.index)):
+                        run_line = run_lines.iloc[row,:]
+                        run_line[0] = current_id
+                        network_model.run_writer.writerow(run_line)
 
 
     # write away trajectory information
     if network_model.config_map["trajectory_file"] is not None:
         network_model.config_map["do_write_trajectory_file"] = True
         for current_id in explorer.container.data.keys():
-            trajectory_lines_per_leg = explorer.container.data[current_id].trajectory_lines
-            for leg_nr in range(len(trajectory_lines_per_leg)):
-                trajectory_lines = trajectory_lines_per_leg[leg_nr]
-                for row in range(len(trajectory_lines.index)):
-                    trajectory_line = trajectory_lines.iloc[row,:]
-                    trajectory_line[0] = current_id
-                    network_model.trajectory_writer.writerow(trajectory_line)
+            if explorer.container.data[current_id].type == "sample":
+                trajectory_lines_per_leg = explorer.container.data[current_id].trajectory_lines
+                for leg_nr in range(len(trajectory_lines_per_leg)):
+                    trajectory_lines = trajectory_lines_per_leg[leg_nr]
+                    for row in range(len(trajectory_lines.index)):
+                        trajectory_line = trajectory_lines.iloc[row,:]
+                        trajectory_line[0] = current_id
+                        network_model.trajectory_writer.writerow(trajectory_line)
 
     # write minima to file
     if FLAGS.minima_file is not None:

@@ -26,6 +26,7 @@ class TrajectoryData(object):
         self.parameters = []
         self.losses = []
         self.gradients = []
+        self.averages_lines = []
         self.run_lines = []
         self.trajectory_lines = []
 
@@ -52,7 +53,7 @@ class TrajectoryData(object):
         return self.id
 
     def add_run_step(self, _steps, _parameters, _losses, _gradients,
-                     _run_lines=None, _trajectory_lines=None):
+                     _averages_lines=None, _run_lines=None, _trajectory_lines=None):
         """ Appends all values from a single run (one leg) to the specific
         internal containers for later analysis
 
@@ -60,6 +61,7 @@ class TrajectoryData(object):
         :param _parameters: (weight and bias) parameters of neural network as flattened vector
         :param _losses: loss/potential energy
         :param _gradients: gradient norm per step
+        :param _averages_lines: single pandas dataframe of averages line per step
         :param _run_lines: single pandas dataframe of run info line per step
         :param _trajectory_lines: single pandas dataframe of trajectory line per step
         """
@@ -73,6 +75,8 @@ class TrajectoryData(object):
             logging.debug("Last leg ended at "+str(self.legs_at_step[-1])+", next starts at "+str(_steps[0]))
             assert( (len(self.legs_at_step) == 0) or (self.legs_at_step[-1] < _steps[0]) )
         self.legs_at_step.append(_steps[-1])
+        if _averages_lines is not None:
+            self.averages_lines.append(_averages_lines)
         if _run_lines is not None:
             self.run_lines.append(_run_lines)
         if _trajectory_lines is not None:
@@ -88,6 +92,8 @@ class TrajectoryData(object):
         status = status and ( len(self.parameters) == len(self.losses) )
         status = status and ( len(self.parameters) == len(self.gradients) )
         status = status and ( len(self.legs_at_step) == len(self.index_at_leg) )
+        status = status and ( (len(self.legs_at_step) == len(self.averages_lines)) \
+                or (len(self.averages_lines)== 0))
         status = status and ( (len(self.legs_at_step) == len(self.run_lines)) \
                 or (len(self.run_lines)== 0))
         status = status and ( (len(self.legs_at_step) == len(self.trajectory_lines) ) \
