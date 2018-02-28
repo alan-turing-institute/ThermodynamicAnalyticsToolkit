@@ -34,7 +34,7 @@ class Explorer(object):
         """
         for i in range(1,self.INITIAL_LEGS+1):
             current_id = self.container.add_empty_data()
-            self.queue.add_run_job(
+            self.queue.add_sample_job(
                 data_id=current_id,
                 network_model=network_model,
                 initial_step=0,
@@ -72,7 +72,7 @@ class Explorer(object):
             data_object.losses[:] = [losses[idx_corner[i]]]
             data_object.gradients[:] = [1]
 
-            self.queue.add_run_job(
+            self.queue.add_sample_job(
                 data_id=current_id,
                 network_model=network_model,
                 initial_step=data_object.steps[-1],

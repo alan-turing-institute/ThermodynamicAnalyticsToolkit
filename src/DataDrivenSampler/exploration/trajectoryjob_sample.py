@@ -4,7 +4,7 @@ import tensorflow as tf
 
 from DataDrivenSampler.exploration.trajectoryjob import TrajectoryJob
 
-class TrajectoryJob_run(TrajectoryJob):
+class TrajectoryJob_sample(TrajectoryJob):
     ''' This implements a job that runs a new leg of a given trajectory.
 
     '''
@@ -18,8 +18,8 @@ class TrajectoryJob_run(TrajectoryJob):
         :param parameters: parameters of the neural net to set. If None, keep random ones
         :param continue_flag: flag allowing to override spawning of subsequent job
         """
-        super(TrajectoryJob_run, self).__init__(data_id)
-        self.job_type = "run"
+        super(TrajectoryJob_sample, self).__init__(data_id)
+        self.job_type = "sample"
         self.network_model = network_model
         self.initial_step = initial_step
         self.parameters = parameters

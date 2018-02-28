@@ -6,13 +6,13 @@ from DataDrivenSampler.exploration.trajectoryjob import TrajectoryJob
 from DataDrivenSampler.models.neuralnet_parameters import neuralnet_parameters
 from DataDrivenSampler.models.model import model as network_model
 
-class TrajectoryJob_check_minima(TrajectoryJob):
+class TrajectoryJob_train(TrajectoryJob):
     ''' This implements a job that runs a new leg of a given trajectory.
 
     '''
 
-    EQUILIBRATION_STEPS = 1000 # number of steps for minimum search
-    LEARNING_RATE = 1e-1 # use larger learning rate as we are close to minimum
+    EQUILIBRATION_STEPS = 10000 # number of steps for minimum search
+    LEARNING_RATE = 3e-2 # use larger learning rate as we are close to minimum
     MAX_CANDIDATES = 3 # dont check more than this number of candidates
     GRADIENT_THRESHOLD = 1e-5 # threshold for accepting minimum
 
@@ -23,7 +23,7 @@ class TrajectoryJob_check_minima(TrajectoryJob):
         :param network_model: network model containing the computational graph and session
         :param continue_flag: flag allowing to override spawning of subsequent job
         """
-        super(TrajectoryJob_check_minima, self).__init__(data_id)
+        super(TrajectoryJob_train, self).__init__(data_id)
         self.job_type = "check_minima"
         self.network_model = network_model
         self.continue_flag = continue_flag
