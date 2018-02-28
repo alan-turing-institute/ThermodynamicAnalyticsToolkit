@@ -14,7 +14,7 @@ class TrajectoryDataContainer(object):
         self.data = {}
         self.current_data_id = 1
 
-    def add_empty_data(self):
+    def add_empty_data(self, type="sample"):
         """ Adds a new data object to the container with an id unique to this
         container.
 

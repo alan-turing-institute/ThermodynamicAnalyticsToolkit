@@ -14,7 +14,7 @@ class TrajectoryData(object):
 
     '''
 
-    def __init__(self, _id):
+    def __init__(self, _id, _type = "sample"):
         ''' Initialize data object with a valid id
 
         :param _id: id of the data object
@@ -42,6 +42,9 @@ class TrajectoryData(object):
 
         # indicates whether this trajectory is done
         self.is_pruned = False
+
+        # type of dynamics that created the trajectory in this data object
+        self.type = _type
 
     def get_id(self):
         """ Return the unique id of this data object
