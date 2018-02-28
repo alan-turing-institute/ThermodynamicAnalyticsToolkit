@@ -39,7 +39,7 @@ class Explorer(object):
                 network_model=network_model,
                 initial_step=0,
                 parameters=None,
-                continue_flag=(i == self.INITIAL_LEGS))
+                continue_flag=True)
 
     def run_all_jobs(self, network_model, parameters):
         """ Run all jobs currently found in the TrajectoryJob queue.
