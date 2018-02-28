@@ -199,13 +199,14 @@ class TrajectoryQueue(object):
                             current_job.job_type in ["analyze", "check_gradient"]:
                 logging.info("Maximum number of legs exceeded, not adding any more jobs of type " \
                              +current_job.job_type+" for data id "+str(data_id)+".")
+                if current_job.job_type == "analyze":
+                    self.add_extract_minima_job(data_id, analyze_object, False)
+                    logging.info("Added extract minima job")
             else:
                 if current_job.job_type == "sample":
                     for i in range(self.number_pruning):
                         self.add_prune_job(data_id, run_object, False)
                     logging.info("Added prune job(s)")
-                    self.add_extract_minima_job(data_id, analyze_object, False)
-                    logging.info("Added extract minima job")
                     self.add_analyze_job(data_id, analyze_object, current_job.continue_flag)
                     logging.info("Added analyze job")
 
@@ -236,7 +237,11 @@ class TrajectoryQueue(object):
                 else:
                     logging.warning("Unknown job type "+current_job.job_type+"!")
         else:
-            logging.info("Not adding.")
+            if current_job.job_type == "analyze":
+                self.add_extract_minima_job(data_id, analyze_object, False)
+                logging.info("Added extract minima job")
+            else:
+                logging.info("Not adding.")
 
 
     def is_empty(self):
