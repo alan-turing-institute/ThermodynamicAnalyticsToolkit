@@ -27,3 +27,6 @@ m4_include([LossFunctionSampler/testsuite-lossfunctionsampler-sgld-trajectory.at
 
 # tests on option exclude parameter
 m4_include([LossFunctionSampler/testsuite-lossfunctionsampler-exclude_parameters.at])
+
+# tests on option interval center file
+m4_include([LossFunctionSampler/testsuite-lossfunctionsampler-interval_center_file.at])

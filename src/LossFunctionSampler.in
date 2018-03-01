@@ -8,6 +8,7 @@ import csv
 import logging
 import math
 import numpy as np
+import pandas as pd
 import tensorflow as tf
 
 from DataDrivenSampler.datasets.classificationdatasets import ClassificationDatasets
@@ -40,6 +41,10 @@ def parse_parameters():
         help='CSV file name to output sampled values to.')
     parser.add_argument('--interval_biases', type=str, nargs='+', default=[],
         help='Min and max value for each bias.')
+    parser.add_argument('--interval_center_file', type=str, default=None,
+        help='CSV file with step column and one for each parameter, e.g. w4 and b3.')
+    parser.add_argument('--interval_center_step', type=int, default=None,
+        help='Giving the step to use of the interval_center_file, i.e. its row')
     parser.add_argument('--exclude_parameters', type=str, nargs='+', default=[],
         help='List of biases, e.g. b0, and weights, e.g. w3, to exclude from sampling.')
     parser.add_argument('--inter_ops_threads', type=int, default=1,
@@ -90,6 +95,8 @@ def main(_):
 
     weights_vals = nn_weights.create_flat_vector()
     biases_vals = nn_biases.create_flat_vector()
+
+    FLAGS.exclude_parameters = get_list_from_string(FLAGS.exclude_parameters)
 
     # get trajectory length or number of sampled points
     if FLAGS.trajectory_file is not None:
@@ -185,6 +192,24 @@ def main(_):
 
     if FLAGS.trajectory_file is None:
 
+        interval_center = {}
+        # parse interval_center file
+        if FLAGS.interval_center_file is not None:
+            interval_centers = pd.read_csv(FLAGS.interval_center_file, sep=',', header=0)
+            if FLAGS.interval_center_step in interval_centers.loc[:,['step']].values:
+                rownr = np.where(interval_centers.loc[:,['step']].values==FLAGS.interval_center_step)[0]
+                for keyname in FLAGS.exclude_parameters:
+                    if "w" in keyname:
+                        fullname = "weight"
+                    elif "b" in keyname:
+                        fullname = "bias"
+                    fullname += keyname[1:]
+                    if fullname in interval_centers.columns:
+                        interval_center[keyname] = interval_centers.loc[rownr, [fullname]].values[0]
+                    elif keyname in interval_centers.columns:
+                        interval_center[keyname] = interval_centers.loc[rownr, [keyname]].values[0]
+            print(interval_center)
+
         weights_index_grid = np.zeros(weights_vals.size, dtype=int)
         biases_index_grid = np.zeros(biases_vals.size, dtype=int)
 
@@ -195,10 +220,11 @@ def main(_):
             weights_interval_end = float(FLAGS.interval_weights[1])
 
             keyname = "w"+str(i)
-            if keyname in FLAGS.exclude_parameters:
-                weights_interval_length = 0.
-            else:
-                weights_interval_length = weights_interval_end - weights_interval_start
+            if keyname in FLAGS.exclude_parameters and keyname in interval_center.keys():
+                weights_interval_start = interval_center[keyname]
+                weights_interval_end = weights_interval_start
+
+            weights_interval_length = weights_interval_end - weights_interval_start
 
             if (FLAGS.samples_weights > 0) and (weights_interval_length > 0.):
                 weights_linspace.append(np.arange(0,FLAGS.samples_weights+1)*weights_interval_length/float(
@@ -219,10 +245,11 @@ def main(_):
             biases_interval_end = float(FLAGS.interval_biases[1])
 
             keyname = "b"+str(i)
-            if keyname in FLAGS.exclude_parameters:
-                biases_interval_length = 0.
-            else:
-                biases_interval_length = biases_interval_end - biases_interval_start
+            if keyname in FLAGS.exclude_parameters and keyname in interval_center.keys():
+                biases_interval_start = interval_center[keyname]
+                biases_interval_end = biases_interval_start
+
+            biases_interval_length = biases_interval_end - biases_interval_start
 
             if (FLAGS.samples_biases > 0) and (biases_interval_length > 0.):
                 biases_linspace.append(np.arange(0,FLAGS.samples_biases+1)*biases_interval_length/float(

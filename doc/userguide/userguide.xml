@@ -995,6 +995,13 @@ cost of all necessary servicing, repair, or correction.</remark>
     sampling. Note that all weight and all bias degrees of freedom are simply 
     enumerated one after the other when going from the input layer till the 
     output layer.</para>
+    <para>Furthermore, we have specified a file containing center points for
+    all excluded parameters. This file is of CSV style having a column "step"
+    to identify which row is to be used and moreover a column for every 
+    (excluded) parameter that is fixed at a value unequal to 0. Note that
+    the minima file written by <programname>DDSExplorer</programname>
+    can be used as this centers file. Moreover, also the trajectory files have
+    the same structure.</para>
   </section>
   <section xml:id="reference.network">
     <title xml:id="reference.network.title">The learned function</title>
