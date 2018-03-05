@@ -160,16 +160,16 @@ def main(_):
     ## function to evaluate the loss
 
     def evaluate_label(current_step):
-        # fetch next batch of data
-        batch_data = network_model.sess.run(network_model.input_pipeline.batch_next)
-        print("batch_data is "+str(batch_data))
+        # get next batch of data
+        features, _ = network_model.input_pipeline.next_batch(sess, auto_reset=False)
+        print("batch_data is "+str(features))
 
         # place in feed dict
         feed_dict = {
-            network_model.xinput: batch_data[0],
+            network_model.xinput: features,
         }
 
-        print(np.asarray(batch_data[0][0]))
+        print(np.asarray(features[0]))
 
         label = network_model.sess.run(
             network_model.nn.placeholder_nodes["y"],
@@ -179,7 +179,7 @@ def main(_):
             print_row = [current_step] \
                         + ['{:{width}.{precision}e}'.format(feature, width=output_width,
                                                             precision=output_precision)
-                                                            for feature in np.asarray(batch_data[0][0])] \
+                                                            for feature in np.asarray(features[0])] \
                         + ['{:{width}.{precision}e}'.format(label, width=output_width,
                                                             precision=output_precision)
                                                             for label in np.asarray(label[0])]
