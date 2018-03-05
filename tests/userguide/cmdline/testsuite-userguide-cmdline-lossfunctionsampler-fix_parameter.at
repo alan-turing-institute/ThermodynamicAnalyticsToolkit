@@ -27,7 +27,7 @@ AT_CHECK([cp -f ${abs_top_srcdir}/tests/userguide/cmdline/pre/dataset-twocluster
 AT_CHECK([env - PATH=${AUTOTEST_PATH} /bin/bash \
 	${abs_top_srcdir}/doc/userguide/cmdline/lossfunctionsampler-fix_parameter.sh
 ], 0, [stdout], [stderr])
-AT_CHECK([grep "step,loss,b0" LossFunctionSampler-output-SGLD.csv], 0, [ignore], [ignore])
+AT_CHECK([grep "step,loss,accuracy,b0" LossFunctionSampler-output-SGLD.csv], 0, [ignore], [ignore])
 AT_CHECK([wc -l LossFunctionSampler-output-SGLD.csv], 0, [stdout], [ignore])
 AT_CHECK([grep "6" stdout], 0, [ignore], [ignore])
 

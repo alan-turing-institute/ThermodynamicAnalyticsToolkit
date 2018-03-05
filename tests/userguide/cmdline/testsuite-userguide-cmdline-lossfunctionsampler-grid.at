@@ -27,10 +27,11 @@ AT_CHECK([cp -f ${abs_top_srcdir}/tests/userguide/cmdline/pre/dataset-twocluster
 AT_CHECK([env - PATH=${AUTOTEST_PATH} /bin/bash \
 	${abs_top_srcdir}/doc/userguide/cmdline/lossfunctionsampler-grid.sh
 ], 0, [stdout], [stderr])
-AT_CHECK([grep "step,loss,w0,w1,b0" LossFunctionSampler-output-SGLD.csv], 0, [ignore], [ignore])
+AT_CHECK([grep "step,loss,accuracy,w0,w1,b0" LossFunctionSampler-output-SGLD.csv], 0, [ignore], [ignore])
 # compare numerically (old loss was printed with just 5 digits)
 AT_CHECK([../../../NumericalDiff \
     --general_threshold 1e-5 absolute \
+    --column_drop accuracy \
     -- LossFunctionSampler-output-SGLD.csv ${abs_top_srcdir}/tests/userguide/cmdline/post/LossFunctionSampler-output-SGLD-grid.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP

@@ -44,7 +44,7 @@ AT_CHECK([cp -f ${abs_top_srcdir}/tests/userguide/cmdline/pre/trajectory-two_clu
 AT_CHECK([env - PATH=${AUTOTEST_PATH} /bin/bash \
 	${abs_top_srcdir}/doc/userguide/cmdline/lossfunctionsampler-trajectory.sh
 ], 0, [stdout], [stderr])
-AT_CHECK([grep "step,loss,w0,w1,b0" LossFunctionSampler-output-SGLD.csv], 0, [ignore], [ignore])
+AT_CHECK([grep "step,loss,accuracy,w0,w1,b0" LossFunctionSampler-output-SGLD.csv], 0, [ignore], [ignore])
 AT_CHECK([wc -l LossFunctionSampler-output-SGLD.csv], 0, [stdout], [ignore])
 AT_CHECK([grep "1001" stdout], 0, [ignore], [ignore])
 

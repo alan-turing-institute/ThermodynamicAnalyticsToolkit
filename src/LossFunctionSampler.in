@@ -132,10 +132,11 @@ def main(_):
 
 
     loss = network_model.nn.get_list_of_nodes(["loss"])
+    acc = network_model.nn.get_list_of_nodes(["accuracy"])
     sess = network_model.sess
 
     ## set up output csv file
-    header = ["step", "loss"]
+    header = ["step", "loss", "accuracy"]
     for i in range(weights_vals.size):
         header.append("w"+str(i))
     for i in range(biases_vals.size):
@@ -161,13 +162,13 @@ def main(_):
         nn_weights.assign(sess, weights_vals)
         nn_biases.assign(sess, biases_vals)
 
-        loss_eval = sess.run(loss, feed_dict=feed_dict)
-        #print("Loss at the given parameters w("+str(w1)+","+str(w2)+"), b("
-        #      +str(b)+") is "+str(loss_eval[0]))
-
+        loss_eval, acc_eval = sess.run([loss, acc], feed_dict=feed_dict)
         # get the weights and biases to check against what we set
         weights_eval = nn_weights.evaluate(sess)
         biases_eval = nn_biases.evaluate(sess)
+
+        print("Loss and accuraccy at the given parameters w("+str(weights_eval)+" b("
+              +str(biases_eval)+") is "+str(loss_eval[0])+" and "+str(acc_eval[0]))
 
         for i in range(weights_eval.size):
             #print("Comparing "+str(weights_eval[i])+" against "+str(weights_vals[i]))
@@ -179,6 +180,8 @@ def main(_):
         if FLAGS.csv_file is not None:
             print_row = [current_step] \
                         + ['{:{width}.{precision}e}'.format(loss_eval[0], width=output_width,
+                                                            precision=output_precision)] \
+                        + ['{:{width}.{precision}e}'.format(acc_eval[0], width=output_width,
                                                             precision=output_precision)] \
                         + ['{:{width}.{precision}e}'.format(weight, width=output_width,
                                                             precision=output_precision)

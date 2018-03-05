@@ -33,7 +33,7 @@ AT_CHECK([env - PATH=${AUTOTEST_PATH} /bin/bash \
 	${abs_top_srcdir}/doc/userguide/cmdline/lossfunctionsampler-exclude_parameters.sh
 ], 0, [stdout], [stderr])
 # w1 is still in there, only retains a single value!
-AT_CHECK([grep "step,loss,w0,w1,b0" LossFunctionSampler-output-SGLD.csv], 0, [ignore], [ignore])
+AT_CHECK([grep "step,loss,accuracy,w0,w1,b0" LossFunctionSampler-output-SGLD.csv], 0, [ignore], [ignore])
 AT_CHECK([wc -l LossFunctionSampler-output-SGLD.csv], 0, [stdout], [ignore])
 # 11 (w0) * 1 (w1) * 5 (b0) = 55 lines (+1 header)
 AT_CHECK([grep "56" stdout], 0, [ignore], [ignore])
