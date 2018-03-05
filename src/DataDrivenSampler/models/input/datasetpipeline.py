@@ -64,23 +64,33 @@ class DatasetPipeline(InputPipeline):
         self.iterator = self.dataset.make_initializable_iterator()
         self.batch_next = self.iterator.get_next()
 
-    def next_batch(self, session):
+    def next_batch(self, session, auto_reset = False, warn_when_reset = False):
         ''' This returns the next batch of features and labels.
 
         :param session: session object as input might be retrieved through the
                 computational graph
+        :param auto_reset: whether to automatically reset the dataset iterator
+                or whether the exception tf.errors.OutOfRangeError is not caught
+        :param warn_when_reset: whether to warn when reset, requires makes
+                auto_reset set to True
         :return: pack of feature and label array
         '''
         # fetch next batch of data
-        try:
+        assert( (not warn_when_reset) or (auto_reset and warn_when_reset) ) # make sure both are activated
+        if not auto_reset:
             batch_data = session.run(self.batch_next)
-        except tf.errors.OutOfRangeError:
-            self.reset(session)
+        else:
             try:
                 batch_data = session.run(self.batch_next)
             except tf.errors.OutOfRangeError:
-                logging.info('Dataset is too small for one batch!')
-                sys.exit(255)
+                if warn_when_reset:
+                    logging.warning("Need to reset the dataset iterator, intended?")
+                self.reset(session)
+                try:
+                    batch_data = session.run(self.batch_next)
+                except tf.errors.OutOfRangeError:
+                    logging.info('Dataset is too small for one batch!')
+                    sys.exit(255)
         return batch_data[0], batch_data[1]
 
     def epochFinished(self):

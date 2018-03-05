@@ -22,9 +22,9 @@ FLAGS.sampler = "GeometricLangevinAlgorithm_2ndOrder"
 nn.reset_parameters(FLAGS)
 nn.init_network(None, setup="sample")
 
-# reset the dataset to make it start at the beginning again
-# otherwise you get error: epoch ended to early!
-nn.reset_dataset()
+# redo the input pipeline and its dataset as max_steps has changed and this
+# the number of internal copies of the dataset.
+nn.init_input_pipeline()
 
 sample_run_info, sample_trajectory, _ = nn.sample( \
     return_run_info=True, return_trajectories=True)

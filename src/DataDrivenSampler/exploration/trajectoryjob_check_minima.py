@@ -68,6 +68,7 @@ class TrajectoryJob_check_minima(TrajectoryJob):
             logging.debug("Set initial step to " + str(set_step))
 
             # run graph here
+            self.network_model.reset_dataset()
             run_info, trajectory, _ = self.network_model.train(
                 return_run_info=True, return_trajectories=True, return_averages=False)
 
