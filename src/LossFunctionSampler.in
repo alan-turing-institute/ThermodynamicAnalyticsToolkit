@@ -108,17 +108,13 @@ def main(_):
     ## function to evaluate the loss
 
     def evaluate_loss():
-        # fetch next batch of data
-        try:
-            batch_data = network_model.sess.run(network_model.input_pipeline.batch_next)
-        except tf.errors.OutOfRangeError:
-            print('Max_steps or batch_size was not chosen right, dataset should always have right size.')
-            sys.exit(255)
+        # get next batch of data
+        features, labels = network_model.input_pipeline.next_batch(sess)
 
         # place in feed dict
         feed_dict = {
-            network_model.xinput: batch_data[0],
-            network_model.nn.placeholder_nodes["y_"]: batch_data[1]
+            network_model.xinput: features,
+            network_model.nn.placeholder_nodes["y_"]: labels
         }
 
         nn_weights.assign(sess, weights_vals)
