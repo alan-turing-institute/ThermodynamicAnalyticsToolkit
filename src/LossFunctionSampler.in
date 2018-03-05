@@ -312,22 +312,31 @@ def main(_):
             next_index()
     else:
         # parse csv file
-        with open(FLAGS.trajectory_file, 'r') as csv_file:
-            csvreader = csv.reader(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-            # go through each row and use values
-            next(csvreader) # skip header
-            row_length = weights_vals.size+biases_vals.size+2 # initially, there is step and loss
-            for row in csvreader:
-                #print("length of row is "+str(len(row))+" and expected length is "+str(row_length))
-                assert( len(row) >= row_length)
-                step = row[0]
-                loss_check = row[0]
-                weights_vals[:weights_vals.size] = row[2:(weights_vals.size+2)]
-                biases_vals[:biases_vals.size] = row[(weights_vals.size+2):row_length]
-                loss_eval = evaluate_loss()
-                #assert( math.fabs( loss_eval - float(loss_check) ) < 1e-6 )
+        trajectories = pd.read_csv(FLAGS.trajectory_file, sep=',', header=0)
+        for rownr in trajectories.index:
+            parameters = {}
+            for keyname in trajectories.columns:
+                if  (keyname[1] >= "0" and keyname[1] <= "9"):
+                    if ("w" == keyname[0]):
+                        fullname = "weight"
+                    elif "b" == keyname[0]:
+                        fullname = "bias"
+                    else:
+                        # not a parameter column
+                        continue
+                    fullname += keyname[1:]
+                    parameters[fullname] = trajectories.loc[rownr, [keyname]].values[0]
+                else:
+                    if ("weight" in keyname) or ("bias" in keyname):
+                        parameters[keyname] = trajectories.loc[rownr, [keyname]].values[0]
 
-                current_step += 1
+            loss_check = trajectories.loc[rownr, ['loss']].values[0]
+            weights_vals[:weights_vals.size] = [parameters[key] for key in sorted(parameters.keys()) if "w" in key]
+            biases_vals[:biases_vals.size] = [parameters[key] for key in sorted(parameters.keys()) if "b" in key]
+            loss_eval = evaluate_loss()
+            #assert( math.fabs( loss_eval - float(loss_check) ) < 1e-6 )
+
+            current_step += 1
 
     network_model.finish()
 
