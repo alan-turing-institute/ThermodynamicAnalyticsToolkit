@@ -64,6 +64,21 @@
 
   <chapter xml:id="introduction">
     <title xml:id="introduction.title">Introduction</title>
+    <section xml:id="introduction.needtoknow">
+      <title xml:id="introduction.needtoknow.title">Before you start</title>
+      <para>In the following we assume that you, the reader, has a general 
+      familiarity with neural networks. You should know what a classification
+      problem is, what an associated dataset for (supervised) learning needs
+      to contain. You should know about what weights and biases in a neural
+      network are and what the loss function does. You should also have a
+      trough idea of what optimization is and that gradients with respect to
+      the chosen loss function can be obtained through so-called 
+      backpropagation.
+      </para>
+      <para>If you are <emphasis>not</emphasis> familiar with the above
+      terminology, then please first read <xref linkend="reference.concepts"/>.
+      </para>
+    </section>
     <section xml:id="introduction.whatis">
       <title xml:id="introduction.whatis.title">What is DataDrivenSampler?</title>
       <para>Typically, optimzation in neural network training employs methods 
@@ -80,8 +95,8 @@
       minimum closest to some random initial configuration and be done. 
       Instead we aim at finding all of the minima and all possible barriers 
       in between by treating the loss function as a high-dimensional potential
-      and the weights and biases of the neural network as particles in a 
-      stochastic differential equation, namely Langevin Dynamics.</para>
+      and the weights and biases of the neural network as one-dimensional 
+      particles in a stochastic differential equation, namely Langevin Dynamics.</para>
       <para>There is not need to panic: You do not need to know anything about 
       these kinds of equations when using the program. However, rest assured 
       that all statistical properties derived using trajectories obtained 
@@ -130,9 +145,9 @@
         <note>Note that on systems with typical core i7 architecture 
         recompiling tensorflow from source provided only very small runtime
         gains in our tests which in most cases do not support the extra effort.
-        However, by default the provided package did not seem to support
-        multi-threading. Hence, in this scenario compiling from source is 
-        required.</note>
+        You may find it necessary for tackling really large networks and 
+        datasets and especially if you desire using Intel's MKL library for the
+        CPU-based linear algebra computations.</note>
         <para>Henceforth, we assume that there is a working tensorflow on 
         your system, i.e. inside the python3 shell</para>
         <programlisting>import tensorflow as tf</programlisting>
@@ -161,7 +176,7 @@ make install
         </programlisting>
         <para>where the first step is only required if you have obtained the 
         package through cloning the github repository. If you extracted it from
-        a distributable tarball, then this is not necssary.</para>
+        a distributable tarball, then it is not necssary.</para>
         <para>Here, "compilation" is done in an extra folder 
         <quote>build64</quote>, i.e. it is an out-of-source build, that 
         prevents cluttering of the source folder. Naturally, you may pick any
@@ -324,10 +339,10 @@ cost of all necessary servicing, repair, or correction.</remark>
       value, that changes through its momentum over time. The momentum again 
       changes because the particle is inside a potential that drives it towards
       the minimum. The system is described by a so-called Hamilton operator
-      that gives rise to its Dynamics. If noise is additionally taken into 
+      that gives rise to its same named dynamics. If noise is additionally taken into 
       account, then we look at Langevin Dynamics.</para>
       <para>Returning to the neural networks, the role of the particles is taken
-      by the degrees of freedom of the system, weights and biases. The loss
+      by the degrees of freedom of the system: weights and biases. The loss
       function is called the <emphasis>potential</emphasis> and it is accompanied 
       by a <emphasis>kinetic energy</emphasis> that is simply the sum of all
       squared momenta. Adding Momentum to Optimizers in neural networks is a
@@ -335,11 +350,22 @@ cost of all necessary servicing, repair, or correction.</remark>
       overcoming areas of the loss function where it is essentially flat.</para>
       <para>Sampling produces trajectories of particles moving along the
       manifold. Integrals along these trajectories, if they are long enough, 
-      are equivalent to integrating over the whole manifold, the system is
+      are equivalent to integrating over the whole manifold, if the system is
       ergodic.</para>
       <para>By using sampling we mean to discover more of the loss manifold
-      than just the closest local minimum. To this end, barriers need to be
-      overcome of which there two kind,</para>
+      than just the closest local minimum. The wording seems to indicate that 
+      we would like to explore <emphasis>all</emphasis> of the loss manifold. 
+      However, this is not the case as there are regions we are not interested
+      in, namely those with large loss function values. In other words, we
+      would like to sample in such a way as only to stay in regions of the loss
+      manifold associated with small values. Generating trajectories by 
+      dynamics where the negative of the gradient acts as a driving force onto
+      each particle automatically brings them into regions where the
+      loss's value is small. This is the principle behind Gradient Descent.
+       However, in general all possible minima locations will not form a
+       connected region on the loss manifold. These minima regions may
+       be separated by barriers which are needed to overcome. We distinguish
+       two kinds,</para>
       <itemizedlist>
         <listitem>entropic barriers,</listitem>
         <listitem>enthalpic barriers.</listitem>
@@ -349,7 +375,8 @@ cost of all necessary servicing, repair, or correction.</remark>
       momentum to overcome it. Entropic barriers on the other hand are passages
       very small in volume that are simply very difficult to find. In order to
       overcome barriers of the first kind, higher temperatures suffice.
-      For the second type of barrer, this is not so easy.</para>
+      For the second type of barrer, this is not so easy. Metaphorically
+      speaking, we are looking for possibly very small door.</para>
       <para>This quick description of the problem of sampling in the context
       of neural networks in data science should have prepare you now for the
       following quickstart tutorial on how to actually use DataDrivenSampler 
@@ -382,7 +409,7 @@ cost of all necessary servicing, repair, or correction.</remark>
         <para>At the moment, datasets are parsed from Comma Separated Values 
         (CSV) files.  In order for the following examples on optimization and 
         sampling to work, we need such a data file containing features and labels.</para>
-        <para>One option is to us the DatasetWriter, see 
+        <para>One option is to use the DatasetWriter, see 
         <xref linkend="quickstart.cmdline.writing_dataset"/>. However, we can
         do the same using python as well.</para>
         <example xml:id="quickstart.python.writing_data.example">
@@ -444,10 +471,10 @@ cost of all necessary servicing, repair, or correction.</remark>
         </itemizedlist>
          </para>
          <para>We did not say anything about <emphasis>sampler</emphasis>
-         as this is convered in the next section.</para>
+         as this is covered in the next section.</para>
         <para>Afterwards, the network is initialized, then we call <command>train()</command>
-        which performs the training and returns runtime info and trajectory
-        as a pandas DataFrame.</para>
+        which performs the training and returns runtime info, trajectory, and 
+        averages (here not used) as a pandas DataFrame.</para>
         <para>At the end of this section on training, let us have a quick 
         glance at the decrease of the loss function over the steps by using
         <command>matplotlib</command>.</para>
@@ -456,7 +483,7 @@ cost of all necessary servicing, repair, or correction.</remark>
           <programlisting><xi:include  href="python/plot_optimize.py"  parse="text"  
       xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
         </example>
-      <para>Go and have a look athe other columns. Or try to visualize the 
+      <para>Go and have a look at the other columns. Or try to visualize the 
       change in the parameters (weights and biases) in the trajectories
       dataframe.</para>
       </section>
@@ -474,11 +501,14 @@ cost of all necessary servicing, repair, or correction.</remark>
         GeometricLangevinAlgorithm_1st, GeometricLangevinAlgorithm_2nd, BAOAB,
         and HamiltonianMonteCarlo, where the first refers to 
         StochasticGradientLangevinDynamics [Welling, Teh, 2011]. GLA 2nd or 
-        BAOAB is currently recommended to use.</para>
+        BAOAB are currently recommended to use as they are second order schemes
+        and provide higher accuracies and allow for larger step widths.</para>
         <section xml:id="quickstart.python.sampling.supply_dataset">
           <title  xml:id="quickstart.python.sampling.supply_dataset.title">Provide your own dataset</title>
           <para>Using the Python API you can directly supply your own dataset, 
-        e.g. from a numpy array residing in memory. See the following example.</para>
+        e.g. from a numpy array residing in memory. See the following example 
+        where we do not generate the data but parse them from a CSV file
+        instead using the pandas module.</para>
           <example xml:id="quickstart.python.supply_dataset.example">
             <title>Supplying a dataset in the form of a numpy array (parsed from a CSV file)</title>
             <programlisting><xi:include  href="python/supply_dataset.py"  parse="text"  
@@ -499,13 +529,17 @@ cost of all necessary servicing, repair, or correction.</remark>
           <command>prior_upper_boundary</command> and 
           <command>prior_lower_boundary</command> give the admitted interval
           per parameter. Within a relative distance of 0.01 (with respect to 
-          length of domain) a force increase with the distance where the power
-          is determined by <command>prior_power</command>.
-          In essence, this will constrain the sampling to within the domain. The
-          force is modified by <command>prior_factor</command>.</para>
+          length of domain and only in that small region to the specified 
+          boundary) an additional force acts upon the particles to drive them
+          back into the desired domain. Its magnitude increases with distance 
+          to the covered inside the boundary region. The distance is taken to
+          the power of <command>prior_power</command>. The force is modified 
+          by <command>prior_factor</command>.</para>
           <para>If upper and lower boundary coincide, then we have the case
           of tethering, where all parameters are pulled inward to the same 
           point.</para>
+          <para>At the moment prioring just a subset of particles is not
+          supported.</para>
           <note>The prior force is acting directly on the variables. It does not 
           modify momentum. Moeover, it is a force! In other words, it depends on
           step width. If the step width is too large and if the repelling force
@@ -515,8 +549,8 @@ cost of all necessary servicing, repair, or correction.</remark>
         </section>
         <section xml:id="quickstart.python.sampling.optimize_then_sample">
           <title  xml:id="quickstart.python.sampling.optimize_then_sample.title">First optimize, then sample</title>
-          <para>We might also concatenate optimize and sample if in between the
-          two we adjust FLAGS as follows:
+          <para>We might also concatenate optimize and sample if, in between the
+          two, we adjust FLAGS as follows:
           <example xml:id="quickstart.python.sampling.example.combined">
             <title>Optimizing first and subsequent sampling</title>
             <programlisting><xi:include  href="python/optimize_sample.py"  parse="text"  
@@ -530,7 +564,7 @@ cost of all necessary servicing, repair, or correction.</remark>
           We have skipped the following steps that are equivalent to
           <xref xrefstyle="template:Example %n" linkend="quickstart.python.sampling.example"/>.
           Again, at the very end we obtain pandas DataFrame containing runtime 
-          information and trajectory.
+          information, trajectory, and averages.
           <note>This is actually the <emphasis>recommended</emphasis> way of
           doing sampling: First make sure that the parameters start in a local 
           minima and from there we explore the surrounding manifold.</note>
@@ -654,15 +688,14 @@ cost of all necessary servicing, repair, or correction.</remark>
           <programlisting><xi:include  href="cmdline/optimize.sh"  parse="text"  
       xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
         </example>
-        <para>This call will create an internal dataset called "two clusters" with 500 
-        points using random number seed 426 (to generate the dataset in a 
-        deterministic fashion) using 10% of noise. 
-        It will then perform a (Stochastic) Gradient  Descent optimization of the 
-        parameters of the network using a step width/learning rate of 0.01 and
-        do this for 1000 steps after which it stops and writes the resulting neural
-        network in a TensorFlow-specific format to a set of files, one of which
-        is called <command>model.ckpt.meta</command> (and the other filenames
-        are derived from this).</para>
+        <para>This call will parse the dataset from the file
+         "dataset-twoclusters.csv".  It will then perform a (Stochastic) 
+         Gradient  Descent optimization in batches of 50 (10% of the dataset) 
+         of the parameters of the network using a step width/learning rate of 
+         0.01 and do this for 1000 steps after which it stops and writes the 
+         resulting neural network in a TensorFlow-specific format to a set of 
+         files, one of which is called <command>model.ckpt.meta</command> (and 
+         the other filenames are derived from this).</para>
         <note>Since Tensorfloe 1.4 an absolute path is required for the storing 
         the model. In the example we use the current directory returned by the
         unix command <command>pwd</command>.</note>
@@ -683,21 +716,26 @@ cost of all necessary servicing, repair, or correction.</remark>
           <programlisting><xi:include  href="cmdline/sample.sh"  parse="text"  
       xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
         </example>
-        <para>This will cause the sampler to prepare the same dataset as before, as
-        we still are using the same seed, data_type, dimension, and noise.
+        <para>This will cause the sampler to parse the same dataset as before.
         Moreover, the sampler will load the neural network from the model, i.e.
         using the optimized parameters right from the start.
         Afterwards it will use the Geometric Langevin Algorithm (GLA) in 2nd order
-        discetization using again step_width of 0.01 and running for 100,000 steps
+        discetization using again step_width of 0.01 and running for 1000 steps
         in total. The GLA is a descretized variant of Langevin Dynamics whose 
         accuracy scales with the inverse square of the step_width (hence, 2nd 
         order).</para>
-        <para>After it is finished, it will create two files; a run file 
+        <para>The seed is needed as we sample using Langevin Dynamics where
+        a noise term is present. The term basically ascertains a specific 
+        temperature which is proportional to the average momentum of each 
+        particle.</para>
+        <para>After it has finished, it will create two files; a run file 
         <command>run.csv</command>containing run time information such as the 
         step, the potential, kinetic and total energy at each step, and a 
         trajectory file <command>trajectory.csv</command>with each parameter 
         of the neural network at each step. These two files we need in the 
-        next stage.</para>
+        next stage. Using the command <command>--averages_file</command> we 
+        may also write a file containing averages such as the kinetic energy, 
+        the ensemble potential energy and so on.</para>
       </section>
       <section xml:id="quickstart.cmdline.analysing">
         <title  xml:id="quickstart.cmdline.analysing.title">Analysing trajectories</title>
@@ -762,6 +800,12 @@ cost of all necessary servicing, repair, or correction.</remark>
           <para>There are two methods available. Here, we have used the
           simpler (and less accurate) (plain old) vanilla method. The other is
           called TMDMap.</para>
+          <para>If you have installed the <emphasis>pydiffmap</emphasis>
+          python package, this mal also be specified as diffusion map method.
+          It has the benefit of an interal optimal parameter choice. Hence, it
+          should behave more robustly than the other two methods.
+          TMDMap is different only in reweighting tre samples according to
+          the specific temperature.</para>
         </section>
         <section xml:id="quickstart.cmdline.analysing.free_energy">
           <title  xml:id="quickstart.cmdline.analysing.free_energy.title">Free energy</title>
@@ -823,9 +867,9 @@ cost of all necessary servicing, repair, or correction.</remark>
           of legs to look at. Each leg goes over max_steps. After that a 
           diffusion map analysis is performed that checks whether the 
           eigenvalues have converged already. If yes, the trajectory is ended,
-          if not we continue with a new log (of max_steps steps). If no 
+          if not we continue with a new leg (of max_steps steps). If no 
           convergence should occur, max_legs gives the maximum number of legs
-          after which the trajectory is still terminated.</para>
+          after which the trajectory is terminated regardlessly.</para>
           <para>Finally, we run multiple trajectories in parallel from
           starting points that are maximally apart from each other in the
           sense of the diffusion distances. This is controlled by
@@ -963,7 +1007,11 @@ cost of all necessary servicing, repair, or correction.</remark>
     cause the program the re-evaluate the loss function at the trajectory
     points which should hopefully give the same values as already stored in the
     trajectory file itself.</para>
-    <para>More interesting is the second case, where instead of giving
+    <para>However, this may be used with a different dataset file, e.g. the
+    testing or validation dataset, in order to evaluate the generalization
+    error in terms of the overall accuracy or the loss at the points along the 
+    given trajectory.</para>
+    <para>Interesting is also the second case, where instead of giving
     a trajectory file, we sample the parameter space equidistantly as
     follows:</para>
     <example xml:id="reference.loss.example.grid">
@@ -983,9 +1031,11 @@ cost of all necessary servicing, repair, or correction.</remark>
       <programlisting><xi:include  href="cmdline/lossfunctionsampler-fix_parameter.sh"  parse="text"  
   xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
     </example>
-    <para>Alternatively, you can use <quote>exclude_parameters</quote> to
-    remove a specific subset of parameters from the sampling as in the following
-    example.</para>
+    <para>Moreover, using <quote>exclude_parameters</quote> can be
+    used to exclude parameters from the variation, i.e. they are kept at
+    fixed values read from a file.</para>
+    <para>This can be used to assess the shape of the loss manifold around
+    a found minimum.</para>
     <example xml:id="reference.loss.example.exclude_parameters">
       <title>Using LossFunctionSampler with an equidistant grid and excluding parameters</title>
       <programlisting><xi:include  href="cmdline/lossfunctionsampler-exclude_parameters.sh"  parse="text"  
@@ -1028,7 +1078,12 @@ cost of all necessary servicing, repair, or correction.</remark>
     parameter tells it which steps to use for evaluating each point on the
     equidistant input space grid, simply referring to rows in said file.</para>
     <note>For anything but trivial input spaces the computational cost quickly 
-    becomes prohibitively large.</note>
+    becomes prohibitively large. But again <quote>fix_parameters</quote>
+    is heeded and can be used to fix certain parameters. This is even necessary
+    if parsing a trajectory that was created using some parameters fixed as
+    they then will <emphasis>not</emphasis> appear in the set of parameters
+    written to file. This will raise an error as the file will contain too few
+    values.</note>
   </section>
   <section xml:id="reference.samplers">
     <title xml:id="reference.samplers.title">Samplers</title>
