@@ -96,9 +96,17 @@ def main(_):
         else:
             start = 0
 
-        steps=trajectoryLoaded[start::FLAGS.every_nth,0]
-        loss=trajectoryLoaded[start::FLAGS.every_nth,1]
-        trajectory=trajectoryLoaded[start::FLAGS.every_nth,2:]
+        steps=df_trajectory.loc[start::FLAGS.every_nth,['step']].values
+        loss=df_trajectory.loc[start::FLAGS.every_nth,['loss']].values
+        index = -1
+        index2 = -1
+        if "weight0" in df_trajectory.columns:
+            index = df_trajectory.columns.get_loc('weight0')
+        if "bias0" in df_trajectory.columns:
+            index2 = df_trajectory.columns.get_loc('bias0')
+        if (index2 < index and index2 >=0) or (index == -1):
+            index = index2
+        trajectory=df_trajectory.iloc[start::FLAGS.every_nth,index:].values
 
         # check whether dofs are sufficiently converged
         number_dof = len(trajectory[0,:])
@@ -155,14 +163,14 @@ def main(_):
                 csv_writer, csv_file = setup_csv_file(FLAGS.diffusion_matrix_file, header)
                 for i in range(np.shape(vectors)[0]):
                     csv_writer.writerow([i] \
-                        +['{:{width}.{precision}e}'.format(loss[i], \
+                        +['{:{width}.{precision}e}'.format(loss[i,0], \
                             width=output_width, precision=output_precision)] \
                         +['{:{width}.{precision}e}'.format(kernel_diff[i,0], \
                             width=output_width, precision=output_precision)] \
                         +['{:{width}.{precision}e}'.format(x, \
-                            width=output_width, precision=output_precision) for x in np.asarray(trajectory[i,:])] \
+                            width=output_width, precision=output_precision) for x in trajectory[i,:]] \
                         +['{:{width}.{precision}e}'.format(x, \
-                            width=output_width, precision=output_precision) for x in np.real(np.asarray(vectors[i,:]))])
+                            width=output_width, precision=output_precision) for x in np.real(vectors[i,:])])
                 csv_file.close()
 
             if FLAGS.landmark_prefix is not None:
@@ -196,8 +204,8 @@ def main(_):
                     csv_writer, csv_file = setup_csv_file(FLAGS.landmark_prefix+"-ev_"+str(ev_index)+".csv", header)
                     for k in range(np.shape(landmarks[ev_index])[0]):
                         i = landmarks[ev_index][k]
-                        csv_writer.writerow([steps[i]]
-                            +['{:{width}.{precision}e}'.format(loss[i], \
+                        csv_writer.writerow([steps[i,0]]
+                            +['{:{width}.{precision}e}'.format(loss[i,0], \
                                 width=output_width, precision=output_precision)] \
                             +['{:{width}.{precision}e}'.format(q[i,0], \
                                 width=output_width, precision=output_precision)] \
