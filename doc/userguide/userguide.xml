@@ -138,6 +138,7 @@
         examples or tests may depend on them:</para>
         <itemizedlist>
           <listitem>matplotlib: see <uri>matplotlib.org</uri></listitem>
+          <listitem>sqlite3: see <uri>www.sqlite.org</uri></listitem>
         </itemizedlist>
         <para>In our setting what typically worked best was to use 
         <productname>anaconda</productname> in the following manner:</para>
