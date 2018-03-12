@@ -34,7 +34,7 @@ AT_CHECK([../../../DDSExplorer \
 	--inverse_temperature 1 \
 	--max_exploration_steps 1 \
 	--max_legs 5 \
-	--max_steps 10 \
+	--max_steps 30 \
 	--number_of_eigenvalues 1 \
 	--number_of_parallel_trajectories 0 \
 	--number_pruning 0 \
@@ -56,7 +56,7 @@ AT_CHECK([../../../DDSExplorer \
 	--friction_constant 1 \
 	--inverse_temperature 1 \
 	--max_legs 5 \
-	--max_steps 10 \
+	--max_steps 30 \
 	--number_of_eigenvalues 1 \
 	--number_of_parallel_trajectories 0 \
 	--number_pruning 1 \
