@@ -134,6 +134,11 @@
         <programlisting>sudo apt install python3-numpy</programlisting>or via
         <command>pip3</command>, i.e.
         <programlisting>pip3 install numpy</programlisting>
+        <para>Moreover, the following packages are not ultimately required but
+        examples or tests may depend on them:</para>
+        <itemizedlist>
+          <listitem>matplotlib: see <uri>matplotlib.org</uri></listitem>
+        </itemizedlist>
         <para>In our setting what typically worked best was to use 
         <productname>anaconda</productname> in the following manner:</para>
         <programlisting>conda create -n tensorflow python=3.5 -y
@@ -193,7 +198,7 @@ make install
         folder. This assumes that your anaconda environment is named
         <quote>tensorflow</quote> as in the example installation steps above.
         </note>
-        <note>We recommend executing
+        <note>We recommend executing (after <quote>make install</quote> was run)
           <programlisting>make check</programlisting>
           additionally. This will execute every test on the extensive testsuite
           and report any errors. None should fail. If all fail, a possible cause 
@@ -403,7 +408,13 @@ cost of all necessary servicing, repair, or correction.</remark>
       This will import the abstract <command>model</command> class from the
       file mentioned before. This class contains wrapper functions to setup 
       the network with either training and sampling in a few keystrokes.</para>
-      
+      <para>In order to make you own python scripts executable and know about
+      the correct (non-standard) path to DataDrivenSampler, place the following
+      two lines at the veryg beginning of your script:</para>
+      <programlisting>import sys
+sys.path.insert(1,"&lt;path_to_DDS&gt;/lib/python3.5/site-packages/")</programlisting>
+      <para>where <quote>&lt;path_to_DDS&gt;</quote> needs to be replaced by your
+      specific installation path.</para>
       <section xml:id="quickstart.python.writing_data">
         <title  xml:id="quickstart.python.writing_data.title">Preparing a dataset</title>
         <para>At the moment, datasets are parsed from Comma Separated Values 
