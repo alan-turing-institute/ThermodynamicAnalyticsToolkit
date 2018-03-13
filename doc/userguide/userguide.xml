@@ -486,7 +486,7 @@ sys.path.insert(1,"&lt;path_to_DDS&gt;/lib/python3.5/site-packages/")</programli
          as this is covered in the next section.</para>
         <para>Afterwards, the network is initialized, then we call <command>train()</command>
         which performs the training and returns runtime info, trajectory, and 
-        averages (here not used) as a pandas DataFrame.</para>
+        averages as a pandas DataFrame.</para>
         <para>At the end of this section on training, let us have a quick 
         glance at the decrease of the loss function over the steps by using
         <command>matplotlib</command>.</para>
@@ -516,6 +516,15 @@ sys.path.insert(1,"&lt;path_to_DDS&gt;/lib/python3.5/site-packages/")</programli
         and <firstterm linkend="HMC">HamiltonianMonteCarlo</firstterm>. GLA 2nd or 
         BAOAB are currently recommended to use as they are second order schemes
         and provide higher accuracies and allow for larger step widths.</para>
+        <para>Again, we produce three output arrays: run info, trajectory, and
+        averages. Trajectories contains among others all parameter degrees of
+        freedom for each step (or <quote>every_nth</quote> step). Run info
+        contains loss, accuracy, norm of gradient, norm of noise and others.
+        Finally, in averages we compute averages over the trajectory such as
+        average (ensemble) loss, average kinetic energy, average virial. Some
+        columns depend on whether the sampler provides the specific quantity,
+        e.g. SGLD does not have momentum, hence there will be no average kinetic
+        energy.</para>
         <section xml:id="quickstart.python.sampling.supply_dataset">
           <title  xml:id="quickstart.python.sampling.supply_dataset.title">Provide your own dataset</title>
           <para>Using the Python API you can directly supply your own dataset, 
@@ -534,6 +543,8 @@ sys.path.insert(1,"&lt;path_to_DDS&gt;/lib/python3.5/site-packages/")</programli
           array using the pandas module. Natually, this is just one way of
           creating a suitable numpy array. Input and output dimensions are
           directly deduced from the the tuple sizes.</para>
+          <para>Note that we have ignored the average output here, by default
+          none of the three output pandas dataframes are accumulated.</para>
         </section>
         <section xml:id="quickstart.python.sampling.priors">
           <title  xml:id="quickstart.python.sampling.priors.title">Using a prior</title>
@@ -709,7 +720,7 @@ sys.path.insert(1,"&lt;path_to_DDS&gt;/lib/python3.5/site-packages/")</programli
          resulting neural network in a TensorFlow-specific format to a set of 
          files, one of which is called <command>model.ckpt.meta</command> (and 
          the other filenames are derived from this).</para>
-        <note>Since Tensorfloe 1.4 an absolute path is required for the storing 
+        <note>Since Tensorflow 1.4 an absolute path is required for the storing 
         the model. In the example we use the current directory returned by the
         unix command <command>pwd</command>.</note>
         <para>In case you have read the quickstart tutorial on the Python
@@ -741,14 +752,18 @@ sys.path.insert(1,"&lt;path_to_DDS&gt;/lib/python3.5/site-packages/")</programli
         a noise term is present. The term basically ascertains a specific 
         temperature which is proportional to the average momentum of each 
         particle.</para>
-        <para>After it has finished, it will create two files; a run file 
-        <command>run.csv</command>containing run time information such as the 
-        step, the potential, kinetic and total energy at each step, and a 
-        trajectory file <command>trajectory.csv</command>with each parameter 
-        of the neural network at each step. These two files we need in the 
-        next stage. Using the command <command>--averages_file</command> we 
-        may also write a file containing averages such as the kinetic energy, 
-        the ensemble potential energy and so on.</para>
+        <para>After it has finished, it will create three files; a run file 
+        <filename>run.csv</filename>containing run time information such as the 
+        step, the potential, kinetic and total energy at each step, a 
+        trajectory file <filename>trajectory.csv</filename>with each parameter 
+        of the neural network at each step, and an averages file 
+        <filename>averages.csv</filename> containing averages accumulated along
+        the trajectory such as average kinetic energy, average virial (
+        connected to the kinetic energy through the virial theorem, valid if a
+        prior keeps parameters bound to finite values), and the average
+        (ensemble) loss. Moreover, for the <glossterm linkend="HMC">HMC</glossterm>
+        sampler the average rejection rate is stored there. 
+        The first two files we need in the next stage.</para>
       </section>
       <section xml:id="quickstart.cmdline.analysing">
         <title  xml:id="quickstart.cmdline.analysing.title">Analysing trajectories</title>
@@ -790,6 +805,11 @@ sys.path.insert(1,"&lt;path_to_DDS&gt;/lib/python3.5/site-packages/")</programli
            <command>average_run.csv</command>. Also, we have the averages
            over the degrees of freedom in 
            <command>average_trajectories.csv</command>.</para>
+           <note>Averages depend crucially on the number of steps we average
+           over. I.e. the more points we throw away, the less accurate it 
+           becomes. In other words, if large accuracy is required, the averages
+           file (if it contains the value of interest) is a better place to 
+           look for.</note>
         </section>
         <section  xml:id="quickstart.cmdline.analysing.diffusion_map">
           <title  xml:id="quickstart.cmdline.analysing.diffusion_map.title">Diffusion map</title>

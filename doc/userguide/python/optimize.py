@@ -14,10 +14,11 @@ FLAGS = model.setup_parameters(
 nn = model(FLAGS)
 nn.init_network(None, setup="train")
 nn.init_input_pipeline()
-run_info, trajectory, _ = nn.train(return_run_info=True, \
-  return_trajectories=True)
+run_info, trajectory, averages = nn.train(return_run_info=True, \
+  return_trajectories=True, return_averages=True)
 nn.finish()
 
 print("Train results")
 print(np.asarray(run_info[0:10]))
 print(np.asarray(trajectory[0:10]))
+print(np.asarray(averages[0:10]))
