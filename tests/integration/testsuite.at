@@ -21,7 +21,7 @@
 # In pre initial files are placed, in post results can be found to be checked by diff in this testsuite.
 
 AT_INIT([Integration tests])
-#AT_TESTED(awk)
+#AT_TESTED(gawk)
 
 # Use colored output with new-enough Autotest.
 m4_ifdef([AT_COLOR_TESTS], [AT_COLOR_TESTS])
