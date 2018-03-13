@@ -37,10 +37,13 @@ max_exploration_steps = 2
 exploration_step = 1
 while exploration_step < max_exploration_steps:
     # a. combine all trajectories
-    steps, parameters, losses = explorer.combine_trajectories()
+    steps, parameters, losses = \
+        explorer.combine_trajectories()
     # b. perform diffusion map analysis for eigenvectors
-    idx_corner = explorer.get_corner_points(parameters, losses, \
-                                            FLAGS, number_of_corner_points=1)
+    idx_corner = \
+        explorer.get_corner_points(parameters, losses, \
+                                   FLAGS, \
+                                   number_of_corner_points=1)
     # d. spawn new trajectories from these points
     explorer.spawn_corner_trajectories(steps, parameters, losses,
                                        idx_corner, nn)
