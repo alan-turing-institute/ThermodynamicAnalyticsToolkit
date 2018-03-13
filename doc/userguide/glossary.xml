@@ -10,6 +10,31 @@
     </glossdef>
   </glossentry>
   
+  <glossentry xml:id="GLA">
+    <glossterm xml:id="GLA.full">Geometric Langevin Algorithm
+    (<acronym xml:id="GLA.acronym">GLA</acronym>)</glossterm>
+    <glossdef>
+      <para>This family of samplers results from a first-order splitting between
+      the Hamiltonian and the Ornstein-Uhlenbeck parts. It provides up to 
+      second-order accuracy. In the package we have implemented both the 1st
+      and 2nd order variant. GLA2nd is among the most accurate samplers,
+      especially when it comes to accuracy of momenta. It is surpassed by
+      BAOAB, particularly for positions.</para>
+    </glossdef>
+  </glossentry>
+  
+  <glossentry xml:id="HMC">
+    <glossterm xml:id="HMC.full">Hamiltonian Monte Carlo
+    (<acronym xml:id="HMC.acronym">HMC</acronym>)</glossterm>
+    <glossdef>
+      <para>Instead of Langevin Dynamics this sampler relies on Hamiltonian
+      Dynamics. After a specific number of trajectory steps an acceptance
+      criterion is evaluated. Afterwards momenta are drawn randomly. Hence,
+      here noise comes into play at distinct intervals while for the other 
+      samplers noise enters gradually in every step.</para>
+    </glossdef>
+  </glossentry>
+  
   <glossentry xml:id="SGD">
     <glossterm xml:id="SGD.full">Stochastic Gradient Descent
     (<acronym xml:id="SGD.acronym">SGD</acronym>)</glossterm>

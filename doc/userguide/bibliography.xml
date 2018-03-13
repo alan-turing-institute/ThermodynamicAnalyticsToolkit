@@ -2,6 +2,67 @@
  version="4.5" 
   xmlns="http://docbook.org/ns/docbook">
 
+<biblioentry role="article" id="baoab">
+  <abbrev id="baoab.abbrev">Leimkuhler2012</abbrev>
+  <biblioset role="article">
+    <author>
+      <firstname>B.</firstname><surname>Leimkuhler</surname>
+      <firstname>C.</firstname><surname>Matthews</surname>
+    </author>
+    <title>Rational Construction of Stochastic Numerical Methods for Molecular Sampling</title>
+    <pagenums>34-56</pagenums>
+    <bibliosource class="doi">10.1093/amrx/abs010</bibliosource>
+  </biblioset>
+    
+  <biblioset role="article">
+    <title>Applied Mathematics Research eXpress</title>
+    <pubdate>2013</pubdate>
+
+  </biblioset>
+</biblioentry>
+
+<biblioentry role="article" id="gla">
+  <abbrev id="gla.abbrev">Leimkuhler2015</abbrev>
+  <biblioset role="article">
+    <author>
+      <firstname>B.</firstname><surname>Leimkuhler</surname>
+      <firstname>C.</firstname><surname>Matthews</surname>
+      <firstname>G.</firstname><surname>Stoltz</surname>
+    </author>
+    <title>The computation of averages from equilibrium and nonequilibrium Langevin molecular dynamics</title>
+    <pagenums>1-55</pagenums>
+    <bibliosource class="doi">http://dx.doi.org/10.1093/imanum/dru056</bibliosource>
+  </biblioset>
+    
+  <biblioset role="article">
+    <title>IMA Journal of Numerical Analysis</title>
+    <pubdate>2015</pubdate>
+
+  </biblioset>
+</biblioentry>
+
+<biblioentry role="article" id="hmc">
+  <abbrev id="hmc.abbrev">Duane1987</abbrev>
+  <biblioset role="article">
+    <author>
+      <firstname>S.</firstname><surname>Duane</surname>
+      <firstname>A.D.</firstname><surname>Kennedy</surname>
+      <firstname>B.J.</firstname><surname>Pendleton</surname>
+      <firstname>D.</firstname><surname>Roweth</surname>
+    </author>
+    <title>Hybrid Monte Carlo</title>
+    <volumenum>195</volumenum>
+    <pagenums>216-222</pagenums>
+    <bibliosource class="doi">http://dx.doi.org/10.1016/0370-2693(87)91197-X</bibliosource>
+  </biblioset>
+    
+  <biblioset role="article">
+    <title>Physics Letters B</title>
+    <pubdate>1987</pubdate>
+
+  </biblioset>
+</biblioentry>
+
 <biblioentry role="article" id="sgld">
   <abbrev id="sgld.abbrev">Welling2011</abbrev>
   <biblioset role="article">

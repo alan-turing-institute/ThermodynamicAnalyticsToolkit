@@ -49,7 +49,7 @@ dist_pdf_DATA = @PACKAGE@.pdf
 if have_fop
 if have_xsltproc
 
-@PACKAGE@.fo: $(top_srcdir)/doc/userguide/userguide.xml $(GLOSSARY_FILE) $(XML_CATALOG_FILES) $(PYTHON_EXAMPLES)
+@PACKAGE@.fo: $(top_srcdir)/doc/userguide/userguide.xml $(top_srcdir)/doc/userguide/bibliography.xml $(top_srcdir)/doc/userguide/glossary.xml $(GLOSSARY_FILE) $(XML_CATALOG_FILES) $(PYTHON_EXAMPLES)
 	XML_CATALOG_FILES=$(XML_CATALOG_FILES) $(XSLTPROC) $(XSLTPROC_FLAGS) -o $@ $(PDF_STYLESHEET) $<
 @PACKAGE@.pdf: @PACKAGE@.fo
 	$(FOP) -fo $< -pdf $@

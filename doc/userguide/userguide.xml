@@ -509,10 +509,11 @@ sys.path.insert(1,"&lt;path_to_DDS&gt;/lib/python3.5/site-packages/")</programli
         </example>
         <para>Here, the <emphasis>sampler</emphasis> setting takes the place
         of the <command>optimizer</command> before as it states which sampling 
-        scheme to use. At the moment the following are available: sgld, 
-        GeometricLangevinAlgorithm_1st, GeometricLangevinAlgorithm_2nd, BAOAB,
-        and HamiltonianMonteCarlo, where the first refers to 
-        StochasticGradientLangevinDynamics [Welling, Teh, 2011]. GLA 2nd or 
+        scheme to use. At the moment the following are available: 
+        <firstterm linkend="SGLD">SGLD</firstterm> 
+        <firstterm linkend="GLA">GeometricLangevinAlgorithm_1st</firstterm>, 
+        <firstterm linkend="GLA">GeometricLangevinAlgorithm_2nd</firstterm>, BAOAB,
+        and <firstterm linkend="HMC">HamiltonianMonteCarlo</firstterm>. GLA 2nd or 
         BAOAB are currently recommended to use as they are second order schemes
         and provide higher accuracies and allow for larger step widths.</para>
         <section xml:id="quickstart.python.sampling.supply_dataset">
@@ -731,11 +732,11 @@ sys.path.insert(1,"&lt;path_to_DDS&gt;/lib/python3.5/site-packages/")</programli
         <para>This will cause the sampler to parse the same dataset as before.
         Moreover, the sampler will load the neural network from the model, i.e.
         using the optimized parameters right from the start.
-        Afterwards it will use the Geometric Langevin Algorithm (GLA) in 2nd order
-        discetization using again step_width of 0.01 and running for 1000 steps
-        in total. The GLA is a descretized variant of Langevin Dynamics whose 
-        accuracy scales with the inverse square of the step_width (hence, 2nd 
-        order).</para>
+        Afterwards it will use the <glossterm linkend="GLA">GLA</glossterm> 
+        in 2nd order discetization using again step_width of 0.01 and running 
+        for 1000 steps in total. The <glossterm linkend="GLA">GLA</glossterm> 
+        is a descretized variant of Langevin Dynamics whose accuracy scales 
+        with the inverse square of the step_width (hence, 2nd order).</para>
         <para>The seed is needed as we sample using Langevin Dynamics where
         a noise term is present. The term basically ascertains a specific 
         temperature which is proportional to the average momentum of each 
@@ -1061,7 +1062,7 @@ sys.path.insert(1,"&lt;path_to_DDS&gt;/lib/python3.5/site-packages/")</programli
     all excluded parameters. This file is of CSV style having a column "step"
     to identify which row is to be used and moreover a column for every 
     (excluded) parameter that is fixed at a value unequal to 0. Note that
-    the minima file written by <programname>DDSExplorer</programname>
+    the minima file written by <command>DDSExplorer</command>
     can be used as this centers file. Moreover, also the trajectory files have
     the same structure.</para>
   </section>
@@ -1124,7 +1125,45 @@ sys.path.insert(1,"&lt;path_to_DDS&gt;/lib/python3.5/site-packages/")</programli
       <glossterm linkend="GD">GD</glossterm> in terms that the 
       <command>step_width</command> needs to be small enough with respect
       to the gradient sizes of your problem.</note>
-      </section>
+    </section>
+    <section xml:id="reference.samplers.gla">
+      <title xml:id="reference.samplers.gla.title">Geometric Langevin Algorithms</title>
+      <para><firstterm linkend="GLA">GLA</firstterm> results from a first-order splitting
+      between the Hamiltonian and the Ornstein-Uhlenbeck parts, see section 
+      2.2.3 of <citation role="REFDB">Leimkuhler2015</citation> and also
+      <citation role="REFDB">Leimkuhler2012</citation>. It provides
+      second order accuracy at basically no extra cost.</para>
+      <note>
+      <para>All <glossterm linkend="GLA">GLA</glossterm> samplers have two
+      more parameters: the inverse temperature beta and the friction constant
+      gamma. Inverse temperature controls the average momentum of each 
+      parameter while the friction constant decides over how much of the 
+      momentum is replaced by random noise, i.e. the random walker character
+      of the trajectory.</para>
+      <para>Good values for beta depend on the loss manifold and its barriers
+      and need to be find by try&amp;error and the moment.</para>
+      </note>
+    </section>
+    <section xml:id="reference.samplers.baoab">
+      <title xml:id="reference.samplers.baoab.title">BAOAB</title>
+      <para>BAOAB derives from the basic building blocks A (position update),
+      B (momentum update), and O (noise update) into which the Langevin
+      system is split up. Each step is solved in a separate step. Hence, we
+      perform a B step, then an A step, ... and so on. This scheme has 
+      second-order accuracy and superb overall accuracy with respect to 
+      positions. See <citation role="REFDB">Leimkuhler2012</citation> for
+      more details.</para>
+      <note>BAOAB has the same two additional parameters as the 
+      <xref linkend="reference.samplers.gla">GLAs</xref></note>
+    </section>
+    <section xml:id="reference.samplers.hmc">
+      <title xml:id="reference.samplers.hmc.title">Hamiltonian Monte Carlo</title>
+      <para><firstterm linkend="HMC">HMC</firstterm> is based on Hamiltonian
+      dynamics instead of Langevin Dynamics. Noise only enters when, after the
+      evaluation of an acceptance criterion, the momenta are redrawn randomly.
+      It has first been proposed by <citation role="REFDB">Duane1987</citation>.
+      </para>
+    </section>
   </section>
   <section xml:id="reference.exploring">
     <title xml:id="reference.exploring.title">Exploring the manifold</title>
