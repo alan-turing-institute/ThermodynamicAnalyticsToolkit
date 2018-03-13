@@ -3,6 +3,8 @@
   <!ENTITY dataset_two_clusters SYSTEM "pictures/dataset_two_clusters.png" NDATA PNG>
   <!ENTITY simple_single_layer_perceptron SYSTEM "pictures/simple_single_layer_perceptron.png" NDATA PNG>
   <!ENTITY optimization_step_loss SYSTEM "pictures/optimization-step_loss.png" NDATA PNG>
+  <!ENTITY neuralnetwork_permutation_symmetry SYSTEM "pictures/neuralnetwork_permutation_symmetry.png" NDATA PNG>
+  <!ENTITY losslandscape_permutation_symmetry SYSTEM "pictures/losslandscape_permutation_symmetry.png" NDATA PNG>
 ]>
 <book 
   xmlns="http://docbook.org/ns/docbook" 
@@ -392,6 +394,43 @@ cost of all necessary servicing, repair, or correction.</remark>
       of neural networks in data science should have prepare you now for the
       following quickstart tutorial on how to actually use DataDrivenSampler 
       to perform sampling.</para>
+      <para>Let us have a closer look at a very simple loss landscape. In
+      <xref linkend="quickstart.introduction.landscape.neuralnetwork">Figure</xref>
+      we look at a very simple network of a single input node, with a single 
+      hidden layer containing just one node and a single output layer. 
+      Activation function is linear everywhere. We set the output node's and 
+      hidden node's bias to zero. The dataset contains two cluster of points,
+      one (label -1) centered at -2, another (label +1) centered at 2 which we 
+      do not depict here. Any product of the two degrees of freedom of the 
+      network, namely its two weights, equal to unity will classify the data 
+      well.</para>
+    <figure xml:id="quickstart.introduction.landscape.neuralnetwork">
+        <title>Neural network with permutation symmetry to provoke multiple minima</title>
+        <mediaobject>
+          <imageobject>
+            <imagedata width="45%" scalefit="1." entityref="neuralnetwork_permutation_symmetry"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+      <para>In <xref linkend="quickstart.introduction.landscape.loss">Figure</xref>
+      we then turn to the loss landscape depending on either weight. We see
+      two minima basins both of hyperbole or "banane" shape. There is a clear
+      (enthalpic) potential barrier in between. However, the minima basins
+      themselves are to some part entropic barriers as they are elongated and 
+      flat.</para>
+      <para>In the figure we also give a trajectory. Here, we have chosen such
+      a (inverse) temperature value such that it is able to pass the potential
+      barrier and reach the other minima basin.</para>
+    <figure xml:id="quickstart.introduction.landscape.loss">
+        <title>Loss landscape with an example trajectory</title>
+        <mediaobject>
+          <imageobject>
+            <imagedata width="45%" scalefit="1." entityref="losslandscape_permutation_symmetry"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+      <para>This is the goal of exploration: To find all (local) minima to allow
+      to pick the lowest, namely the global minimum.</para>
     </section>
     <section xml:id="quickstart.python">
       <title  xml:id="quickstart.python.title">Using Python</title>
