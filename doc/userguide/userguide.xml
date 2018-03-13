@@ -140,6 +140,9 @@
           <listitem>matplotlib: see <uri>matplotlib.org</uri></listitem>
           <listitem>sqlite3: see <uri>www.sqlite.org</uri></listitem>
         </itemizedlist>
+        <para>Finally, for the diffusion map analysis we recommend using the
+        pydiffmap package, see 
+        <uri>github.com/DiffusionMapsAcademics/pyDiffMap</uri>.</para>
         <para>In our setting what typically worked best was to use 
         <productname>anaconda</productname> in the following manner:</para>
         <programlisting>conda create -n tensorflow python=3.5 -y
