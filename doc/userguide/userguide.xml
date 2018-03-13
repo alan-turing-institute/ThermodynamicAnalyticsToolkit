@@ -2,6 +2,7 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd" [
   <!ENTITY dataset_two_clusters SYSTEM "pictures/dataset_two_clusters.png" NDATA PNG>
   <!ENTITY simple_single_layer_perceptron SYSTEM "pictures/simple_single_layer_perceptron.png" NDATA PNG>
+  <!ENTITY optimization_step_loss SYSTEM "pictures/optimization-step_loss.png" NDATA PNG>
 ]>
 <book 
   xmlns="http://docbook.org/ns/docbook" 
@@ -484,8 +485,8 @@ sys.path.insert(1,"&lt;path_to_DDS&gt;/lib/python3.5/site-packages/")</programli
           minimum, values too small need longer to reach it.
           </listitem>
         </itemizedlist>
-         </para>
-         <para>We did not say anything about <emphasis>sampler</emphasis>
+        </para>
+        <para>We did not say anything about <emphasis>sampler</emphasis>
          as this is covered in the next section.</para>
         <para>Afterwards, the network is initialized, then we call <command>train()</command>
         which performs the training and returns runtime info, trajectory, and 
@@ -498,9 +499,21 @@ sys.path.insert(1,"&lt;path_to_DDS&gt;/lib/python3.5/site-packages/")</programli
           <programlisting><xi:include  href="python/plot_optimize.py"  parse="text"  
       xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
         </example>
-      <para>Go and have a look at the other columns. Or try to visualize the 
-      change in the parameters (weights and biases) in the trajectories
-      dataframe.</para>
+        <para>The graph should look similar to the one obtained with 
+        pgfplots (see <uri>https://sourceforge.net/pgfplots</uri> in 
+        <xref linkend="quickstart.python.optimizing.plot">Figure</xref>.
+        </para>
+        <figure xml:id="quickstart.python.optimizing.plot">
+            <title>Plot of the loss history for the optimization run</title>
+            <mediaobject>
+              <imageobject>
+                <imagedata width="50%" scalefit="1." entityref="optimization_step_loss"/>
+              </imageobject>
+            </mediaobject>
+          </figure>
+          <para>Go and have a look at the other columns. Or try to visualize the 
+          change in the parameters (weights and biases) in the trajectories
+          dataframe.</para>
       </section>
       <section xml:id="quickstart.python.sampling">
         <title  xml:id="quickstart.python.sampling.title">Sampling the network</title>
@@ -723,6 +736,11 @@ sys.path.insert(1,"&lt;path_to_DDS&gt;/lib/python3.5/site-packages/")</programli
          resulting neural network in a TensorFlow-specific format to a set of 
          files, one of which is called <command>model.ckpt.meta</command> (and 
          the other filenames are derived from this).</para>
+        <para>We have also created a file <filename>run.csv</filename> which
+        contains among others the loss at each (<quote>every_nth</quote>, 
+        respectively) step of the optimization run. Plotting the loss over the 
+        step column from the run file will result in a figure similar to in 
+        <xref linkend="quickstart.python.optimizing.plot"/>.</para>
         <note>Since Tensorflow 1.4 an absolute path is required for the storing 
         the model. In the example we use the current directory returned by the
         unix command <command>pwd</command>.</note>
