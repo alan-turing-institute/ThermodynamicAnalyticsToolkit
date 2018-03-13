@@ -1301,17 +1301,6 @@ sys.path.insert(1,"&lt;path_to_DDS&gt;/lib/python3.5/site-packages/")</programli
     </section>
     <para>still empty</para>
   </section>
-  <section xml:id="reference.limitations">
-    <title xml:id="reference.limitations.title">Current limitations</title>
-    <para>We would like to list the current limitations of the implementation.
-    Note that in general this code is heavily based on tensorflow, hence all its
-    limitations also apply to us.</para>
-    <itemizedlist>
-      <listitem> 
-        <para>At the moment only exactly two-dimensional inputs are supported.</para>
-      </listitem>
-    </itemizedlist>
-  </section>
 </chapter>
   <chapter>
     <title>Acknowledgements</title>
