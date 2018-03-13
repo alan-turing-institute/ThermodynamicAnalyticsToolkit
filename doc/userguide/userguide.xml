@@ -972,6 +972,37 @@ sys.path.insert(1,"&lt;path_to_DDS&gt;/lib/python3.5/site-packages/")</programli
         </section>
       </section>
     </section>
+    <section xml:id="quickstart.parallelization">
+      <title  xml:id="quickstart.parallelization.title">A note on parallelization</title>
+      <para>Internally, <productname>Tensorflow</productname> uses a 
+      computational graph to represent all operations. Nodes in the graph 
+      represent computations and their results and edges represent 
+      dependencies between these values, i.e. some may act as input to 
+      operations resulting in certain output.</para>
+      <para>Because of this internal representation 
+      <productname>Tensorflow</productname> has two kind of parallelisms:
+      <itemizedlist>
+        <listitem>inter ops</listitem>
+        <listitem>intra ops</listitem>
+      </itemizedlist>
+      Each is connected to its its own thread pool. Both the command-line
+      and the Python interface let you pick the number of threads per pool.
+      If 0 is stated (default), then the number of threads is picked 
+      automatically.</para>
+      <para>In general, <quote>inter_ops_threads</quote>refers to multiple
+      cores performing matrix multiplication or reduction operations together.
+      <quote>intra_ops_threads</quote> seems to be connected to executing
+      multiple nodes in parallel that are independent of each other but this is
+      guessing at the moment.</para>
+      <warning>
+        <para>When setting <quote>inter_ops_threads</quote> 
+        <emphasis>unequal</emphasis> to 1, then subsequent runs may produce
+        different results, i.e. results are no longer strictly reproducible.
+        According to Tensorflow this is because reduction operations such as
+        <command>reduce_sum</command> run non-deterministically on multiple
+        cores for sake of speed.</para>
+      </warning>
+    </section>
     <section xml:id="quickstart.conclusion">
       <title  xml:id="quickstart.conclusion.title">Conclusion</title>
       <para>This has been the very quick introduction into samping done
