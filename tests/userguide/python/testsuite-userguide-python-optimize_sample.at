@@ -28,7 +28,7 @@ AT_CHECK([cp -f ${abs_top_srcdir}/tests/userguide/python/pre/dataset-twoclusters
 AT_CHECK([../../run \
 	${abs_top_srcdir}/doc/userguide/python/optimize_sample.py
 ], 0, [stdout], [stderr])
-AT_CHECK([grep "10 " stdout], 0, [ignore], [ignore])
+AT_CHECK([grep " 10." stdout], 0, [ignore], [ignore])
 
 AT_CLEANUP
 
