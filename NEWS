@@ -1,3 +1,22 @@
+v0.6
+====
+
+- supporting now up to tensorflow 1.6
+- added DDSExplorer for exploring loss landscapes, picking minima long the way
+- prints replaced by logging expressions and verbose cmdline statment supported
+- FIX: rejection_rate in HMC fixed
+- tensorflow computations can now be done with a given basetype.
+- returned to default tf.float32 as tensorflow basetype. tf.float64 seems to
+  be broken to some extent suggested from sampler's convergence plots
+- FIX: SGLD was not resetting aggregated values in run info
+- LossFunctionSampler can now fix partial set of parameters and to values
+  obtained from (minima, trajectory) file
+- FIX: Picking input columns (e.g. "sin(x1)") was broken to some extent
+- LossFunctionSampler and InputSpaceSampler can now interpret CSV files of
+  arbitrary type (they pick out the columns they need)
+- updated userguide significantly
+- some fixes to changed dependent python packages related to Ubuntu 16.04
+
 v0.5
 ====
 

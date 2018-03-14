@@ -1,7 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT(DataDrivenSampler, 0.5, frederik.heber@gmail.com)
+AC_INIT(DataDrivenSampler, 0.6, frederik.heber@gmail.com)
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_SRCDIR([src/DataDrivenSampler/common.py])
 AC_CONFIG_MACRO_DIR([m4])
