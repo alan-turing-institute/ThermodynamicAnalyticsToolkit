@@ -2,6 +2,8 @@ import logging
 import numpy as np
 import tensorflow as tf
 
+from distutils.version import LooseVersion
+
 from DataDrivenSampler.models.basetype import dds_basetype
 from DataDrivenSampler.samplers.BAOAB import BAOABSampler
 from DataDrivenSampler.samplers.GLAFirstOrderMomentumSampler import GLAFirstOrderMomentumSampler
@@ -312,12 +314,17 @@ class NeuralNetwork(object):
         :param y_: true labels
         """
         with tf.name_scope('loss'):
-            softmax_cross_entropy = tf.reduce_mean(
-                tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y))
             sigmoid_cross_entropy = tf.reduce_mean(
                 tf.nn.sigmoid_cross_entropy_with_logits(labels=y_, logits=y))
             absolute_difference = tf.losses.absolute_difference(labels=y_, predictions=y)
-            cosine_distance = tf.losses.cosine_distance(labels=y_, predictions=y, dim=1)
+            if LooseVersion(tf.__version__) < LooseVersion("1.5.0"):
+                cosine_distance = tf.losses.cosine_distance(labels=y_, predictions=y, dim=1)
+                softmax_cross_entropy = tf.reduce_mean(
+                    tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y))
+            else:
+                cosine_distance = tf.losses.cosine_distance(labels=y_, predictions=y, axis=1)
+                softmax_cross_entropy = tf.reduce_mean(
+                    tf.nn.softmax_cross_entropy_with_logits_v2(labels=y_, logits=y))
             hinge_loss = tf.losses.hinge_loss(labels=y_, logits=y)
             log_loss = tf.losses.log_loss(labels=y_, predictions=y)
             mean_squared = tf.losses.mean_squared_error(labels=y_, predictions=y)
