@@ -128,7 +128,7 @@
         moment other operation systems are not supported but may still work.</para>
         <para>It has the following non-trivial dependencies:</para>
         <itemizedlist>
-          <listitem>TensorFlow: see below<uri>www.tensorflow.org</uri></listitem>
+          <listitem>TensorFlow: see below<uri>www.tensorflow.org</uri>, version 1.4 till currently 1.6 supported</listitem>
           <listitem>Numpy: see <uri>www.numpy.org</uri></listitem>
           <listitem>Pandas: see <uri>pandas.pydata.org</uri></listitem>
           <listitem>sklearn: see <uri>scikit-learn.org</uri></listitem>
