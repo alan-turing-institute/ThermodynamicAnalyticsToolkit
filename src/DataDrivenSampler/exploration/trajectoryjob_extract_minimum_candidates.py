@@ -49,36 +49,50 @@ class TrajectoryJob_extract_minimium_candidates(TrajectoryJob):
                 """
                 smallest_val_index = small_gradient_start
                 smallest_val = _data.gradients[smallest_val_index]
-                for j in range(small_gradient_start + 1, i):
+                for j in range(small_gradient_start + 1, small_gradient_end):
                     if _data.gradients[j] < smallest_val:
                         smallest_val_index = j
                         smallest_val = _data.gradients[j]
                 return smallest_val_index
 
             # gather new ones
-            small_gradient_start = -1
+            if _data.gradients[0] <= tolerance:
+                small_gradient_start = 0
+            else:
+                small_gradient_start = -1
             for i in range(1,len(_data.gradients)):
                 if _data.gradients[i-1] > tolerance \
                     and _data.gradients[i] <= tolerance:
+                    logging.debug("Found start of region below tolerance "+str(tolerance) \
+                                  +" at "+str(i)+" with "+str(_data.gradients[i]))
                     small_gradient_start = i
                 elif _data.gradients[i-1] <= tolerance \
                     and _data.gradients[i] > tolerance:
+                    logging.debug("Found end of region below tolerance "+str(tolerance) \
+                                  +" at "+str(i)+" with "+str(_data.gradients[i]))
                     if small_gradient_start != -1:
                         smallest_val_index = find_smallest_gradient_index(
                             small_gradient_start, i)
                         _data.minimum_candidates.append(smallest_val_index)
+                        logging.debug("Picked " + str(smallest_val_index)+ " with " \
+                                      +str(_data.gradients[smallest_val_index]) \
+                                      +" as candidate from region")
                         # reset gradient start
                         small_gradient_start = -1
             # check if last small gradient region extends till end of trajectory
-            if (small_gradient_start != -1) and len(_data.minimum_candidates) != 0:
-                smallest_val_index = find_smallest_gradient_index(small_gradient_start, -1)
+            if (small_gradient_start != -1) and len(_data.gradients) != 0:
+                smallest_val_index = find_smallest_gradient_index(
+                    small_gradient_start, len(_data.gradients))
                 _data.minimum_candidates.append(smallest_val_index)
+                logging.debug("Picked " + str(smallest_val_index) + " with " \
+                              + str(_data.gradients[smallest_val_index]) \
+                              + " as candidate from last region")
 
             if len(_data.minimum_candidates) > self.MINIMUM_EXTRACT_CANDIDATES:
                 print("Picked "+str(len(_data.minimum_candidates))+" at threshold "+str(tolerance))
                 break
-            #else:
-            #    print("Threshold " + str(tolerance)+" is too small still.")
+
+            logging.info("Found minima candidates: " + str(_data.minimum_candidates))
 
         logging.info("Found minima candidates: "+str(_data.minimum_candidates))
 
