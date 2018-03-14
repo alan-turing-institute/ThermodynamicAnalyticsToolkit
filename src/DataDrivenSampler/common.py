@@ -349,7 +349,7 @@ def decode_csv_line(line, defaults):
     items = tf.decode_csv(line, list(defaults.values()))
 
     # reshape into proper tensors
-    features = items[0:-1]
+    features = tf.stack(items[0:-1])
     label = tf.reshape(tf.convert_to_tensor(items[-1], dtype=tf.int32), [1])
 
     # return last element as label, rest as features
