@@ -1,5 +1,6 @@
 DDSampler \
-  	--batch_data_files dataset-twoclusters.csv \
+    --averages_file averages.csv \
+    --batch_data_files dataset-twoclusters.csv \
     --batch_size 50 \
     --friction_constant 10 \
     --inverse_temperature 10 \

@@ -1,6 +1,8 @@
 # specific source code versioning stuff
 version.py
 .git-version
+doc/userguide/version.txt
+doc/.git-version
 
 
 # python and pycharm stuff

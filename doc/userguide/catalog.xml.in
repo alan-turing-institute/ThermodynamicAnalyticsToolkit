@@ -18,4 +18,7 @@
 
         <uri name="pictures/small_single_layer_perceptron.png" uri="pictures/small_single_layer_perceptron.png"/>
         <uri name="pictures/dataset_two_clusters.png" uri="pictures/dataset_two_clusters.png"/>
+        <uri name="pictures/optimization-step_loss.png" uri="pictures/optimization-step_loss.png"/>
+        <uri name="pictures/neuralnetwork_permutation_symmetry.png" uri="pictures/neuralnetwork_permutation_symmetry.png"/>
+        <uri name="pictures/losslandscape_permutation_symmetry.png" uri="pictures/losslandscape_permutation_symmetry.png"/>
 </catalog>

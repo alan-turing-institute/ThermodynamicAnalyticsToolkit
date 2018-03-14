@@ -49,7 +49,7 @@ dist_pdf_DATA = @PACKAGE@.pdf
 if have_fop
 if have_xsltproc
 
-@PACKAGE@.fo: $(top_srcdir)/doc/userguide/userguide.xml $(GLOSSARY_FILE) $(XML_CATALOG_FILES) $(PYTHON_EXAMPLES)
+@PACKAGE@.fo: $(top_srcdir)/doc/userguide/userguide.xml $(top_srcdir)/doc/userguide/bibliography.xml $(top_srcdir)/doc/userguide/glossary.xml $(srcdir)/userguide/version.txt $(GLOSSARY_FILE) $(XML_CATALOG_FILES) $(PYTHON_EXAMPLES)
 	XML_CATALOG_FILES=$(XML_CATALOG_FILES) $(XSLTPROC) $(XSLTPROC_FLAGS) -o $@ $(PDF_STYLESHEET) $<
 @PACKAGE@.pdf: @PACKAGE@.fo
 	$(FOP) -fo $< -pdf $@
@@ -83,6 +83,23 @@ SUBDIRS = userguide
 EXTRA_DIST += \
 	am_doxygen_include.am \
 	Doxyfile
+
+FORCE:
+
+$(srcdir)/.git-version: FORCE
+	@if (test -d $(top_srcdir)/.git && cd $(srcdir) \
+		&& { git describe --dirty --long || git describe --long; } ) > .git-version-t 2>/dev/null \
+		&& ! diff .git-version-t $(srcdir)/.git-version >/dev/null 2>&1; then \
+		mv -f .git-version-t $(srcdir)/.git-version; \
+	else \
+		rm -f .git-version-t; \
+	fi
+
+EXTRA_DIST += \
+	$(srcdir)/.git-version
+
+$(srcdir)/userguide/version.txt: $(srcdir)/.git-version
+	cat $(srcdir)/.git-version >$@
 
 include ../src/documentation/Makefile.am
 
