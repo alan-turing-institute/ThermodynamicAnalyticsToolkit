@@ -40,6 +40,7 @@ AT_CHECK([../../../DDSOptimizer \
 
 # and compare (exclude time_per_nth_step column)
 AT_CHECK([../../../NumericalDiff \
+    --general_threshold 1.1e-6 absolute \
     --column_drop time_per_nth_step id -- \
     run-mnist.csv ${abs_top_srcdir}/tests/regression/DataOptimizer/Datasets/post/run-mnist.csv], 0, [ignore], [ignore])
 

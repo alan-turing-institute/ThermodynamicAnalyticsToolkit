@@ -35,7 +35,8 @@ AT_CHECK([../../../DDSOptimizer \
 ], 0, [stdout], [stderr])
 
 # and compare
-AT_CHECK([../../../NumericalDiff -- \
-    averages-twoclusters.csv ${abs_top_srcdir}/tests/regression/DataOptimizer/Averages/post/averages-twoclusters.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff \
+    --general_threshold 1e-7 absolute \
+    -- averages-twoclusters.csv ${abs_top_srcdir}/tests/regression/DataOptimizer/Averages/post/averages-twoclusters.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP

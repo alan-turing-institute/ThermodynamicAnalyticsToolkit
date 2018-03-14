@@ -46,6 +46,7 @@ AT_CHECK([../../../DDSExplorer \
 ], 0, [stdout], [stderr])
 
 AT_CHECK([../../../NumericalDiff \
+    --general_threshold 1e-7 absolute \
     --column_drop time_per_nth_step -- \
     run-single.csv ${abs_top_srcdir}/tests/regression/DataDrivenExplorer/SingleTrajectory/post/run-single.csv], 0, [ignore], [ignore])
 

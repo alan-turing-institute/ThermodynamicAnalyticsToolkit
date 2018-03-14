@@ -36,6 +36,7 @@ AT_CHECK([../../../DDSOptimizer \
 
 # and compare (exclude time_per_nth_step column)
 AT_CHECK([../../../NumericalDiff \
+    --general_threshold 2e-7 absolute \
     --column_drop time_per_nth_step id -- \
     run-twospirals.csv ${abs_top_srcdir}/tests/regression/DataOptimizer/Datasets/post/run-twospirals.csv], 0, [ignore], [ignore])
 
