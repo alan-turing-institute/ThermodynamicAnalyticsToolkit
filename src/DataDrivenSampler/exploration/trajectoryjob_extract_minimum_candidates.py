@@ -92,8 +92,6 @@ class TrajectoryJob_extract_minimium_candidates(TrajectoryJob):
                 print("Picked "+str(len(_data.minimum_candidates))+" at threshold "+str(tolerance))
                 break
 
-            logging.info("Found minima candidates: " + str(_data.minimum_candidates))
-
         logging.info("Found minima candidates: "+str(_data.minimum_candidates))
 
         # after extract there is no other job (on that trajectory)
