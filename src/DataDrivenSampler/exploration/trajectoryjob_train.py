@@ -104,6 +104,7 @@ class TrajectoryJob_train(TrajectoryJob_sample):
                 self.network_model.hessians,
                 feed_dict=feed_dict)
             #print(hessian_eval)
+            _data.hessian_eigenvalues.append(np.linalg.eigvals(hessian_eval))
             logging.info("Max and min eigenvalues of hessian: "+str(_data.hessian_eigenvalues[0:2]) \
                          +"..."+str(_data.hessian_eigenvalues[-3:-1]))
 

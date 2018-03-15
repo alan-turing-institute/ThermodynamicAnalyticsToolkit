@@ -38,6 +38,7 @@ class TrajectoryData(object):
 
         # candidates for minima
         self.minimum_candidates = []
+        self.hessian_eigenvalues = []
 
         # indicates whether this trajectory is done
         self.is_pruned = False
