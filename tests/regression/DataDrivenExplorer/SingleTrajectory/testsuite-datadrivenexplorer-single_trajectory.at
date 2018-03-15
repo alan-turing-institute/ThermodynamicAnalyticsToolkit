@@ -28,12 +28,14 @@ AT_CHECK([../../../DDSExplorer \
 	--batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenExplorer/SingleTrajectory/pre/dataset-twoclusters.csv \
 	--batch_size 10 \
 	--diffusion_map_method vanilla \
+	--do_hessians 1 \
 	--every_nth 1 \
 	--friction_constant 1 \
 	--inverse_temperature 1 \
 	--max_exploration_steps 1 \
 	--max_legs 25 \
 	--max_steps 20 \
+	--minima_file minima.csv \
 	--number_of_eigenvalues 1 \
 	--number_of_parallel_trajectories 0 \
 	--optimizer GradientDescent \
@@ -49,5 +51,12 @@ AT_CHECK([../../../NumericalDiff \
     --general_threshold 1e-7 absolute \
     --column_drop time_per_nth_step -- \
     run-single.csv ${abs_top_srcdir}/tests/regression/DataDrivenExplorer/SingleTrajectory/post/run-single.csv], 0, [ignore], [ignore])
+colname="num_negative_ev"
+AT_CHECK([cat minima.csv | \
+    gawk -F"," -v colname=$colname \
+    'BEGIN { col=-1} \
+    { if (NR == 1) { for (i=1;i<=NF;++i) { if ($i == colname) { col = i } } } else \
+        { if (col == -1) { print "Could not find column with name "colname; exit 255 } else \
+          { if ($col > 0) { print NR","col": "$col; exit 255} } } }'], 0, [stdout], [ignore])
 
 AT_CLEANUP

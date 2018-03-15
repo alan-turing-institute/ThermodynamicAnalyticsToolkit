@@ -160,6 +160,10 @@ def main(_):
             network_model.weights.get_total_dof(),
             network_model.biases.get_total_dof())
         header.insert(header.index("loss")+1, "gradient")
+        if FLAGS.do_hessians:
+            insert_index = header.index("gradient")+1
+            header.insert(insert_index, "num_negative_ev")
+            header.insert(insert_index, "num_positive_ev")
         minima_writer, minima_file = setup_csv_file(
             FLAGS.minima_file, header)
         for current_id in explorer.container.data.keys():
@@ -169,6 +173,11 @@ def main(_):
                 loss =  explorer.container.data[current_id].losses[-1]
                 gradient =  explorer.container.data[current_id].gradients[-1]
                 minima_line = [current_id, step, loss, gradient]
+                if FLAGS.do_hessians:
+                    hessian_ev =  explorer.container.data[current_id].hessian_eigenvalues[-1]
+                    num_negative_ev = (0 > hessian_ev).sum()
+                    num_positive_ev = (0 < hessian_ev).sum()
+                    minima_line.extend([num_positive_ev, num_negative_ev])
                 minima_line.extend(np.asarray(minima_parameters))
                 minima_writer.writerow(minima_line)
         minima_file.close()
