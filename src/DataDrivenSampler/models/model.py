@@ -4,6 +4,7 @@ import logging
 from math import sqrt, floor, ceil, exp
 import numpy as np
 import pandas as pd
+import scipy.sparse as sps
 import tensorflow as tf
 import time
 
@@ -997,6 +998,28 @@ class model:
         logging.info("TRAINED down to loss %s and accuracy %s." % (loss_eval, acc))
 
         return run_info, trajectory, averages
+
+    def compute_optimal_stepwidth(self):
+        placeholder_nodes = self.nn.get_dict_of_nodes(["learning_rate", "y_"])
+
+        # get first batch of data
+        self.reset_dataset()
+        features, labels = self.input_pipeline.next_batch(self.sess)
+
+        # place in feed dict
+        feed_dict = {
+            self.xinput: features,
+            placeholder_nodes["y_"]: labels,
+            placeholder_nodes["learning_rate"]: self.FLAGS.step_width
+        }
+        if self.FLAGS.dropout is not None:
+            feed_dict.update({placeholder_nodes["keep_prob"] : self.FLAGS.dropout})
+
+        hessian_eval = self.sess.run(self.hessians, feed_dict=feed_dict)
+        lambdas, _ = sps.linalg.eigs(hessian_eval, k=1)
+        optimal_step_width = 2/sqrt(lambdas[0])
+        logging.info("Optimal step width would be "+str(optimal_step_width))
+
 
     def close_files(self):
         """ Closes the output files if they have been opened.

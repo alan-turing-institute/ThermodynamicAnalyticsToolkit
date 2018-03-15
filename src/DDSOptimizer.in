@@ -11,7 +11,7 @@ import time
 
 from DataDrivenSampler.common import add_common_options_to_parser, add_data_options_to_parser, \
         add_model_options_to_parser, add_prior_options_to_parser, \
-        get_filename_from_fullpath, react_to_common_options
+        get_filename_from_fullpath, react_to_common_options, str2bool
 from DataDrivenSampler.models.model import model
 from DataDrivenSampler.runtime.runtime import runtime
 
@@ -55,6 +55,9 @@ def main(_):
     rt.set_init_network_time(time.process_time() - time_init_network_zero)
 
     network_model.train()
+
+    if FLAGS.do_hessians:
+        network_model.compute_optimal_stepwidth()
 
     rt.set_train_network_time(time.process_time() - rt.time_init_network)
 

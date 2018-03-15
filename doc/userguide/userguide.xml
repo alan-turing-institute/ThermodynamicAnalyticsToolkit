@@ -526,7 +526,15 @@ sys.path.insert(1,"&lt;path_to_DDS&gt;/lib/python3.5/site-packages/")</programli
           </listitem>
         </itemizedlist>
         </para>
-        <para>We did not say anything about <emphasis>sampler</emphasis>
+        <para>For small networks the option <quote>do_hessians</quote>
+        might be useful which will compute the hessian matrix at the end of the
+        trajectory and use the largest eigenvalue to compute the optimal step
+        width. This will add nodes to the underlying computational graph for
+        computing the components of the hessian matrix. <note>The creation of 
+        the nodes (not speaking of their evaluation) is a O(N^2) process in 
+        the number of parameters of the network N. Hence, this should only be 
+        done for small networks and on purpose.</note></para>
+        <para>Moreover, we did not say anything about <emphasis>sampler</emphasis>
          as this is covered in the next section.</para>
         <para>Afterwards, the network is initialized, then we call <command>train()</command>
         which performs the training and returns runtime info, trajectory, and 
@@ -784,6 +792,12 @@ sys.path.insert(1,"&lt;path_to_DDS&gt;/lib/python3.5/site-packages/")</programli
         <note>Since Tensorflow 1.4 an absolute path is required for the storing 
         the model. In the example we use the current directory returned by the
         unix command <command>pwd</command>.</note>
+        <para>If you need to compute the optimal step width, which is possible
+        for smaller networks from the largest eigenvalue of the hessian matrix,
+        then use the option <quote>do_hessians 1</quote> to activate it.
+        <note>The creation of the nodes is costly, O(N^2) in 
+        the number of parameters of the network N. Hence, may not work for
+        anything but small networks and should be done on purpose.</note></para>
         <para>In case you have read the quickstart tutorial on the Python
         interface before, then the names of the command-line option will
         probably remind you of the variables in the FLAGS structure.</para>
