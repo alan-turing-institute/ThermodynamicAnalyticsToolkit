@@ -2,6 +2,8 @@ import logging
 import numpy as np
 from tensorflow.python.framework import errors_impl
 
+import tensorflow as tf
+
 from DataDrivenSampler.exploration.trajectoryjob_sample import TrajectoryJob_sample
 
 class TrajectoryJob_train(TrajectoryJob_sample):
@@ -78,6 +80,32 @@ class TrajectoryJob_train(TrajectoryJob_sample):
         except errors_impl.InvalidArgumentError:
             logging.error("The trajectory diverged, aborting.")
             self.continue_flag = False
+
+        # compute hessian if desired
+        # get next batch of data
+        if self.network_model.FLAGS.do_hessians:
+            self.network_model.reset_dataset()
+            features, labels = self.network_model.input_pipeline.next_batch(self.network_model.sess)
+            feed_dict = {
+                self.network_model.xinput: features,
+                self.network_model.nn.placeholder_nodes["y_"]: labels,
+            }
+            if self.network_model.FLAGS.dropout is not None:
+                feed_dict.update({
+                    self.network_model.nn.placeholder_nodes["keep_prob"]: self.FLAGS.dropout})
+
+            #self.network_model.reset_dataset()
+            # gradient_eval = self.network_model.sess.run(
+            #     self.network_model.gradients,
+            #     feed_dict=feed_dict)
+            # print(gradient_eval)
+
+            hessian_eval = self.network_model.sess.run(
+                self.network_model.hessians,
+                feed_dict=feed_dict)
+            #print(hessian_eval)
+            logging.info("Max and min eigenvalues of hessian: "+str(_data.hessian_eigenvalues[0:2]) \
+                         +"..."+str(_data.hessian_eigenvalues[-3:-1]))
 
         # set FLAGS back to old values
         FLAGS.step_width = sampler_step_width
