@@ -10,6 +10,10 @@ DataDrivenSampler_exploration_PYTHON = \
     trajectoryjob_sample.py \
     trajectoryjob_train.py \
     trajectoryjobqueue.py \
+    trajectoryprocess.py \
+    trajectoryprocess_sample.py \
+    trajectoryprocess_train.py \
+    trajectoryprocessqueue.py \
     trajectoryqueue.py \
 	__init__.py
 

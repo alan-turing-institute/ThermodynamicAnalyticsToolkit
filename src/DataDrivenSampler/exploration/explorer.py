@@ -1,5 +1,6 @@
 from DataDrivenSampler.exploration.trajectorydatacontainer import TrajectoryDataContainer
 from DataDrivenSampler.exploration.trajectoryjobqueue import TrajectoryJobQueue
+from DataDrivenSampler.exploration.trajectoryprocessqueue import TrajectoryProcessQueue
 from DataDrivenSampler.TrajectoryAnalyser import compute_diffusion_maps
 
 import logging
@@ -18,14 +19,20 @@ class Explorer(object):
 
     INITIAL_LEGS = 3  # how many legs to run without convergence stop check
 
-    def __init__(self, max_legs, number_pruning=0):
+    def __init__(self, parameters, max_legs=20, use_processes=0, number_pruning=0):
         """ Initializes the explorer class with its internal instances.
 
+        :param parameters: parameter struct for steering exploration
+        :param max_legs: maximum number of legs
         :param number_pruning: number of pruning tasks to spawn at end of trajectory
-        :param max_legs:
         """
         self.container = TrajectoryDataContainer()
-        self.queue = TrajectoryJobQueue(self.container, max_legs, number_pruning)
+        self.use_processes = use_processes != 0
+        self.parameters = parameters
+        if use_processes == 0:
+            self.queue = TrajectoryJobQueue(self.container, max_legs, number_pruning)
+        else:
+            self.queue = TrajectoryProcessQueue(self.container, parameters, number_pruning, number_processes=use_processes)
 
     def spawn_starting_trajectory(self, network_model):
         """ Begin exploration by sampling an initial starting trajectory.
@@ -34,12 +41,18 @@ class Explorer(object):
         """
         for i in range(1,self.INITIAL_LEGS+1):
             current_id = self.container.add_empty_data(type="sample")
-            self.queue.add_sample_job(
-                data_id=current_id,
-                network_model=network_model,
-                initial_step=0,
-                parameters=None,
-                continue_flag=True)
+            if self.use_processes:
+                self.queue.add_sample_job(
+                    data_id=current_id,
+                    restore_model_filename=None,
+                    continue_flag=True)
+            else:
+                self.queue.add_sample_job(
+                    data_id=current_id,
+                    network_model=network_model,
+                    initial_step=0,
+                    parameters=None,
+                    continue_flag=True)
 
     def run_all_jobs(self, network_model, parameters):
         """ Run all jobs currently found in the TrajectoryJob queue.
@@ -72,12 +85,18 @@ class Explorer(object):
             data_object.losses[:] = [losses[idx_corner[i]]]
             data_object.gradients[:] = [1]
 
-            self.queue.add_sample_job(
-                data_id=current_id,
-                network_model=network_model,
-                initial_step=data_object.steps[-1],
-                parameters=data_object.parameters[-1],
-                continue_flag=True)
+            if self.use_processes:
+                self.queue.add_sample_job(
+                    data_id=current_id,
+                    restore_model_filename=None,
+                    continue_flag=True)
+            else:
+                self.queue.add_sample_job(
+                    data_id=current_id,
+                    network_model=network_model,
+                    initial_step=data_object.steps[-1],
+                    parameters=data_object.parameters[-1],
+                    continue_flag=True)
             cornerpoints.append( [data_object.steps[-1], data_object.losses[-1], data_object.parameters[-1]] )
         return cornerpoints
 

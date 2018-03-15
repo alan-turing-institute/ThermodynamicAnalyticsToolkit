@@ -22,7 +22,7 @@ nn.init_network(None, setup="sample")
 nn.init_network(None, setup="train")
 nn.init_input_pipeline()
 
-explorer = Explorer(max_legs=5, number_pruning=0)
+explorer = Explorer(parameters=FLAGS, max_legs=5, number_pruning=0)
 
 print("Creating starting trajectory.")
 # a. add three legs to queue

@@ -49,6 +49,8 @@ def parse_parameters():
         help='Filename to write found minima to')
     parser.add_argument('--number_of_eigenvalues', type=int, default=4,
         help='How many largest eigenvalues to compute')
+    parser.add_argument('--number_processes', type=int, default=0,
+        help='Whether to activate parallel mode (unequal 0) and how many processes to use then')
     parser.add_argument('--number_of_parallel_trajectories', type=int, default=5,
         help='Number of trajectories to run in parallel, i.e. number of points maximally apart in diffusion distance')
     parser.add_argument('--number_pruning', type=int, default=0,
@@ -80,7 +82,9 @@ def main(_):
     network_model.config_map["do_write_trajectory_file"] = False
 
     # 1. run initially just one trajectory
-    explorer = Explorer(max_legs=FLAGS.max_legs,
+    explorer = Explorer(parameters=FLAGS,
+                        max_legs=FLAGS.max_legs,
+                        use_processes=FLAGS.number_processes,
                         number_pruning=FLAGS.number_pruning)
 
     print("Creating starting trajectory.")
