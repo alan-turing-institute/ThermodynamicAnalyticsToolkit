@@ -1,5 +1,5 @@
 from DataDrivenSampler.exploration.trajectorydatacontainer import TrajectoryDataContainer
-from DataDrivenSampler.exploration.trajectoryqueue import TrajectoryQueue
+from DataDrivenSampler.exploration.trajectoryjobqueue import TrajectoryJobQueue
 from DataDrivenSampler.TrajectoryAnalyser import compute_diffusion_maps
 
 import logging
@@ -25,7 +25,7 @@ class Explorer(object):
         :param max_legs:
         """
         self.container = TrajectoryDataContainer()
-        self.queue = TrajectoryQueue(self.container, max_legs, number_pruning)
+        self.queue = TrajectoryJobQueue(self.container, max_legs, number_pruning)
 
     def spawn_starting_trajectory(self, network_model):
         """ Begin exploration by sampling an initial starting trajectory.

@@ -9,6 +9,7 @@ DataDrivenSampler_exploration_PYTHON = \
     trajectoryjob_prune.py \
     trajectoryjob_sample.py \
     trajectoryjob_train.py \
+    trajectoryjobqueue.py \
     trajectoryqueue.py \
 	__init__.py
 
