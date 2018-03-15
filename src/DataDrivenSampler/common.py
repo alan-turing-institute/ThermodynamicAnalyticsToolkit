@@ -159,6 +159,8 @@ def add_model_options_to_parser(parser):
     # please adhere to alphabetical ordering
     parser.add_argument('--batch_size', type=int, default=None,
         help='The number of samples used to divide sample set into batches in one training step.')
+    parser.add_argument('--do_hessians', type=str2bool, default=False,
+        help='Whether to add hessian computation nodes to graph, when present used by optimizer and explorer')
     parser.add_argument('--dropout', type=float, default=None,
         help='Keep probability for training dropout, e.g. 0.9')
     parser.add_argument('--fix_parameters', type=str, default=None,

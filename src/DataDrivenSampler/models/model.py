@@ -78,6 +78,10 @@ class model:
         self.weights = None
         self.biases = None
 
+        # mark placeholders for gradient and hessian computation as to be created
+        self.gradients = None
+        self.hessians = None
+
         # mark step assign op as to be created
         self.global_step_assign_t = None
 
@@ -229,6 +233,7 @@ class model:
             batch_data_file_type="csv",
             batch_size=10,
             diffusion_map_method="vanilla",
+            do_hessians=False,
             dropout=None,
             every_nth=1,
             fix_parameters=None,
@@ -267,6 +272,7 @@ class model:
                 batch_data_file_type=batch_data_file_type,
                 batch_size=batch_size,
                 diffusion_map_method=diffusion_map_method,
+                do_hessians=do_hessians,
                 dropout=dropout,
                 every_nth=every_nth,
                 fix_parameters=fix_parameters,
@@ -333,6 +339,70 @@ class model:
                 output_activation=activations[self.FLAGS.output_activation],
                 loss_name=self.FLAGS.loss
             )
+            if self.FLAGS.do_hessians:
+                # create node for gradient and hessian computation only if specifically
+                # requested as the creation along is costly (apart from the expensive part
+                # of evaluating the nodes eventually). This would otherwise slow down
+                # startup quite a bit even when hessians are not evaluated.
+                print("GRADIENTS")
+                vectorized_gradients = []
+                for tensor in tf.get_collection(tf.GraphKeys.WEIGHTS) + tf.get_collection(tf.GraphKeys.BIASES):
+                    #vectorized_tensor = tf.reshape(tensor, [-1])
+                    grad = tf.gradients(loss, tensor)
+                    print(grad)
+                    vectorized_gradients.append(tf.reshape(grad, [-1]))
+                self.gradients = tf.reshape(tf.concat(vectorized_gradients, axis=0), [-1])
+                print(self.gradients)
+                print(vectorized_gradients)
+
+                print("HESSIAN")
+                self.hessians = []
+                total_dofs = 0
+                for gradient in vectorized_gradients:
+                    dofs = int(np.cumprod(gradient.shape))
+                    total_dofs += dofs
+                    #print(dofs)
+                    # tensorflow cannot compute the gradient of a multi-dimensional mapping
+                    # only of functions (i.e. one-dimensional output). Hence, we have to
+                    # split the gradients into its components and do gradient on each
+                    split_gradient = tf.split(gradient, num_or_size_splits=dofs)
+                    #print(split_gradient)
+                    for splitgrad in split_gradient:
+                        for othertensor in tf.get_collection(tf.GraphKeys.WEIGHTS) + tf.get_collection(tf.GraphKeys.BIASES):
+                            #vectorized_othertensor = tf.reshape(othertensor, [-1])
+                            grad = tf.gradients(splitgrad, othertensor)
+                            #print(grad)
+                            self.hessians.append(
+                                tf.reshape(grad, [-1]))
+                self.hessians = tf.reshape(tf.concat(self.hessians, axis=0), [total_dofs, total_dofs])
+                #print(self.hessians)
+                #vectorized_tensors.append(vectorized_tensor)
+
+                # this is taken from https://stackoverflow.com/a/37666032
+                # def cons(x):
+                #     return tf.constant(x, dtype=tf.float32)
+                #
+                # def compute_hessian(fn, vars):
+                #     dofs = np.cumsum([np.cumprod(var.shape) for var in vars])
+                #     mat = []
+                #     for v1 in vars:
+                #         temp = []
+                #         for v2 in vars:
+                #             # computing derivative twice, first w.r.t v2 and then w.r.t v1
+                #             temp.append(tf.gradients(tf.gradients(fn, v2)[0], v1)[0])
+                #         temp = [cons(0) if t == None else t for t in
+                #                 temp]  # tensorflow returns None when there is no gradient, so we replace None with 0
+                #         print(temp)
+                #         temp = tf.stack(temp)
+                #         mat.append(temp)
+                #     print(mat)
+                #     mat = tf.reshape(mat, [dofs, dofs])
+                #     return mat
+
+                #self.hessians = compute_hessian(loss, vectorized_tensors)
+                #flat_variables = tf.concat(vectorized_tensors, axis=0)
+                #self.gradients = tf.gradients(loss, [flat_variables])
+                #self.hessians = tf.hessians(loss, flat_variables)
         else:
             loss = self.nn.get_list_of_nodes(["loss"])[0]
 

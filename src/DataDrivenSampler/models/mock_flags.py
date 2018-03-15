@@ -10,6 +10,7 @@ class MockFlags:
                  batch_data_file_type="csv",
                  batch_size=10,
                  diffusion_map_method="vanilla",
+                 do_hessians=False,
                  dropout=0.9,
                  every_nth=1,
                  fix_parameters=None,
@@ -50,6 +51,7 @@ class MockFlags:
         :param batch_data_file_type: type of the files to read input from
         :param batch_size: The number of samples used to divide sample set into batches in one sampleing step.
         :param diffusion_map_method:
+        :param do_hessians: whether to add hessian evaluation nodes to graph, used bz optimzier and explorer
         :param dropout: Keep probability for sampleing dropout, e.g. 0.9
         :param every_nth: Store only every nth trajectory (and run) point to files, e.g. 10
         :param fix_parameters: string formatted as "name=value;..." with name of parameter fixed to value
@@ -89,6 +91,7 @@ class MockFlags:
         self.batch_size = batch_size
         self.diffusion_map_method = diffusion_map_method
         self.dimension = 0 # keeps the input dimension later
+        self.do_hessians = do_hessians
         self.dropout = dropout
         self.every_nth = every_nth
         self.fix_parameters = fix_parameters
