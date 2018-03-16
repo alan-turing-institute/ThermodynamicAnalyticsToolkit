@@ -1,4 +1,8 @@
+import logging
+import os
+
 from DataDrivenSampler.exploration.trajectoryjob import TrajectoryJob
+
 
 class TrajectoryProcess(TrajectoryJob):
     ''' This is the base class for process object that can be placed in the
@@ -10,12 +14,35 @@ class TrajectoryProcess(TrajectoryJob):
 
     '''
 
-    def __init__(self, data_id):
+    def __init__(self, data_id, network_model):
         """ Initializes the trajectory process.
 
         :param _data_id: id associated with data object
+        :param network_model: neural network object for creating model files as starting points
         """
         super(TrajectoryProcess, self).__init__(data_id)
+        self.network_model = network_model
+
+    def _set_parameters(self, parameters):
+        # set parameters to ones from old leg (if exists)
+        sess = self.network_model.sess
+        weights_dof = self.network_model.weights.get_total_dof()
+        self.network_model.weights.assign(sess, self.parameters[0:weights_dof])
+        self.network_model.biases.assign(sess, parameters[weights_dof:])
+
+    def create_starting_model(self, _data, model_filename):
+        foldername = os.path.dirname(model_filename)
+        # save starting parameters set to a model
+        if not os.path.isdir(foldername):
+            os.mkdir(foldername)
+            logging.debug("Creating folder "+foldername)
+            # create model files from the parameters
+            assert( len(_data.parameters) != 0 )
+            print("Create initial model from parameters "+str(_data.parameters[-1][0:5]))
+            parameters = _data.parameters[-1]
+            self._set_parameters(parameters)
+            save_path = self.network_model.saver.save(
+                self.network_model.sess, model_filename)
 
     @staticmethod
     def get_options_from_flags(FLAGS, keys):

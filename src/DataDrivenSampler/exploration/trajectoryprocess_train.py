@@ -7,6 +7,7 @@ import subprocess
 from DataDrivenSampler.exploration.trajectoryprocess import TrajectoryProcess
 from DataDrivenSampler.exploration.get_executables import get_install_path
 
+
 class TrajectoryProcess_train(TrajectoryProcess):
     ''' This implements a job that runs a new leg of a given trajectory
     using an Optimizer.
@@ -19,7 +20,7 @@ class TrajectoryProcess_train(TrajectoryProcess):
 
     LEARNING_RATE = 3e-2 # use larger learning rate as we are close to minimum
 
-    def __init__(self, data_id, FLAGS, temp_filenames, restore_model, save_model=None, continue_flag = True):
+    def __init__(self, data_id, FLAGS, network_model, temp_filenames, restore_model, save_model=None, continue_flag = True):
         """ Initializes a run job.
 
         :param data_id: id associated with data object
@@ -29,8 +30,8 @@ class TrajectoryProcess_train(TrajectoryProcess):
         :param save_model: file of the model to save last step to
         :param continue_flag: flag allowing to override spawning of subsequent job
         """
-        super(TrajectoryProcess_train, self).__init__(data_id)
-        self.job_type = "sample"
+        super(TrajectoryProcess_train, self).__init__(data_id, network_model)
+        self.job_type = "train"
         self.FLAGS = FLAGS
         self.temp_filenames = temp_filenames
         self.restore_model = restore_model

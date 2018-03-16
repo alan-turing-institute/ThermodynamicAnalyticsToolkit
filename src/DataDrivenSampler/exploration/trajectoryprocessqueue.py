@@ -1,6 +1,6 @@
 import logging
 import tempfile
-import os, glob
+import os, shutil
 
 from multiprocessing.context import Process
 
@@ -57,10 +57,11 @@ class TrajectoryProcessQueue(TrajectoryJobQueue):
             data_object.model_filename = self.getUniqueFilename(prefix="model-")
             restore_model_filename = None
         else:
-            restore_model_filename = data_object.model_filename
-        save_model_filename = data_object.model_filename
+            restore_model_filename = data_object.model_filename+"/model"
+        save_model_filename = data_object.model_filename+"/model"
         sample_job = TrajectoryProcess_sample(data_id=data_object.get_id(),
                                               FLAGS=self.parameters,
+                                              network_model=run_object,
                                               temp_filenames=temp_filenames,
                                               restore_model=restore_model_filename,
                                               save_model=save_model_filename,
@@ -79,11 +80,14 @@ class TrajectoryProcessQueue(TrajectoryJobQueue):
                            self.getUniqueFilename(prefix="averages-", suffix=".csv")]
         if data_object.model_filename is None:
             data_object.model_filename = self.getUniqueFilename(prefix="model-")
+        restore_model_filename = data_object.model_filename + "/model"
+        save_model_filename = data_object.model_filename+"/model"
         train_job = TrajectoryProcess_train(data_id=data_object.get_id(),
                                             FLAGS=self.parameters,
+                                            network_model=run_object,
                                             temp_filenames=temp_filenames,
-                                            restore_model=data_object.model_filename,
-                                            save_model=data_object.model_filename,
+                                            restore_model=restore_model_filename,
+                                            save_model=save_model_filename,
                                             continue_flag=continue_flag)
         self._enqueue_job(train_job)
 
@@ -95,9 +99,9 @@ class TrajectoryProcessQueue(TrajectoryJobQueue):
         """
         # remove the model files when trajectory is done
         data_object = self.data_container.get_data(data_id)
-        for filename in glob.glob(data_object.model_filename+"*"):
-            logging.debug("Removing "+filename)
-            os.remove(filename)
+        if os.path.isdir(data_object.model_filename):
+            logging.debug("Removing "+data_object.model_filename)
+            shutil.rmtree(data_object.model_filename)
 
     def run_next_job_till_queue_empty(self, network_model, parameters):
         """ Run jobs in queue till empty
@@ -118,7 +122,7 @@ class TrajectoryProcessQueue(TrajectoryJobQueue):
         :param parameters:
         :return:
         """
-        processes = [Process(target=self.run_next_job_till_queue_empty, args=(network_model, parameters)) \
+        processes = [Process(target=self.run_next_job_till_queue_empty, args=(network_model, parameters,)) \
                      for i in range(self.number_processes)]
         logging.info("Starting "+str(len(processes))+" processes.")
         for p in processes:
