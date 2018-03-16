@@ -5,6 +5,7 @@ import pandas as pd
 import subprocess
 
 from DataDrivenSampler.exploration.trajectoryprocess import TrajectoryProcess
+from DataDrivenSampler.exploration.get_executables import get_install_path
 
 class TrajectoryProcess_sample(TrajectoryProcess):
     ''' This implements a job that runs a new leg of a given trajectory.
@@ -64,7 +65,7 @@ class TrajectoryProcess_sample(TrajectoryProcess):
         ])
 
         # run DDSampler
-        p = subprocess.Popen(["DDSampler"]+sampling_flags)
+        p = subprocess.Popen([get_install_path()+"/DDSampler"]+sampling_flags)
         p.communicate(None)
         retcode = p.poll()
         assert( retcode == 0 )

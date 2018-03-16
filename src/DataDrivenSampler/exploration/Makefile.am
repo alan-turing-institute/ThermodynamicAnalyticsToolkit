@@ -1,5 +1,6 @@
 DataDrivenSampler_exploration_PYTHON = \
     explorer.py \
+    get_executables.py \
     trajectorydata.py \
     trajectorydatacontainer.py \
     trajectoryjob.py \
@@ -18,3 +19,9 @@ DataDrivenSampler_exploration_PYTHON = \
 	__init__.py
 
 DataDrivenSampler_explorationdir = $(pythondir)/DataDrivenSampler/exploration
+
+FORCE:
+
+$(srcdir)/get_executables.py:
+	echo "def get_install_path():" >$@
+	echo "   return \"$(exec_prefix)/bin/\"" >>$@
