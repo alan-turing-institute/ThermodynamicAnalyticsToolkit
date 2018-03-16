@@ -47,9 +47,13 @@ class TrajectoryProcess_sample(TrajectoryProcess):
                     "batch_data_file_type", "input_dimension", "output_dimension", \
                     "batch_size", "dropout", "fix_parameters", "hidden_activation", \
                     "hidden_dimension", "in_memory_pipeline", "input_columns", "loss", \
-                    "output_activation", "seed", "prior_factor", "prior_lower_boundary", \
+                    "output_activation", "prior_factor", "prior_lower_boundary", \
                     "prior_power", "prior_upper_boundary", "friction_constant", "inverse_temperature", \
                     "hamiltonian_dynamics_time", "max_steps", "sampler", "step_width"])
+        # use a deterministic but different seed for each trajectory
+        if self.FLAGS.seed is not None:
+            sampling_flags.extend(
+                ["--seed", str(self.FLAGS.seed+_data.get_id())])
         # restore initial point and save end point for next leg
         if self.restore_model is not None:
             sampling_flags.extend(
