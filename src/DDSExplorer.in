@@ -27,7 +27,7 @@ class MyManager(BaseManager):
     pass
 
 MyManager.register('network_model', model)
-
+MyManager.register('list', list)
 
 FLAGS = None
 
@@ -100,6 +100,13 @@ def main(_):
                         max_legs=FLAGS.max_legs,
                         use_processes=FLAGS.number_processes,
                         number_pruning=FLAGS.number_pruning)
+
+    # add a uses_ids list
+    if FLAGS.number_processes == 0:
+        used_ids = []
+    else:
+        used_ids = manager.list()
+    explorer.add_used_data_ids_list(used_ids)
 
     print("Creating starting trajectory.")
     # a. add three legs to queue

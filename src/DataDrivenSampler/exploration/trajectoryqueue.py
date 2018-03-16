@@ -25,6 +25,10 @@ class TrajectoryQueue(object):
             self.queue = deque()
         else:
             self.queue = JoinableQueue()
+        self.used_data_ids = [] # make a simple list as default
+
+    def add_used_data_ids_list(self, _list):
+        self.used_data_ids = _list
 
     def _enqueue_job(self, _job):
         """ Adds a new job to the end of the queue, also giving it a unique

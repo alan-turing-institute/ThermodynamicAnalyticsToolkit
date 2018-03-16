@@ -3,6 +3,7 @@ import tempfile
 import os, shutil
 
 from multiprocessing.context import Process
+from multiprocessing import Manager
 
 from DataDrivenSampler.exploration.trajectoryprocess_sample import TrajectoryProcess_sample
 from DataDrivenSampler.exploration.trajectoryprocess_train import TrajectoryProcess_train
@@ -110,7 +111,7 @@ class TrajectoryProcessQueue(TrajectoryJobQueue):
         :param parameters:
         :return:
         """
-        while not self.queue.empty():
+        while not self.is_empty():
             self.run_next_job(network_model, parameters)
             self.queue.task_done()
         print("QUEUE IS EMPTY, process stopping.")

@@ -181,14 +181,31 @@ class TrajectoryJobQueue(TrajectoryQueue):
         :param run_object: neural network object for run
         :param analyze_object: parameter object for analysis
         '''
-        if self.number_processes == 0:
-            current_job = self.queue.popleft()
-        else:
-            current_job = self.queue.get()
+        usable_job = False
+        while not usable_job:
+            if self.number_processes == 0:
+                current_job = self.queue.popleft()
+            else:
+                current_job = self.queue.get()
+            data_id = current_job.get_data_id()
+
+            # check whether data_id is in list
+            usable_job = self.used_data_ids.count(data_id) == 0
+            logging.info("Job #"+str(current_job.get_job_id())+" is " \
+                         +("NOT" if not usable_job else "")+" usable.")
+
+            if not usable_job:
+                self.queue._enqueue_job(current_job)
+
+        # append data id to list to mark it as in use
+        self.used_data_ids.append(data_id)
+
         logging.info("Current job #"+str(current_job.get_job_id())+": "+current_job.job_type)
-        data_id = current_job.get_data_id()
         data_object = self.data_container.get_data(data_id)
         updated_data, continue_flag = current_job.run(data_object)
+
+        # remove id from list again
+        self.used_data_ids.remove(data_id)
 
         if current_job.job_type in ["sample", "train"]:
             self.leg_ended(data_id)

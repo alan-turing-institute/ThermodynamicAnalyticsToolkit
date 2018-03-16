@@ -32,6 +32,13 @@ class Explorer(object):
         else:
             self.queue = TrajectoryProcessQueue(self.container, parameters, number_pruning, number_processes=use_processes)
 
+    def add_used_data_ids_list(self, _list):
+        """ Pass function through to TrajectoryQueue
+
+        :param _list: list to use for storing currently used data ids
+        """
+        self.queue.add_used_data_ids_list(_list)
+
     def spawn_starting_trajectory(self, network_model, number_trajectories=3):
         """ Begin exploration by sampling an initial starting trajectory.
 
