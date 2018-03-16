@@ -119,8 +119,8 @@ def main(_):
     # 3. write final set of values
 
     # write away averages time information
-    if network_model.get_config_map("averages_file") is not None:
-        network_model.set_config_map("do_write_averages_file", True)
+    if FLAGS.averages_file is not None:
+        averages_writer, averages_file = setup_csv_file(FLAGS.averages_file, network_model.get_averages_header(setup="sample"))
         for current_id in explorer.container.data.keys():
             if explorer.container.data[current_id].type == "sample":
                 averages_lines_per_leg = explorer.container.data[current_id].averages_lines
@@ -129,11 +129,14 @@ def main(_):
                     for row in range(len(averages_lines.index)):
                         averages_line = averages_lines.iloc[row,:]
                         averages_line[0] = current_id
-                        network_model.write_averages_row(averages_line)
+                        averages_writer.writerow(averages_line)
+        averages_file.close()
 
 
-    if network_model.get_config_map("csv_file") is not None:
-        network_model.set_config_map("do_write_run_file", True)
+    # write away run info
+    if FLAGS.run_file is not None:
+        run_header = network_model.get_sample_header()
+        run_writer, run_file = setup_csv_file(FLAGS.run_file, run_header)
         for current_id in explorer.container.data.keys():
             if explorer.container.data[current_id].type == "sample":
                 run_lines_per_leg = explorer.container.data[current_id].run_lines
@@ -142,12 +145,17 @@ def main(_):
                     for row in range(len(run_lines.index)):
                         run_line = run_lines.iloc[row,:]
                         run_line[0] = current_id
-                        network_model.write_run_row(run_line)
+                        run_writer.writerow(run_line)
+        run_file.close()
 
+    trajectory_header = get_trajectory_header(
+        network_model.get_total_weight_dof(),
+        network_model.get_total_bias_dof())
 
     # write away trajectory information
-    if network_model.get_config_map("trajectory_file") is not None:
-        network_model.set_config_map("do_write_trajectory_file", True)
+    if FLAGS.trajectory_file is not None:
+        trajectory_writer, trajectory_file = \
+            setup_csv_file(FLAGS.trajectory_file, trajectory_header)
         for current_id in explorer.container.data.keys():
             if explorer.container.data[current_id].type == "sample":
                 trajectory_lines_per_leg = explorer.container.data[current_id].trajectory_lines
@@ -156,13 +164,12 @@ def main(_):
                     for row in range(len(trajectory_lines.index)):
                         trajectory_line = trajectory_lines.iloc[row,:]
                         trajectory_line[0] = current_id
-                        network_model.write_trajectory_row(trajectory_line)
+                        trajectory_writer.writerow(trajectory_line)
+        trajectory_file.close()
 
     # write minima to file
     if FLAGS.minima_file is not None:
-        header = get_trajectory_header(
-            network_model.get_total_weight_dof(),
-            network_model.get_total_bias_dof())
+        header = trajectory_header
         header.insert(header.index("loss")+1, "gradient")
         if FLAGS.do_hessians:
             insert_index = header.index("gradient")+1
@@ -188,9 +195,7 @@ def main(_):
 
     # write corner points to file
     if FLAGS.cornerpoints_file is not None:
-        header = get_trajectory_header(
-            network_model.get_total_weight_dof(),
-            network_model.get_total_bias_dof())
+        header = trajectory_header
         cornerpoints_writer, cornerpoints_file = setup_csv_file(
             FLAGS.cornerpoints_file, header)
         for id in range(len(cornerpoints)):
