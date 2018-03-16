@@ -23,9 +23,9 @@ from DataDrivenSampler.models.model import model
 from DataDrivenSampler.runtime.runtime import runtime
 from DataDrivenSampler.TrajectoryAnalyser import compute_diffusion_maps
 
-from multiprocessing.managers import BaseManager
+from multiprocessing.managers import SyncManager
 
-class MyManager(BaseManager):
+class MyManager(SyncManager):
     pass
 
 MyManager.register('network_model', model)

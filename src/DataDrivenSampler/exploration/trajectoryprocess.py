@@ -14,7 +14,7 @@ class TrajectoryProcess(TrajectoryJob):
 
     '''
 
-    def __init__(self, data_id, network_model):
+    def __init__(self, data_id, network_model, lock):
         """ Initializes the trajectory process.
 
         :param _data_id: id associated with data object
@@ -22,6 +22,7 @@ class TrajectoryProcess(TrajectoryJob):
         """
         super(TrajectoryProcess, self).__init__(data_id)
         self.network_model = network_model
+        self.lock = lock
 
     def create_starting_model(self, _data, model_filename):
         foldername = os.path.dirname(model_filename)
@@ -36,10 +37,12 @@ class TrajectoryProcess(TrajectoryJob):
             print("Create initial model from parameters " \
                   +str(_data.parameters[-1][0:5])+" at step " \
                   +str(_data.steps[-1]))
+            self.lock.acquire()
             self.network_model.create_model_file(
                 _data.steps[-1],
                 parameters,
                 model_filename)
+            self.lock.release()
 
     @staticmethod
     def get_options_from_flags(FLAGS, keys):
