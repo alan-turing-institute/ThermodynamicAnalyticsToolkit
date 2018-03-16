@@ -46,6 +46,9 @@ class TrajectoryData(object):
         # type of dynamics that created the trajectory in this data object
         self.type = _type
 
+        # model filename used by trajectoryprocess'es
+        self.model_filename = None
+
     def get_id(self):
         """ Return the unique id of this data object
 

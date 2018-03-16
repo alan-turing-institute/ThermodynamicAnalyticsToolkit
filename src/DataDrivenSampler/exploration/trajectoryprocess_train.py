@@ -86,7 +86,6 @@ class TrajectoryProcess_train(TrajectoryProcess):
 
         return _data, self.continue_flag
 
-
     def _store_last_step_of_trajectory(self, _data, averages, run_info, trajectory):
         step = [int(np.asarray(run_info.loc[:, 'step'])[-1])]
         loss = [float(np.asarray(run_info.loc[:, 'loss'])[-1])]

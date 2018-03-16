@@ -1,8 +1,5 @@
-from collections import deque
 import logging
-import tensorflow as tf
 
-from DataDrivenSampler.models.neuralnet_parameters import neuralnet_parameters
 from DataDrivenSampler.exploration.trajectoryjob_analyze import TrajectoryJob_analyze
 from DataDrivenSampler.exploration.trajectoryjob_check_gradient import TrajectoryJob_check_gradient
 from DataDrivenSampler.exploration.trajectoryjob_extract_minimum_candidates import TrajectoryJob_extract_minimium_candidates
@@ -19,47 +16,47 @@ class TrajectoryJobQueue(TrajectoryQueue):
 
     MAX_MINIMA_CANDIDATES = 3 # dont check more than this number of minima candidates
 
-    def __init__(self, _data_container, max_legs, number_pruning):
+    def __init__(self, _data_container, max_legs, number_pruning, number_processes=0):
         """ Initializes a queue of trajectory jobs.
 
         :param _data_container: data container with all data object
         :param .max_legs: maximum number of legs (of length max_steps) per trajectory
         :param number_pruning: number of pruning jobs added at trajectory end
+        :param number_processes: number of concurrent processes to use
         """
-        super(TrajectoryJobQueue, self).__init__(_data_container, max_legs, number_pruning)
+        super(TrajectoryJobQueue, self).__init__(_data_container, max_legs, number_pruning, number_processes)
 
-    def add_analyze_job(self, data_id, parameters, continue_flag):
+    def add_analyze_job(self, data_object, parameters, continue_flag):
         """ Adds an analyze job to the queue.
 
-        :param data_id: id associated with data object for the job
+        :param data_object: data object for the job
         :param parameters: parameters for analysis
         :param continue_flag: flag whether job should spawn more jobs or not
         """
-        analyze_job = TrajectoryJob_analyze(data_id=data_id,
+        analyze_job = TrajectoryJob_analyze(data_id=data_object.get_id(),
                                             parameters=parameters,
                                             continue_flag=continue_flag)
         self._enqueue_job(analyze_job)
 
-    def add_check_gradient_job(self, data_id, parameters=None, continue_flag=True):
+    def add_check_gradient_job(self, data_object, parameters=None, continue_flag=True):
         """ Adds an check_gradient job to the queue.
 
-        :param data_id: id associated with data object for the job
+        :param data_object: data object for the job
         :param parameters: parameters for analysis
         :param continue_flag: flag whether job should spawn more jobs or not
         """
-        check_gradient_job = TrajectoryJob_check_gradient(data_id=data_id,
+        check_gradient_job = TrajectoryJob_check_gradient(data_id=data_object.get_id(),
                                                           parameters=parameters,
                                                           continue_flag=continue_flag)
         self._enqueue_job(check_gradient_job)
 
-    def add_check_minima_jobs(self, data_id, network_model, continue_flag):
+    def add_check_minima_jobs(self, data_object, run_object, continue_flag):
         """ Adds a check_minima/optimize job to the queue.
 
-        :param _data_id: id associated with data object for the job
+        :param data_object: data object for the job
         :param network_model: neural network object for running the graph
         :param continue_flag: flag whether job should spawn more jobs or not
         """
-        data_object = self.data_container.get_data(data_id)
         assert( data_object is not None )
         # set parameters to ones from old leg (if exists)
         if len(data_object.minimum_candidates) > self.MAX_MINIMA_CANDIDATES:
@@ -92,66 +89,72 @@ class TrajectoryJobQueue(TrajectoryQueue):
             new_data_object.losses[:] = [data_object.losses[minima_index]]
             new_data_object.gradients[:] = [data_object.gradients[minima_index]]
             self.add_train_job(
-                data_id=current_id,
-                network_model=network_model,
-                initial_step=new_data_object.steps[-1],
-                parameters=new_data_object.parameters[-1],
+                data_object=new_data_object,
+                run_object=run_object,
                 continue_flag=continue_flag)
 
-    def add_extract_minima_job(self, data_id, parameters, continue_flag):
+    def add_extract_minima_job(self, data_object, parameters, continue_flag):
         """ Adds an extract job to the queue.
 
-        :param data_id: id associated with data object for the job
+        :param data_object: id associated with data object for the job
         :param parameters: parameters for analysis
         :param continue_flag: flag whether job should spawn more jobs or not
         """
         extract_job = TrajectoryJob_extract_minimium_candidates(
-            data_id=data_id,
+            data_id=data_object.get_id(),
             parameters=parameters,
             continue_flag=continue_flag)
         self._enqueue_job(extract_job)
 
-    def add_prune_job(self, data_id, network_model, continue_flag):
+    def add_prune_job(self, data_object, network_model, continue_flag):
         """ Adds a prune job to the queue.
 
-        :param data_id: id associated with data object for the job
+        :param data_object: data object for the job
         :param network_model: neural network model
         :param continue_flag: flag whether job should spawn more jobs or not
         """
-        prune_job = TrajectoryJob_prune(data_id=data_id,
+        prune_job = TrajectoryJob_prune(data_id=data_object.get_id(),
                                         network_model=network_model,
                                         continue_flag=False)
         self._enqueue_job(prune_job)
 
-    def add_sample_job(self, data_id, network_model, initial_step, parameters=None, continue_flag=False):
+    def add_sample_job(self, data_object, run_object, continue_flag=False):
         """ Adds a run job to the queue.
 
-        :param _data_id: id associated with data object for the job
-        :param network_model: neural network object for running the graph
+        :param data_object: data object for the job
+        :param run_object: neural network object for running the graph
         :param initial_step: number of first step (for continuing a trajectory)
         :param parameters: parameters of the neural net to set. If None, keep random ones
         :param continue_flag: flag whether job should spawn more jobs or not
         """
-        sample_job = TrajectoryJob_sample(data_id=data_id,
-                                          network_model=network_model,
+        if len(data_object.legs_at_step) > 0:
+            initial_step = data_object.legs_at_step[-1]
+        else:
+            initial_step = 0
+        if len(data_object.parameters) > 0:
+            parameters = data_object.parameters[-1]
+        else:
+            parameters = None
+        sample_job = TrajectoryJob_sample(data_id=data_object.get_id(),
+                                          network_model=run_object,
                                           initial_step=initial_step,
                                           parameters=parameters,
                                           continue_flag=continue_flag)
         self._enqueue_job(sample_job)
 
-    def add_train_job(self, data_id, network_model, initial_step, parameters=None, continue_flag=False):
+    def add_train_job(self, data_object, run_object, continue_flag=False):
         """ Adds a run job to the queue.
 
-        :param _data_id: id associated with data object for the job
-        :param network_model: neural network object for running the graph
+        :param data_object: data object for the job
+        :param run_object: neural network object for running the graph
         :param initial_step: number of first step (for continuing a trajectory)
         :param parameters: parameters of the neural net to set. If None, keep random ones
         :param continue_flag: flag whether job should spawn more jobs or not
         """
-        train_job = TrajectoryJob_train(data_id=data_id,
-                                        network_model=network_model,
-                                        initial_step=initial_step,
-                                        parameters=parameters,
+        train_job = TrajectoryJob_train(data_id=data_object.get_id(),
+                                        network_model=run_object,
+                                        initial_step=data_object.steps[-1],
+                                        parameters=data_object.parameters[-1],
                                         continue_flag=continue_flag)
         self._enqueue_job(train_job)
 
@@ -162,7 +165,10 @@ class TrajectoryJobQueue(TrajectoryQueue):
         :param run_object: neural network object for run
         :param analyze_object: parameter object for analysis
         '''
-        current_job = self.queue.popleft()
+        if self.number_processes == 0:
+            current_job = self.queue.popleft()
+        else:
+            current_job = self.queue.get()
         logging.info("Current job #"+str(current_job.get_job_id())+": "+current_job.job_type)
         data_id = current_job.get_data_id()
         data_object = self.data_container.get_data(data_id)
@@ -173,39 +179,35 @@ class TrajectoryJobQueue(TrajectoryQueue):
             if len(updated_data.legs_at_step) >= self.max_legs and \
                             current_job.job_type in ["analyze", "check_gradient"]:
                 logging.info("Maximum number of legs exceeded, not adding any more jobs of type " \
-                             +current_job.job_type+" for data id "+str(data_id)+".")
+                             +current_job.job_type+" for data id "+str(data_object.get_id())+".")
                 if current_job.job_type == "analyze":
-                    self.add_extract_minima_job(data_id, analyze_object, False)
+                    self.add_extract_minima_job(data_object, analyze_object, False)
                     logging.info("Added extract minima job")
             else:
                 if current_job.job_type == "sample":
                     for i in range(self.number_pruning):
-                        self.add_prune_job(data_id, run_object, False)
+                        self.add_prune_job(data_object, run_object, False)
                     logging.info("Added prune job(s)")
-                    self.add_analyze_job(data_id, analyze_object, current_job.continue_flag)
+                    self.add_analyze_job(data_object, analyze_object, current_job.continue_flag)
                     logging.info("Added analyze job")
 
                 elif current_job.job_type == "train":
-                    self.add_check_gradient_job(data_id)
+                    self.add_check_gradient_job(data_object)
                     logging.info("Added check gradient job")
 
                 elif current_job.job_type == "check_gradient":
-                    self.add_train_job(data_id=data_id,
-                                       network_model=run_object,
-                                       initial_step=data_object.legs_at_step[-1],
-                                       parameters=data_object.parameters[-1],
+                    self.add_train_job(data_object=data_object,
+                                       run_object=run_object,
                                        continue_flag=current_job.continue_flag)
                     logging.info("Added train job")
 
                 elif current_job.job_type == "extract_minimium_candidates":
-                    self.add_check_minima_jobs(data_id, run_object, True)
+                    self.add_check_minima_jobs(data_object, run_object, True)
                     logging.info("Added check minima jobs")
 
                 elif current_job.job_type == "analyze":
-                    self.add_sample_job(data_id=data_id,
-                                        network_model=run_object,
-                                        initial_step=data_object.legs_at_step[-1],
-                                        parameters=data_object.parameters[-1],
+                    self.add_sample_job(data_object=data_object,
+                                        run_object=run_object,
                                         continue_flag=current_job.continue_flag)
                     logging.info("Added sample job")
 
@@ -213,7 +215,7 @@ class TrajectoryJobQueue(TrajectoryQueue):
                     logging.warning("Unknown job type "+current_job.job_type+"!")
         else:
             if current_job.job_type == "analyze":
-                self.add_extract_minima_job(data_id, analyze_object, False)
+                self.add_extract_minima_job(data_object, analyze_object, False)
                 logging.info("Added extract minima job")
             else:
                 logging.info("Not adding.")

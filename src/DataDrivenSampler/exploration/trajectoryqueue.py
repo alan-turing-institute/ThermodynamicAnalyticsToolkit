@@ -1,5 +1,6 @@
 from collections import deque
 import logging
+from multiprocessing import JoinableQueue
 
 
 class TrajectoryQueue(object):
@@ -8,7 +9,7 @@ class TrajectoryQueue(object):
 
     '''
 
-    def __init__(self, _data_container, max_legs, number_pruning):
+    def __init__(self, _data_container, max_legs, number_pruning, number_processes=0):
         """ Initializes a queue of trajectory jobs.
 
         :param _data_container: data container with all data object
@@ -18,8 +19,12 @@ class TrajectoryQueue(object):
         self.data_container =  _data_container
         self.max_legs = max_legs
         self.number_pruning = number_pruning
+        self.number_processes = number_processes
         self.current_job_id = 1
-        self.queue = deque()
+        if self.number_processes == 0:
+            self.queue = deque()
+        else:
+            self.queue = JoinableQueue()
 
     def _enqueue_job(self, _job):
         """ Adds a new job to the end of the queue, also giving it a unique
@@ -29,7 +34,10 @@ class TrajectoryQueue(object):
         """
         _job.set_job_id(self.current_job_id)
         self.current_job_id += 1
-        self.queue.append(_job)
+        if self.number_processes == 0:
+            self.queue.append(_job)
+        else:
+            self.queue.put(_job)
 
     def remove_job(self, _job_id):
         ''' Removes a job of the given id from the queue.
@@ -37,10 +45,11 @@ class TrajectoryQueue(object):
         :param _job_id: id of the job
         :return true - job found and removed, false - job id not found
         '''
-        for job in list(self.queue):
-            if job.get_job_id() == _job_id:
-                self.queue.remove(job)
-                return True
+        if self.number_processes == 0:
+            for job in list(self.queue):
+                if job.get_job_id() == _job_id:
+                    self.queue.remove(job)
+                    return True
         return False
 
     def run_next_job(self, run_object, analyze_object):
@@ -66,4 +75,7 @@ class TrajectoryQueue(object):
 
         :return: True - queue is empty, False not
         """
-        return len(self.queue) == 0
+        if self.number_processes == 0:
+            return len(self.queue) == 0
+        else:
+            return self.queue.empty()

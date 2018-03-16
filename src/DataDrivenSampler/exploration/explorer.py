@@ -41,18 +41,11 @@ class Explorer(object):
         """
         for i in range(1,self.INITIAL_LEGS+1):
             current_id = self.container.add_empty_data(type="sample")
-            if self.use_processes:
-                self.queue.add_sample_job(
-                    data_id=current_id,
-                    restore_model_filename=None,
-                    continue_flag=True)
-            else:
-                self.queue.add_sample_job(
-                    data_id=current_id,
-                    network_model=network_model,
-                    initial_step=0,
-                    parameters=None,
-                    continue_flag=True)
+            data_object = self.container.get_data(current_id)
+            self.queue.add_sample_job(
+                data_object=data_object,
+                run_object=network_model,
+                continue_flag=True)
 
     def spawn_corner_trajectories(self, steps, parameters, losses, idx_corner, network_model):
         """ Run further trajectories for a given list of corner points.
@@ -76,18 +69,10 @@ class Explorer(object):
             data_object.losses[:] = [losses[idx_corner[i]]]
             data_object.gradients[:] = [1]
 
-            if self.use_processes:
-                self.queue.add_sample_job(
-                    data_id=current_id,
-                    restore_model_filename=None,
-                    continue_flag=True)
-            else:
-                self.queue.add_sample_job(
-                    data_id=current_id,
-                    network_model=network_model,
-                    initial_step=data_object.steps[-1],
-                    parameters=data_object.parameters[-1],
-                    continue_flag=True)
+            self.queue.add_sample_job(
+                data_object=data_object,
+                run_object=network_model,
+                continue_flag=True)
             cornerpoints.append( [data_object.steps[-1], data_object.losses[-1], data_object.parameters[-1]] )
         return cornerpoints
 
