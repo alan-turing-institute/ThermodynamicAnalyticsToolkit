@@ -60,8 +60,8 @@ class TrajectoryProcessQueue(TrajectoryJobQueue):
             restore_model_filename = data_object.model_filename+"/model"
         save_model_filename = data_object.model_filename+"/model"
         sample_job = TrajectoryProcess_sample(data_id=data_object.get_id(),
-                                              FLAGS=self.parameters,
                                               network_model=run_object,
+                                              FLAGS=self.parameters,
                                               temp_filenames=temp_filenames,
                                               restore_model=restore_model_filename,
                                               save_model=save_model_filename,
@@ -83,8 +83,8 @@ class TrajectoryProcessQueue(TrajectoryJobQueue):
         restore_model_filename = data_object.model_filename + "/model"
         save_model_filename = data_object.model_filename+"/model"
         train_job = TrajectoryProcess_train(data_id=data_object.get_id(),
-                                            FLAGS=self.parameters,
                                             network_model=run_object,
+                                            FLAGS=self.parameters,
                                             temp_filenames=temp_filenames,
                                             restore_model=restore_model_filename,
                                             save_model=save_model_filename,

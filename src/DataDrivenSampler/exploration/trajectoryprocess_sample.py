@@ -17,7 +17,7 @@ class TrajectoryProcess_sample(TrajectoryProcess):
     INDEX_TRAJECTORY_FILENAME = 1   # index of trajectory in temp_filenames
     INDEX_AVERAGES_FILENAME = 2     # index of averages in temp_filenames
 
-    def __init__(self, data_id, FLAGS, network_model, temp_filenames, restore_model, save_model=None, continue_flag = True):
+    def __init__(self, data_id, network_model, FLAGS, temp_filenames, restore_model, save_model=None, continue_flag = True):
         """ Initializes a run job.
 
         :param data_id: id associated with data object

@@ -20,7 +20,7 @@ class TrajectoryProcess_train(TrajectoryProcess):
 
     LEARNING_RATE = 3e-2 # use larger learning rate as we are close to minimum
 
-    def __init__(self, data_id, FLAGS, network_model, temp_filenames, restore_model, save_model=None, continue_flag = True):
+    def __init__(self, data_id, network_model, FLAGS, temp_filenames, restore_model, save_model=None, continue_flag = True):
         """ Initializes a run job.
 
         :param data_id: id associated with data object

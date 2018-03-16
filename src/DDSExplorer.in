@@ -8,7 +8,6 @@ import logging
 import numpy as np
 import tensorflow as tf
 import time
-
 import scipy.spatial.distance as scidist
 
 from DataDrivenSampler.common import add_common_options_to_parser, add_data_options_to_parser, \
@@ -20,6 +19,15 @@ from DataDrivenSampler.exploration.explorer import Explorer
 from DataDrivenSampler.models.model import model
 from DataDrivenSampler.runtime.runtime import runtime
 from DataDrivenSampler.TrajectoryAnalyser import compute_diffusion_maps
+
+from multiprocessing.managers import BaseManager
+
+
+class MyManager(BaseManager):
+    pass
+
+MyManager.register('network_model', model)
+
 
 FLAGS = None
 
@@ -68,7 +76,13 @@ def main(_):
     time_zero = time.process_time()
 
     # setup neural network
-    network_model = model(FLAGS)
+    if FLAGS.number_processes == 0:
+        network_model = model(FLAGS)
+    else:
+        manager = MyManager()
+        manager.start()
+        network_model = manager.network_model(FLAGS)
+
     time_init_network_zero = time.process_time()
     # prepare for both sampling and training
     network_model.init_network(FLAGS.restore_model, setup="sample")
@@ -77,9 +91,9 @@ def main(_):
     rt.set_init_network_time(time.process_time() - time_init_network_zero)
 
     # prevent writing of output files during leg sampling
-    network_model.config_map["do_write_averages_file"] = False
-    network_model.config_map["do_write_run_file"] = False
-    network_model.config_map["do_write_trajectory_file"] = False
+    network_model.set_config_map("do_write_averages_file", False)
+    network_model.set_config_map("do_write_run_file", False)
+    network_model.set_config_map("do_write_trajectory_file", False)
 
     # 1. run initially just one trajectory
     explorer = Explorer(parameters=FLAGS,
