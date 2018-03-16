@@ -17,8 +17,6 @@ class Explorer(object):
 
     """
 
-    INITIAL_LEGS = 3  # how many legs to run without convergence stop check
-
     def __init__(self, parameters, max_legs=20, use_processes=0, number_pruning=0):
         """ Initializes the explorer class with its internal instances.
 
@@ -34,12 +32,12 @@ class Explorer(object):
         else:
             self.queue = TrajectoryProcessQueue(self.container, parameters, number_pruning, number_processes=use_processes)
 
-    def spawn_starting_trajectory(self, network_model):
+    def spawn_starting_trajectory(self, network_model, number_trajectories=3):
         """ Begin exploration by sampling an initial starting trajectory.
 
         :param network_model: model of neural network with Session for sample and optimize jobs
         """
-        for i in range(1,self.INITIAL_LEGS+1):
+        for i in range(1,number_trajectories+1):
             current_id = self.container.add_empty_data(type="sample")
             data_object = self.container.get_data(current_id)
             self.queue.add_sample_job(

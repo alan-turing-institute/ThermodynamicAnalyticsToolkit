@@ -103,7 +103,7 @@ def main(_):
 
     print("Creating starting trajectory.")
     # a. add three legs to queue
-    explorer.spawn_starting_trajectory(network_model)
+    explorer.spawn_starting_trajectory(network_model, FLAGS.number_of_parallel_trajectories)
 
     # b. continue until queue has run dry
     explorer.run_all_jobs(network_model, FLAGS)

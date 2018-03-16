@@ -36,7 +36,7 @@ AT_CHECK([../../../DDSExplorer \
 	--max_legs 5 \
 	--max_steps 30 \
 	--number_of_eigenvalues 1 \
-	--number_of_parallel_trajectories 0 \
+	--number_of_parallel_trajectories 3 \
 	--number_pruning 0 \
 	--optimizer GradientDescent \
 	--run_file run-none.csv \
@@ -58,7 +58,7 @@ AT_CHECK([../../../DDSExplorer \
 	--max_legs 5 \
 	--max_steps 30 \
 	--number_of_eigenvalues 1 \
-	--number_of_parallel_trajectories 0 \
+	--number_of_parallel_trajectories 3 \
 	--number_pruning 1 \
 	--optimizer GradientDescent \
 	--run_file run-single.csv \
