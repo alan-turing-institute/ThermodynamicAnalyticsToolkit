@@ -36,9 +36,10 @@ class TrajectoryProcess(TrajectoryJob):
             print("Create initial model from parameters " \
                   +str(_data.parameters[-1][0:5])+" at step " \
                   +str(_data.steps[-1]))
-            self.network_model.assign_current_step(_data.steps[-1])
-            self.network_model.assign_neural_network_parameters(parameters)
-            self.network_model.save_model(model_filename)
+            self.network_model.create_model_file(
+                _data.steps[-1],
+                parameters,
+                model_filename)
 
     @staticmethod
     def get_options_from_flags(FLAGS, keys):

@@ -245,6 +245,11 @@ class model:
     def write_averages_row(self, line):
         self.averages_writer.writerow(line)
 
+    def create_model_file(self, initial_step, parameters, model_filename):
+        self.assign_current_step(initial_step)
+        self.assign_neural_network_parameters(parameters)
+        self.save_model(model_filename)
+
     @staticmethod
     def setup_parameters(
             averages_file=None,

@@ -26,6 +26,13 @@ class TrajectoryDataContainer(object):
         self.current_data_id += 1
         return return_id
 
+    def get_ids(self):
+        """ Returns a list of ids.
+
+        :return: list of ids
+        """
+        return self.data.keys()
+
     def get_data(self, _id):
         """ This returns the datum to a given id
 
@@ -36,3 +43,13 @@ class TrajectoryDataContainer(object):
             return self.data[_id]
         else:
             return None
+
+    def update_data(self, data_object):
+        """ Replace old data object by new data object
+
+        :param data_object: new data object
+        """
+        data_id = data_object.get_id()
+        assert( data_id in self.data.keys())
+        del self.data[data_id]
+        self.data[data_id] = data_object

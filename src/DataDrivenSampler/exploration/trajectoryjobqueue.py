@@ -1,11 +1,14 @@
+from collections import deque
 import logging
 
+from DataDrivenSampler.exploration.trajectorydatacontainer import TrajectoryDataContainer
 from DataDrivenSampler.exploration.trajectoryjob_analyze import TrajectoryJob_analyze
 from DataDrivenSampler.exploration.trajectoryjob_check_gradient import TrajectoryJob_check_gradient
 from DataDrivenSampler.exploration.trajectoryjob_extract_minimum_candidates import TrajectoryJob_extract_minimium_candidates
 from DataDrivenSampler.exploration.trajectoryjob_prune import TrajectoryJob_prune
 from DataDrivenSampler.exploration.trajectoryjob_sample import TrajectoryJob_sample
 from DataDrivenSampler.exploration.trajectoryjob_train import TrajectoryJob_train
+from DataDrivenSampler.exploration.trajectoryjobid import TrajectoryJobId
 from DataDrivenSampler.exploration.trajectoryqueue import TrajectoryQueue
 
 class TrajectoryJobQueue(TrajectoryQueue):
@@ -16,15 +19,17 @@ class TrajectoryJobQueue(TrajectoryQueue):
 
     MAX_MINIMA_CANDIDATES = 3 # dont check more than this number of minima candidates
 
-    def __init__(self, _data_container, max_legs, number_pruning, number_processes=0):
+    def __init__(self, max_legs, number_pruning, number_processes=0):
         """ Initializes a queue of trajectory jobs.
 
-        :param _data_container: data container with all data object
-        :param .max_legs: maximum number of legs (of length max_steps) per trajectory
+        :param max_legs: maximum number of legs (of length max_steps) per trajectory
         :param number_pruning: number of pruning jobs added at trajectory end
         :param number_processes: number of concurrent processes to use
         """
-        super(TrajectoryJobQueue, self).__init__(_data_container, max_legs, number_pruning, number_processes)
+        super(TrajectoryJobQueue, self).__init__(max_legs, number_pruning, number_processes)
+        self.data_container =  TrajectoryDataContainer()
+        self.current_job_id = TrajectoryJobId(1)
+        self.queue = deque()
 
     def add_analyze_job(self, data_object, parameters, continue_flag):
         """ Adds an analyze job to the queue.
@@ -83,11 +88,12 @@ class TrajectoryJobQueue(TrajectoryQueue):
         for i in range (len(candidates)):
             minima_index = candidates[i]
             current_id = self.data_container.add_empty_data(type="train")
-            new_data_object = self.data_container.data[current_id]
+            new_data_object = self.data_container.get_data(current_id)
             new_data_object.steps[:] = [data_object.steps[minima_index]]
             new_data_object.parameters[:] = [data_object.parameters[minima_index]]
             new_data_object.losses[:] = [data_object.losses[minima_index]]
             new_data_object.gradients[:] = [data_object.gradients[minima_index]]
+            self.data_container.update_data(new_data_object)
             self.add_train_job(
                 data_object=new_data_object,
                 run_object=run_object,
@@ -127,6 +133,7 @@ class TrajectoryJobQueue(TrajectoryQueue):
         :param parameters: parameters of the neural net to set. If None, keep random ones
         :param continue_flag: flag whether job should spawn more jobs or not
         """
+        data_object = self.instantiate_data_object(data_object)
         if len(data_object.legs_at_step) > 0:
             initial_step = data_object.legs_at_step[-1]
         else:
@@ -151,6 +158,7 @@ class TrajectoryJobQueue(TrajectoryQueue):
         :param parameters: parameters of the neural net to set. If None, keep random ones
         :param continue_flag: flag whether job should spawn more jobs or not
         """
+        data_object = self.instantiate_data_object(data_object)
         train_job = TrajectoryJob_train(data_id=data_object.get_id(),
                                         network_model=run_object,
                                         initial_step=data_object.steps[-1],
@@ -192,7 +200,7 @@ class TrajectoryJobQueue(TrajectoryQueue):
             # check whether data_id is in list
             usable_job = self.used_data_ids.count(data_id) == 0
             logging.info("Job #"+str(current_job.get_job_id())+" is " \
-                         +("NOT" if not usable_job else "")+" usable.")
+                         +("NOT " if not usable_job else "")+"usable.")
 
             if not usable_job:
                 self.queue._enqueue_job(current_job)
@@ -200,9 +208,17 @@ class TrajectoryJobQueue(TrajectoryQueue):
         # append data id to list to mark it as in use
         self.used_data_ids.append(data_id)
 
-        logging.info("Current job #"+str(current_job.get_job_id())+": "+current_job.job_type)
+        logging.info("Current job #"+str(current_job.get_job_id())+": " \
+                     +current_job.job_type+" on data #"+str(data_id))
+
         data_object = self.data_container.get_data(data_id)
-        updated_data, continue_flag = current_job.run(data_object)
+        logging.debug("Old data is "+str(data_object))
+
+        data_object, continue_flag = current_job.run(data_object)
+
+        self.data_container.update_data(data_object)
+
+        logging.debug("New data is "+str(data_object))
 
         # remove id from list again
         self.used_data_ids.remove(data_id)
@@ -212,7 +228,7 @@ class TrajectoryJobQueue(TrajectoryQueue):
 
         logging.info("Continue? "+str(continue_flag))
         if continue_flag:
-            if len(updated_data.legs_at_step) >= self.max_legs and \
+            if len(data_object.legs_at_step) >= self.max_legs and \
                             current_job.job_type in ["analyze", "check_gradient"]:
                 logging.info("Maximum number of legs exceeded, not adding any more jobs of type " \
                              +current_job.job_type+" for data id "+str(data_object.get_id())+".")

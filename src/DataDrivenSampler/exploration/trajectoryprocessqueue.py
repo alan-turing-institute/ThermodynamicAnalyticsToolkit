@@ -3,7 +3,7 @@ import tempfile
 import os, shutil
 
 from multiprocessing.context import Process
-from multiprocessing import Manager
+from multiprocessing import JoinableQueue
 
 from DataDrivenSampler.exploration.trajectoryprocess_sample import TrajectoryProcess_sample
 from DataDrivenSampler.exploration.trajectoryprocess_train import TrajectoryProcess_train
@@ -17,17 +17,19 @@ class TrajectoryProcessQueue(TrajectoryJobQueue):
 
     MAX_MINIMA_CANDIDATES = 3 # dont check more than this number of minima candidates
 
-    def __init__(self, _data_container, parameters, number_pruning, number_processes):
+    def __init__(self, parameters, number_pruning, number_processes, manager):
         """ Initializes a queue of trajectory jobs.
 
-        :param _data_container: data container with all data object
-        :param .max_legs: maximum number of legs (of length max_steps) per trajectory
+        :param max_legs: maximum number of legs (of length max_steps) per trajectory
         :param number_pruning: number of pruning jobs added at trajectory end
         :param number_processes: number of concurrent processes to use
+        :param manager: manager for semaphored instances used in multiprocessing
         """
-        super(TrajectoryProcessQueue, self).__init__(_data_container, parameters.max_legs, number_pruning, number_processes)
-        self.unique_filenames = {}  # stores used filenames per data id
+        super(TrajectoryProcessQueue, self).__init__(parameters.max_legs, number_pruning, number_processes)
         self.parameters = parameters
+        self.data_container =  manager.TrajectoryDataContainer()
+        self.current_job_id = manager.TrajectoryJobId(1)
+        self.queue = JoinableQueue()
 
     def getUniqueFilename(self, prefix="", suffix=""):
         """ Returns a unique filename
@@ -51,6 +53,7 @@ class TrajectoryProcessQueue(TrajectoryJobQueue):
         :param restore_model_filename: file name from where to restore model
         :param continue_flag: flag whether job should spawn more jobs or not
         """
+        data_object = self.instantiate_data_object(data_object, type="sample")
         temp_filenames = [ self.getUniqueFilename(prefix="run-", suffix=".csv"),
                            self.getUniqueFilename(prefix="trajectory-", suffix=".csv"),
                            self.getUniqueFilename(prefix="averages-", suffix=".csv")]
@@ -60,6 +63,7 @@ class TrajectoryProcessQueue(TrajectoryJobQueue):
         else:
             restore_model_filename = data_object.model_filename+"/model"
         save_model_filename = data_object.model_filename+"/model"
+        self.data_container.update_data(data_object)
         sample_job = TrajectoryProcess_sample(data_id=data_object.get_id(),
                                               network_model=run_object,
                                               FLAGS=self.parameters,
@@ -76,6 +80,7 @@ class TrajectoryProcessQueue(TrajectoryJobQueue):
         :param restore_model_filename: file name from where to restore model
         :param continue_flag: flag whether job should spawn more jobs or not
         """
+        data_object = self.instantiate_data_object(data_object, type="train")
         temp_filenames = [ self.getUniqueFilename(prefix="run-", suffix=".csv"),
                            self.getUniqueFilename(prefix="trajectory-", suffix=".csv"),
                            self.getUniqueFilename(prefix="averages-", suffix=".csv")]
@@ -83,6 +88,7 @@ class TrajectoryProcessQueue(TrajectoryJobQueue):
             data_object.model_filename = self.getUniqueFilename(prefix="model-")
         restore_model_filename = data_object.model_filename + "/model"
         save_model_filename = data_object.model_filename+"/model"
+        self.data_container.update_data(data_object)
         train_job = TrajectoryProcess_train(data_id=data_object.get_id(),
                                             network_model=run_object,
                                             FLAGS=self.parameters,
@@ -111,7 +117,7 @@ class TrajectoryProcessQueue(TrajectoryJobQueue):
         :param parameters:
         :return:
         """
-        while not self.is_empty():
+        while True:
             self.run_next_job(network_model, parameters)
             self.queue.task_done()
         print("QUEUE IS EMPTY, process stopping.")

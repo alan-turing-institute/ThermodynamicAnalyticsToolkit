@@ -49,6 +49,9 @@ class TrajectoryData(object):
         # model filename used by trajectoryprocess'es
         self.model_filename = None
 
+    def __repr__(self):
+        return ("data #"+str(self.id)+": "+str(self.steps[0:3])+"..."+str(self.steps[-3:-1]))
+
     def get_id(self):
         """ Return the unique id of this data object
 

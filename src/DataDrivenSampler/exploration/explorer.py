@@ -1,4 +1,3 @@
-from DataDrivenSampler.exploration.trajectorydatacontainer import TrajectoryDataContainer
 from DataDrivenSampler.exploration.trajectoryjobqueue import TrajectoryJobQueue
 from DataDrivenSampler.exploration.trajectoryprocessqueue import TrajectoryProcessQueue
 from DataDrivenSampler.TrajectoryAnalyser import compute_diffusion_maps
@@ -17,20 +16,24 @@ class Explorer(object):
 
     """
 
-    def __init__(self, parameters, max_legs=20, use_processes=0, number_pruning=0):
+    def __init__(self, parameters, max_legs=20, use_processes=0, number_pruning=0, manager=None):
         """ Initializes the explorer class with its internal instances.
 
         :param parameters: parameter struct for steering exploration
-        :param max_legs: maximum number of legs
-        :param number_pruning: number of pruning tasks to spawn at end of trajectory
+        :param max_legs: maximum number of legs per trajectory
+        :param use_processes: whether to use a single or multiple processes (using
+                multiple processes allows to explore in parallel but needs to build
+                multiple copies of the graph, one per process)
+        :param number_pruning: number of pruning jobs added after trajectory has ended
+        :param manager: multiprocessing's manager object to control shared instances
+                in case of multiple processes
         """
-        self.container = TrajectoryDataContainer()
         self.use_processes = use_processes != 0
         self.parameters = parameters
         if use_processes == 0:
-            self.queue = TrajectoryJobQueue(self.container, max_legs, number_pruning)
+            self.queue = TrajectoryJobQueue(max_legs, number_pruning)
         else:
-            self.queue = TrajectoryProcessQueue(self.container, parameters, number_pruning, number_processes=use_processes)
+            self.queue = TrajectoryProcessQueue(parameters, number_pruning, number_processes=use_processes, manager=manager)
 
     def add_used_data_ids_list(self, _list):
         """ Pass function through to TrajectoryQueue
@@ -45,10 +48,8 @@ class Explorer(object):
         :param network_model: model of neural network with Session for sample and optimize jobs
         """
         for i in range(1,number_trajectories+1):
-            current_id = self.container.add_empty_data(type="sample")
-            data_object = self.container.get_data(current_id)
             self.queue.add_sample_job(
-                data_object=data_object,
+                data_object=None,
                 run_object=network_model,
                 continue_flag=True)
 
@@ -64,15 +65,17 @@ class Explorer(object):
         """
         # d. spawn new trajectories from these points
         cornerpoints = []
+        data_container = self.queue.get_data_container()
         for i in range(len(idx_corner)):
             logging.debug("Current corner point is (first and last five shown):" \
                           +str(parameters[idx_corner[i]][:5])+" ... "+str(parameters[idx_corner[i]][-5:]))
-            current_id = self.container.add_empty_data(type="sample")
-            data_object = self.container.data[current_id]
+            current_id = data_container.add_empty_data(type="sample")
+            data_object = data_container.get_data(current_id)
             data_object.steps[:] = [steps[idx_corner[i]]]
             data_object.parameters[:] = [parameters[idx_corner[i]]]
             data_object.losses[:] = [losses[idx_corner[i]]]
             data_object.gradients[:] = [1]
+            data_container.update_data(data_object)
 
             self.queue.add_sample_job(
                 data_object=data_object,
@@ -89,11 +92,13 @@ class Explorer(object):
         steps = []
         parameters = []
         losses = []
-        for id in self.container.data.keys():
-            if self.container.data[id].type == "sample":
-                steps.extend( self.container.data[id].steps )
-                parameters.extend( self.container.data[id].parameters )
-                losses.extend( self.container.data[id].losses )
+        data_container = self.queue.get_data_container()
+        for id in data_container.get_ids():
+            data_object = data_container.get_data(id)
+            if data_object.type == "sample":
+                steps.extend( data_object.steps )
+                parameters.extend( data_object.parameters )
+                losses.extend( data_object.losses )
         return steps, parameters, losses
 
     @staticmethod
@@ -185,9 +190,11 @@ class Explorer(object):
 
         :return: run_info and trajectory
         """
+        data_container = self.queue.get_data_container()
+
         run_info = []
-        for current_id in self.container.data.keys():
-            run_lines_per_leg = self.container.data[current_id].run_lines
+        for current_id in data_container.data.keys():
+            run_lines_per_leg = data_container.data[current_id].run_lines
             for leg_nr in range(len(run_lines_per_leg)):
                 run_lines = run_lines_per_leg[leg_nr]
                 for row in range(len(run_lines.index)):
@@ -196,8 +203,8 @@ class Explorer(object):
                     run_info.append(run_line)
 
         trajectory = []
-        for current_id in self.container.data.keys():
-            trajectory_lines_per_leg = self.container.data[current_id].trajectory_lines
+        for current_id in data_container.data.keys():
+            trajectory_lines_per_leg = data_container.data[current_id].trajectory_lines
             for leg_nr in range(len(trajectory_lines_per_leg)):
                 trajectory_lines = trajectory_lines_per_leg[leg_nr]
                 for row in range(len(trajectory_lines.index)):

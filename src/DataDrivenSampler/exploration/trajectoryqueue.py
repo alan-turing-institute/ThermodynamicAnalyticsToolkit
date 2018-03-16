@@ -1,7 +1,4 @@
-from collections import deque
 import logging
-from multiprocessing import JoinableQueue
-
 
 class TrajectoryQueue(object):
     ''' This class is a queue of trajectory jobs of any type
@@ -9,26 +6,49 @@ class TrajectoryQueue(object):
 
     '''
 
-    def __init__(self, _data_container, max_legs, number_pruning, number_processes=0):
+    def __init__(self, max_legs, number_pruning, number_processes=0):
         """ Initializes a queue of trajectory jobs.
 
-        :param _data_container: data container with all data object
         :param .max_legs: maximum number of legs (of length max_steps) per trajectory
         :param number_pruning: number of pruning jobs added at trajectory end
         """
-        self.data_container =  _data_container
         self.max_legs = max_legs
         self.number_pruning = number_pruning
         self.number_processes = number_processes
-        self.current_job_id = 1
-        if self.number_processes == 0:
-            self.queue = deque()
-        else:
-            self.queue = JoinableQueue()
+        self.data_container = None
+        self.current_job_id = None
+        self.queue = None
         self.used_data_ids = [] # make a simple list as default
+
+    def get_data_container(self):
+        return self.data_container
 
     def add_used_data_ids_list(self, _list):
         self.used_data_ids = _list
+
+    def add_sample_job(self, data_object, run_object=None, continue_flag=False):
+        """ Adds a sampling job to the queue.
+
+        :param data_object: data object for the job
+        :param restore_model_filename: file name from where to restore model
+        :param continue_flag: flag whether job should spawn more jobs or not
+        """
+        assert( False )
+
+    def add_train_job(self, data_object, run_object=None, continue_flag=False):
+        """ Adds a training job to the queue.
+
+        :param data_object: data object for the job
+        :param restore_model_filename: file name from where to restore model
+        :param continue_flag: flag whether job should spawn more jobs or not
+        """
+        assert( False )
+
+    def instantiate_data_object(self, data_object, type="sample"):
+        if data_object is None:
+            data_id = self.data_container.add_empty_data(type=type)
+            data_object = self.data_container.get_data(data_id)
+        return data_object
 
     def _enqueue_job(self, _job):
         """ Adds a new job to the end of the queue, also giving it a unique
@@ -36,8 +56,7 @@ class TrajectoryQueue(object):
 
         :param _job: job to add
         """
-        _job.set_job_id(self.current_job_id)
-        self.current_job_id += 1
+        _job.set_job_id(self.current_job_id.get_unique_id())
         if self.number_processes == 0:
             self.queue.append(_job)
         else:
