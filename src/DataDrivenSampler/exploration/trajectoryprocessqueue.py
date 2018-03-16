@@ -1,5 +1,6 @@
 import logging
 import tempfile
+import os, glob
 
 from multiprocessing.context import Process
 
@@ -86,6 +87,30 @@ class TrajectoryProcessQueue(TrajectoryJobQueue):
                                             continue_flag=continue_flag)
         self._enqueue_job(train_job)
 
+    def trajectory_ended(self, data_id):
+        """ Provides a hook for derived classes to do something when a trajectory
+        is terminated.
+
+        :param data_id: data id to this trajectory
+        """
+        # remove the model files when trajectory is done
+        data_object = self.data_container.get_data(data_id)
+        for filename in glob.glob(data_object.model_filename+"*"):
+            logging.debug("Removing "+filename)
+            os.remove(filename)
+
+    def run_next_job_till_queue_empty(self, network_model, parameters):
+        """ Run jobs in queue till empty
+
+        :param network_model:
+        :param parameters:
+        :return:
+        """
+        while not self.queue.empty():
+            self.run_next_job(network_model, parameters)
+            self.queue.task_done()
+        print("QUEUE IS EMPTY, process stopping.")
+
     def run_all_jobs(self, network_model, parameters):
         """ Run all jobs using a set of processes.
 
@@ -93,10 +118,21 @@ class TrajectoryProcessQueue(TrajectoryJobQueue):
         :param parameters:
         :return:
         """
-        processes = [Process(target=self.run_next_job(network_model, parameters)) \
+        processes = [Process(target=self.run_next_job_till_queue_empty, args=(network_model, parameters)) \
                      for i in range(self.number_processes)]
+        logging.info("Starting "+str(len(processes))+" processes.")
         for p in processes:
             p.start()
         self.queue.join()
+        assert( len(self.used_data_ids.copy()) == 0 )
         for p in processes:
             p.terminate()
+        for p in processes:
+            p.join()
+        running = True
+        while running:
+                running = any([p.is_alive() for p in processes])
+        processes.clear()
+        self.queue.close()
+        # reset queue: otherwise we cannot push new items onto it
+        self.queue = JoinableQueue()

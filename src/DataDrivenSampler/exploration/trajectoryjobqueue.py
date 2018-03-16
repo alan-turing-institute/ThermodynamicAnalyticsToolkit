@@ -158,6 +158,22 @@ class TrajectoryJobQueue(TrajectoryQueue):
                                         continue_flag=continue_flag)
         self._enqueue_job(train_job)
 
+    def trajectory_ended(self, data_id):
+        """ Provides a hook for derived classes to do something when a trajectory
+        is terminated.
+
+        :param data_id: data id to this trajectory
+        """
+        pass
+
+    def leg_ended(self, data_id):
+        """ Provides a hook for derived classes to do something when a leg
+        is terminated.
+
+        :param data_id: data id to this trajectory
+        """
+        pass
+
     def run_next_job(self, run_object, analyze_object):
         ''' Takes the next job from the start of the queue and runs it.
         Will add new jobs to queue depending on the result of the run job.
@@ -174,12 +190,16 @@ class TrajectoryJobQueue(TrajectoryQueue):
         data_object = self.data_container.get_data(data_id)
         updated_data, continue_flag = current_job.run(data_object)
 
+        if current_job.job_type in ["sample", "train"]:
+            self.leg_ended(data_id)
+
         logging.info("Continue? "+str(continue_flag))
         if continue_flag:
             if len(updated_data.legs_at_step) >= self.max_legs and \
                             current_job.job_type in ["analyze", "check_gradient"]:
                 logging.info("Maximum number of legs exceeded, not adding any more jobs of type " \
                              +current_job.job_type+" for data id "+str(data_object.get_id())+".")
+                self.trajectory_ended(data_id)
                 if current_job.job_type == "analyze":
                     self.add_extract_minima_job(data_object, analyze_object, False)
                     logging.info("Added extract minima job")
@@ -214,8 +234,10 @@ class TrajectoryJobQueue(TrajectoryQueue):
                 else:
                     logging.warning("Unknown job type "+current_job.job_type+"!")
         else:
+            self.trajectory_ended(data_id)
             if current_job.job_type == "analyze":
                 self.add_extract_minima_job(data_object, analyze_object, False)
                 logging.info("Added extract minima job")
             else:
                 logging.info("Not adding.")
+
