@@ -54,15 +54,6 @@ class Explorer(object):
                     parameters=None,
                     continue_flag=True)
 
-    def run_all_jobs(self, network_model, parameters):
-        """ Run all jobs currently found in the TrajectoryJob queue.
-
-        :param network_model: model of neural network with Session for sample and optimize jobs
-        :param parameters: parameter struct for analysis jobs
-        """
-        while not self.queue.is_empty():
-            self.queue.run_next_job(network_model, parameters)
-
     def spawn_corner_trajectories(self, steps, parameters, losses, idx_corner, network_model):
         """ Run further trajectories for a given list of corner points.
 
@@ -186,6 +177,14 @@ class Explorer(object):
         idx_corner = self.find_corner_points(
                 dmap_eigenvectors, number_of_corner_points)
         return idx_corner
+
+    def run_all_jobs(self, network_model, parameters):
+        """ Run all jobs currently found in the TrajectoryJob queue.
+
+        :param network_model: model of neural network with Session for sample and optimize jobs
+        :param parameters: parameter struct for analysis jobs
+        """
+        self.queue.run_all_jobs(network_model, parameters)
 
     def get_run_info_and_trajectory(self):
         """ This combines all stored run_info and trajectory and returns them

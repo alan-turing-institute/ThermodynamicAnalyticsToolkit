@@ -50,6 +50,16 @@ class TrajectoryQueue(object):
         :param run_object: neural network object for run
         :param analyze_object: parameter object for analysis
         '''
+        pass
+
+    def run_all_jobs(self, network_model, parameters):
+        """ Run all jobs currently found in the Trajectory queue.
+
+        :param network_model: model of neural network with Session for sample and optimize jobs
+        :param parameters: parameter struct for analysis jobs
+        """
+        while not self.is_empty():
+            self.run_next_job(network_model, parameters)
 
     def is_empty(self):
         """ Returns whether the queue is empty
