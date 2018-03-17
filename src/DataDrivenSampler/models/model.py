@@ -1,17 +1,16 @@
 from builtins import staticmethod
 
 import logging
-from math import sqrt, floor, ceil, exp
+from math import sqrt, exp
 import numpy as np
 import pandas as pd
 import scipy.sparse as sps
 import tensorflow as tf
 import time
 
-from DataDrivenSampler.common import create_input_layer, decode_csv_line, file_length, \
-    get_csv_defaults, get_list_from_string, get_trajectory_header, \
-    initialize_config_map, \
-    setup_csv_file, setup_run_file, setup_trajectory_file
+from DataDrivenSampler.common import create_input_layer, file_length, get_list_from_string, \
+    get_trajectory_header, initialize_config_map, setup_csv_file, setup_run_file, \
+    setup_trajectory_file
 from DataDrivenSampler.models.input.datasetpipeline import DatasetPipeline
 from DataDrivenSampler.models.input.inmemorypipeline import InMemoryPipeline
 from DataDrivenSampler.models.basetype import dds_basetype
@@ -277,6 +276,8 @@ class model:
             optimizer="GradientDescent",
             output_activation="tanh",
             output_dimension=1,
+            parse_parameters_file=None,
+            parse_steps=[],
             prior_factor=1.,
             prior_lower_boundary=None,
             prior_power=1.,
@@ -316,6 +317,8 @@ class model:
                 optimizer=optimizer,
                 output_activation=output_activation,
                 output_dimension=output_dimension,
+                parse_parameters_file=parse_parameters_file,
+                parse_steps=parse_steps,
                 prior_factor=prior_factor,
                 prior_lower_boundary=prior_lower_boundary,
                 prior_power=prior_power,
@@ -465,6 +468,7 @@ class model:
             logging.debug("Assigning the following values to fixed degrees of freedom: "+str(values))
             self.assign_parameters(fixed_variables, values)
 
+        # assign state of model from file if given
         if filename is not None:
             # Tensorflow DOCU says: initializing is not needed when restoring
             # however, global_variables are missing otherwise for storing kinetic, ...
@@ -474,17 +478,23 @@ class model:
             self.saver.restore(self.sess, restore_path)
             logging.info("Model restored from file: %s" % restore_path)
 
+        if self.weights is None:
+            self.weights = neuralnet_parameters(tf.get_collection(tf.GraphKeys.WEIGHTS))
+        if self.biases is None:
+            self.biases = neuralnet_parameters(tf.get_collection(tf.GraphKeys.BIASES))
+
+        # assign parameters of NN from step in given file
+        if self.FLAGS.parse_parameters_file is not None \
+                and (self.FLAGS.parse_steps is not None and (len(self.FLAGS.parse_steps) > 0)):
+            step=self.FLAGS.parse_steps[0]
+            self.assign_weights_and_biases_from_file(self.FLAGS.parse_parameters_file, step, do_check=True)
+
         header = None
         logging.info("Setting up output files for "+str(setup))
         if setup == "sample":
             header = self.get_sample_header()
         elif setup == "train":
             header = self.get_train_header()
-
-        if self.weights is None:
-            self.weights = neuralnet_parameters(tf.get_collection(tf.GraphKeys.WEIGHTS))
-        if self.biases is None:
-            self.biases = neuralnet_parameters(tf.get_collection(tf.GraphKeys.BIASES))
 
         try:
             if self.averages_writer is None:

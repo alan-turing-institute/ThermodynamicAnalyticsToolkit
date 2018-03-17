@@ -30,6 +30,8 @@ class MockFlags:
                  optimizer="GradientDescent",
                  output_activation="tanh",
                  output_dimension=1,
+                 parse_parameters_file=None,
+                 parse_steps=[],
                  prior_factor=1.,
                  prior_lower_boundary=None,
                  prior_power=1.,
@@ -71,6 +73,8 @@ class MockFlags:
         :param optimizer: Choose the optimizer to use for sampling: GradientDescent
         :param output_activation: Activation function to use for output layer: tanh, relu, linear
         :param output_dimension: number of output nodes/number of classes
+        :param parse_parameters_file: parse neural network parameters from this file on network creation
+        :param parse_steps: indicates the row (in column "step") of the parse_parameters_file to use
         :param prior_factor: factor for scaling prior force
         :param prior_lower_boundary: lower boundary for wall-repelling prior force
         :param prior_power: power of distance used in calculating force
@@ -111,6 +115,8 @@ class MockFlags:
         self.optimizer = optimizer
         self.output_activation = output_activation
         self.output_dimension = output_dimension
+        self.parse_parameters_file = parse_parameters_file
+        self.parse_steps = parse_steps
         self.prior_factor = prior_factor
         self.prior_lower_boundary = prior_lower_boundary
         self.prior_power = prior_power

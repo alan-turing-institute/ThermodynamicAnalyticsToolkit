@@ -176,6 +176,10 @@ def add_model_options_to_parser(parser):
         help='Set the loss to be measured during sampling, e.g. mean_squared, log_loss, ...')
     parser.add_argument('--output_activation', type=str, default="tanh",
         help='Activation function to use for output layer: tanh, relu, linear')
+    parser.add_argument('--parse_parameters_file', type=str, default=None,
+        help='File to parse initial set of parameters from')
+    parser.add_argument('--parse_steps', type=int, nargs='+', default=[],
+        help='Step(s) to parse from parse_parameters_file assuming multiple are present')
     parser.add_argument('--seed', type=int, default=None,
         help='Seed to use for random number generators.')
 
