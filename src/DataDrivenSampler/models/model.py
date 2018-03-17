@@ -376,34 +376,6 @@ class model:
                             self.hessians.append(
                                 tf.reshape(grad, [-1]))
                 self.hessians = tf.reshape(tf.concat(self.hessians, axis=0), [total_dofs, total_dofs])
-                #print(self.hessians)
-                #vectorized_tensors.append(vectorized_tensor)
-
-                # this is taken from https://stackoverflow.com/a/37666032
-                # def cons(x):
-                #     return tf.constant(x, dtype=tf.float32)
-                #
-                # def compute_hessian(fn, vars):
-                #     dofs = np.cumsum([np.cumprod(var.shape) for var in vars])
-                #     mat = []
-                #     for v1 in vars:
-                #         temp = []
-                #         for v2 in vars:
-                #             # computing derivative twice, first w.r.t v2 and then w.r.t v1
-                #             temp.append(tf.gradients(tf.gradients(fn, v2)[0], v1)[0])
-                #         temp = [cons(0) if t == None else t for t in
-                #                 temp]  # tensorflow returns None when there is no gradient, so we replace None with 0
-                #         print(temp)
-                #         temp = tf.stack(temp)
-                #         mat.append(temp)
-                #     print(mat)
-                #     mat = tf.reshape(mat, [dofs, dofs])
-                #     return mat
-
-                #self.hessians = compute_hessian(loss, vectorized_tensors)
-                #flat_variables = tf.concat(vectorized_tensors, axis=0)
-                #self.gradients = tf.gradients(loss, [flat_variables])
-                #self.hessians = tf.hessians(loss, flat_variables)
         else:
             loss = self.nn.get_list_of_nodes(["loss"])[0]
 
