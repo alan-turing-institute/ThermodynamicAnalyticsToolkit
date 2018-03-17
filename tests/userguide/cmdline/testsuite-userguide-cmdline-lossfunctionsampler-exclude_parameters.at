@@ -21,8 +21,8 @@ AT_SETUP([Examples cmdline - loss function sampling over grid excluding paramete
 AT_KEYWORDS([example cmdline lossfunctionsampler grd exclude_parameters])
 
 AT_DATA(centers.csv,
-[step,w1,
-1,0.5
+[step,w0,w1,b1
+1,0.5,0.5,0.5
 ])
 
 # dataset prepared as follows:

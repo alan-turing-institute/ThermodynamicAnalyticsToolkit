@@ -1142,7 +1142,7 @@ sys.path.insert(1,"&lt;path_to_DDS&gt;/lib/python3.5/site-packages/")</programli
   xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
     </example>
     <para>It takes as input the dataset file <quote>dataset-twoclusters.csv</quote>
-    and either a trajectory file <quote>trajectory.csv</quote>. This will
+    and either a parameter file <quote>trajectory.csv</quote>. This will
     cause the program the re-evaluate the loss function at the trajectory
     points which should hopefully give the same values as already stored in the
     trajectory file itself.</para>
@@ -1151,7 +1151,7 @@ sys.path.insert(1,"&lt;path_to_DDS&gt;/lib/python3.5/site-packages/")</programli
     error in terms of the overall accuracy or the loss at the points along the 
     given trajectory.</para>
     <para>Interesting is also the second case, where instead of giving
-    a trajectory file, we sample the parameter space equidistantly as
+    a parameters file, we sample the parameter space equidistantly as
     follows:</para>
     <example xml:id="reference.loss.example.grid">
       <title>Using LossFunctionSampler with an equidistant grid</title>
@@ -1171,8 +1171,10 @@ sys.path.insert(1,"&lt;path_to_DDS&gt;/lib/python3.5/site-packages/")</programli
   xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
     </example>
     <para>Moreover, using <quote>exclude_parameters</quote> can be
-    used to exclude parameters from the variation, i.e. they are kept at
-    fixed values read from a file.</para>
+    used to exclude parameters from the variation, i.e. this subset is kept at
+    fixed values read from the file given by <quote>parse_parameters_file</quote>
+    where the row designated by the value in <quote>parse_steps</quote> is
+    taken.</para>
     <para>This can be used to assess the shape of the loss manifold around
     a found minimum.</para>
     <example xml:id="reference.loss.example.exclude_parameters">

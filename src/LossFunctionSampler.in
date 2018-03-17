@@ -59,8 +59,6 @@ def parse_parameters():
         help='Number of samples to take per bias interval')
     parser.add_argument('--samples_weights', type=int, default=None,
         help='Number of samples to take per weight interval')
-    parser.add_argument('--trajectory_file', type=str,default=None,
-        help='Input trajectory file')
     parser.add_argument('--verbose', '-v', action='count',
         help='Level of verbosity during compare')
     parser.add_argument('--version', '-V', action="store_true",
@@ -98,9 +96,10 @@ def main(_):
 
     FLAGS.exclude_parameters = get_list_from_string(FLAGS.exclude_parameters)
 
-    # get trajectory length or number of sampled points
-    if FLAGS.trajectory_file is not None:
-        FLAGS.max_steps = file_length(FLAGS.trajectory_file)-1
+    # get parse_parameters_file length or number of sampled points
+    if FLAGS.parse_parameters_file is not None and \
+            ((FLAGS.parse_steps is None) or (len(FLAGS.parse_steps) == 0)):
+        FLAGS.max_steps = file_length(FLAGS.parse_parameters_file)-1
     else:
         weight_degrees = weights_vals.size
         bias_degrees = biases_vals.size
@@ -130,7 +129,6 @@ def main(_):
     network_model.init_input_pipeline()
     print(FLAGS)
 
-
     loss = network_model.nn.get_list_of_nodes(["loss"])
     acc = network_model.nn.get_list_of_nodes(["accuracy"])
     sess = network_model.sess
@@ -149,7 +147,7 @@ def main(_):
 
     ## function to evaluate the loss
 
-    def evaluate_loss():
+    def evaluate_loss(weights_eval, biases_eval):
         # get next batch of data
         features, labels = network_model.input_pipeline.next_batch(sess)
 
@@ -159,23 +157,10 @@ def main(_):
             network_model.nn.placeholder_nodes["y_"]: labels
         }
 
-        nn_weights.assign(sess, weights_vals)
-        nn_biases.assign(sess, biases_vals)
-
         loss_eval, acc_eval = sess.run([loss, acc], feed_dict=feed_dict)
-        # get the weights and biases to check against what we set
-        weights_eval = nn_weights.evaluate(sess)
-        biases_eval = nn_biases.evaluate(sess)
 
         print("Loss and accuraccy at the given parameters w("+str(weights_eval)+" b("
               +str(biases_eval)+") is "+str(loss_eval[0])+" and "+str(acc_eval[0]))
-
-        for i in range(weights_eval.size):
-            #print("Comparing "+str(weights_eval[i])+" against "+str(weights_vals[i]))
-            assert( math.fabs(weights_eval[i] - weights_vals[i]) < 1e-6 )
-        for i in range(biases_eval.size):
-            #print("Comparing "+str(biases_eval[i])+" against "+str(biases_vals[i]))
-            assert( math.fabs(biases_eval[i] - biases_vals[i]) < 1e-6 )
 
         if FLAGS.csv_file is not None:
             print_row = [current_step] \
@@ -185,33 +170,20 @@ def main(_):
                                                             precision=output_precision)] \
                         + ['{:{width}.{precision}e}'.format(weight, width=output_width,
                                                             precision=output_precision)
-                                                            for weight in weights_vals[:]] \
+                                                            for weight in weights_eval[:]] \
                         + ['{:{width}.{precision}e}'.format(bias, width=output_width,
                                                             precision=output_precision)
-                                                            for bias in biases_vals[:]]
+                                                            for bias in biases_eval[:]]
             csv_writer.writerow(print_row)
 
         return loss_eval[0]
 
-    if FLAGS.trajectory_file is None:
+    if (FLAGS.parse_parameters_file is None) or \
+            FLAGS.parse_steps is not None and (len(FLAGS.parse_steps) == 1):
 
-        interval_center = {}
-        # parse interval_center file
-        if FLAGS.interval_center_file is not None:
-            interval_centers = pd.read_csv(FLAGS.interval_center_file, sep=',', header=0)
-            if FLAGS.interval_center_step in interval_centers.loc[:,['step']].values:
-                rownr = np.where(interval_centers.loc[:,['step']].values==FLAGS.interval_center_step)[0]
-                for keyname in FLAGS.exclude_parameters:
-                    if "w" in keyname:
-                        fullname = "weight"
-                    elif "b" in keyname:
-                        fullname = "bias"
-                    fullname += keyname[1:]
-                    if fullname in interval_centers.columns:
-                        interval_center[keyname] = interval_centers.loc[rownr, [fullname]].values[0]
-                    elif keyname in interval_centers.columns:
-                        interval_center[keyname] = interval_centers.loc[rownr, [keyname]].values[0]
-            print(interval_center)
+        # evaluate weights and biases to obtain interval centers from parsed file
+        weights_eval = network_model.weights.evaluate(network_model.sess)
+        biases_eval = network_model.biases.evaluate(network_model.sess)
 
         weights_index_grid = np.zeros(weights_vals.size, dtype=int)
         biases_index_grid = np.zeros(biases_vals.size, dtype=int)
@@ -223,8 +195,8 @@ def main(_):
             weights_interval_end = float(FLAGS.interval_weights[1])
 
             keyname = "w"+str(i)
-            if keyname in FLAGS.exclude_parameters and keyname in interval_center.keys():
-                weights_interval_start = interval_center[keyname]
+            if keyname in FLAGS.exclude_parameters:
+                weights_interval_start = weights_eval[i]
                 weights_interval_end = weights_interval_start
 
             weights_interval_length = weights_interval_end - weights_interval_start
@@ -248,8 +220,8 @@ def main(_):
             biases_interval_end = float(FLAGS.interval_biases[1])
 
             keyname = "b"+str(i)
-            if keyname in FLAGS.exclude_parameters and keyname in interval_center.keys():
-                biases_interval_start = interval_center[keyname]
+            if keyname in FLAGS.exclude_parameters:
+                biases_interval_start = biases_eval[i]
                 biases_interval_end = biases_interval_start
 
             biases_interval_length = biases_interval_end - biases_interval_start
@@ -306,7 +278,17 @@ def main(_):
             weights_vals[:] = [weights_linspace[i][ weights_index_grid[i] ] for i in range(weights_vals.size)]
             biases_vals[:] = [biases_linspace[i][ biases_index_grid[i] ] for i in range(biases_vals.size)]
 
-            evaluate_loss()
+            weights_eval, biases_eval = network_model.assign_weights_and_biases( \
+                weights_vals, biases_vals, do_check=True)
+            evaluate_loss(weights_eval, biases_eval)
+
+            for i in range(weights_eval.size):
+                print("Comparing "+str(weights_eval[i])+" against "+str(weights_vals[i]))
+                assert( math.fabs(weights_eval[i] - weights_vals[i]) < 1e-6 )
+            for i in range(biases_eval.size):
+                print("Comparing "+str(biases_eval[i])+" against "+str(biases_vals[i]))
+                assert( math.fabs(biases_eval[i] - biases_vals[i]) < 1e-6 )
+
 
             current_step += 1
 
@@ -315,28 +297,15 @@ def main(_):
             next_index()
     else:
         # parse csv file
-        trajectories = pd.read_csv(FLAGS.trajectory_file, sep=',', header=0)
+        trajectories = pd.read_csv(FLAGS.parse_parameters_file, sep=',', header=0)
         for rownr in trajectories.index:
-            parameters = {}
-            for keyname in trajectories.columns:
-                if  (keyname[1] >= "0" and keyname[1] <= "9"):
-                    if ("w" == keyname[0]):
-                        fullname = "weight"
-                    elif "b" == keyname[0]:
-                        fullname = "bias"
-                    else:
-                        # not a parameter column
-                        continue
-                    fullname += keyname[1:]
-                    parameters[fullname] = trajectories.loc[rownr, [keyname]].values[0]
-                else:
-                    if ("weight" in keyname) or ("bias" in keyname):
-                        parameters[keyname] = trajectories.loc[rownr, [keyname]].values[0]
-
-            loss_check = trajectories.loc[rownr, ['loss']].values[0]
-            weights_vals[:weights_vals.size] = [parameters[key] for key in sorted(parameters.keys()) if "w" in key]
-            biases_vals[:biases_vals.size] = [parameters[key] for key in sorted(parameters.keys()) if "b" in key]
-            loss_eval = evaluate_loss()
+            weights_eval, biases_eval = network_model.assign_weights_and_biases_from_dataframe(
+                df_parameters=trajectories,
+                rownr=rownr,
+                do_check=True
+            )
+            #loss_check = trajectories.loc[rownr, ['loss']].values[0]
+            loss_eval = evaluate_loss(weights_eval, biases_eval)
             #assert( math.fabs( loss_eval - float(loss_check) ) < 1e-6 )
 
             current_step += 1

@@ -28,8 +28,8 @@ AT_CHECK([../../../LossFunctionSampler \
 	--batch_size 20 \
 	--csv_file LossFunctionSampler-output-SGLD.csv \
 	--exclude_parameters "w0" \
-	--seed 426 \
-	--trajectory_file ${abs_top_srcdir}/tests/regression/LossFunctionSampler/pre/trajectory-SGLD.csv
+	--parse_parameters_file ${abs_top_srcdir}/tests/regression/LossFunctionSampler/pre/trajectory-SGLD.csv \
+	--seed 426
 ], 0, [stdout], [stderr])
 
 

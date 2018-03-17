@@ -26,18 +26,21 @@ AT_KEYWORDS([lossfunctionsampler interval_center_file])
 AT_CHECK([../../../LossFunctionSampler \
 	--batch_data_files ${abs_top_srcdir}/tests/regression/LossFunctionSampler/pre/dataset-twoclusters.csv \
 	--batch_size 20 \
-	--csv_file LossFunctionSampler-output-SGLD.csv \
-	--interval_center_file parameters.dat \
-	--seed 426 \
-	--trajectory_file ${abs_top_srcdir}/tests/regression/LossFunctionSampler/pre/trajectory-SGLD.csv
+	--csv_file LossFunctionSampler-output.csv \
+	--exclude_parameters "w0" \
+	--interval_biases -1 1 \
+	--interval_weights -1 1 \
+	--parse_step 1 \
+	--parse_parameters_file ${abs_top_srcdir}/tests/regression/LossFunctionSampler/pre/trajectory-SGLD.csv \
+	--samples_biases 4 \
+	--samples_weights 4 \
+	--seed 426
 ], 0, [stdout], [stderr])
 
-
-# select only the "loss" column 
-cat LossFunctionSampler-output-SGLD.csv | gawk -F"," 'BEGIN { column_nr=-1 } { if (NR==1) { for(i=1;i<=NF;++i) { if (match($i,"loss") != 0) { column_nr=i } } } else { print $column_nr+0 }  }' > LFS-losses.txt
-
 # now compare
-AT_CHECK([diff LFS-losses.txt ${abs_top_srcdir}/tests/regression/LossFunctionSampler/post/trajectory-losses-SGLD.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff \
+    --column_drop step accuracy \
+    -- LossFunctionSampler-output.csv ${abs_top_srcdir}/tests/regression/LossFunctionSampler/post/trajectory-losses-center_file.csv], 0, [ignore], [ignore])
 
 
 AT_CLEANUP
