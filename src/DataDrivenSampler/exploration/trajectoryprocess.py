@@ -1,8 +1,8 @@
 import logging
-import os
+import tempfile
 
 from DataDrivenSampler.exploration.trajectoryjob import TrajectoryJob
-
+from DataDrivenSampler.common import setup_csv_file
 
 class TrajectoryProcess(TrajectoryJob):
     ''' This is the base class for process object that can be placed in the
@@ -23,23 +23,27 @@ class TrajectoryProcess(TrajectoryJob):
         super(TrajectoryProcess, self).__init__(data_id)
         self.network_model = network_model
 
-    def create_starting_model(self, _data, model_filename):
-        foldername = os.path.dirname(model_filename)
-        # save starting parameters set to a model
-        if not os.path.isdir(foldername):
-            os.mkdir(foldername)
-            logging.debug("Creating folder "+foldername)
-            # create model files from the parameters
-            assert( len(_data.parameters) != 0 )
-            print("Create initial model from parameters "+str(_data.parameters[-1][0:5]))
-            parameters = _data.parameters[-1]
-            print("Create initial model from parameters " \
-                  +str(_data.parameters[-1][0:5])+" at step " \
-                  +str(_data.steps[-1]))
-            self.network_model.create_model_file(
-                _data.steps[-1],
-                parameters,
-                model_filename)
+    def create_starting_parameters(self, _data, number_weights, number_biases):
+        # create model files from the parameters
+        assert( len(_data.parameters) != 0 )
+        parameters = _data.parameters[-1]
+        print("Writing initial parameters " \
+              +str(_data.parameters[-1][0:5])+" at step " \
+              +str(_data.steps[-1])+" to temporary file.")
+        f = tempfile.NamedTemporaryFile(mode="w", prefix="parameters-", suffix=".csv")
+        filename = f.name
+        f.close()
+        header = ['step']\
+           + [str("weight")+str(i) for i in range(0, number_weights)]\
+           + [str("bias") + str(i) for i in range(0, number_biases)]
+
+        parameters_writer, parameters_file = setup_csv_file(
+            filename, header)
+        write_row = [0, _data.steps[-1]]
+        write_row.extend(_data.parameters[-1])
+        parameters_writer.writerow(write_row)
+        parameters_file.close()
+        return filename, _data.steps[-1]
 
     @staticmethod
     def get_options_from_flags(FLAGS, keys):

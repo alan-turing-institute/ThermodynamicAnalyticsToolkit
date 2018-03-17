@@ -33,6 +33,8 @@ class TrajectoryProcess_train(TrajectoryProcess):
         super(TrajectoryProcess_train, self).__init__(data_id, network_model)
         self.job_type = "train"
         self.FLAGS = FLAGS
+        self.number_biases = network_model.get_total_bias_dof()
+        self.number_weights = network_model.get_total_weight_dof()
         self.temp_filenames = temp_filenames
         self.restore_model = restore_model
         self.save_model = save_model
@@ -45,10 +47,6 @@ class TrajectoryProcess_train(TrajectoryProcess):
         :param _data: data object to use
         :return: updated data object
         """
-        # create a starting model if needed
-        if self.restore_model is not None:
-            self.create_starting_model(_data, self.restore_model)
-
         # construct flags for DDSOptimizer
         optimizing_flags = self.get_options_from_flags(self.FLAGS,
                    ["every_nth", "inter_ops_threads", "intra_ops_threads", "batch_data_files", \
@@ -64,11 +62,22 @@ class TrajectoryProcess_train(TrajectoryProcess):
         # restore initial point and save end point for next leg
         optimizing_flags.extend(
             ["--step_width", str(self.LEARNING_RATE)])
+        # restore initial point and save end point for next leg
+        do_remove_parameter_file = False
+        if self.restore_model is not None:
+            foldername = os.path.dirname(self.restore_model)
+            if not os.path.isdir(foldername):
+                filename, step = self.create_starting_parameters(_data, self.number_weights, self.number_biases)
+                optimizing_flags.extend(
+                    ["--parse_parameters_file", filename,
+                     "--parse_steps", str(step)])
+                do_remove_parameter_file = True
+            else:
+                optimizing_flags.extend(
+                    ["--restore_model", self.restore_model])
         if self.restore_model is not None:
             optimizing_flags.extend(
-                ["--restore_model", self.restore_model])
-        optimizing_flags.extend(
-            ["--save_model", self.save_model])
+                ["--save_model", self.save_model])
         # store all run info, trajectory and averages
         optimizing_flags.extend([
             "--run_file", self.temp_filenames[self.INDEX_RUN_FILENAME],
@@ -81,6 +90,10 @@ class TrajectoryProcess_train(TrajectoryProcess):
         p.communicate(None)
         retcode = p.poll()
         assert( retcode == 0 )
+
+        # remove possibly created parameters file
+        if do_remove_parameter_file:
+            os.remove(filename)
 
         # parse files for store in _data
         run_info = pd.read_csv(self.temp_filenames[self.INDEX_RUN_FILENAME], sep=',', header=0)
