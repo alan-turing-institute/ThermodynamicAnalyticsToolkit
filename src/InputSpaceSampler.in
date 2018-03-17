@@ -50,10 +50,6 @@ def parse_parameters():
         help='Restore model (input and biases) from a file.')
     parser.add_argument('--samples_input', type=int, default=None,
         help='Number of samples to take per weight interval')
-    parser.add_argument('--steps', type=int, nargs='+', default=[],
-        help='At which steps of the loaded trajectory to sample the input space.')
-    parser.add_argument('--trajectory_file', type=str, default=None,
-        help='Input trajectory file')
     parser.add_argument('--verbose', '-v', action='count',
         help='Level of verbosity during compare')
     parser.add_argument('--version', '-V', action="store_true",
@@ -135,28 +131,12 @@ def main(_):
     y = network_model.nn.get_list_of_nodes(["y"])
     sess = network_model.sess
 
-    nn_weights = network_model.weights
-    nn_biases = network_model.biases
-
-    weights_vals = nn_weights.create_flat_vector()
-    biases_vals = nn_biases.create_flat_vector()
-
     if FLAGS.csv_file is not None:
         header = ["i"]
         for i in range(input_dimension):
             header.append("x"+str(i+1))
         header.append("label")
         csv_writer, csv_file = setup_csv_file(FLAGS.csv_file, header)
-
-    def assign_parameters():
-        nn_weights.assign(sess, weights_vals)
-        nn_biases.assign(sess, biases_vals)
-
-        # get the input and biases to check against what we set
-        weights_eval = nn_weights.evaluate(sess)
-        biases_eval = nn_biases.evaluate(sess)
-
-        print("Evaluating at weights "+str(weights_eval[0:10])+", biases "+str(biases_eval[0:10]))
 
     ## function to evaluate the loss
 
@@ -186,45 +166,21 @@ def main(_):
                                                             for label in np.asarray(label[0])]
             csv_writer.writerow(print_row)
 
-    if FLAGS.trajectory_file is None:
-        print("Need trajectory file that contains weights and biases per step.")
+    if FLAGS.parse_parameters_file is None:
+        print("Need parameters file that contains weights and biases per step.")
         sys.exit(255)
     else:
-        # parse csv file
-        trajectories = pd.read_csv(FLAGS.trajectory_file, sep=',', header=0)
-        for step in FLAGS.steps:
-            if step in trajectories.loc[:,['step']].values:
-                parameters = {}
-                rownr = np.where(trajectories.loc[:,['step']].values==step)[0]
-                for keyname in trajectories.columns:
-                    if  (keyname[1] >= "0" and keyname[1] <= "9"):
-                        if ("w" == keyname[0]):
-                            fullname = "weight"
-                        elif "b" == keyname[0]:
-                            fullname = "bias"
-                        else:
-                            # not a parameter column
-                            continue
-                        fullname += keyname[1:]
-                        parameters[fullname] = trajectories.loc[rownr, [keyname]].values[0]
-                    else:
-                        if ("weight" in keyname) or ("bias" in keyname):
-                            parameters[keyname] = trajectories.loc[rownr, [keyname]].values[0]
-                print("Got for step "+str(step)+":"+str(parameters))
+        for step in FLAGS.parse_steps:
+            network_model.assign_weights_and_biases_from_file(FLAGS.parse_parameters_file, step, do_check=True)
 
-                loss_check = trajectories.loc[rownr, ['loss']].values[0]
-                weights_vals[:weights_vals.size] = [parameters[key] for key in sorted(parameters.keys()) if "w" in key]
-                biases_vals[:biases_vals.size] = [parameters[key] for key in sorted(parameters.keys()) if "b" in key]
-                assign_parameters()
-
-                current_step = 0
-                while True:
-                    try:
-                        evaluate_label(current_step)
-                        current_step += 1
-                    except tf.errors.OutOfRangeError:
-                        print("End of dataset.")
-                        break
+            current_step = 0
+            while True:
+                try:
+                    evaluate_label(current_step)
+                    current_step += 1
+                except tf.errors.OutOfRangeError:
+                    print("End of dataset.")
+                    break
 
     network_model.finish()
 

@@ -27,8 +27,8 @@ AT_CHECK([../../../InputSpaceSampler \
 	--samples_input 10 \
 	--csv_file InputSpaceSampler-output.csv \
 	--seed 426 \
-	--steps 1 \
-	--trajectory_file ${abs_top_srcdir}/tests/regression/InputSpaceSampler/pre/trajectory-SGLD.csv
+	--parse_step 1 \
+	--parse_parameters_file ${abs_top_srcdir}/tests/regression/InputSpaceSampler/pre/trajectory-SGLD.csv
 ], 0, [stdout], [stderr])
 
 AT_CHECK([../../../NumericalDiff -- grid.csv ${abs_top_srcdir}/tests/regression/InputSpaceSampler/post/grid.csv], 0, [ignore], [ignore])
