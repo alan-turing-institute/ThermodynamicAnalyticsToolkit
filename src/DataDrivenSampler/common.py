@@ -6,7 +6,6 @@ import os
 import sys
 import tensorflow as tf
 
-from DataDrivenSampler.datasets.classificationdatasets import ClassificationDatasets as DatasetGenerator
 from DataDrivenSampler.models.basetype import dds_basetype
 from DataDrivenSampler.version import get_package_version, get_build_hash
 

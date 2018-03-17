@@ -1148,6 +1148,82 @@ class model:
         self.weights.assign(self.sess, parameters[0:weights_dof])
         self.biases.assign(self.sess, parameters[weights_dof:])
 
+    def assign_weights_and_biases(self, weights_vals, biases_vals, do_check=False):
+        """ Assigns weights and biases of a neural network.
+
+        :param weights_vals: flat weights parameters
+        :param biases_vals: flat bias parameters
+        :param do_check: whether to check set values (and print) or not
+        :return evaluated weights and bias on do_check or None otherwise
+        """
+        self.weights.assign(self.sess, weights_vals)
+        self.biases.assign(self.sess, biases_vals)
+
+        # get the input and biases to check against what we set
+        if do_check:
+            weights_eval = self.weights.evaluate(self.sess)
+            biases_eval = self.biases.evaluate(self.sess)
+            logging.info("Evaluating at weights " + str(weights_eval[0:10]) + ", biases " + str(biases_eval[0:10]))
+            return weights_eval, biases_eval
+        return None
+
+    def assign_weights_and_biases_from_dataframe(self, df_parameters, rownr, do_check=False):
+        """ Parse weight and bias values from a dataframe given a specific step
+        to set the neural network's parameters.
+
+        :param df_parameters: pandas dataframe
+        :param rownr: rownr to set
+        :param do_check: whether to evaluate (and print) set parameters
+        :return evaluated weights and bias on do_check or None otherwise
+        """
+        # parse csv file
+        parameters = {}
+        for keyname in df_parameters.columns:
+            if (keyname[1] >= "0" and keyname[1] <= "9"):
+                if ("w" == keyname[0]):
+                    fullname = "weight"
+                elif "b" == keyname[0]:
+                    fullname = "bias"
+                else:
+                    # not a parameter column
+                    continue
+                fullname += keyname[1:]
+                parameters[fullname] = df_parameters.loc[rownr, [keyname]].values[0]
+            else:
+                if ("weight" in keyname) or ("bias" in keyname):
+                    parameters[keyname] = df_parameters.loc[rownr, [keyname]].values[0]
+        logging.info("Read row " + str(rownr) + ":" + str(parameters))
+
+        # create internal array to store parameters
+        weights_vals = self.weights.create_flat_vector()
+        biases_vals = self.biases.create_flat_vector()
+        weights_vals[:weights_vals.size] = [parameters[key] for key in sorted(parameters.keys()) if "w" in key]
+        biases_vals[:biases_vals.size] = [parameters[key] for key in sorted(parameters.keys()) if "b" in key]
+        return self.assign_weights_and_biases(weights_vals, biases_vals, do_check)
+
+    def assign_weights_and_biases_from_file(self, filename, step, do_check=False):
+        """ Parse weight and bias values from a CSV file given a specific step
+        to set the neural network's parameters.
+
+        :param filename: filename to parse
+        :param step: step to set (i.e. value in "step" column designates row)
+        :param do_check: whether to evaluate (and print) set parameters
+        :return evaluated weights and bias on do_check or None otherwise
+        """
+        # parse csv file
+        df_parameters = pd.read_csv(filename, sep=',', header=0)
+        if step in df_parameters.loc[:, ['step']].values:
+            rownr = np.where(df_parameters.loc[:, ['step']].values == step)[0]
+            self.assign_current_step(step)
+            return self.assign_weights_and_biases_from_dataframe(
+                df_parameters=df_parameters,
+                rownr=rownr,
+                do_check=do_check
+            )
+        else:
+            logging.debug("Step " + str(step) + " not found in file.")
+            return None
+
     def assign_parameters(self, variables, values):
         """ Allows to assign multiple parameters at once.
 
