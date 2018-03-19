@@ -8,7 +8,8 @@ TESTSCRIPTS =
 
 # PLEASE adhere to alphabetical ordering of TESTSCRIPTS
 TESTSCRIPTS += \
-	$(srcdir)/Equilibration/testsuite-equilibration.at
+	$(srcdir)/Equilibration/testsuite-equilibration.at \
+	$(srcdir)/InputSpaceSampling_Trajectory/testsuite-inputspacesampling_trajectory.at
 
 EXTRA_DIST = \
 	testsuite.at \
@@ -16,7 +17,8 @@ EXTRA_DIST = \
 	atlocal.in \
 	package.m4 \
 	$(TESTSCRIPTS) \
-	Equilibration
+	Equilibration \
+	InputSpaceSampling_Trajectory
 
 max_jobs = 4
  
