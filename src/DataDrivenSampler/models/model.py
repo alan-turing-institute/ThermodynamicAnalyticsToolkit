@@ -227,6 +227,24 @@ class model:
                                       use_resource=True, dtype=tf.int64)
         self.resources_created = True
 
+    def get_config_map(self, key):
+        if key in self.config_map.keys():
+            return self.config_map[key]
+        else:
+            return None
+
+    def set_config_map(self, key, value):
+        self.config_map[key] = value
+
+    def write_run_row(self, line):
+        self.run_writer.writerow(line)
+
+    def write_trajectory_row(self, line):
+        self.trajectory_writer.writerow(line)
+
+    def write_averages_row(self, line):
+        self.averages_writer.writerow(line)
+
     @staticmethod
     def setup_parameters(
             averages_file=None,
@@ -518,6 +536,12 @@ class model:
         """ Prepares the distinct header for the run file for training
         """
         return ['id', 'step', 'epoch', 'accuracy', 'loss', 'time_per_nth_step', 'scaled_gradient', 'virial']
+
+    def get_total_weight_dof(self):
+        return self.weights.get_total_dof()
+
+    def get_total_bias_dof(self):
+        return self.biases.get_total_dof()
 
     def sample(self, return_run_info = False, return_trajectories = False, return_averages = False):
         """ Performs the actual sampling of the neural network `nn` given a dataset `ds` and a
