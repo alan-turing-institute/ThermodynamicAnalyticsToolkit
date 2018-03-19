@@ -42,6 +42,10 @@ class TrajectoryProcess_sample(TrajectoryProcess):
         :param _data: data object to use
         :return: updated data object
         """
+        # create a starting model if needed
+        if self.restore_model is not None:
+            self.create_starting_model(_data, self.restore_model)
+
         # construct flags for DDSampler
         sampling_flags = self.get_options_from_flags(self.FLAGS,
                    ["every_nth", "inter_ops_threads", "intra_ops_threads", "batch_data_files", \
