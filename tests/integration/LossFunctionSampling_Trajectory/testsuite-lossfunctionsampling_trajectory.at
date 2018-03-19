@@ -1,0 +1,74 @@
+#
+#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    Copyright (C) 2018 The University of Edinburgh
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### 
+
+AT_SETUP([LossFunctionSampling - From Sampled Trajectory])
+AT_KEYWORDS([datasetwriter ddsampler lossfunctionsampler])
+
+DIR=`pwd`
+# run 1: Create dataset
+AT_CHECK([../../../DatasetWriter \
+	--data_type 2 \
+	--dimension 20 \
+	--seed 426 \
+	--train_test_ratio 0 \
+	--test_data_file dataset-twocluster.csv
+], 0, [stdout], [stderr])
+
+# run 1: Optimize network
+AT_CHECK([../../../DDSOptimizer \
+	--batch_data_files dataset-twocluster.csv \
+	--batch_size 20 \
+	--max_steps 10 \
+	--optimizer GradientDescent \
+	--save_model ${DIR}/model.ckpt \
+	--seed 426 \
+	--step_width 1e-1
+], 0, [stdout], [stderr])
+
+# run 2: sample network
+AT_CHECK([../../../DDSampler \
+	--batch_data_files dataset-twocluster.csv \
+	--batch_size 20 \
+	--friction_constant 1 \
+	--inverse_temperature 1 \
+	--max_steps 10 \
+	--sampler GeometricLangevinAlgorithm_1stOrder \
+	--restore_model ${DIR}/model.ckpt \
+	--trajectory_file trajectory.csv \
+	--seed 426 \
+	--step_width 1e-1
+], 0, [stdout], [stderr])
+
+# run 3: use trajectory file for loss function sampling
+AT_CHECK([../../../LossFunctionSampler \
+    --batch_data_files dataset-twocluster.csv \
+	--batch_size 20 \
+    --csv_file lossfunction.csv \
+    --parse_parameters_file trajectory.csv \
+    --seed 426
+], 0, [stdout], [stderr])
+
+# compare
+sed -i -e "s#w0#weight0#" -e "s#w1#weight1#" -e "s#b0#bias0#" lossfunction.csv
+AT_CHECK([../../../NumericalDiff \
+    --column_drop accuracy id step \
+    -- lossfunction.csv trajectory.csv], 0, [ignore], [ignore])
+
+AT_CLEANUP
+

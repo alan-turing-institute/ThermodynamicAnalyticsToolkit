@@ -28,3 +28,9 @@ m4_ifdef([AT_COLOR_TESTS], [AT_COLOR_TESTS])
 
 # tests for equilibration using first Optimizer, then Sampler
 m4_include(Equilibration/testsuite-equilibration.at)
+
+# tests using first Optimizer, then Sampler, then InputSpaceSampler
+m4_include(InputSpaceSampling_Trajectory/testsuite-inputspacesampling_trajectory.at)
+
+# tests using first Optimizer, then Sampler, then LossFunctionSampler
+m4_include(LossFunctionSampling_Trajectory/testsuite-lossfunctionsampling_trajectory.at)

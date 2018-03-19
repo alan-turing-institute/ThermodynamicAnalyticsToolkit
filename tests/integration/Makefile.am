@@ -9,7 +9,8 @@ TESTSCRIPTS =
 # PLEASE adhere to alphabetical ordering of TESTSCRIPTS
 TESTSCRIPTS += \
 	$(srcdir)/Equilibration/testsuite-equilibration.at \
-	$(srcdir)/InputSpaceSampling_Trajectory/testsuite-inputspacesampling_trajectory.at
+	$(srcdir)/InputSpaceSampling_Trajectory/testsuite-inputspacesampling_trajectory.at \
+	$(srcdir)/LossFunctionSampling_Trajectory/testsuite-lossfunctionsampling_trajectory.at
 
 EXTRA_DIST = \
 	testsuite.at \
@@ -18,7 +19,8 @@ EXTRA_DIST = \
 	package.m4 \
 	$(TESTSCRIPTS) \
 	Equilibration \
-	InputSpaceSampling_Trajectory
+	InputSpaceSampling_Trajectory \
+	LossFunctionSampling_Trajectory
 
 max_jobs = 4
  
