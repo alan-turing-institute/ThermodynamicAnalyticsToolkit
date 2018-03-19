@@ -17,8 +17,8 @@
 #
 ### 
 
-AT_SETUP([LossFunctionSampling - From Sampled Trajectory])
-AT_KEYWORDS([datasetwriter ddsampler inputspacesampler])
+AT_SETUP([LossFunctionSampling - From Explored Minima])
+AT_KEYWORDS([datasetwriter ddsexplorer lossfunctionsampler])
 
 DIR=`pwd`
 # run 1: Create dataset
@@ -30,29 +30,25 @@ AT_CHECK([../../../DatasetWriter \
 	--test_data_file dataset-twocluster.csv
 ], 0, [stdout], [stderr])
 
-# run 1: Optimize network
-AT_CHECK([../../../DDSOptimizer \
+# run 1: explore
+AT_CHECK([../../../DDSExplorer \
 	--batch_data_files dataset-twocluster.csv \
 	--batch_size 20 \
-	--max_steps 10 \
-	--optimizer GradientDescent \
-	--save_model ${DIR}/model.ckpt \
-	--seed 426 \
-	--step_width 1e-1
-], 0, [stdout], [stderr])
-
-# run 2: sample network
-AT_CHECK([../../../DDSampler \
-	--batch_data_files dataset-twocluster.csv \
-	--batch_size 20 \
+	--diffusion_map_method vanilla \
 	--friction_constant 1 \
 	--inverse_temperature 1 \
+	--max_exploration_steps 0 \
+	--max_legs 2 \
 	--max_steps 10 \
+	--minima_file minima.csv \
+	--number_of_eigenvalues 1 \
+	--number_of_parallel_trajectories 1 \
+	--number_pruning 0 \
+	--optimizer GradientDescent \
 	--sampler GeometricLangevinAlgorithm_1stOrder \
-	--restore_model ${DIR}/model.ckpt \
-	--trajectory_file trajectory.csv \
 	--seed 426 \
-	--step_width 1e-1
+	--step_width 1e-1 \
+	--trajectory_file trajectory.csv
 ], 0, [stdout], [stderr])
 
 # run 3: use trajectory file for loss function sampling
@@ -60,15 +56,15 @@ AT_CHECK([../../../LossFunctionSampler \
     --batch_data_files dataset-twocluster.csv \
 	--batch_size 20 \
     --csv_file lossfunction.csv \
-    --parse_parameters_file trajectory.csv \
+    --parse_parameters_file minima.csv \
     --seed 426
 ], 0, [stdout], [stderr])
 
 # compare
 sed -i -e "s#w0#weight0#" -e "s#w1#weight1#" -e "s#b0#bias0#" lossfunction.csv
 AT_CHECK([../../../NumericalDiff \
-    --column_drop step id accuracy \
-    -- lossfunction.csv trajectory.csv], 0, [ignore], [ignore])
+    --column_drop accuracy gradient id step \
+    -- lossfunction.csv minima.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
 

@@ -10,6 +10,7 @@ TESTSCRIPTS =
 TESTSCRIPTS += \
 	$(srcdir)/Equilibration/testsuite-equilibration.at \
 	$(srcdir)/InputSpaceSampling_Trajectory/testsuite-inputspacesampling_trajectory.at \
+	$(srcdir)/LossFunctionSampling_Minima/testsuite-lossfunctionsampling_minima.at \
 	$(srcdir)/LossFunctionSampling_Trajectory/testsuite-lossfunctionsampling_trajectory.at
 
 EXTRA_DIST = \

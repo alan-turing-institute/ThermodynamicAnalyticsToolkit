@@ -34,3 +34,6 @@ m4_include(InputSpaceSampling_Trajectory/testsuite-inputspacesampling_trajectory
 
 # tests using first Optimizer, then Sampler, then LossFunctionSampler
 m4_include(LossFunctionSampling_Trajectory/testsuite-lossfunctionsampling_trajectory.at)
+
+# tests using first DDSExplorer, then LossFunctionSampler
+m4_include(LossFunctionSampling_Minima/testsuite-lossfunctionsampling_minima.at)
