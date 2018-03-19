@@ -947,6 +947,14 @@ class model:
             assert (abs(check_gradients) < 1e-10)
             assert (abs(check_virials) < 1e-10)
 
+            # get the weights and biases as otherwise the loss won't match
+            # tf first computes loss, then gradient, then performs variable update
+            # hence, after the sample step, we would have updated variables but old loss
+            if current_step % self.FLAGS.every_nth == 0:
+                if self.config_map["do_write_trajectory_file"] or return_trajectories:
+                    weights_eval = self.weights.evaluate(self.sess)
+                    biases_eval = self.biases.evaluate(self.sess)
+
             summary, _, acc, global_step, loss_eval, y_true_eval, y_eval, scaled_grad = \
                 self.sess.run(test_nodes, feed_dict=feed_dict)
 
@@ -987,8 +995,6 @@ class model:
 
 
                 if return_trajectories or self.config_map["do_write_trajectory_file"]:
-                    weights_eval = self.weights.evaluate(self.sess)
-                    biases_eval = self.biases.evaluate(self.sess)
                     trajectory_line = [0, global_step] \
                                       + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
                                                                           precision=output_precision)] \
