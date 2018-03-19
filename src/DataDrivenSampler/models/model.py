@@ -1036,6 +1036,15 @@ class model:
             self.config_map["trajectory_file"] = None
             self.trajectory_writer = None
 
+    def save_model(self, filename):
+        """ Saves the current neural network model to a set of files,
+        whose prefix is given by filename.
+
+        :param filename: prefix of set of model files
+        :return: path where model was saved
+        """
+        return self.saver.save(self.sess, filename)
+
     def finish(self):
         """ Closes all open files and saves the model if desired
         """
@@ -1043,7 +1052,7 @@ class model:
 
         try:
             if self.FLAGS.save_model is not None:
-                save_path = self.saver.save(self.sess, self.FLAGS.save_model.replace('.meta', ''))
+                save_path = self.save_model(self.FLAGS.save_model.replace('.meta', ''))
                 logging.info("Model saved in file: %s" % save_path)
         except AttributeError:
             pass
@@ -1116,6 +1125,23 @@ class model:
             else:
                 retlist.append(variable)
         return retlist
+
+    def assign_current_step(self, step):
+        # set step
+        if ('global_step' in self.nn.summary_nodes.keys()):
+            sample_step_placeholder = self.nn.get("step_placeholder")
+            feed_dict = {sample_step_placeholder: step}
+            set_step = self.sess.run(self.global_step_assign_t, feed_dict=feed_dict)
+
+    def assign_neural_network_parameters(self, parameters):
+        """ Assigns the parameters of the neural network from
+        the given array.
+
+        :param parameters: list of values, one for each weight and bias
+        """
+        weights_dof = self.weights.get_total_dof()
+        self.weights.assign(self.sess, parameters[0:weights_dof])
+        self.biases.assign(self.sess, parameters[weights_dof:])
 
     def assign_parameters(self, variables, values):
         """ Allows to assign multiple parameters at once.

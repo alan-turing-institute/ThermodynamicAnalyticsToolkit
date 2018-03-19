@@ -23,13 +23,6 @@ class TrajectoryProcess(TrajectoryJob):
         super(TrajectoryProcess, self).__init__(data_id)
         self.network_model = network_model
 
-    def _set_parameters(self, parameters):
-        # set parameters to ones from old leg (if exists)
-        sess = self.network_model.sess
-        weights_dof = self.network_model.weights.get_total_dof()
-        self.network_model.weights.assign(sess, self.parameters[0:weights_dof])
-        self.network_model.biases.assign(sess, parameters[weights_dof:])
-
     def create_starting_model(self, _data, model_filename):
         foldername = os.path.dirname(model_filename)
         # save starting parameters set to a model
@@ -40,9 +33,12 @@ class TrajectoryProcess(TrajectoryJob):
             assert( len(_data.parameters) != 0 )
             print("Create initial model from parameters "+str(_data.parameters[-1][0:5]))
             parameters = _data.parameters[-1]
-            self._set_parameters(parameters)
-            save_path = self.network_model.saver.save(
-                self.network_model.sess, model_filename)
+            print("Create initial model from parameters " \
+                  +str(_data.parameters[-1][0:5])+" at step " \
+                  +str(_data.steps[-1]))
+            self.network_model.assign_current_step(_data.steps[-1])
+            self.network_model.assign_neural_network_parameters(parameters)
+            self.network_model.save_model(model_filename)
 
     @staticmethod
     def get_options_from_flags(FLAGS, keys):
