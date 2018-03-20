@@ -20,7 +20,7 @@ class TrajectoryProcess_train(TrajectoryProcess):
 
     LEARNING_RATE = 3e-2 # use larger learning rate as we are close to minimum
 
-    def __init__(self, data_id, network_model, lock, FLAGS, temp_filenames, restore_model, save_model=None, continue_flag = True):
+    def __init__(self, data_id, network_model, FLAGS, temp_filenames, restore_model, save_model=None, continue_flag = True):
         """ Initializes a run job.
 
         :param data_id: id associated with data object
@@ -30,7 +30,7 @@ class TrajectoryProcess_train(TrajectoryProcess):
         :param save_model: file of the model to save last step to
         :param continue_flag: flag allowing to override spawning of subsequent job
         """
-        super(TrajectoryProcess_train, self).__init__(data_id, network_model, lock)
+        super(TrajectoryProcess_train, self).__init__(data_id, network_model)
         self.job_type = "train"
         self.FLAGS = FLAGS
         self.temp_filenames = temp_filenames

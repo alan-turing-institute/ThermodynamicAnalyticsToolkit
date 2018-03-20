@@ -30,7 +30,6 @@ class TrajectoryProcessQueue(TrajectoryJobQueue):
         self.data_container =  manager.TrajectoryDataContainer()
         self.current_job_id = manager.TrajectoryJobId(1)
         self.queue = JoinableQueue()
-        self.lock = manager.Lock()
 
     def getUniqueFilename(self, prefix="", suffix=""):
         """ Returns a unique filename
@@ -67,7 +66,6 @@ class TrajectoryProcessQueue(TrajectoryJobQueue):
         self.data_container.update_data(data_object)
         sample_job = TrajectoryProcess_sample(data_id=data_object.get_id(),
                                               network_model=run_object,
-                                              lock=self.lock,
                                               FLAGS=self.parameters,
                                               temp_filenames=temp_filenames,
                                               restore_model=restore_model_filename,
@@ -93,7 +91,6 @@ class TrajectoryProcessQueue(TrajectoryJobQueue):
         self.data_container.update_data(data_object)
         train_job = TrajectoryProcess_train(data_id=data_object.get_id(),
                                             network_model=run_object,
-                                            lock=self.lock,
                                             FLAGS=self.parameters,
                                             temp_filenames=temp_filenames,
                                             restore_model=restore_model_filename,

@@ -17,7 +17,7 @@ class TrajectoryProcess_sample(TrajectoryProcess):
     INDEX_TRAJECTORY_FILENAME = 1   # index of trajectory in temp_filenames
     INDEX_AVERAGES_FILENAME = 2     # index of averages in temp_filenames
 
-    def __init__(self, data_id, network_model, lock, FLAGS, temp_filenames, restore_model, save_model=None, continue_flag = True):
+    def __init__(self, data_id, network_model, FLAGS, temp_filenames, restore_model, save_model=None, continue_flag = True):
         """ Initializes a run job.
 
         :param data_id: id associated with data object
@@ -27,7 +27,7 @@ class TrajectoryProcess_sample(TrajectoryProcess):
         :param save_model: file of the model to save last step to
         :param continue_flag: flag allowing to override spawning of subsequent job
         """
-        super(TrajectoryProcess_sample, self).__init__(data_id, network_model, lock)
+        super(TrajectoryProcess_sample, self).__init__(data_id, network_model)
         self.job_type = "sample"
         self.FLAGS = FLAGS
         self.temp_filenames = temp_filenames
