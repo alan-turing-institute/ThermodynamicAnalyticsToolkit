@@ -9,6 +9,7 @@ TESTSCRIPTS =
 # PLEASE adhere to alphabetical ordering of TESTSCRIPTS
 TESTSCRIPTS += \
 	$(srcdir)/Equilibration/testsuite-equilibration.at \
+	$(srcdir)/InputSpaceSampling_Minima/testsuite-inputspacesampling_minima.at \
 	$(srcdir)/InputSpaceSampling_Trajectory/testsuite-inputspacesampling_trajectory.at \
 	$(srcdir)/LossFunctionSampling_Minima/testsuite-lossfunctionsampling_minima.at \
 	$(srcdir)/LossFunctionSampling_Trajectory/testsuite-lossfunctionsampling_trajectory.at

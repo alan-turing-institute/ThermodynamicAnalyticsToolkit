@@ -1,0 +1,70 @@
+#
+#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    Copyright (C) 2018 The University of Edinburgh
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### 
+
+AT_SETUP([InputSpaceSampling - From Explored Minima])
+AT_KEYWORDS([datasetwriter ddsexplorer inputspacesampler])
+
+DIR=`pwd`
+# run 1: Create dataset
+AT_CHECK([../../../DatasetWriter \
+	--data_type 2 \
+	--dimension 20 \
+	--seed 426 \
+	--train_test_ratio 0 \
+	--test_data_file dataset-twocluster.csv
+], 0, [stdout], [stderr])
+
+# run 1: explore
+AT_CHECK([../../../DDSExplorer \
+	--batch_data_files dataset-twocluster.csv \
+	--batch_size 20 \
+	--diffusion_map_method vanilla \
+	--friction_constant 1 \
+	--inverse_temperature 1 \
+	--max_exploration_steps 0 \
+	--max_legs 2 \
+	--max_steps 10 \
+	--minima_file minima.csv \
+	--number_of_eigenvalues 1 \
+	--number_of_parallel_trajectories 1 \
+	--number_pruning 0 \
+	--optimizer GradientDescent \
+	--sampler GeometricLangevinAlgorithm_1stOrder \
+	--seed 426 \
+	--step_width 1e-1 \
+	--trajectory_file trajectory.csv
+], 0, [stdout], [stderr])
+
+# run 3: use minima file for input space sampling
+AT_CHECK([../../../InputSpaceSampler \
+    --batch_data_files sampled_grid_step28.csv \
+    --csv_file inputspace_step28.csv \
+    --interval_input -1 1 \
+    --parse_steps 28 \
+    --parse_parameters_file minima.csv \
+    --samples_input 4 \
+    --seed 426
+], 0, [stdout], [stderr])
+
+# compare
+AT_CHECK([../../../NumericalDiff \
+    -- inputspace_step28.csv ${abs_top_srcdir}/tests/integration/InputSpaceSampling_Minima/post/inputspace_step28.csv], 0, [ignore], [ignore])
+
+AT_CLEANUP
+
