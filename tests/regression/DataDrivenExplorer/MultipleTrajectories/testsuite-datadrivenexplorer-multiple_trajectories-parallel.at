@@ -15,36 +15,72 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-### test on exploring with multiple trajectories
+### test on parallel exploring with multiple trajectories
 
-AT_SETUP([Explorer - multiple trajectories exploration])
-AT_KEYWORDS([options ddsexplorer exploration multiple_trajectories])
+AT_SETUP([Explorer - multiple trajectories parallel exploration])
+AT_KEYWORDS([options ddsexplorer exploration parallel multiple_trajectories])
 
 # dataset prepared as follows:
 # DatasetWriter --data_type 2 --dimension 10 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
 
-# run
+# run: exploration with "many" processes (and trajectories) but only for one exploration step
+AT_CHECK([../../../DDSExplorer \
+	--batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenExplorer/MultipleTrajectories/pre/dataset-twoclusters.csv \
+	--batch_size 10 \
+	--diffusion_map_method vanilla \
+	--every_nth 1 \
+	--friction_constant 10 \
+	--inverse_temperature 1e1 \
+	--max_exploration_steps 0 \
+	--max_legs 3 \
+	--max_steps 20 \
+	--minima_file minima-parallel.csv \
+	--number_of_eigenvalues 1 \
+	--number_of_parallel_trajectories 4 \
+	--number_processes 4 \
+	--optimizer GradientDescent \
+	--run_file run-parallel.csv \
+	--step_width 1e-2 \
+	--sampler GeometricLangevinAlgorithm_1stOrder \
+	--seed 426 \
+	--trajectory_file trajectory-parallel.csv \
+	--use_reweighting 0
+], 0, [stdout], [stderr])
+
+AT_CHECK([diff run-parallel.csv ${abs_top_srcdir}/tests/regression/DataDrivenExplorer/MultipleTrajectories/post/run-parallel.csv], 1, [ignore], [ignore])
+
+AT_CLEANUP
+
+AT_SETUP([Explorer - multiple parallel exploration])
+AT_KEYWORDS([options ddsexplorer exploration parallel multiple_exploration])
+
+# dataset prepared as follows:
+# DatasetWriter --data_type 2 --dimension 10 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+
+# run: exploration with just two processes but for more exploration steps
 AT_CHECK([../../../DDSExplorer \
 	--batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenExplorer/SingleTrajectory/pre/dataset-twoclusters.csv \
 	--batch_size 10 \
 	--diffusion_map_method vanilla \
 	--every_nth 1 \
-	--friction_constant 1 \
-	--inverse_temperature 1 \
+	--friction_constant 10 \
+	--inverse_temperature 1e2 \
 	--max_exploration_steps 2 \
-	--max_legs 10 \
+	--max_legs 3 \
 	--max_steps 20 \
+	--minima_file minima-parallel_multiple.csv \
 	--number_of_eigenvalues 1 \
 	--number_of_parallel_trajectories 2 \
+	--number_processes 2 \
 	--optimizer GradientDescent \
-	--run_file run-multiple.csv \
+	--run_file run-parallel_multiple.csv \
 	--step_width 1e-2 \
 	--sampler GeometricLangevinAlgorithm_1stOrder \
 	--seed 426 \
-	--trajectory_file trajectory-multiple.csv \
+	--trajectory_file trajectory-parallel_multiple.csv \
 	--use_reweighting 0
 ], 0, [stdout], [stderr])
 
-AT_CHECK([diff run-multiple.csv ${abs_top_srcdir}/tests/regression/DataDrivenExplorer/MultipleTrajectories/post/run-multiple.csv], 1, [ignore], [ignore])
+AT_CHECK([diff run-parallel_multiple.csv ${abs_top_srcdir}/tests/regression/DataDrivenExplorer/MultipleTrajectories/post/run-parallel_multiple.csv], 1, [ignore], [ignore])
 
 AT_CLEANUP

@@ -13,6 +13,9 @@ TESTSCRIPTS += \
 	$(srcdir)/DataDrivenExplorer/Pruning/testsuite-datadrivenexplorer-pruning.at \
 	$(srcdir)/DataDrivenExplorer/SingleTrajectory/testsuite-datadrivenexplorer-single_trajectory.at \
 	$(srcdir)/DataDrivenExplorer/MultipleTrajectories/testsuite-datadrivenexplorer-multiple_trajectories.at \
+	$(srcdir)/DataDrivenExplorer/MultipleTrajectories/testsuite-datadrivenexplorer-multiple_trajectories-multiple.at \
+	$(srcdir)/DataDrivenExplorer/MultipleTrajectories/testsuite-datadrivenexplorer-multiple_trajectories-parallel.at \
+	$(srcdir)/DataDrivenExplorer/MultipleTrajectories/testsuite-datadrivenexplorer-multiple_trajectories-single.at \
 	$(srcdir)/DataDrivenSampler/testsuite-datadrivensampler.at \
 	$(srcdir)/DataDrivenSampler/testsuite-datadrivensampler-simple.at \
 	$(srcdir)/DataDrivenSampler/Averages/testsuite-datadrivensampler-averages.at \
