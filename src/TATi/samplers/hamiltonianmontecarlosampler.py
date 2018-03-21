@@ -7,10 +7,10 @@ from tensorflow.python.framework import ops
 import tensorflow as tf
 
 from TATi.models.basetype import dds_basetype
-from TATi.samplers.sgldsampler import SGLDSampler
+from TATi.samplers.stochasticgradientlangevindynamicssampler import StochasticGradientLangevinDynamicsSampler
 
 
-class HamiltonianMonteCarloSampler(SGLDSampler):
+class HamiltonianMonteCarloSampler(StochasticGradientLangevinDynamicsSampler):
     """ Implements a Hamiltonian Monte Carlo Sampler
     in the form of a TensorFlow Optimizer, overriding tensorflow.python.training.Optimizer.
 

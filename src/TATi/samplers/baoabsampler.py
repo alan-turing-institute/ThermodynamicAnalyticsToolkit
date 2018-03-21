@@ -4,10 +4,10 @@ from tensorflow.python.ops import state_ops
 import tensorflow as tf
 
 from TATi.models.basetype import dds_basetype
-from TATi.samplers.GLAFirstOrderMomentumSampler import GLAFirstOrderMomentumSampler
+from TATi.samplers.geometriclangevinalgorithmfirstordersampler import GeometricLangevinAlgorithmFirstOrderSampler
 
 
-class BAOABSampler(GLAFirstOrderMomentumSampler):
+class BAOABSampler(GeometricLangevinAlgorithmFirstOrderSampler):
     """ Implements a Geometric Langevin Algorithm Momentum Sampler
     in the form of a TensorFlow Optimizer, overriding tensorflow.python.training.Optimizer.
 

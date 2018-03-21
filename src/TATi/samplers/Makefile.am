@@ -1,10 +1,10 @@
 TATI_samplers_PYTHON = \
-    BAOAB.py \
-	GradientDescent.py \
-	GLAFirstOrderMomentumSampler.py \
-	GLASecondOrderMomentumSampler.py \
-	HamiltonianMonteCarloSampler.py \
-	sgldsampler.py \
+    baoabsampler.py \
+	gradientdescent.py \
+	geometriclangevinalgorithmfirstordersampler.py \
+	geometriclangevinalgorithmsecondordersampler.py \
+	hamiltonianmontecarlosampler.py \
+	stochasticgradientlangevindynamicssampler.py \
 	__init__.py
 
 TATI_samplersdir = $(pythondir)/TATi/samplers

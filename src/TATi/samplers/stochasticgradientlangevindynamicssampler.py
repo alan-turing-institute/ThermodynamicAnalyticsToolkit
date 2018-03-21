@@ -9,7 +9,7 @@ import tensorflow as tf
 from TATi.models.basetype import dds_basetype
 
 
-class SGLDSampler(optimizer.Optimizer):
+class StochasticGradientLangevinDynamicsSampler(optimizer.Optimizer):
     """ Implements a Stochastic Gradient Langevin Dynamics Sampler
     in the form of a TensorFlow Optimizer, overriding tensorflow.python.training.Optimizer.
 
@@ -27,7 +27,7 @@ class SGLDSampler(optimizer.Optimizer):
         :param use_locking: whether to lock in the context of multi-threaded operations
         :param name: internal name of optimizer
         """
-        super(SGLDSampler, self).__init__(use_locking, name)
+        super(StochasticGradientLangevinDynamicsSampler, self).__init__(use_locking, name)
         self._step_width = step_width
         self._seed = seed
         self.random_noise = None

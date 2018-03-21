@@ -5,12 +5,12 @@ import tensorflow as tf
 from distutils.version import LooseVersion
 
 from TATi.models.basetype import dds_basetype
-from TATi.samplers.BAOAB import BAOABSampler
-from TATi.samplers.GLAFirstOrderMomentumSampler import GLAFirstOrderMomentumSampler
-from TATi.samplers.GLASecondOrderMomentumSampler import GLASecondOrderMomentumSampler
-from TATi.samplers.HamiltonianMonteCarloSampler import HamiltonianMonteCarloSampler
-from TATi.samplers.GradientDescent import GradientDescent
-from TATi.samplers.sgldsampler import SGLDSampler
+from TATi.samplers.baoabsampler import BAOABSampler
+from TATi.samplers.geometriclangevinalgorithmfirstordersampler import GeometricLangevinAlgorithmFirstOrderSampler
+from TATi.samplers.geometriclangevinalgorithmsecondordersampler import GeometricLangevinAlgorithmSecondOrderSampler
+from TATi.samplers.hamiltonianmontecarlosampler import HamiltonianMonteCarloSampler
+from TATi.samplers.gradientdescent import GradientDescent
+from TATi.samplers.stochasticgradientlangevindynamicssampler import StochasticGradientLangevinDynamicsSampler
 
 
 class NeuralNetwork(object):
@@ -230,11 +230,11 @@ class NeuralNetwork(object):
             self.placeholder_nodes['friction_constant'] = friction_constant
 
             if sampling_method == "StochasticGradientLangevinDynamics":
-                sampler = SGLDSampler(step_width, inverse_temperature, seed=seed)
+                sampler = StochasticGradientLangevinDynamicsSampler(step_width, inverse_temperature, seed=seed)
             elif sampling_method == "GeometricLangevinAlgorithm_1stOrder":
-                sampler = GLAFirstOrderMomentumSampler(step_width, inverse_temperature, friction_constant, seed=seed)
+                sampler = GeometricLangevinAlgorithmFirstOrderSampler(step_width, inverse_temperature, friction_constant, seed=seed)
             elif sampling_method == "GeometricLangevinAlgorithm_2ndOrder":
-                sampler = GLASecondOrderMomentumSampler(step_width, inverse_temperature, friction_constant, seed=seed)
+                sampler = GeometricLangevinAlgorithmSecondOrderSampler(step_width, inverse_temperature, friction_constant, seed=seed)
             elif sampling_method == "HamiltonianMonteCarlo":
                 if seed is not None:
                     np.random.seed(seed)
