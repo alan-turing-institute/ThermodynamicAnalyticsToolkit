@@ -203,7 +203,7 @@ class TrajectoryJobQueue(TrajectoryQueue):
                          +("NOT " if not usable_job else "")+"usable.")
 
             if not usable_job:
-                self.queue._enqueue_job(current_job)
+                self._enqueue_job(current_job)
 
         # append data id to list to mark it as in use
         self.used_data_ids.append(data_id)
