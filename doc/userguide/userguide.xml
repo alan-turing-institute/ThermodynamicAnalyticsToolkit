@@ -460,6 +460,23 @@ cost of all necessary servicing, repair, or correction.</remark>
 sys.path.insert(1,"&lt;path_to_DDS&gt;/lib/python3.5/site-packages/")</programlisting>
       <para>where <quote>&lt;path_to_DDS&gt;</quote> needs to be replaced by your
       specific installation path.</para>
+      
+      <section xml:id="quickstart.python.simple_evaluation">
+        <title  xml:id="quickstart.python.simple_evaluation.title">Evaluating loss and gradients</title>
+        <para>DataDrivenSampler can also be used as a simplified interface to
+        access the loss and the gradients of the neural network. Then, it can be
+        treated as a simple high-dimensional function (the loss), whose 
+        derivative (the gradients) is available as a numpy array. See the 
+        following example which sets up a simple fully-connected hidden
+        network and evaluates loss and then loss and gradients combined.
+        <example xml:id="quickstart.python.simple_evaluation.example">
+          <title>Evaluating loss and gradients through the Python API</title>
+          <programlisting><xi:include  href="python/eval_loss_gradient.py"  parse="text"  
+      xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
+        </example>
+        </para>
+      </section>  
+      
       <section xml:id="quickstart.python.writing_data">
         <title  xml:id="quickstart.python.writing_data.title">Preparing a dataset</title>
         <para>At the moment, datasets are parsed from Comma Separated Values 

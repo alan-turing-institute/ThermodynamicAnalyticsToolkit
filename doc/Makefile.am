@@ -11,6 +11,7 @@ PYTHON_EXAMPLES = \
 	$(srcdir)/userguide/cmdline/analyse_free_energy.sh \
 	$(srcdir)/userguide/cmdline/exploring.sh \
 	$(srcdir)/userguide/cmdline/inputspacesampler.sh \
+	$(srcdir)/userguide/cmdline/lossfunctionsampler-exclude_parameters.sh \
 	$(srcdir)/userguide/cmdline/lossfunctionsampler-fix_parameter.sh \
 	$(srcdir)/userguide/cmdline/lossfunctionsampler-grid.sh \
 	$(srcdir)/userguide/cmdline/lossfunctionsampler-trajectory.sh \
@@ -19,6 +20,7 @@ PYTHON_EXAMPLES = \
 	$(srcdir)/userguide/cmdline/sample.sh \
 	$(srcdir)/userguide/cmdline/write_dataset.sh \
 	$(srcdir)/userguide/python/analyse.py \
+	$(srcdir)/userguide/python/eval_loss_gradient.py \
 	$(srcdir)/userguide/python/explore.py \
 	$(srcdir)/userguide/python/fix_parameter.py \
 	$(srcdir)/userguide/python/optimize.py \
