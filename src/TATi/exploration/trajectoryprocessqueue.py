@@ -118,9 +118,17 @@ class TrajectoryProcessQueue(TrajectoryJobQueue):
         :return:
         """
         while True:
+            print("Checking for next job, queue has approximate size "+str(self.queue.qsize()))
             self.run_next_job(network_model, parameters)
             self.queue.task_done()
         print("QUEUE IS EMPTY, process stopping.")
+
+    def start_processes(self, network_model, parameters):
+        self.processes = [Process(target=self.run_next_job_till_queue_empty, args=(network_model, parameters,)) \
+                     for i in range(self.number_processes)]
+        logging.info("Starting "+str(len(self.processes))+" processes.")
+        for p in self.processes:
+            p.start()
 
     def run_all_jobs(self, network_model, parameters):
         """ Run all jobs using a set of processes.
@@ -129,21 +137,17 @@ class TrajectoryProcessQueue(TrajectoryJobQueue):
         :param parameters:
         :return:
         """
-        processes = [Process(target=self.run_next_job_till_queue_empty, args=(network_model, parameters,)) \
-                     for i in range(self.number_processes)]
-        logging.info("Starting "+str(len(processes))+" processes.")
-        for p in processes:
-            p.start()
+        print("Waiting for queue to empty")
         self.queue.join()
+        print("Queue is empty")
         assert( len(self.used_data_ids.copy()) == 0 )
-        for p in processes:
+
+    def stop_processes(self):
+        for p in self.processes:
             p.terminate()
-        for p in processes:
+        for p in self.processes:
             p.join()
         running = True
         while running:
-                running = any([p.is_alive() for p in processes])
-        processes.clear()
-        self.queue.close()
-        # reset queue: otherwise we cannot push new items onto it
-        self.queue = JoinableQueue()
+            running = any([p.is_alive() for p in self.processes])
+        self.processes.clear()
