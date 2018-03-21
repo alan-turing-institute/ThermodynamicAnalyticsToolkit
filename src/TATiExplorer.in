@@ -114,6 +114,10 @@ def main(_):
         used_ids = manager.list()
     explorer.add_used_data_ids_list(used_ids)
 
+    # launch worker processes initially
+    if FLAGS.number_processes > 0:
+        explorer.queue.start_processes(network_model, FLAGS)
+
     print("Creating starting trajectory.")
     # a. add three legs to queue
     explorer.spawn_starting_trajectory(network_model, FLAGS.number_of_parallel_trajectories)
@@ -142,6 +146,10 @@ def main(_):
         exploration_step += 1
 
     rt.set_train_network_time(time.process_time() - rt.time_init_network)
+
+    # stop worker processes finally
+    if FLAGS.number_processes > 0:
+        explorer.queue.stop_processes()
 
     # 3. write final set of values
     data_container = explorer.queue.get_data_container()
