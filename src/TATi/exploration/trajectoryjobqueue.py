@@ -203,6 +203,9 @@ class TrajectoryJobQueue(TrajectoryQueue):
                          +("NOT " if not usable_job else "")+"usable.")
 
             if not usable_job:
+                # decrease JoinableQueue counter for this, as we need to re-add
+                if self.number_processes != 0:
+                    self.queue.task_done()
                 self._enqueue_job(current_job)
 
         # append data id to list to mark it as in use
