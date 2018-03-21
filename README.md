@@ -19,7 +19,7 @@ In total, we depend on the following python packages:
  * scikit-learn
 
 It has received financial support from a seed funding grant and through a 
-Rutherford fellowship from the Ala Turing Institute in London (R-SIS-003, 
+Rutherford fellowship from the Alan Turing Institute in London (R-SIS-003, 
 R-RUT-001) and a british EPSRC grant (Data Driven Sampling).
 
 Please refer to INSTALL for installation instructions. When cloning from
