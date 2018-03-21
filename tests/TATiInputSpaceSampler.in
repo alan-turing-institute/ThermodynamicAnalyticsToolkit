@@ -1,0 +1,12 @@
+#!/bin/sh
+#
+# wrapper for testing TATiInputSpaceSampler
+
+. ../../atlocal
+
+"${AUTOTEST_PATH}/TATiInputSpaceSampler" \
+${1+"$@"}
+
+status=$?
+
+exit $status

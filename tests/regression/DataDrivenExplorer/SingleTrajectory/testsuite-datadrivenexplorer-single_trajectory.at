@@ -1,5 +1,5 @@
 #
-#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
 #    Copyright (C) 2018 The University of Edinburgh
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -18,13 +18,13 @@
 ### test on exploring with just a single trajectory
 
 AT_SETUP([Explorer - single trajectory exploration])
-AT_KEYWORDS([options ddsexplorer exploration single_trajectory])
+AT_KEYWORDS([options tatiexplorer exploration single_trajectory])
 
 # dataset prepared as follows:
-# DatasetWriter --data_type 2 --dimension 10 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+# TATiDatasetWriter --data_type 2 --dimension 10 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
 
 # run
-AT_CHECK([../../../DDSExplorer \
+AT_CHECK([../../../TATiExplorer \
 	--batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenExplorer/SingleTrajectory/pre/dataset-twoclusters.csv \
 	--batch_size 10 \
 	--diffusion_map_method vanilla \

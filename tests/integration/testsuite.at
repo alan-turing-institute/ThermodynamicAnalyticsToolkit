@@ -1,5 +1,5 @@
 #
-#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
 #    Copyright (C) 2017 The University of Edinburgh
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -29,14 +29,14 @@ m4_ifdef([AT_COLOR_TESTS], [AT_COLOR_TESTS])
 # tests for equilibration using first Optimizer, then Sampler
 m4_include(Equilibration/testsuite-equilibration.at)
 
-# tests using first Optimizer, then Sampler, then InputSpaceSampler
+# tests using first Optimizer, then Sampler, then TATiInputSpaceSampler
 m4_include(InputSpaceSampling_Trajectory/testsuite-inputspacesampling_trajectory.at)
 
-# tests using first Optimizer, then Sampler, then LossFunctionSampler
+# tests using first Optimizer, then Sampler, then TATiLossFunctionSampler
 m4_include(LossFunctionSampling_Trajectory/testsuite-lossfunctionsampling_trajectory.at)
 
-# tests using first DDSExplorer, then InputSpaceSampler
+# tests using first TATiExplorer, then TATiInputSpaceSampler
 m4_include(InputSpaceSampling_Minima/testsuite-inputspacesampling_minima.at)
 
-# tests using first DDSExplorer, then LossFunctionSampler
+# tests using first TATiExplorer, then TATiLossFunctionSampler
 m4_include(LossFunctionSampling_Minima/testsuite-lossfunctionsampling_minima.at)

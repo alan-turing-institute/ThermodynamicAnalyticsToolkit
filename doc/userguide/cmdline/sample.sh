@@ -1,4 +1,4 @@
-DDSampler \
+TATiSampler \
     --averages_file averages.csv \
     --batch_data_files dataset-twoclusters.csv \
     --batch_size 50 \

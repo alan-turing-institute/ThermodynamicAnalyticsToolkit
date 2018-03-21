@@ -1,4 +1,4 @@
-DatasetWriter \
+TATiDatasetWriter \
 	--data_type 2 \
 	--dimension 500 \
 	--noise 0.1 \

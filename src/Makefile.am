@@ -1,27 +1,27 @@
-SUBDIRS = DataDrivenSampler
+SUBDIRS = TATi
 
 bin_SCRIPTS = \
-	DatasetParser \
-	DatasetWriter \
-	DDSampler \
-	DDSExplorer \
-	DDSOptimizer \
-	DDSAnalyser \
-	InputSpaceSampler \
-	LossFunctionSampler \
+	TATiAnalyser \
+	TATiDatasetParser \
+	TATiDatasetWriter \
+	TATiExplorer \
+	TATiInputSpaceSampler \
+	TATiLossFunctionSampler \
+	TATiOptimizer \
+	TATiSampler \
 	NumericalDiff
 
 CLEANFILES = $(bin_SCRIPTS)
 
 EXTRA_DIST = \
-	DatasetParser.in \
-	DatasetWriter.in \
-	DDSampler.in \
-	DDSExplorer.in \
-	DDSOptimizer.in \
-	DDSAnalyser.in \
-	InputSpaceSampler.in \
-	LossFunctionSampler.in \
+	TATiAnalyser.in \
+	TATiDatasetParser.in \
+	TATiDatasetWriter.in \
+	TATiExplorer.in \
+	TATiInputSpaceSampler.in \
+	TATiLossFunctionSampler.in \
+	TATiOptimizer.in \
+	TATiSampler.in \
 	NumericalDiff.in
 
 do_substitution = sed -e 's,[@]pythondir[@],$(pythondir),g' \
@@ -29,37 +29,37 @@ do_substitution = sed -e 's,[@]pythondir[@],$(pythondir),g' \
 	-e 's,[@]PYTHON[@],$(PYTHON),g' \
 	-e 's,[@]VERSION[@],$(VERSION),g' 
 
-DatasetParser: DatasetParser.in Makefile
-	$(do_substitution) < $(srcdir)/DatasetParser.in > DatasetParser
-	chmod +x DatasetParser
+TATiAnalyser: TATiAnalyser.in Makefile
+	$(do_substitution) < $(srcdir)/TATiAnalyser.in > TATiAnalyser
+	chmod +x TATiAnalyser
 
-DatasetWriter: DatasetWriter.in Makefile
-	$(do_substitution) < $(srcdir)/DatasetWriter.in > DatasetWriter
-	chmod +x DatasetWriter
+TATiDatasetParser: TATiDatasetParser.in Makefile
+	$(do_substitution) < $(srcdir)/TATiDatasetParser.in > TATiDatasetParser
+	chmod +x TATiDatasetParser
 
-DDSampler: DDSampler.in Makefile
-	$(do_substitution) < $(srcdir)/DDSampler.in > DDSampler
-	chmod +x DDSampler
+TATiDatasetWriter: TATiDatasetWriter.in Makefile
+	$(do_substitution) < $(srcdir)/TATiDatasetWriter.in > TATiDatasetWriter
+	chmod +x TATiDatasetWriter
 
-DDSExplorer: DDSExplorer.in Makefile
-	$(do_substitution) < $(srcdir)/DDSExplorer.in > DDSExplorer
-	chmod +x DDSExplorer
+TATiExplorer: TATiExplorer.in Makefile
+	$(do_substitution) < $(srcdir)/TATiExplorer.in > TATiExplorer
+	chmod +x TATiExplorer
 
-DDSOptimizer: DDSOptimizer.in Makefile
-	$(do_substitution) < $(srcdir)/DDSOptimizer.in > DDSOptimizer
-	chmod +x DDSOptimizer
+TATiInputSpaceSampler: TATiInputSpaceSampler.in Makefile
+	$(do_substitution) < $(srcdir)/TATiInputSpaceSampler.in > TATiInputSpaceSampler
+	chmod +x TATiInputSpaceSampler
 
-DDSAnalyser: DDSAnalyser.in Makefile
-	$(do_substitution) < $(srcdir)/DDSAnalyser.in > DDSAnalyser
-	chmod +x DDSAnalyser
+TATiLossFunctionSampler: TATiLossFunctionSampler.in Makefile
+	$(do_substitution) < $(srcdir)/TATiLossFunctionSampler.in > TATiLossFunctionSampler
+	chmod +x TATiLossFunctionSampler
 
-InputSpaceSampler: InputSpaceSampler.in Makefile
-	$(do_substitution) < $(srcdir)/InputSpaceSampler.in > InputSpaceSampler
-	chmod +x InputSpaceSampler
+TATiOptimizer: TATiOptimizer.in Makefile
+	$(do_substitution) < $(srcdir)/TATiOptimizer.in > TATiOptimizer
+	chmod +x TATiOptimizer
 
-LossFunctionSampler: LossFunctionSampler.in Makefile
-	$(do_substitution) < $(srcdir)/LossFunctionSampler.in > LossFunctionSampler
-	chmod +x LossFunctionSampler
+TATiSampler: TATiSampler.in Makefile
+	$(do_substitution) < $(srcdir)/TATiSampler.in > TATiSampler
+	chmod +x TATiSampler
 
 NumericalDiff: NumericalDiff.in Makefile
 	$(do_substitution) < $(srcdir)/NumericalDiff.in > NumericalDiff

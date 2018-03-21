@@ -1,5 +1,5 @@
 #
-#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
 #    Copyright (C) 2017 The University of Edinburgh
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -18,13 +18,13 @@
 ### test on option inverse_temperature
 
 AT_SETUP([Sampler Options - inverse temperature])
-AT_KEYWORDS([options ddsampler inverse_temperature])
+AT_KEYWORDS([options tatisampler inverse_temperature])
 
 # dataset prepared as follows:
-# DatasetWriter --data_type 2 --dimension 10 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+# TATiDatasetWriter --data_type 2 --dimension 10 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
 
 # run 1
-AT_CHECK([../../../DDSampler \
+AT_CHECK([../../../TATiSampler \
     --batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Options/pre/dataset-twoclusters.csv \
     --batch_size 10 \
 	--friction_constant 1 \
@@ -37,7 +37,7 @@ AT_CHECK([../../../DDSampler \
 ], 0, [stdout], [stderr])
 
 # run 2
-AT_CHECK([../../../DDSampler \
+AT_CHECK([../../../TATiSampler \
     --batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Options/pre/dataset-twoclusters.csv \
     --batch_size 10 \
 	--friction_constant 1 \

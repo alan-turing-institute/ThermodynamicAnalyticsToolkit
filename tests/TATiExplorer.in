@@ -1,0 +1,12 @@
+#!/bin/sh
+#
+# wrapper for testing TATiExplorer
+
+. ../../atlocal
+
+"${AUTOTEST_PATH}/TATiExplorer" \
+${1+"$@"}
+
+status=$?
+
+exit $status

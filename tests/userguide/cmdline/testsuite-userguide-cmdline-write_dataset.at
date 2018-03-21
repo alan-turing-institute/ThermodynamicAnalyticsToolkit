@@ -1,5 +1,5 @@
 #
-#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
 #    Copyright (C) 2017 The University of Edinburgh
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@
 ### test on examples in the userguide
 
 AT_SETUP([Examples cmdline - writing dataset])
-AT_KEYWORDS([example cmdline write_dataset])
+AT_KEYWORDS([example cmdline tatidatasetwriter write_dataset])
 
 AT_CHECK([env - PATH=${AUTOTEST_PATH} /bin/bash \
 	${abs_top_srcdir}/doc/userguide/cmdline/write_dataset.sh

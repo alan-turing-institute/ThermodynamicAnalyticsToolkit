@@ -1,5 +1,5 @@
 #
-#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
 #    Copyright (C) 2017 The University of Edinburgh
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -18,10 +18,10 @@
 ### 
 
 AT_SETUP([DatasetParser - Basics - help output])
-AT_KEYWORDS([help DatasetParser])
+AT_KEYWORDS([help tatidatasetparser])
 
-AT_CHECK([../../../DatasetParser --help], 0, [stdout], [stderr])
-AT_CHECK([fgrep "usage: DatasetParser" stdout], 0, [ignore], [ignore])
+AT_CHECK([../../../TATiDatasetParser --help], 0, [stdout], [stderr])
+AT_CHECK([fgrep "usage: TATiDatasetParser" stdout], 0, [ignore], [ignore])
 
 AT_CLEANUP
 

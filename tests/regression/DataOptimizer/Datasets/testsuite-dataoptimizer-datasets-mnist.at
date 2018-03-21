@@ -1,5 +1,5 @@
 #
-#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
 #    Copyright (C) 2018 The University of Edinburgh
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -22,9 +22,9 @@
 # cp validation.tfrecords dataset-mnist.tfrecords
 
 AT_SETUP([Optimizer Datasets - MNIST])
-AT_KEYWORDS([mnist ddsoptimizer])
+AT_KEYWORDS([mnist tatioptimizer])
 
-AT_CHECK([../../../DDSOptimizer \
+AT_CHECK([../../../TATiOptimizer \
     --batch_data_files ${abs_top_srcdir}/tests/regression/DataOptimizer/Datasets/pre/dataset-mnist.tfrecords \
     --batch_data_file_type tfrecord \
     --batch_size 50 \

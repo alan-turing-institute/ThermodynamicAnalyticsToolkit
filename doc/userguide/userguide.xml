@@ -16,7 +16,7 @@
   xmlns:html="http://www.w3.org/1999/xhtml" 
   xmlns:db="http://docbook.org/ns/docbook" version="5.0">
 <info>
-  <title>DataDrivenSampler</title>
+  <title>ThermodynamicAnalyticsToolkit</title>
   <subtitle>Manual version <xi:include  href="version.txt"  parse="text"  
       xmlns:xi="http://www.w3.org/2001/XInclude"/></subtitle>
   <author>
@@ -32,10 +32,10 @@
   </author>
   <copyright>
     <holder>The University of Edinburgh, all rights reserved</holder>
-    <year>2017</year>
+    <year>2017-2018</year>
   </copyright>
    <cover>
-        <para role="tagline">The Official Documentation for DataDrivenSampler</para>
+        <para role="tagline">The Official Documentation for ThermodynamicAnalyticsToolkit</para>
         <mediaobject>
           <imageobject>
             <imagedata width="30%" scalefit="1." entityref="dataset_two_clusters"/>
@@ -48,15 +48,15 @@
             <imagedata width="30%" scalefit="1." entityref="dataset_two_clusters"/>
           </imageobject>
         </mediaobject>
-        <para>DataDrivenSampler is a sampling-based approach to training 
+        <para>ThermodynamicAnalyticsToolkit is a sampling-based approach to training 
         neural networks using TensorFlow </para>
-        <para><citetitle>DataDrivenSampler: Manual</citetitle> is the…</para>
+        <para><citetitle>ThermodynamicAnalyticsToolkit: Manual</citetitle> is the…</para>
         <itemizedlist>
           <listitem>
     	      <para>A brief introduction to data-driven sampling in machine learning</para>
           </listitem>
           <listitem>
-            <para>A guide to using DataDrivenSampler to perform sampling experiments</para>
+            <para>A guide to using ThermodynamicAnalyticsToolkit to perform sampling experiments</para>
           </listitem>
         </itemizedlist>
       </cover>
@@ -84,7 +84,7 @@
       </para>
     </section>
     <section xml:id="introduction.whatis">
-      <title xml:id="introduction.whatis.title">What is DataDrivenSampler?</title>
+      <title xml:id="introduction.whatis.title">What is ThermodynamicAnalyticsToolkit?</title>
       <para>Typically, optimzation in neural network training employs methods 
       such as Gradient Descent, Stochastic Gradient Descent or derived methods
       using momentum such as ADAM and so on. The loss function itself may be
@@ -120,7 +120,7 @@
     <section xml:id="introduction.installation">
       <title xml:id="introduction.installation.title">Installation</title>
       <para>In the following we explain the installation procedure to get
-      DataDrivenSampler up and running.</para>
+      ThermodynamicAnalyticsToolkit up and running.</para>
       <section xml:id="introduction.installation.requirements">
         <title xml:id="introduction.installation.requirements.title">Installation requirements</title>
         <para>This program suite is implemented using python3 and the development
@@ -221,7 +221,7 @@ make install
     </section>
     <section xml:id="introduction.license">
       <title xml:id="introduction.license.title">License</title>
-      <para>As long as no other license statement is given, DataDrivenSampler is
+      <para>As long as no other license statement is given, ThermodynamicAnalyticsToolkit is
       free for use under the GNU Public License (GPL) Version 3 (see
       <uri>www.gnu.de/documents/gpl-3.0.de.html</uri>).</para>
     </section>
@@ -392,7 +392,7 @@ cost of all necessary servicing, repair, or correction.</remark>
       speaking, we are looking for possibly very small door.</para>
       <para>This quick description of the problem of sampling in the context
       of neural networks in data science should have prepare you now for the
-      following quickstart tutorial on how to actually use DataDrivenSampler 
+      following quickstart tutorial on how to actually use ThermodynamicAnalyticsToolkit 
       to perform sampling.</para>
       <para>Let us have a closer look at a very simple loss landscape. In
       <xref linkend="quickstart.introduction.landscape.neuralnetwork">Figure</xref>
@@ -442,28 +442,28 @@ cost of all necessary servicing, repair, or correction.</remark>
       system such as <command>git</command>.</para>
       <para>
       If you have installed the package in the folder "/foo", i.e. we have 
-      folders "DataDrivenSampler/models" with a file 
+      folders "ThermodynamicAnalyticsToolkit/models" with a file 
       <command>model.py</command> residing in there, then you 
       probably need to add it to the 
       <command>PYTHONPATH</command> as follows</para>
       <programlisting>PYTHONPATH=/foo python3</programlisting>
       <para>In this shell, you may import the sampling part of the package as 
       follows 
-      <programlisting>from DataDrivenSampler.models.model import model</programlisting>
+      <programlisting>from TATi.models.model import model</programlisting>
       This will import the abstract <command>model</command> class from the
       file mentioned before. This class contains wrapper functions to setup 
       the network with either training and sampling in a few keystrokes.</para>
       <para>In order to make you own python scripts executable and know about
-      the correct (non-standard) path to DataDrivenSampler, place the following
+      the correct (non-standard) path to ThermodynamicAnalyticsToolkit, place the following
       two lines at the veryg beginning of your script:</para>
       <programlisting>import sys
-sys.path.insert(1,"&lt;path_to_DDS&gt;/lib/python3.5/site-packages/")</programlisting>
-      <para>where <quote>&lt;path_to_DDS&gt;</quote> needs to be replaced by your
+sys.path.insert(1,"&lt;path_to_TATi&gt;/lib/python3.5/site-packages/")</programlisting>
+      <para>where <quote>&lt;path_to_TATi&gt;</quote> needs to be replaced by your
       specific installation path.</para>
       
       <section xml:id="quickstart.python.simple_evaluation">
         <title  xml:id="quickstart.python.simple_evaluation.title">Evaluating loss and gradients</title>
-        <para>DataDrivenSampler can also be used as a simplified interface to
+        <para>ThermodynamicAnalyticsToolkit can also be used as a simplified interface to
         access the loss and the gradients of the neural network. Then, it can be
         treated as a simple high-dimensional function (the loss), whose 
         derivative (the gradients) is available as a numpy array. See the 
@@ -482,7 +482,7 @@ sys.path.insert(1,"&lt;path_to_DDS&gt;/lib/python3.5/site-packages/")</programli
         <para>At the moment, datasets are parsed from Comma Separated Values 
         (CSV) files.  In order for the following examples on optimization and 
         sampling to work, we need such a data file containing features and labels.</para>
-        <para>One option is to use the DatasetWriter, see 
+        <para>One option is to use the TATiDatasetWriter, see 
         <xref linkend="quickstart.cmdline.writing_dataset"/>. However, we can
         do the same using python as well.</para>
         <example xml:id="quickstart.python.writing_data.example">
@@ -683,7 +683,7 @@ sys.path.insert(1,"&lt;path_to_DDS&gt;/lib/python3.5/site-packages/")</programli
         <para>To this end, specify <command>FLAGS.run_file</command> and
         <command>FLAGS.trajectory_file</command> with some valid file names.</para>
         <para>Subsequently, these may be easily parsed as follows, see also
-         "DDSAnalyser.in".</para>
+         "TATiAnalyser.in".</para>
         <example xml:id="quickstart.python.analysis.example">
           <title>Plotting the averages of the parameters over steps</title>
           <programlisting><xi:include  href="python/analyse.py"  parse="text"  
@@ -759,7 +759,7 @@ sys.path.insert(1,"&lt;path_to_DDS&gt;/lib/python3.5/site-packages/")</programli
         <para>As data is read from file, this file needs to be created beforehand.</para>
         <para>For a certain set of simple classification problems, namely those 
         that can be found in the tensorflow playground, we have added a
-        <quote>DatasetWriter</quote> that spills out the dataset in CSV format.
+        <quote>TATiDatasetWriter</quote> that spills out the dataset in CSV format.
         </para>
         <example xml:id="quickstart.cmdline.writing_dataset.example">
           <title>Creating the "two clusters" dataset as CSV file</title>
@@ -964,14 +964,14 @@ sys.path.insert(1,"&lt;path_to_DDS&gt;/lib/python3.5/site-packages/")</programli
         least have a good idea about whether the minimas we have found so far 
         are reasonable.</para>
         <para>To this end, a command-line tool called 
-        <command>DDSExplorer</command> is provided. The idea is to make use
+        <command>TATiExplorer</command> is provided. The idea is to make use
         of the diffusion map with its diffusion distance to assess what part of 
         the loss manifold has been explored already. Moreover, we use multiple
         trajectories that are spawned from a specific number of places that are
         maximally separate with respect to their diffusion distance. This will
         ensure that we cover the most ground possible.</para>
         <para>In the end, the eigenvectors obtained through a run using the
-        <command>DDSExplorer</command> will return the dominant diffusion
+        <command>TATiExplorer</command> will return the dominant diffusion
         directions and therefore those pointing in the direction along the 
         minima, i.e. where the sampling usually gets stuck and remains for
         a while, hence diffusion is slow.</para>
@@ -1151,10 +1151,10 @@ sys.path.insert(1,"&lt;path_to_DDS&gt;/lib/python3.5/site-packages/")</programli
     <title xml:id="reference.loss.title">The loss function</title>
     <para>At the moment, there are two little utility programs that help in 
     evaluating the loss function given a certain dataset, namely the
-    <quote>LossFunctionSampler</quote>. Let us give an example
+    <quote>TATiLossFunctionSampler</quote>. Let us give an example
     call right away.</para>
     <example xml:id="reference.loss.example.trajectory">
-      <title>Using LossFunctionSampler on a given trajectory</title>
+      <title>Using TATiLossFunctionSampler on a given trajectory</title>
       <programlisting><xi:include  href="cmdline/lossfunctionsampler-trajectory.sh"  parse="text"  
   xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
     </example>
@@ -1171,7 +1171,7 @@ sys.path.insert(1,"&lt;path_to_DDS&gt;/lib/python3.5/site-packages/")</programli
     a parameters file, we sample the parameter space equidistantly as
     follows:</para>
     <example xml:id="reference.loss.example.grid">
-      <title>Using LossFunctionSampler with an equidistant grid</title>
+      <title>Using TATiLossFunctionSampler with an equidistant grid</title>
       <programlisting><xi:include  href="cmdline/lossfunctionsampler-grid.sh"  parse="text"  
   xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
     </example>
@@ -1183,7 +1183,7 @@ sys.path.insert(1,"&lt;path_to_DDS&gt;/lib/python3.5/site-packages/")</programli
     to lower the computational cost by choosing a certain subsets of weights
     and biases to sample.</note>
     <example xml:id="reference.loss.example.fix_parameter">
-      <title>Using LossFunctionSampler with an equidistant grid and fixing parameters</title>
+      <title>Using TATiLossFunctionSampler with an equidistant grid and fixing parameters</title>
       <programlisting><xi:include  href="cmdline/lossfunctionsampler-fix_parameter.sh"  parse="text"  
   xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
     </example>
@@ -1195,7 +1195,7 @@ sys.path.insert(1,"&lt;path_to_DDS&gt;/lib/python3.5/site-packages/")</programli
     <para>This can be used to assess the shape of the loss manifold around
     a found minimum.</para>
     <example xml:id="reference.loss.example.exclude_parameters">
-      <title>Using LossFunctionSampler with an equidistant grid and excluding parameters</title>
+      <title>Using TATiLossFunctionSampler with an equidistant grid and excluding parameters</title>
       <programlisting><xi:include  href="cmdline/lossfunctionsampler-exclude_parameters.sh"  parse="text"  
   xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
     </example>
@@ -1207,7 +1207,7 @@ sys.path.insert(1,"&lt;path_to_DDS&gt;/lib/python3.5/site-packages/")</programli
     all excluded parameters. This file is of CSV style having a column "step"
     to identify which row is to be used and moreover a column for every 
     (excluded) parameter that is fixed at a value unequal to 0. Note that
-    the minima file written by <command>DDSExplorer</command>
+    the minima file written by <command>TATiExplorer</command>
     can be used as this centers file. Moreover, also the trajectory files have
     the same structure.</para>
   </section>
@@ -1215,11 +1215,11 @@ sys.path.insert(1,"&lt;path_to_DDS&gt;/lib/python3.5/site-packages/")</programli
     <title xml:id="reference.network.title">The learned function</title>
     <para>The second little utility programs does not evaluate the loss function
     itself but the unknown function learned by the neural network depending
-    on the loss function, called the <quote>InputSpaceSampler</quote>. 
+    on the loss function, called the <quote>TATiInputSpaceSampler</quote>. 
     In other words, it gives the classification result for data point sampled
     from an equidistant grid. Let us give an example call right away.</para>
     <example xml:id="reference.network.example">
-      <title>Using InputSpaceSampler with an equidistant grid</title>
+      <title>Using TATiInputSpaceSampler with an equidistant grid</title>
       <programlisting><xi:include  href="cmdline/inputspacesampler.sh"  parse="text"  
   xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
     </example>

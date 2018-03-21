@@ -1,5 +1,5 @@
 #
-#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
 #    Copyright (C) 2018 The University of Edinburgh
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -18,13 +18,13 @@
 ### test on option do_hessians
 
 AT_SETUP([Optimizer Options - do hessian calculation])
-AT_KEYWORDS([options ddsoptimizer do_hessians])
+AT_KEYWORDS([options tatioptimizer do_hessians])
 
 # dataset prepared as follows:
-# DatasetWriter --data_type 2 --dimension 10 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+# TATiDatasetWriter --data_type 2 --dimension 10 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
 
 # run 1
-AT_CHECK([../../../DDSOptimizer \
+AT_CHECK([../../../TATiOptimizer \
     --batch_data_files ${abs_top_srcdir}/tests/regression/DataOptimizer/Options/pre/dataset-twoclusters.csv \
     --batch_size 10 \
 	--do_hessians 1 \

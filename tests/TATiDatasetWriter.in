@@ -1,0 +1,12 @@
+#!/bin/sh
+#
+# wrapper for testing TATiDatasetWriter
+
+. ../../atlocal
+
+"${AUTOTEST_PATH}/TATiDatasetWriter" \
+${1+"$@"}
+
+status=$?
+
+exit $status

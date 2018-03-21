@@ -1,0 +1,69 @@
+#!/usr/bin/env @PYTHON@
+
+import sys, getopt
+sys.path.insert(1, '@pythondir@')
+
+import argparse
+import logging
+import time
+import numpy as np
+import tensorflow as tf
+
+from TATi.common import add_common_options_to_parser, add_data_options_to_parser, \
+        add_model_options_to_parser, add_prior_options_to_parser, add_sampler_options_to_parser, \
+        get_filename_from_fullpath, \
+        react_to_common_options, react_to_sampler_options
+from TATi.models.model import model
+from TATi.runtime.runtime import runtime
+
+FLAGS = None
+
+
+def parse_parameters():
+    """ Sets up the argument parser for parsing command line parameters into dictionary
+
+    :return: dictionary with parameter names as keys, unrecognized parameters
+    """
+    parser = argparse.ArgumentParser()
+
+    add_common_options_to_parser(parser)
+    add_data_options_to_parser(parser)
+    add_model_options_to_parser(parser)
+    add_prior_options_to_parser(parser)
+    add_sampler_options_to_parser(parser)
+
+    return parser.parse_known_args()
+
+
+def main(_):
+    rt = runtime(FLAGS)
+
+    time_zero = time.process_time()
+
+    network_model = model(FLAGS)
+
+    time_init_network_zero = time.process_time()
+
+    network_model.init_network(FLAGS.restore_model, setup="sample")
+    network_model.init_input_pipeline()
+
+    rt.set_init_network_time(time.process_time() - time_init_network_zero)
+
+    network_model.sample()
+
+    rt.set_train_network_time(time.process_time() - rt.time_init_network)
+
+    network_model.finish()
+
+    rt.set_overall_time(time.process_time() - time_zero)
+
+if __name__ == '__main__':
+    # setup logging
+    logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
+
+    FLAGS, unparsed = parse_parameters()
+
+    react_to_common_options(FLAGS, unparsed)
+    react_to_sampler_options(FLAGS, unparsed)
+
+    tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)

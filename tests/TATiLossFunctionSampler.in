@@ -1,0 +1,12 @@
+#!/bin/sh
+#
+# wrapper for testing TATiLossFunctionSampler
+
+. ../../atlocal
+
+"${AUTOTEST_PATH}/TATiLossFunctionSampler" \
+${1+"$@"}
+
+status=$?
+
+exit $status

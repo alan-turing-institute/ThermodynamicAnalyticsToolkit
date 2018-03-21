@@ -3,7 +3,7 @@
 EXTRA_DIST =
 
 EXTRA_DIST += \
-	$(top_builddir)/doc/datadrivensampler.pdf
+	$(top_builddir)/doc/thermodynamicanalyticstoolkit.pdf
 
 PYTHON_EXAMPLES = \
 	$(srcdir)/userguide/cmdline/analyse_average.sh \

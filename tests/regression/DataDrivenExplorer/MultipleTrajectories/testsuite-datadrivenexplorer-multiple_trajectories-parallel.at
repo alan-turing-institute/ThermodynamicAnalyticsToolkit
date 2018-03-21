@@ -1,5 +1,5 @@
 #
-#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
 #    Copyright (C) 2018 The University of Edinburgh
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -18,13 +18,13 @@
 ### test on parallel exploring with multiple trajectories
 
 AT_SETUP([Explorer - multiple trajectories parallel exploration])
-AT_KEYWORDS([options ddsexplorer exploration parallel multiple_trajectories])
+AT_KEYWORDS([options tatiexplorer exploration parallel multiple_trajectories])
 
 # dataset prepared as follows:
-# DatasetWriter --data_type 2 --dimension 10 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+# TATiDatasetWriter --data_type 2 --dimension 10 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
 
 # run: exploration with "many" processes (and trajectories) but only for one exploration step
-AT_CHECK([../../../DDSExplorer \
+AT_CHECK([../../../TATiExplorer \
 	--batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenExplorer/MultipleTrajectories/pre/dataset-twoclusters.csv \
 	--batch_size 10 \
 	--diffusion_map_method vanilla \
@@ -52,13 +52,13 @@ AT_CHECK([diff run-parallel.csv ${abs_top_srcdir}/tests/regression/DataDrivenExp
 AT_CLEANUP
 
 AT_SETUP([Explorer - multiple parallel exploration])
-AT_KEYWORDS([options ddsexplorer exploration parallel multiple_exploration])
+AT_KEYWORDS([options tatiexplorer exploration parallel multiple_exploration])
 
 # dataset prepared as follows:
-# DatasetWriter --data_type 2 --dimension 10 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+# TATiDatasetWriter --data_type 2 --dimension 10 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
 
 # run: exploration with just two processes but for more exploration steps
-AT_CHECK([../../../DDSExplorer \
+AT_CHECK([../../../TATiExplorer \
 	--batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenExplorer/SingleTrajectory/pre/dataset-twoclusters.csv \
 	--batch_size 10 \
 	--diffusion_map_method vanilla \

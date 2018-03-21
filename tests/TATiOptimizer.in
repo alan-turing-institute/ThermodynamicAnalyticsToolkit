@@ -1,0 +1,12 @@
+#!/bin/sh
+#
+# wrapper for testing TATiOptimizer
+
+. ../../atlocal
+
+"${AUTOTEST_PATH}/TATiOptimizer" \
+${1+"$@"}
+
+status=$?
+
+exit $status

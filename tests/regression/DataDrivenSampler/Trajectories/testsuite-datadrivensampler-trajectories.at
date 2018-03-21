@@ -1,5 +1,5 @@
 #
-#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
 #    Copyright (C) 2017 The University of Edinburgh
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -18,13 +18,13 @@
 ### test on saved trajectories
 
 AT_SETUP([Sampler Trajectories - Simple])
-AT_KEYWORDS([ddsampler trajectory])
+AT_KEYWORDS([tatisampler trajectory])
 
 # dataset prepared as follows:
-# DatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+# TATiDatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
 
 # run 1
-AT_CHECK([../../../DDSampler \
+AT_CHECK([../../../TATiSampler \
     --batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Trajectories/pre/dataset-twoclusters.csv \
 	--batch_size 20 \
 	--friction_constant 1 \
@@ -42,13 +42,13 @@ AT_CLEANUP
 
 
 AT_SETUP([Trajectories - Single hidden layer])
-AT_KEYWORDS([trajectory hidden_dimension])
+AT_KEYWORDS([tatisampler trajectory hidden_dimension])
 
 # dataset prepared as follows:
-# DatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+# TATiDatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
 
 # run 1
-AT_CHECK([../../../DDSampler \
+AT_CHECK([../../../TATiSampler \
     --batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Trajectories/pre/dataset-twoclusters.csv \
 	--batch_size 20 \
 	--hidden_dimension 2 \
@@ -68,13 +68,13 @@ AT_CLEANUP
 
 
 AT_SETUP([Trajectories - Few hidden layers])
-AT_KEYWORDS([trajectory hidden_dimension])
+AT_KEYWORDS([tatisampler trajectory hidden_dimension])
 
 # dataset prepared as follows:
-# DatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+# TATiDatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
 
 # run 1
-AT_CHECK([../../../DDSampler \
+AT_CHECK([../../../TATiSampler \
     --batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Trajectories/pre/dataset-twoclusters.csv \
 	--batch_size 20 \
 	--hidden_dimension 2 2 2 \

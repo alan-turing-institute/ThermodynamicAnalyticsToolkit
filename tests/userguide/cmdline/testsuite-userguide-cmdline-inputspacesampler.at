@@ -1,5 +1,5 @@
 #
-#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
 #    Copyright (C) 2017 The University of Edinburgh
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -18,11 +18,11 @@
 ### test on examples in the userguide
 
 AT_SETUP([Examples cmdline - input space sampling])
-AT_KEYWORDS([example cmdline inputspacesampler])
+AT_KEYWORDS([example cmdline tatiinputspacesampler])
 
 # analyse a trajectory that was created by:
 # (Two clusters dataset with two inputs nodes, single output, linear activation)
-# DDSampler \
+# TATiSampler \
 # --run_file run-two_clusters-dim_500-gamma_10-beta_1e4-max_steps_1000-noise_0.1-linear-seed_426.csv
 # --data_type 2 \
 # --dimension 500 \
@@ -40,7 +40,7 @@ AT_CHECK([cp -f ${abs_top_srcdir}/tests/userguide/cmdline/pre/trajectory-two_clu
 AT_CHECK([env - PATH=${AUTOTEST_PATH} /bin/bash \
 	${abs_top_srcdir}/doc/userguide/cmdline/inputspacesampler.sh
 ], 0, [stdout], [stderr])
-AT_CHECK([grep "120," InputSpaceSampler-output.csv], 0, [ignore], [ignore])
+AT_CHECK([grep "120," TATiInputSpaceSampler-output.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
 

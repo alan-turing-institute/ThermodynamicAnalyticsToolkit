@@ -1,5 +1,5 @@
 #
-#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
 #    Copyright (C) 2017 The University of Edinburgh
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -18,13 +18,13 @@
 ### test on prior by wall-repelling force
 
 AT_SETUP([Optimizer - Prior through wall-repelling force])
-AT_KEYWORDS([ddsoptimizer prior wall_repelling lower_boundary upper_boundary])
+AT_KEYWORDS([tatioptimizer prior wall_repelling lower_boundary upper_boundary])
 
 # dataset prepared as follows:
-# DatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+# TATiDatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
 
-AT_CHECK([../../../DDSOptimizer \
-    --batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Prior/pre/dataset-twoclusters.csv \
+AT_CHECK([../../../TATiOptimizer \
+    --batch_data_files ${abs_top_srcdir}/tests/regression/DataOptimizer/Prior/pre/dataset-twoclusters.csv \
 	--batch_size 20 \
 	--max_steps 20 \
 	--prior_factor .1 \

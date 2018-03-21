@@ -3,7 +3,7 @@ version.py
 .git-version
 doc/userguide/version.txt
 doc/.git-version
-src/DataDrivenSampler/exploration/get_executables.py
+src/TATi/exploration/get_executables.py
 
 
 # python and pycharm stuff

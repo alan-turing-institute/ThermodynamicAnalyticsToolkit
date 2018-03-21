@@ -1,5 +1,5 @@
 #
-#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
 #    Copyright (C) 2017 The University of Edinburgh
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -21,7 +21,7 @@ AT_SETUP([Analyser Options - drop_burnin on run info I])
 AT_KEYWORDS([options trajectoryanalyser drop_burnin run_info])
 
 # run1: no drop
-AT_CHECK([../../../DDSAnalyser \
+AT_CHECK([../../../TATiAnalyser \
 	--average_run_file average_run-single_step-drop_burnin_0.csv \
 	--drop_burnin 0 \
 	--run_file ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/Options/pre/run-single_step.csv \
@@ -30,7 +30,7 @@ AT_CHECK([../../../DDSAnalyser \
 AT_CHECK([diff average_run-single_step-drop_burnin_0.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/Options/post/average_run-single_step-drop_burnin_0.csv], 0, [ignore], [ignore])
 
 # run2: half drop
-AT_CHECK([../../../DDSAnalyser \
+AT_CHECK([../../../TATiAnalyser \
 	--average_run_file average_run-single_step-drop_burnin_2.csv \
 	--drop_burnin 2 \
 	--run_file ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/Options/pre/run-single_step.csv \
@@ -39,7 +39,7 @@ AT_CHECK([../../../DDSAnalyser \
 AT_CHECK([diff average_run-single_step-drop_burnin_2.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/Options/post/average_run-single_step-drop_burnin_2.csv], 0, [ignore], [ignore])
 
 # run3: full drop
-AT_CHECK([../../../DDSAnalyser \
+AT_CHECK([../../../TATiAnalyser \
 	--average_run_file average_run-single_step-drop_burnin_4.csv \
 	--drop_burnin 4 \
 	--run_file ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/Options/pre/run-single_step.csv \

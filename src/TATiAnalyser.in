@@ -1,0 +1,276 @@
+#!/usr/bin/env @PYTHON@
+
+import sys, getopt
+sys.path.insert(1, '@pythondir@')
+
+import logging
+import numpy as np
+import pandas as pd
+import scipy
+import tensorflow as tf
+
+from TATi.version import get_package_version, get_build_hash
+from TATi.common import get_filename_from_fullpath, setup_csv_file
+from TATi.TrajectoryAnalyser import compute_diffusion_maps, \
+            compute_free_energy, compute_free_energy_using_histograms, \
+            get_landmarks_over_vectors, moving_average, parse_parameters, \
+            write_landmarks, write_values_as_csv
+
+FLAGS = None
+
+output_width=8
+output_precision=8
+
+
+def main(_):
+    print("Run file is "+str(FLAGS.run_file))
+    if FLAGS.run_file is not None:
+        # load run file
+        df_run = pd.read_csv(FLAGS.run_file, sep=',', header=0)
+        run=np.asarray(df_run.loc[:,['step','loss','kinetic_energy', 'total_energy']])
+
+        if (len(run[:,0]) > 1) and (FLAGS.drop_burnin >= run[1,0]):
+            if FLAGS.drop_burnin < run[-1,0]:
+                start = next(x[0] for x in enumerate(run[:,0]) if x[1] > FLAGS.drop_burnin)
+            else:
+                sys.stderr.write("FLAGS.drop_burnin is too large, no data points left.")
+                sys.exit(1)
+        else:
+            start = 0
+        print("Starting run array at "+str(start))
+
+        steps=run[start::FLAGS.every_nth,0]
+        loss=run[start::FLAGS.every_nth,1]
+        kinetic_energy=run[start::FLAGS.every_nth,2]
+        total_energy=run[start::FLAGS.every_nth,3]
+
+        no_steps = len(steps)
+
+        print("%d steps after dropping burn in." % (no_steps))
+        print("%lg average and %lg variance in loss." % (np.average(loss), loss.var()))
+
+        end_list = np.arange(1,FLAGS.steps+1)*int(no_steps/FLAGS.steps)
+        print("Evaluating at steps: "+str(end_list))
+
+        average_kinetic = [np.average(kinetic_energy[0:end]) for end in end_list]
+        variance_kinetic = [np.var(kinetic_energy[0:end]) for end in end_list]
+        average_loss = [np.average(loss[0:end]) for end in end_list]
+        variance_loss = [np.var(loss[0:end]) for end in end_list]
+        average_total = [np.average(total_energy[0:end]) for end in end_list]
+        variance_total = [np.var(total_energy[0:end]) for end in end_list]
+        print("Average first ten running kinetic energies "+str(average_kinetic[0:10]))
+
+        if FLAGS.average_run_file is not None:
+            csv_writer, csv_file = setup_csv_file(FLAGS.average_run_file,
+                ['step', 'average_kinetic_energy', 'variance_kinetic_energy', \
+                    'average_loss', 'variance_loss', \
+                    'average_total_energy', 'variance_total_energy'])
+            for step, avg_kin, var_kin, avg_loss, var_loss, avg_total, var_total in zip(end_list,
+                average_kinetic, variance_kinetic,
+                average_loss, variance_loss,
+                average_total, variance_total):
+                csv_writer.writerow(
+                    [steps[step-1]]
+                    +['{:{width}.{precision}e}'.format(avg_kin, width=output_width, precision=output_precision)]+
+                        ['{:{width}.{precision}e}'.format(var_kin, width=output_width, precision=output_precision)]
+                    +['{:{width}.{precision}e}'.format(avg_loss, width=output_width, precision=output_precision)]+
+                        ['{:{width}.{precision}e}'.format(var_loss, width=output_width, precision=output_precision)]
+                    +['{:{width}.{precision}e}'.format(avg_total, width=output_width, precision=output_precision)]+
+                        ['{:{width}.{precision}e}'.format(var_total, width=output_width, precision=output_precision)]
+                )
+            csv_file.close()
+
+    print("Trajectory file is "+str(FLAGS.trajectory_file))
+    if FLAGS.trajectory_file is not None:
+        # load trajectory file
+        print("Loading trajectory file")
+        df_trajectory = pd.read_csv(FLAGS.trajectory_file, sep=',', header=0)
+        trajectoryLoaded=np.asarray(df_trajectory)
+
+        if (len(trajectoryLoaded[:,0]) > 1) and (FLAGS.drop_burnin >= trajectoryLoaded[1,0]):
+            if FLAGS.drop_burnin < trajectoryLoaded[-1,0]:
+                start = next(x[0] for x in enumerate(trajectoryLoaded[:,0]) if x[1] > FLAGS.drop_burnin)
+            else:
+                sys.stderr.write("FLAGS.drop_burnin is too large, no data points left.")
+                sys.exit(1)
+        else:
+            start = 0
+
+        steps=df_trajectory.loc[start::FLAGS.every_nth,['step']].values
+        loss=df_trajectory.loc[start::FLAGS.every_nth,['loss']].values
+        index = -1
+        index2 = -1
+        if "weight0" in df_trajectory.columns:
+            index = df_trajectory.columns.get_loc('weight0')
+        if "bias0" in df_trajectory.columns:
+            index2 = df_trajectory.columns.get_loc('bias0')
+        if (index2 < index and index2 >=0) or (index == -1):
+            index = index2
+        trajectory=df_trajectory.iloc[start::FLAGS.every_nth,index:].values
+
+        # check whether dofs are sufficiently converged
+        number_dof = len(trajectory[0,:])
+        average_params = [np.average(trajectory[0:, i]) for i in range(number_dof)]
+        variance_params = [np.var(trajectory[0:, i]) for i in range(number_dof)]
+        print("First ten parameters are converged to the following values:")
+        print(str(average_params[0:10]))
+        print(str(variance_params[0:10]))
+
+        if FLAGS.average_trajectory_file is not None:
+            csv_writer, csv_file = setup_csv_file(FLAGS.average_trajectory_file, ['step', 'average_parameter', 'variance_parameter'])
+            for step, avg,var in zip(range(number_dof), average_params, variance_params):
+                csv_writer.writerow(
+                    [step, '{:{width}.{precision}e}'.format(avg, width=output_width, precision=output_precision)]+
+                    ['{:{width}.{precision}e}'.format(var, width=output_width, precision=output_precision)]
+                )
+            csv_file.close()
+
+        # compute diffusion map and write to file
+        if FLAGS.diffusion_map_file is not None or FLAGS.diffusion_matrix_file is not None \
+                or FLAGS.landmarks is not None:
+            if FLAGS.inverse_temperature is None or FLAGS.number_of_eigenvalues is None:
+                print("Require both inverse_temperature and number_of_eigenvalues.")
+                sys.exit(255)
+
+            print("Computing diffusion map")
+            try:
+                vectors, values, q = compute_diffusion_maps( \
+                    traj=trajectory, \
+                    beta=FLAGS.inverse_temperature, \
+                    loss=loss, \
+                    nrOfFirstEigenVectors=FLAGS.number_of_eigenvalues, \
+                    method=FLAGS.diffusion_map_method,
+                    use_reweighting=FLAGS.use_reweighting)
+            except scipy.sparse.linalg.eigen.arpack.ArpackNoConvergence:
+                print("ERROR: Vectors were non-convergent.")
+                vectors = np.zeros( (np.shape(trajectory)[0], FLAGS.number_of_eigenvalues) )
+                values = np.zeros( (FLAGS.number_of_eigenvalues) )
+                q = np.zeros( (np.shape(trajectory)[0], np.shape(trajectory)[0]) )
+                # override landmarks to skip computation
+                FLAGS.landmarks = 0
+            kernel_diff = np.asarray(q)
+
+            if FLAGS.diffusion_map_file is not None:
+                print("Eigenvalues are "+str(values))
+                write_values_as_csv(values, FLAGS.diffusion_map_file, output_width, output_precision)
+
+            if FLAGS.diffusion_matrix_file is not None:
+                header = ["i", "loss", "kernel_diff"]
+                for i in range(np.shape(trajectory)[1]):
+                    header.append("dof_"+str(i))
+                for i in range(np.shape(vectors)[1]):
+                    header.append("ev_"+str(i))
+                csv_writer, csv_file = setup_csv_file(FLAGS.diffusion_matrix_file, header)
+                for i in range(np.shape(vectors)[0]):
+                    csv_writer.writerow([i] \
+                        +['{:{width}.{precision}e}'.format(loss[i,0], \
+                            width=output_width, precision=output_precision)] \
+                        +['{:{width}.{precision}e}'.format(kernel_diff[i,0], \
+                            width=output_width, precision=output_precision)] \
+                        +['{:{width}.{precision}e}'.format(x, \
+                            width=output_width, precision=output_precision) for x in trajectory[i,:]] \
+                        +['{:{width}.{precision}e}'.format(x, \
+                            width=output_width, precision=output_precision) for x in np.real(vectors[i,:])])
+                csv_file.close()
+
+            if FLAGS.landmark_prefix is not None:
+                # compute landmarks
+                if FLAGS.landmarks > 0:
+                    print("Getting landmarks")
+                    landmarks=get_landmarks_over_vectors( \
+                        data=trajectory, \
+                        K=FLAGS.landmarks, \
+                        q=q, \
+                        vectors=vectors, \
+                        energies=loss)
+                else:
+                    landmarks = []
+                    for vindex in range(np.shape(vectors)[1]):
+                        landmarks.append(np.zeros(FLAGS.landmarks))
+
+                # compute free energy at landmark points
+                print("Computing free energy")
+                freeEnergies, NumLevelsets = compute_free_energy(
+                    trajectory, FLAGS.landmarks, q, vectors)
+                print("freeEnergies: "+str(freeEnergies))
+                print("NumLevelsets: "+str(NumLevelsets))
+
+                for ev_index in range(np.shape(vectors)[1]):
+                    header = ["landmark", "loss", "kernel_diff"]
+                    for i in range(np.shape(trajectory)[1]):
+                        header.append("dof_"+str(i))
+                    header.append("free_energy")
+                    header.append("ev_"+str(ev_index))
+                    csv_writer, csv_file = setup_csv_file(FLAGS.landmark_prefix+"-ev_"+str(ev_index)+".csv", header)
+                    for k in range(np.shape(landmarks[ev_index])[0]):
+                        i = landmarks[ev_index][k]
+                        csv_writer.writerow([steps[i,0]]
+                            +['{:{width}.{precision}e}'.format(loss[i,0], \
+                                width=output_width, precision=output_precision)] \
+                            +['{:{width}.{precision}e}'.format(q[i,0], \
+                                width=output_width, precision=output_precision)] \
+                            +['{:{width}.{precision}e}'.format(x, \
+                                width=output_width, precision=output_precision) for x in np.asarray(trajectory[i,:])] \
+                            +['{:{width}.{precision}e}'.format(freeEnergies[ev_index][k], \
+                                width=output_width, precision=output_precision)] \
+                            +['{:{width}.{precision}e}'.format(np.real(vectors[i,ev_index]), \
+                                width=output_width, precision=output_precision)])
+                    csv_file.close()
+
+
+            if FLAGS.free_energy_prefix is not None:
+                for ev_index in range(np.shape(vectors)[1]):
+                    # calculate free energy by histogramming the eigenvector
+                    freeEnergies, HistogramBins = compute_free_energy_using_histograms(
+                        radius=vectors[:, ev_index],
+                        nrbins=FLAGS.landmarks)
+                    print("freeEnergies: "+str(freeEnergies))
+                    print("HistogramBins: "+str(HistogramBins))
+                    header = ["bin", "free_energy"]
+                    csv_writer, csv_file = setup_csv_file(FLAGS.free_energy_prefix+"-ev_"+str(ev_index)+".csv", header)
+                    for k in range(len(freeEnergies)):
+                        csv_writer.writerow(
+                            ['{:{width}.{precision}e}'.format(HistogramBins[k], \
+                                width=output_width, precision=output_precision)] \
+                            +['{:{width}.{precision}e}'.format(freeEnergies[k], \
+                                width=output_width, precision=output_precision)])
+                    csv_file.close()
+
+
+if __name__ == '__main__':
+    # setup logging
+    logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
+
+    FLAGS, unparsed = parse_parameters()
+
+    if FLAGS.version:
+        # give version and exit
+        print(get_filename_from_fullpath(sys.argv[0])+" "+get_package_version()+" -- version "+get_build_hash())
+        sys.exit(0)
+
+    # obtain prefix from given filename
+    if FLAGS.landmark_file is not None:
+        landmark_suffix = "-ev_1.csv"
+        if landmark_suffix in FLAGS.landmark_file:
+            FLAGS.landmark_prefix = FLAGS.landmark_file[0:FLAGS.landmark_file.find(landmark_suffix)]
+        else:
+            FLAGS.landmark_prefix = FLAGS.landmark_file
+    else:
+        FLAGS.landmark_prefix = None
+    if FLAGS.free_energy_file is not None:
+        free_energy_suffix = "-ev_1.csv"
+        if free_energy_suffix in FLAGS.free_energy_file:
+            FLAGS.free_energy_prefix = FLAGS.free_energy_file[0:FLAGS.free_energy_file.find(free_energy_suffix)]
+        else:
+            FLAGS.free_energy_prefix = FLAGS.free_energy_file
+    else:
+        FLAGS.free_energy_prefix = None
+
+    print("Using parameters: "+str(FLAGS))
+
+    if len(unparsed) != 0:
+        print("There are unparsed parameters '"+str(unparsed)+"', have you misspelled some?")
+        sys.exit(255)
+
+    tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
+

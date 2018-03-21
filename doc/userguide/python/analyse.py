@@ -5,7 +5,7 @@ import matplotlib
 matplotlib.use("agg")
 import matplotlib.pyplot as plt
 
-from DataDrivenSampler.models.model import model
+from TATi.models.model import model
 
 FLAGS = model.setup_parameters(
     trajectory_file="trajectory.csv"

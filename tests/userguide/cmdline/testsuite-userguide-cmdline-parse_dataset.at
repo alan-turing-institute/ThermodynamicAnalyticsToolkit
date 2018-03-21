@@ -1,5 +1,5 @@
 #
-#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
 #    Copyright (C) 2017 The University of Edinburgh
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -18,10 +18,10 @@
 ### test on examples in the userguide
 
 AT_SETUP([Examples cmdline - parsing dataset])
-AT_KEYWORDS([example cmdline parse_dataset])
+AT_KEYWORDS([example cmdline tatidatasetparser parse_dataset])
 
 # dataset prepared as follows:
-# DatasetWriter --data_type 2 --dimension 500 --seed 426 --noise 0.1 --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+# TATiDatasetWriter --data_type 2 --dimension 500 --seed 426 --noise 0.1 --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
 AT_CHECK([cp -f ${abs_top_srcdir}/tests/userguide/cmdline/pre/dataset-twoclusters.csv .], 0, [ignore], [ignore])
 
 AT_CHECK([env - PATH=${AUTOTEST_PATH} /bin/bash \

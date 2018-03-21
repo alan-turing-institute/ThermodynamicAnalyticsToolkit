@@ -1,5 +1,5 @@
 #
-#    InputSpaceSampler - 
+#    ThermodynamicAnalyticsToolkit - explore loss-function 
 #    Copyright (C) 2017 The University of Edinburgh
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -18,10 +18,10 @@
 ### 
 
 AT_SETUP([InputSpaceSampler Basics - help output])
-AT_KEYWORDS([help inputspacesampler])
+AT_KEYWORDS([help tatiinputspacesampler])
 
-AT_CHECK([../../../InputSpaceSampler --help], 0, [stdout], [stderr])
-AT_CHECK([fgrep "usage: InputSpaceSampler" stdout], 0, [ignore], [ignore])
+AT_CHECK([../../../TATiInputSpaceSampler --help], 0, [stdout], [stderr])
+AT_CHECK([fgrep "usage: TATiInputSpaceSampler" stdout], 0, [ignore], [ignore])
 
 AT_CLEANUP
 

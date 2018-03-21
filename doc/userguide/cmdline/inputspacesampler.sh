@@ -1,6 +1,6 @@
-InputSpaceSampler \
+TATiInputSpaceSampler \
 	--batch_data_files grid.csv \
-	--csv_file InputSpaceSampler-output.csv \
+	--csv_file TATiInputSpaceSampler-output.csv \
 	--input_dimension 2 \
 	--interval_input -4 4 \
 	--parse_steps 1 \

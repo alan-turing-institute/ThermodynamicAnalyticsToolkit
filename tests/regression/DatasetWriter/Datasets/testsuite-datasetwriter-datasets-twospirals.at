@@ -1,5 +1,5 @@
 #
-#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
 #    Copyright (C) 2017 The University of Edinburgh
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -18,9 +18,9 @@
 ### test on classification problem: two spirals
 
 AT_SETUP([DatasetWriter - Datasets - two spirals])
-AT_KEYWORDS([twospirals datasetwriter])
+AT_KEYWORDS([twospirals tatidatasetwriter])
 
-AT_CHECK([../../../DatasetWriter \
+AT_CHECK([../../../TATiDatasetWriter \
 	--data_type 3 \
 	--dimension 20 \
 	--noise 0.1 \

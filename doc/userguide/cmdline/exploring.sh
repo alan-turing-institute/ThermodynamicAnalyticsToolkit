@@ -1,4 +1,4 @@
-DDSExplorer \
+TATiExplorer \
   	--batch_data_files dataset-twoclusters.csv \
     --batch_size 50 \
     --diffusion_map_method vanilla \

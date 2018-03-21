@@ -7,7 +7,7 @@ import argparse
 import logging
 import pandas as pd
 
-from DataDrivenSampler.common import react_to_common_options
+from TATi.common import react_to_common_options
 
 FLAGS = None
 

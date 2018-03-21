@@ -1,7 +1,7 @@
-Data Driven Sampler
-===================
+Thermodynamic Analytics Toolkit
+===============================
 
-Data Driven Sampler is a sampling-based approach to understand the
+Thermodynamic Analytics Toolkit is a sampling-based approach to understand the
 effectiveness of neural networks training.
 
 It uses Tensorflow (https://www.tensorflow.org/) as neural network
@@ -18,11 +18,11 @@ In total, we depend on the following python packages:
  * scipy
  * scikit-learn
 
-It has received financial support from a seed funding grant from the Alan
-Turing Institute in London (R-SIS-003) and a british EPSRC grant (Data Driven
-Sampling).
+It has received financial support from a seed funding grant and through a 
+Rutherford fellowship from the Ala Turing Institute in London (R-SIS-003, 
+R-RUT-001) and a british EPSRC grant (Data Driven Sampling).
 
 Please refer to INSTALL for installation instructions. When cloning from
 github please call the bootstrap.sh script (requiring installed autotools and
 automake packages). After installation (configure, make, make install) there 
-is a userguide "datadrivensampler.pdf" for full reference.
+is a userguide "thermodynamicanalyticstoolkit.pdf" for full reference.

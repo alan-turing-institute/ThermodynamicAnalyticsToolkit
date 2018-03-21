@@ -1,4 +1,4 @@
-DDSAnalyser \
+TATiAnalyser \
     --diffusion_map_file diffusion_map_values.csv \
     --diffusion_map_method vanilla \
     --diffusion_matrix_file diffusion_map_vectors.csv \

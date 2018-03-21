@@ -1,5 +1,5 @@
 #
-#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
 #    Copyright (C) 2017 The University of Edinburgh
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -18,12 +18,12 @@
 ### test on prior by wall-repelling force
 
 AT_SETUP([Sampler - Prior in GLA 2nd])
-AT_KEYWORDS([ddsampler samplers prior wall_repelling lower_boundary upper_boundary gla2nd])
+AT_KEYWORDS([tatisampler samplers prior wall_repelling lower_boundary upper_boundary gla2nd])
 
 # dataset prepared as follows:
-# DatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+# TATiDatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
 
-AT_CHECK([../../../DDSampler \
+AT_CHECK([../../../TATiSampler \
     --batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Prior/pre/dataset-twoclusters.csv \
 	--batch_size 20 \
 	--friction_constant 1 \
@@ -49,12 +49,12 @@ AT_CLEANUP
 # SGLD is very touchy here: We need to go down to really small step widths
 # and use a stronger repelling force
 AT_SETUP([Sampler - Prior in SGLD])
-AT_KEYWORDS([ddsampler samplers prior wall_repelling lower_boundary upper_boundary sgld])
+AT_KEYWORDS([tatisampler samplers prior wall_repelling lower_boundary upper_boundary sgld])
 
 # dataset prepared as follows:
-# DatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+# TATiDatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
 
-AT_CHECK([../../../DDSampler \
+AT_CHECK([../../../TATiSampler \
     --batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Prior/pre/dataset-twoclusters.csv \
 	--batch_size 20 \
 	--inverse_temperature 1 \
@@ -77,12 +77,12 @@ AT_CLEANUP
 
 
 AT_SETUP([Sampler - Prior in BAOAB])
-AT_KEYWORDS([ddsampler samplers prior wall_repelling lower_boundary upper_boundary baoab])
+AT_KEYWORDS([tatisampler samplers prior wall_repelling lower_boundary upper_boundary baoab])
 
 # dataset prepared as follows:
-# DatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+# TATiDatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
 
-AT_CHECK([../../../DDSampler \
+AT_CHECK([../../../TATiSampler \
     --batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Prior/pre/dataset-twoclusters.csv \
 	--batch_size 20 \
 	--friction_constant 1 \
@@ -107,12 +107,12 @@ AT_CLEANUP
 # HMC is a bit more touchy here than the rest, probably because of
 # re-initializing of momenta. We need to decrease step_width slightly.
 AT_SETUP([Sampler - Prior in HMC])
-AT_KEYWORDS([ddsampler samplers prior wall_repelling lower_boundary upper_boundary hmc])
+AT_KEYWORDS([tatisampler samplers prior wall_repelling lower_boundary upper_boundary hmc])
 
 # dataset prepared as follows:
-# DatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+# TATiDatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
 
-AT_CHECK([../../../DDSampler \
+AT_CHECK([../../../TATiSampler \
     --batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Prior/pre/dataset-twoclusters.csv \
 	--batch_size 20 \
 	--hamiltonian_dynamics_time 0.25 \

@@ -1,7 +1,6 @@
-from DataDrivenSampler.models.model import model
+from TATi.models.model import model
 
 import numpy as np
-import tensorflow as tf
 
 # prepare parameters
 FLAGS = model.setup_parameters(

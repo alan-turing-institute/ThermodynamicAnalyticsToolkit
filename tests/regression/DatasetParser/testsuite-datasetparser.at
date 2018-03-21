@@ -1,5 +1,5 @@
 #
-#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
 #    Copyright (C) 2017 The University of Edinburgh
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -17,7 +17,7 @@
 #
 ### all tests on DatasetParser
 
-AT_BANNER([DataDrivenSampler - DatasetParser])
+AT_BANNER([ThermodynamicAnalyticsToolkit - DatasetParser])
 
 # tests on simple behavior
 m4_include([DatasetParser/testsuite-datasetparser-simple.at])

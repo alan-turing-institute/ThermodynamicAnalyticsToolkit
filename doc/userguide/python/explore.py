@@ -1,5 +1,5 @@
-from DataDrivenSampler.models.model import model
-from DataDrivenSampler.exploration.explorer import Explorer
+from TATi.models.model import model
+from TATi.exploration.explorer import Explorer
 
 import numpy as np
 

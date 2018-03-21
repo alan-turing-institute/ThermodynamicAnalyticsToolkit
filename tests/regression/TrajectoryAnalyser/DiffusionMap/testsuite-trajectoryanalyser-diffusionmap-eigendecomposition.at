@@ -1,5 +1,5 @@
 #
-#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
 #    Copyright (C) 2017 The University of Edinburgh
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -18,11 +18,11 @@
 ### 
 
 AT_SETUP([Analyser - Diffusion map, method vanilla])
-AT_KEYWORDS([ddsanalyser diffusion_map vanilla])
+AT_KEYWORDS([tatianalyser diffusion_map vanilla])
 
 # analyse a trajectory that was created by:
 # (Two clusters dataset with two inputs nodes, single output, linear activation)
-# DDSampler \
+# TATiSampler \
 # --data_type 2 \
 # --dimension 500 \
 # --friction_constant 10 \
@@ -33,7 +33,7 @@ AT_KEYWORDS([ddsanalyser diffusion_map vanilla])
 # --seed 426 \
 # --trajectory_file trajectory-two_clusters-dim_500-gamma_10-beta_1e4-max_steps_1000-noise_0.1-linear-seed_426.csv
 #
-AT_CHECK([../../../DDSAnalyser \
+AT_CHECK([../../../TATiAnalyser \
     --diffusion_map_file eigenvalues.csv \
     --diffusion_map_method "vanilla" \
     --diffusion_matrix_file eigenvectors.csv \
@@ -50,11 +50,11 @@ AT_CHECK([../../../NumericalDiff --column_ignore_sign "ev_0" "ev_1" "ev_2" "ev_3
 AT_CLEANUP
 
 AT_SETUP([Analyser - Diffusion map, method TMDMap])
-AT_KEYWORDS([ddsanalyser diffusion_map TMDMap])
+AT_KEYWORDS([tatianalyser diffusion_map TMDMap])
 
 # analyse a trajectory that was created by:
 # (Two clusters dataset with two inputs nodes, single output, linear activation)
-# DDSampler \
+# TATiSampler \
 # --data_type 2 \
 # --dimension 500 \
 # --friction_constant 10 \
@@ -65,7 +65,7 @@ AT_KEYWORDS([ddsanalyser diffusion_map TMDMap])
 # --seed 426 \
 # --trajectory_file trajectory-two_clusters-dim_500-gamma_10-beta_1e1-max_steps_1000-noise_0.1-linear-seed_426.csv
 #
-AT_CHECK([../../../DDSAnalyser \
+AT_CHECK([../../../TATiAnalyser \
     --diffusion_map_file eigenvalues.csv \
     --diffusion_map_method "TMDMap" \
     --diffusion_matrix_file eigenvectors.csv \
@@ -82,12 +82,12 @@ AT_CHECK([../../../NumericalDiff --column_ignore_sign "ev_0" "ev_1" "ev_2" "ev_3
 AT_CLEANUP
 
 AT_SETUP([Analyser - Diffusion map, method pydiffmap])
-AT_KEYWORDS([ddsanalyser diffusion_map pydiffmap])
+AT_KEYWORDS([tatianalyser diffusion_map pydiffmap])
 AT_SKIP_IF([! ../../../check_pydiffmap])
 
 # analyse a trajectory that was created by:
 # (Two clusters dataset with two inputs nodes, single output, linear activation)
-# DDSampler \
+# TATiSampler \
 # --data_type 2 \
 # --dimension 500 \
 # --friction_constant 10 \
@@ -98,7 +98,7 @@ AT_SKIP_IF([! ../../../check_pydiffmap])
 # --seed 426 \
 # --trajectory_file trajectory-two_clusters-dim_500-gamma_10-beta_1e1-max_steps_1000-noise_0.1-linear-seed_426.csv
 #
-AT_CHECK([../../../DDSAnalyser \
+AT_CHECK([../../../TATiAnalyser \
     --diffusion_map_file eigenvalues.csv \
     --diffusion_map_method "pydiffmap" \
     --diffusion_matrix_file eigenvectors.csv \

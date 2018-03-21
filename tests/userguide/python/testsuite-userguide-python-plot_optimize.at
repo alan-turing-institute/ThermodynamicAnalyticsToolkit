@@ -1,5 +1,5 @@
 #
-#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
 #    Copyright (C) 2017 The University of Edinburgh
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -22,7 +22,7 @@ AT_KEYWORDS([example python optimize plot])
 
 # analyse a run that was created by:
 # (Two clusters dataset with two inputs nodes, single output, linear activation)
-# DDSampler \
+# TATiSampler \
 # --run_file run-two_clusters-dim_500-gamma_10-beta_1e4-max_steps_1000-noise_0.1-linear-seed_426.csv
 # --data_type 2 \
 # --dimension 500 \

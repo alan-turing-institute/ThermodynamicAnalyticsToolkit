@@ -1,5 +1,5 @@
 #
-#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
 #    Copyright (C) 2018 The University of Edinburgh
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -18,11 +18,11 @@
 ### 
 
 AT_SETUP([LossFunctionSampling - From Sampled Trajectory])
-AT_KEYWORDS([datasetwriter ddsampler lossfunctionsampler])
+AT_KEYWORDS([tatidatasetwriter tatisampler tatilossfunctionsampler])
 
 DIR=`pwd`
 # run 1: Create dataset
-AT_CHECK([../../../DatasetWriter \
+AT_CHECK([../../../TATiDatasetWriter \
 	--data_type 2 \
 	--dimension 20 \
 	--seed 426 \
@@ -31,7 +31,7 @@ AT_CHECK([../../../DatasetWriter \
 ], 0, [stdout], [stderr])
 
 # run 1: Optimize network
-AT_CHECK([../../../DDSOptimizer \
+AT_CHECK([../../../TATiOptimizer \
 	--batch_data_files dataset-twocluster.csv \
 	--batch_size 20 \
 	--max_steps 10 \
@@ -42,7 +42,7 @@ AT_CHECK([../../../DDSOptimizer \
 ], 0, [stdout], [stderr])
 
 # run 2: sample network
-AT_CHECK([../../../DDSampler \
+AT_CHECK([../../../TATiSampler \
 	--batch_data_files dataset-twocluster.csv \
 	--batch_size 20 \
 	--friction_constant 1 \
@@ -56,7 +56,7 @@ AT_CHECK([../../../DDSampler \
 ], 0, [stdout], [stderr])
 
 # run 3: use trajectory file for loss function sampling
-AT_CHECK([../../../LossFunctionSampler \
+AT_CHECK([../../../TATiLossFunctionSampler \
     --batch_data_files dataset-twocluster.csv \
 	--batch_size 20 \
     --csv_file lossfunction.csv \

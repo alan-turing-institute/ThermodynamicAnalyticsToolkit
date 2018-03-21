@@ -1,5 +1,5 @@
 #
-#    LossFunctionSampler - 
+#    ThermodynamicAnalyticsToolkit - explore manifolds
 #    Copyright (C) 2017 The University of Edinburgh
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -18,10 +18,10 @@
 ### 
 
 AT_SETUP([LossFunctionSampler Basics - help output])
-AT_KEYWORDS([help lossfunctionsampler])
+AT_KEYWORDS([help tatilossfunctionsampler])
 
-AT_CHECK([../../../LossFunctionSampler --help], 0, [stdout], [stderr])
-AT_CHECK([fgrep "usage: LossFunctionSampler" stdout], 0, [ignore], [ignore])
+AT_CHECK([../../../TATiLossFunctionSampler --help], 0, [stdout], [stderr])
+AT_CHECK([fgrep "usage: TATiLossFunctionSampler" stdout], 0, [ignore], [ignore])
 
 AT_CLEANUP
 

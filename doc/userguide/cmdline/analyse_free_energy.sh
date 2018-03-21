@@ -1,4 +1,4 @@
-DDSAnalyser \
+TATiAnalyser \
     --diffusion_map_method TMDMap \
     --drop_burnin 100 \
     --every_nth 10 \

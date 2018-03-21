@@ -1,4 +1,4 @@
-DDSOptimizer \
+TATiOptimizer \
     --batch_data_files dataset-twoclusters.csv \
     --batch_size 50 \
     --loss mean_squared \

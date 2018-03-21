@@ -1,5 +1,5 @@
 #
-#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
 #    Copyright (C) 2017 The University of Edinburgh
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -18,9 +18,9 @@
 ### test on classification problem: two clusters
 
 AT_SETUP([DatasetParser - Datasets - two clusters])
-AT_KEYWORDS([twoclusters datasetparser])
+AT_KEYWORDS([twoclusters tatidatasetparser])
 
-AT_CHECK([../../../DatasetParser \
+AT_CHECK([../../../TATiDatasetParser \
 	--batch_data_files ${abs_top_srcdir}/tests/regression/DatasetParser/Datasets/pre/testset-twoclusters.csv \
 	--batch_size 20 \
 	--seed 426

@@ -1,5 +1,5 @@
 #
-#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
 #    Copyright (C) 2017 The University of Edinburgh
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -18,10 +18,10 @@
 ### test on reproducible runs using two clusters dataset
 
 AT_SETUP([DatasetWriter Reproducibility - same and different seed])
-AT_KEYWORDS([reproducibility seed twoclusters datasetwriter])
+AT_KEYWORDS([reproducibility seed twoclusters tatidatasetwriter])
 
 # run 1
-AT_CHECK([../../../DatasetWriter \
+AT_CHECK([../../../TATiDatasetWriter \
 	--data_type 2 \
 	--dimension 20 \
 	--noise 0.1 \
@@ -31,7 +31,7 @@ AT_CHECK([../../../DatasetWriter \
 ], 0, [stdout], [stderr])
 
 # run 2: same seed
-AT_CHECK([../../../DatasetWriter \
+AT_CHECK([../../../TATiDatasetWriter \
 	--data_type 2 \
 	--dimension 20 \
 	--noise 0.1 \
@@ -42,7 +42,7 @@ AT_CHECK([../../../DatasetWriter \
 
 
 # run 3: other seed
-AT_CHECK([../../../DatasetWriter \
+AT_CHECK([../../../TATiDatasetWriter \
 	--data_type 2 \
 	--dimension 20 \
 	--noise 0.1 \

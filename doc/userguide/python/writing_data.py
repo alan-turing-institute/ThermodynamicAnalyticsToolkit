@@ -1,4 +1,4 @@
-from DataDrivenSampler.datasets.classificationdatasets \
+from TATi.datasets.classificationdatasets \
     import ClassificationDatasets as DatasetGenerator
 
 import csv

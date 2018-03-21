@@ -1,7 +1,7 @@
-LossFunctionSampler \
+TATiLossFunctionSampler \
   --batch_data_files dataset-twoclusters.csv \
   --batch_size 20 \
-  --csv_file LossFunctionSampler-output-SGLD.csv \
+  --csv_file TATiLossFunctionSampler-output-SGLD.csv \
   --exclude_parameters "w1" \
   --interval_center_step 1 \
   --interval_weights -5 5 \

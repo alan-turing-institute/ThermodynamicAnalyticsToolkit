@@ -1,5 +1,5 @@
 #
-#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
 #    Copyright (C) 2017 The University of Edinburgh
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -18,15 +18,15 @@
 ### test on examples in the userguide
 
 AT_SETUP([Examples cmdline - loss function sampling over trajectory])
-AT_KEYWORDS([example cmdline lossfunctionsampler trajectory])
+AT_KEYWORDS([example cmdline tatilossfunctionsampler trajectory])
 
 # dataset prepared as follows:
-# DatasetWriter --data_type 2 --dimension 500 --seed 426 --noise 0.1 --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+# TATiDatasetWriter --data_type 2 --dimension 500 --seed 426 --noise 0.1 --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
 AT_CHECK([cp -f ${abs_top_srcdir}/tests/userguide/cmdline/pre/dataset-twoclusters.csv .], 0, [ignore], [ignore])
 
 # analyse a trajectory that was created by:
 # (Two clusters dataset with two inputs nodes, single output, linear activation)
-# DDSampler \
+# TATiSampler \
 # --run_file run-two_clusters-dim_500-gamma_10-beta_1e4-max_steps_1000-noise_0.1-linear-seed_426.csv
 # --data_type 2 \
 # --dimension 500 \
@@ -44,8 +44,8 @@ AT_CHECK([cp -f ${abs_top_srcdir}/tests/userguide/cmdline/pre/trajectory-two_clu
 AT_CHECK([env - PATH=${AUTOTEST_PATH} /bin/bash \
 	${abs_top_srcdir}/doc/userguide/cmdline/lossfunctionsampler-trajectory.sh
 ], 0, [stdout], [stderr])
-AT_CHECK([grep "step,loss,accuracy,w0,w1,b0" LossFunctionSampler-output-SGLD.csv], 0, [ignore], [ignore])
-AT_CHECK([wc -l LossFunctionSampler-output-SGLD.csv], 0, [stdout], [ignore])
+AT_CHECK([grep "step,loss,accuracy,w0,w1,b0" TATiLossFunctionSampler-output-SGLD.csv], 0, [ignore], [ignore])
+AT_CHECK([wc -l TATiLossFunctionSampler-output-SGLD.csv], 0, [stdout], [ignore])
 AT_CHECK([grep "1001" stdout], 0, [ignore], [ignore])
 
 AT_CLEANUP

@@ -1,5 +1,5 @@
 #
-#    LossFunctionSampler - explore high-dimensional manifold of neural networks
+#    TATiLossFunctionSampler - explore high-dimensional manifold of neural networks
 #    Copyright (C) 2018 The University of Edinburgh
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -18,15 +18,15 @@
 ### test on option interval_center_file
 
 AT_SETUP([LossFunctionSampler - interval center file])
-AT_KEYWORDS([lossfunctionsampler interval_center_file])
+AT_KEYWORDS([tatilossfunctionsampler interval_center_file])
 
 # dataset prepared as follows:
-# DatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+# TATiDatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
 
-AT_CHECK([../../../LossFunctionSampler \
+AT_CHECK([../../../TATiLossFunctionSampler \
 	--batch_data_files ${abs_top_srcdir}/tests/regression/LossFunctionSampler/pre/dataset-twoclusters.csv \
 	--batch_size 20 \
-	--csv_file LossFunctionSampler-output.csv \
+	--csv_file TATiLossFunctionSampler-output.csv \
 	--exclude_parameters "w0" \
 	--interval_biases -1 1 \
 	--interval_weights -1 1 \
@@ -40,7 +40,7 @@ AT_CHECK([../../../LossFunctionSampler \
 # now compare
 AT_CHECK([../../../NumericalDiff \
     --column_drop step accuracy \
-    -- LossFunctionSampler-output.csv ${abs_top_srcdir}/tests/regression/LossFunctionSampler/post/trajectory-losses-center_file.csv], 0, [ignore], [ignore])
+    -- TATiLossFunctionSampler-output.csv ${abs_top_srcdir}/tests/regression/LossFunctionSampler/post/trajectory-losses-center_file.csv], 0, [ignore], [ignore])
 
 
 AT_CLEANUP

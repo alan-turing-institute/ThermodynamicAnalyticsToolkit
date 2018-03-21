@@ -1,5 +1,5 @@
 #
-#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
 #    Copyright (C) 2018 The University of Edinburgh
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -20,8 +20,8 @@
 AT_SETUP([Explorer Basics - help output])
 AT_KEYWORDS([help ddsampler])
 
-AT_CHECK([../../../DDSExplorer --help], 0, [stdout], [stderr])
-AT_CHECK([fgrep "usage: DDSExplorer" stdout], 0, [ignore], [ignore])
+AT_CHECK([../../../TATiExplorer --help], 0, [stdout], [stderr])
+AT_CHECK([fgrep "usage: TATiExplorer" stdout], 0, [ignore], [ignore])
 
 AT_CLEANUP
 

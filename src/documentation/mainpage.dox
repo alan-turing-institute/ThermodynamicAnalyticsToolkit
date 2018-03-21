@@ -1,5 +1,5 @@
 /*
- * Project: DataDrivenSampler
+ * Project: ThermodynamicAnalyticsToolkit
  * Description: Explore the high-dimensional landscape of neural networks
  * Copyright (C)  2017 The University of Edinburgh. All rights reserved.
  * Please see the LICENSE file for details.
@@ -16,14 +16,14 @@
 
 /*! \page copyright Copyright notice
  *
- *  DataDrivenSampler - to design and perform numerical experiments
+ *  ThermodynamicAnalyticsToolkit - to design and perform numerical experiments
  *  Copyright (C) 2017 The University of Edinburgh. All rights reserved.
  *
  */
 
-/** \mainpage DataDrivenSampler
+/** \mainpage ThermodynamicAnalyticsToolkit
  *
- * This is the main page of the Doxygen documentation of \e DataDrivenSampler. 
+ * This is the main page of the Doxygen documentation of \e ThermodynamicAnalyticsToolkit. 
  * We give a brief description what the program is intended to do and then
  * branch via the contents of this documentation into various topics.
  *
