@@ -56,7 +56,9 @@ class TrajectoryQueue(object):
 
         :param _job: job to add
         """
-        _job.set_job_id(self.current_job_id.get_unique_id())
+        # maintain old id if the jobs has been re-queued
+        if _job.job_id == -1:
+            _job.set_job_id(self.current_job_id.get_unique_id())
         if self.number_processes == 0:
             self.queue.append(_job)
         else:
