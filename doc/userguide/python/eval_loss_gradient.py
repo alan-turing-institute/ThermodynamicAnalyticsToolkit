@@ -6,16 +6,12 @@ import numpy as np
 FLAGS = model.setup_parameters(
     batch_data_files=["dataset-twoclusters.csv"],
     batch_size=10,
-    max_steps=10,
-    output_activation="linear",
-    sampler="GeometricLangevinAlgorithm_2ndOrder",
-    seed=426,
-    step_width=1e-2
+    output_activation="linear"
 )
 nn = model(FLAGS)
 
 # prepare network and input pipeline
-nn.init_network(None, setup="sample",
+nn.init_network(None, setup="None",
                 add_vectorized_gradients=True)
 nn.init_input_pipeline()
 

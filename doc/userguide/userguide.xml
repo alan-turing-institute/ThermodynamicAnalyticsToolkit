@@ -442,9 +442,8 @@ cost of all necessary servicing, repair, or correction.</remark>
       system such as <command>git</command>.</para>
       <para>
       If you have installed the package in the folder "/foo", i.e. we have 
-      folders "ThermodynamicAnalyticsToolkit/models" with a file 
-      <command>model.py</command> residing in there, then you 
-      probably need to add it to the 
+      folders "TATi/models" with a file <filename>model.py</filename> residing 
+      in there, then you probably need to add it to the 
       <command>PYTHONPATH</command> as follows</para>
       <programlisting>PYTHONPATH=/foo python3</programlisting>
       <para>In this shell, you may import the sampling part of the package as 
