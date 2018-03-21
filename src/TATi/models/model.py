@@ -179,6 +179,13 @@ class model:
                                                   input_dimension=self.input_dimension, output_dimension=self.output_dimension,
                                                   shuffle=shuffle, seed=FLAGS.seed)
 
+    def get_parameters(self):
+        """ Getter for the internal set oF FLAGS controlling training and sampling.
+
+        :return: FLAGS parameter set
+        """
+        return self.FLAGS
+
     def reset_parameters(self, FLAGS):
         """ Use to pass a different set of FLAGS controlling training or sampling.
 
