@@ -1219,7 +1219,8 @@ class model:
             else:
                 if ("weight" in keyname) or ("bias" in keyname):
                     parameters[keyname] = df_parameters.loc[rownr, [keyname]].values[0]
-        logging.info("Read row " + str(rownr) + ":" + str(parameters))
+        logging.debug("Read row "+str(rownr)+":"+str([parameters[key] for key in ["weight0", "weight1", "weight2"] if key in parameters.keys()]) \
+                      +"..."+str([parameters[key] for key in ["bias0", "bias1", "bias2"] if key in parameters.keys()]))
 
         # create internal array to store parameters
         weights_vals = self.weights.create_flat_vector()
