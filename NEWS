@@ -1,3 +1,16 @@
+v0.7
+====
+- renamed from DataDrivenSampler (DDS) to Thermodynamic Analytics Toolkit 
+  (TATi)
+- added (vectorized) hessian and gradient nodes to allow easy access through
+  numpy arrays
+- sampler, optimizer, lossfunctionsampler, and inputspacesampler may now parse
+  parameters from a given CSV file through a single cmd-line option
+- Explorer can now run parallel processes each sampling or training along a
+  independent trajectory
+- FIX: Sampler module's names were inconsistent
+- FIX: sqlite3 presence check was broken
+
 v0.6
 ====
 
