@@ -358,7 +358,7 @@ class model:
             self.nn = NeuralNetwork()
             hidden_dimension = [int(i) for i in get_list_from_string(self.FLAGS.hidden_dimension)]
             activations = NeuralNetwork.get_activations()
-            loss = self.nn.create(
+            self.loss = self.nn.create(
                 self.x, hidden_dimension, self.output_dimension,
                 seed=self.FLAGS.seed,
                 add_dropped_layer=(self.FLAGS.dropout is not None),
@@ -375,7 +375,7 @@ class model:
                 vectorized_gradients = []
                 for tensor in tf.get_collection(tf.GraphKeys.WEIGHTS) + tf.get_collection(tf.GraphKeys.BIASES):
                     #vectorized_tensor = tf.reshape(tensor, [-1])
-                    grad = tf.gradients(loss, tensor)
+                    grad = tf.gradients(self.loss, tensor)
                     print(grad)
                     vectorized_gradients.append(tf.reshape(grad, [-1]))
                 self.gradients = tf.reshape(tf.concat(vectorized_gradients, axis=0), [-1])
@@ -403,7 +403,7 @@ class model:
                                 tf.reshape(grad, [-1]))
                 self.hessians = tf.reshape(tf.concat(self.hessians, axis=0), [total_dofs, total_dofs])
         else:
-            loss = self.nn.get_list_of_nodes(["loss"])[0]
+            self.loss = self.nn.get_list_of_nodes(["loss"])[0]
 
         if self.FLAGS.fix_parameters is not None:
             names, values = self.split_parameters_as_names_values(self.FLAGS.fix_parameters)
@@ -433,9 +433,9 @@ class model:
 
         # setup training/sampling
         if setup == "train":
-            self.nn.add_train_method(loss, optimizer_method=self.FLAGS.optimizer, prior=prior)
+            self.nn.add_train_method(self.loss, optimizer_method=self.FLAGS.optimizer, prior=prior)
         elif setup == "sample":
-            self.nn.add_sample_method(loss, sampling_method=self.FLAGS.sampler, seed=self.FLAGS.seed, prior=prior)
+            self.nn.add_sample_method(self.loss, sampling_method=self.FLAGS.sampler, seed=self.FLAGS.seed, prior=prior)
         else:
             logging.info("Not adding sample or train method.")
 
