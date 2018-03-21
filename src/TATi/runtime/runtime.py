@@ -74,9 +74,13 @@ class runtime(object):
                 intra_ops_threads = self.FLAGS.inter_ops_threads
                 if intra_ops_threads is None:
                     intra_ops_threads = 0
+                try:
+                    dataset_dimension = self.FLAGS.dimension
+                except AttributeError:
+                    dataset_dimension = self.FLAGS.batch_size
                 add_values_command = add_values_format.format(
                     batch_size=self.FLAGS.batch_size,
-                    dimension=self.FLAGS.dimension,
+                    dimension=dataset_dimension,
                     hidden_num_layers=len(hidden_dimension),
                     hidden_min_nodes=min_nodes,
                     hidden_max_nodes=max_nodes,
