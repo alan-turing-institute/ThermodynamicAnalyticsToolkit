@@ -338,10 +338,18 @@ class model:
         """
         self.input_pipeline.reset(self.sess)
 
-    def init_network(self, filename = None, setup = None):
+    def init_network(self, filename = None, setup = None,
+                     add_vectorized_gradients = False):
         """ Initializes the graph, from a stored model if filename is not None.
 
         :param filename: name of file containing stored model
+        :param setup: "sample", "train" or else to add nodes that trigger a
+                single sampling or training step. Otherwise they are not added.
+                init_network() can be called consecutively with both variants
+                to add either type of node.
+        :param add_vectorized_gradients: add nodes to return gradients in fully
+                vectorized form, i.e. in the same sequence as nn_weights and
+                nn_biases parameters combined, see self.gradients.
         """
         # dataset was provided
         assert( self.input_dimension is not None )
@@ -366,23 +374,22 @@ class model:
                 output_activation=activations[self.FLAGS.output_activation],
                 loss_name=self.FLAGS.loss
             )
-            if self.FLAGS.do_hessians:
+
+            if self.FLAGS.do_hessians or add_vectorized_gradients:
                 # create node for gradient and hessian computation only if specifically
                 # requested as the creation along is costly (apart from the expensive part
                 # of evaluating the nodes eventually). This would otherwise slow down
                 # startup quite a bit even when hessians are not evaluated.
-                print("GRADIENTS")
+                #print("GRADIENTS")
                 vectorized_gradients = []
                 for tensor in tf.get_collection(tf.GraphKeys.WEIGHTS) + tf.get_collection(tf.GraphKeys.BIASES):
-                    #vectorized_tensor = tf.reshape(tensor, [-1])
                     grad = tf.gradients(self.loss, tensor)
                     print(grad)
                     vectorized_gradients.append(tf.reshape(grad, [-1]))
                 self.gradients = tf.reshape(tf.concat(vectorized_gradients, axis=0), [-1])
-                print(self.gradients)
-                print(vectorized_gradients)
 
-                print("HESSIAN")
+            if self.FLAGS.do_hessians:
+                #print("HESSIAN")
                 self.hessians = []
                 total_dofs = 0
                 for gradient in vectorized_gradients:
@@ -393,12 +400,9 @@ class model:
                     # only of functions (i.e. one-dimensional output). Hence, we have to
                     # split the gradients into its components and do gradient on each
                     split_gradient = tf.split(gradient, num_or_size_splits=dofs)
-                    #print(split_gradient)
                     for splitgrad in split_gradient:
                         for othertensor in tf.get_collection(tf.GraphKeys.WEIGHTS) + tf.get_collection(tf.GraphKeys.BIASES):
-                            #vectorized_othertensor = tf.reshape(othertensor, [-1])
                             grad = tf.gradients(splitgrad, othertensor)
-                            #print(grad)
                             self.hessians.append(
                                 tf.reshape(grad, [-1]))
                 self.hessians = tf.reshape(tf.concat(self.hessians, axis=0), [total_dofs, total_dofs])
