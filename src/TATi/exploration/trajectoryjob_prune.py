@@ -40,11 +40,12 @@ class TrajectoryJob_prune(TrajectoryJob):
             logging.debug("\tHaving "+str(p_accept)+" as threshold, rolled "+str(die_roll))
             return p_accept > die_roll
 
-        num_dof = self.network_model.number_of_parameters
-        average_kinetic_energy = num_dof/(2*self.network_model.FLAGS.inverse_temperature)
+        num_dof = self.network_model.get_total_weight_dof()+self.network_model.get_total_bias_dof()
+        FLAGS = self.network_model.get_parameters()
+        average_kinetic_energy = num_dof/(2*FLAGS.inverse_temperature)
 
         # set a seed such that prunes occur reproducibly
-        np.random.seed(self.network_model.FLAGS.seed+_data.get_id())
+        np.random.seed(FLAGS.seed+_data.get_id())
 
         # prune last leg
         run_lines_per_leg = _data.run_lines
