@@ -163,7 +163,7 @@ class model:
         :param shuffle: whether to shuffle dataset or not
         """
         if FLAGS.in_memory_pipeline and (FLAGS.batch_data_file_type == "csv"):
-            logging.info("Using in-memory pipeline")
+            logging.debug("Using in-memory pipeline")
             # at the moment we can only parse a single file
             assert( len(FLAGS.batch_data_files) == 1 )
             csv_dataset = pd.read_csv(FLAGS.batch_data_files[0], sep=',', header=0)
@@ -173,7 +173,7 @@ class model:
                                                    max_steps=FLAGS.max_steps,
                                                    shuffle=shuffle, seed=FLAGS.seed)
         else:
-            logging.info("Using tf.Dataset pipeline")
+            logging.debug("Using tf.Dataset pipeline")
             self.input_pipeline = DatasetPipeline(filenames=FLAGS.batch_data_files, filetype=FLAGS.batch_data_file_type,
                                                   batch_size=FLAGS.batch_size, dimension=FLAGS.dimension, max_steps=FLAGS.max_steps,
                                                   input_dimension=self.input_dimension, output_dimension=self.output_dimension,
@@ -391,7 +391,6 @@ class model:
                 vectorized_gradients = []
                 for tensor in tf.get_collection(tf.GraphKeys.WEIGHTS) + tf.get_collection(tf.GraphKeys.BIASES):
                     grad = tf.gradients(self.loss, tensor)
-                    print(grad)
                     vectorized_gradients.append(tf.reshape(grad, [-1]))
                 self.gradients = tf.reshape(tf.concat(vectorized_gradients, axis=0), [-1])
 
@@ -402,7 +401,6 @@ class model:
                 for gradient in vectorized_gradients:
                     dofs = int(np.cumprod(gradient.shape))
                     total_dofs += dofs
-                    #print(dofs)
                     # tensorflow cannot compute the gradient of a multi-dimensional mapping
                     # only of functions (i.e. one-dimensional output). Hence, we have to
                     # split the gradients into its components and do gradient on each
@@ -501,7 +499,6 @@ class model:
             self.assign_weights_and_biases_from_file(self.FLAGS.parse_parameters_file, step, do_check=True)
 
         header = None
-        logging.info("Setting up output files for "+str(setup))
         if setup == "sample":
             header = self.get_sample_header()
         elif setup == "train":
@@ -1085,7 +1082,7 @@ class model:
         try:
             if self.FLAGS.save_model is not None:
                 save_path = self.save_model(self.FLAGS.save_model.replace('.meta', ''))
-                logging.info("Model saved in file: %s" % save_path)
+                logging.debug("Model saved in file: %s" % save_path)
         except AttributeError:
             pass
 

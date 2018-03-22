@@ -27,8 +27,8 @@ class TrajectoryProcess(TrajectoryJob):
         # create model files from the parameters
         assert( len(_data.parameters) != 0 )
         parameters = _data.parameters[-1]
-        print("Writing initial parameters " \
-              +str(_data.parameters[-1][0:5])+" at step " \
+        logging.debug("Writing initial parameters " \
+              +str(parameters[0:5])+" at step " \
               +str(_data.steps[-1])+" to temporary file.")
         f = tempfile.NamedTemporaryFile(mode="w", prefix="parameters-", suffix=".csv")
         filename = f.name
@@ -40,7 +40,7 @@ class TrajectoryProcess(TrajectoryJob):
         parameters_writer, parameters_file = setup_csv_file(
             filename, header)
         write_row = [0, _data.steps[-1]]
-        write_row.extend(_data.parameters[-1])
+        write_row.extend(parameters)
         parameters_writer.writerow(write_row)
         parameters_file.close()
         return filename, _data.steps[-1]

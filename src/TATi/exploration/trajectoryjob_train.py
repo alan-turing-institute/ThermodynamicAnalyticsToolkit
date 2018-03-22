@@ -94,16 +94,9 @@ class TrajectoryJob_train(TrajectoryJob_sample):
                 feed_dict.update({
                     self.network_model.nn.placeholder_nodes["keep_prob"]: self.FLAGS.dropout})
 
-            #self.network_model.reset_dataset()
-            # gradient_eval = self.network_model.sess.run(
-            #     self.network_model.gradients,
-            #     feed_dict=feed_dict)
-            # print(gradient_eval)
-
             hessian_eval = self.network_model.sess.run(
                 self.network_model.hessians,
                 feed_dict=feed_dict)
-            #print(hessian_eval)
             _data.hessian_eigenvalues.append(np.linalg.eigvals(hessian_eval))
             logging.info("Max and min eigenvalues of hessian: "+str(_data.hessian_eigenvalues[0:2]) \
                          +"..."+str(_data.hessian_eigenvalues[-3:-1]))
