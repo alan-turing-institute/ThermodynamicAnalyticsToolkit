@@ -1223,263 +1223,290 @@ sys.path.insert(1,"&lt;path_to_TATi&gt;/lib/python3.5/site-packages/")</programl
     However, there is some branching, too. Hence, you are challenged to put
     the pieces you need together. As principle guideline: follow the order as
     it is given here.</para>
-    
-      <section xml:id="reference.python_general_nn_usage.setting_up_network">
-      <title xml:id="reference.python_general_nn_usage.setting_up_network.title">Setting up the network</title>
-        <para>Let's first create a neural network. At the moment of writing 
-        <productname>TATi</productname> is constrained to multi-layer perceptrons
-        but this will soon be extened to convolutational and other networks.</para>
-        <para>Multi-layer perceptrons are characterized by the number of layers, 
-        the number of nodes per layer and the output function used in each node.</para>
-          <example xml:id="quickstart.python_general_nn_usage.setting_up_network.example">
-            <title>Setting up a multi-layer perceptrons</title>
-            <programlisting><xi:include  href="python/general_nn/setting_up_network.py"  parse="text"  
-        xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
-          </example>
-        <para>In the above example, we specify a neural network of two hidden 
-        layers, each having 8 nodes. We use the "rectified linear" activation 
-        function for these nodes. The output nodes are activated by a linear 
-        function.</para>
-        <note>At the moment it is not possible to set different activation
-        functions for individual nodes or between hidden layers.</note>
-        <para>For a full (and up-to-date) list of all available activation 
-        functions, please look at TATi/models/model.py, <quote>get_activations()</quote>.
-        <note>Note that creating the <quote>tati_model</quote> instance "model"
-        will always reset the computational graph of tensorflow in case you 
-        need to add nodes.</note>
-        </para>
-      </section>
 
-      <section xml:id="reference.python_general_nn_usage.supply_dataset">
-      <title xml:id="reference.python_general_nn_usage.supply_dataset.title">Supply dataset as array</title>
-        <para>As a next step, we need to supply a dataset. This dataset will
-        also necessitate a certain amount of input and output nodes.</para>
-        <note>At the moment only classification datasets can be setup.</note>
-        <para>There are basically two ways of supplying the dataset:
-        <itemizedlist>
-          <listitem>from a CSV file</listitem>
-          <listitem>from an internal (numpy) array</listitem>
-        </itemizedlist>
-        We will give examples for both ways here.</para>
-        <example xml:id="quickstart.python_general_nn_usage.supply_dataset_csv.example">
-          <title>Supplying a dataset from file</title>
-          <programlisting><xi:include  href="python/general_nn/supply_dataset_csv.py"  parse="text"  
-      xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
-        </example>
-        <para>The <quote>batch_data_files</quote> always needs to be a list
-        as multiple files may be given. <quote>batch_data_file_type</quote> gives
-        the type of the files. Currently "csv" and "tfrecord" are supported
-        choices.</para>
-        <para>Note that you can combine the "additional" <quote>FLAGS</quote>
-        given for specifying the data set files with the ones characterizing
-        the neural network above. In that case you do not need to call
-        <quote>reset_parameters</quote>. For a full (and up-to-date list
-        please refer to TATi/models/model.py, function <quote>add_losses()</quote>.
-        </para>
-        <para>We repeat the example given in <xref linkend="quickstart.python.sampling.supply_dataset"/>.
-          <example xml:id="quickstart.python_general_nn_usage.supply_dataset_array.example">
-            <title>Supplying a dataset from an array</title>
-            <programlisting><xi:include  href="python/general_nn/supply_dataset_array.py"  parse="text"  
-        xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
-          </example>
-          There, we read a dataset from a CSV file into a pandas dataframe 
-          which afterwards is converted to a numpy array and then handed
-          over to the <quote>provide_dataset</quote> function of the model
-          interface. Naturally, if the dataset is present in memory, it can be
-          given right away and we do not need to parse a CSV file.
-        </para>
-      </section>
-        
-      <section xml:id="reference.python_general_nn_usage.note_batching">
-      <title xml:id="reference.python_general_nn_usage.note_batching.title">A note on batching</title>
-        <para>If you want to evaluate your dataset in batches, there are two
-        notes to give: </para>
-        <para>First, the parameter <quote>batch_size</quote> controls
-        the size of the randomly chosen subset of the dataset on which the loss
-        function is evaluated at the next call.</para>
-        <para>Second, <quote>max_steps</quote> controls how many (internal) 
-        copies of the dataset are created. Once every batch of every copy has 
-        been delivered, the Dataset will signal this with an exceotions and stop. 
-        This can be overcome by either calling
-          <example xml:id="quickstart.python_general_nn_usage.reset_dataset.example">
-            <title>Reset dataset iterator to beginning</title>
-            <programlisting><xi:include  href="python/general_nn/reset_dataset.py"  parse="text"  
-        xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
-          </example>
-          which will simply reset the iterator.</para>
-          <para>Another approach is to tell the model right-away that we do not
-          care when the dataset ends, i.e. to reset automatically.</para>
-          <example xml:id="quickstart.python_general_nn_usage.reset_dataset_auto.example">
-            <title>Set the input pipeline for automatic reset</title>
-            <programlisting><xi:include  href="python/general_nn/reset_dataset_auto.py"  parse="text"  
-        xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
-          </example>
-          <para>Now, what is this <quote>input_pipeline.next_batch()</quote>
-          you might wonder. We'll come to this, when we finally evaluate the 
-          loss.</para>
-      </section>
+      <section xml:id="reference.python_general_nn_usage.setup">
+      <title xml:id="reference.python_general_nn_usage.setup.title">Setup</title>
+      <para>Let's first look at how to set up the neural network and supply it
+      with a dataset.
+      </para>
       
-      <section xml:id="reference.python_general_nn_usage.requesting_parameters">
-      <title xml:id="reference.python_general_nn_usage.requesting_parameters.title">Requesting parameters</title>
-        <para>Once the neural network is set up and the dataset is provided, we
-        come closer to actually allowing to evaluate the network. But first, let
-        us look at the initially random parameters.</para>
-        <example xml:id="quickstart.python_general_nn_usage.requesting_parameters.example">
-          <title>Requesting the parameters of the network</title>
-          <programlisting><xi:include  href="python/general_nn/requesting_parameters.py"  parse="text"  
-      xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
-        </example>
-        <para>As you see in the example, there are two entities in model that
-        contain representations to the weights and biases of the neural 
-        network. Calling <quote>evaluate()</quote> on these, for which the
-        "session" object of tensorflow is required, which is also an entity in
-        the model, will return arrays with their values.</para>
-      </section>
+        <section xml:id="reference.python_general_nn_usage.setup.setting_up_network">
+        <title xml:id="reference.python_general_nn_usage.setup.setting_up_network.title">Setting up the network</title>
+          <para>Let's first create a neural network. At the moment of writing 
+          <productname>TATi</productname> is constrained to multi-layer perceptrons
+          but this will soon be extened to convolutational and other networks.</para>
+          <para>Multi-layer perceptrons are characterized by the number of layers, 
+          the number of nodes per layer and the output function used in each node.</para>
+            <example xml:id="quickstart.python_general_nn_usage.setup.setting_up_network.example">
+              <title>Setting up a multi-layer perceptrons</title>
+              <programlisting><xi:include  href="python/general_nn/setting_up_network.py"  parse="text"  
+          xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
+            </example>
+          <para>In the above example, we specify a neural network of two hidden 
+          layers, each having 8 nodes. We use the "rectified linear" activation 
+          function for these nodes. The output nodes are activated by a linear 
+          function.</para>
+          <note>At the moment it is not possible to set different activation
+          functions for individual nodes or between hidden layers.</note>
+          <para>For a full (and up-to-date) list of all available activation 
+          functions, please look at TATi/models/model.py, <quote>get_activations()</quote>.
+          <note>Note that creating the <quote>tati_model</quote> instance "model"
+          will always reset the computational graph of tensorflow in case you 
+          need to add nodes.</note>
+          </para>
+        </section>
 
-      <section xml:id="reference.python_general_nn_usage.setting_parameters">
-      <title xml:id="reference.python_general_nn_usage.setting_parameters.title">Setting parameters</title>
-        <para>In the last section, we have already seen that there are 
-        <quote>weights</quote> and <quote>biases</quote> entities in the model
-        that allow accessing their current value. They can also be used to set 
-        them. However, there is actually a convenience function in model that
-        allows to set both at the same time from a single array (of the correct
-        size).</para>
-        <example xml:id="quickstart.python_general_nn_usage.setting_parameters.example">
-          <title>Setting parameters of the network</title>
-          <programlisting><xi:include  href="python/general_nn/setting_parameters.py"  parse="text"  
-      xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
-        </example>
-        <para>Here, we create the numpy array filled with zeros by requesting the
-        total number of weight and bias degrees of freedom, i.e. the number of
-        parameters of the network. Afterwards, 
-        <quote>assign_neural_network_parameters()</quote> is used to put these
-        into the neural network.</para>
+        <section xml:id="reference.python_general_nn_usage.setup.supply_dataset">
+        <title xml:id="reference.python_general_nn_usage.setup.supply_dataset.title">Supply dataset as array</title>
+          <para>As a next step, we need to supply a dataset. This dataset will
+          also necessitate a certain amount of input and output nodes.</para>
+          <note>At the moment only classification datasets can be setup.</note>
+          <para>There are basically two ways of supplying the dataset:
+          <itemizedlist>
+            <listitem>from a CSV file</listitem>
+            <listitem>from an internal (numpy) array</listitem>
+          </itemizedlist>
+          We will give examples for both ways here.</para>
+          <example xml:id="quickstart.python_general_nn_usage.setup.supply_dataset_csv.example">
+            <title>Supplying a dataset from file</title>
+            <programlisting><xi:include  href="python/general_nn/supply_dataset_csv.py"  parse="text"  
+        xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
+          </example>
+          <para>The <quote>batch_data_files</quote> always needs to be a list
+          as multiple files may be given. <quote>batch_data_file_type</quote> gives
+          the type of the files. Currently "csv" and "tfrecord" are supported
+          choices.</para>
+          <para>Note that you can combine the "additional" <quote>FLAGS</quote>
+          given for specifying the data set files with the ones characterizing
+          the neural network above. In that case you do not need to call
+          <quote>reset_parameters</quote>. For a full (and up-to-date list
+          please refer to TATi/models/model.py, function <quote>add_losses()</quote>.
+          </para>
+          <para>We repeat the example given in <xref linkend="quickstart.python.sampling.supply_dataset"/>.
+            <example xml:id="quickstart.python_general_nn_usage.setup.supply_dataset_array.example">
+              <title>Supplying a dataset from an array</title>
+              <programlisting><xi:include  href="python/general_nn/supply_dataset_array.py"  parse="text"  
+          xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
+            </example>
+            There, we read a dataset from a CSV file into a pandas dataframe 
+            which afterwards is converted to a numpy array and then handed
+            over to the <quote>provide_dataset</quote> function of the model
+            interface. Naturally, if the dataset is present in memory, it can be
+            given right away and we do not need to parse a CSV file.
+          </para>
+        </section>
+          
+        <section xml:id="reference.python_general_nn_usage.setup.note_batching">
+        <title xml:id="reference.python_general_nn_usage.setup.note_batching.title">A note on batching</title>
+          <para>If you want to evaluate your dataset in batches, there are two
+          notes to give: </para>
+          <para>First, the parameter <quote>batch_size</quote> controls
+          the size of the randomly chosen subset of the dataset on which the loss
+          function is evaluated at the next call.</para>
+          <para>Second, <quote>max_steps</quote> controls how many (internal) 
+          copies of the dataset are created. Once every batch of every copy has 
+          been delivered, the Dataset will signal this with an exceotions and stop. 
+          This can be overcome by either calling
+            <example xml:id="quickstart.python_general_nn_usage.setup.reset_dataset.example">
+              <title>Reset dataset iterator to beginning</title>
+              <programlisting><xi:include  href="python/general_nn/reset_dataset.py"  parse="text"  
+          xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
+            </example>
+            which will simply reset the iterator.</para>
+            <para>Another approach is to tell the model right-away that we do not
+            care when the dataset ends, i.e. to reset automatically.</para>
+            <example xml:id="quickstart.python_general_nn_usage.setup.reset_dataset_auto.example">
+              <title>Set the input pipeline for automatic reset</title>
+              <programlisting><xi:include  href="python/general_nn/reset_dataset_auto.py"  parse="text"  
+          xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
+            </example>
+            <para>Now, what is this <quote>input_pipeline.next_batch()</quote>
+            you might wonder. We'll come to this, when we finally evaluate the 
+            loss.</para>
+        </section>
+        
       </section>
+      <section xml:id="reference.python_general_nn_usage.parameters">
+      <title xml:id="reference.python_general_nn_usage.parameters.title">Parameters</title>
+      <para>Next, we look at how to inspect and modify the neural network's 
+      parameters.
+      </para>
+        
+        <section xml:id="reference.python_general_nn_usage.parameters.requesting_parameters">
+        <title xml:id="reference.python_general_nn_usage.parameters.requesting_parameters.title">Requesting parameters</title>
+          <para>Once the neural network is set up and the dataset is provided, we
+          come closer to actually allowing to evaluate the network. But first, let
+          us look at the initially random parameters.</para>
+          <example xml:id="quickstart.python_general_nn_usage.parameters.requesting_parameters.example">
+            <title>Requesting the parameters of the network</title>
+            <programlisting><xi:include  href="python/general_nn/requesting_parameters.py"  parse="text"  
+        xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
+          </example>
+          <para>As you see in the example, there are two entities in model that
+          contain representations to the weights and biases of the neural 
+          network. Calling <quote>evaluate()</quote> on these, for which the
+          "session" object of tensorflow is required, which is also an entity in
+          the model, will return arrays with their values.</para>
+        </section>
 
-      <section xml:id="reference.python_general_nn_usage.evaluate_loss">
-      <title xml:id="reference.python_general_nn_usage.evaluate_loss.title">Evaluate loss</title>
-      <para>Now, all is set to actually evaluate the loss function for the 
-      first time As a default the mean squared distance is chosen as the loss
-      function. However, by setting the <quote>loss</quote> in the initial
-      parameters (<quote>FLAGS</quote>) appropriately, all other loss functions
-      that tensorflow offers are available, too.</para>
-        <example xml:id="quickstart.python_general_nn_usage.evaluate_loss.example">
-          <title>Evaluate the loss</title>
-          <programlisting><xi:include  href="python/general_nn/evaluate_loss.py"  parse="text"  
-      xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
-        </example>
-        <para>Here, we have to do two things: First, we set up a "feed_dict"
-        then we call <quote>run()</quote> of the "session" object in order to
-        evaluate the loss. Note that <quote>run()</quote> may be given a list
-        of nodes and returns a list of evaluations, ready for unpacking.</para>
-        <para>Note the two nodes that are turned from <quote>next_batch</quote>
-        from the input pipeline. These are nodes in the computational graph
-        of tensorflow that trigger reading the CSV file or feeding parts of
-        the internal array dataset into the graph. This "input_pipeline" 
-        controls the flow of the dataset into the neural network.</para>
+        <section xml:id="reference.python_general_nn_usage.parameters.setting_parameters">
+        <title xml:id="reference.python_general_nn_usage.parameters.setting_parameters.title">Setting parameters</title>
+          <para>In the last section, we have already seen that there are 
+          <quote>weights</quote> and <quote>biases</quote> entities in the model
+          that allow accessing their current value. They can also be used to set 
+          them. However, there is actually a convenience function in model that
+          allows to set both at the same time from a single array (of the correct
+          size).</para>
+          <example xml:id="quickstart.python_general_nn_usage.parameters.setting_parameters.example">
+            <title>Setting parameters of the network</title>
+            <programlisting><xi:include  href="python/general_nn/setting_parameters.py"  parse="text"  
+        xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
+          </example>
+          <para>Here, we create the numpy array filled with zeros by requesting the
+          total number of weight and bias degrees of freedom, i.e. the number of
+          parameters of the network. Afterwards, 
+          <quote>assign_neural_network_parameters()</quote> is used to put these
+          into the neural network.</para>
+        </section>
+        
       </section>
+      <section xml:id="reference.python_general_nn_usage.evaluation">
+      <title xml:id="reference.python_general_nn_usage.evaluation.title">Evaluation</title>
+      <para>Now, we are in the position to evaluate our neural network.</para>
 
-      <section xml:id="reference.python_general_nn_usage.evaluate_gradients">
-      <title xml:id="reference.python_general_nn_usage.evaluate_gradients.title">Evaluate gradients</title>
-      <para>Gradient information is similarly important as the loss function
-      itself.</para>
-        <example xml:id="quickstart.python_general_nn_usage.evaluate_gradients.example">
-          <title>Evaluate the loss</title>
-          <programlisting><xi:include  href="python/general_nn/evaluate_gradients.py"  parse="text"  
-      xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
-        </example>
-        <para>Remember that all parameters are vectorized, hence, the
-        <quote>gradients_eval</quote> object returned is actually a numpy
-        array containing per component the gradient with respect to the 
-        specific parameter.</para>
-        <para>The procedure is very similar, the only diffence is that we
-        evaluate another node. Keep in mind that <quote>run()</quote> may
-        be given list of nodes, i.e. loss and gradients can be evaluated at
-        the same time!</para>
+        <section xml:id="reference.python_general_nn_usage.evaluate_loss">
+        <title xml:id="reference.python_general_nn_usage.evaluate_loss.title">Evaluate loss</title>
+        <para>Now, all is set to actually evaluate the loss function for the 
+        first time As a default the mean squared distance is chosen as the loss
+        function. However, by setting the <quote>loss</quote> in the initial
+        parameters (<quote>FLAGS</quote>) appropriately, all other loss functions
+        that tensorflow offers are available, too.</para>
+          <example xml:id="quickstart.python_general_nn_usage.evaluate_loss.example">
+            <title>Evaluate the loss</title>
+            <programlisting><xi:include  href="python/general_nn/evaluate_loss.py"  parse="text"  
+        xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
+          </example>
+          <para>Here, we have to do two things: First, we set up a "feed_dict"
+          then we call <quote>run()</quote> of the "session" object in order to
+          evaluate the loss. Note that <quote>run()</quote> may be given a list
+          of nodes and returns a list of evaluations, ready for unpacking.</para>
+          <para>Note the two nodes that are turned from <quote>next_batch</quote>
+          from the input pipeline. These are nodes in the computational graph
+          of tensorflow that trigger reading the CSV file or feeding parts of
+          the internal array dataset into the graph. This "input_pipeline" 
+          controls the flow of the dataset into the neural network.</para>
+        </section>
+
+        <section xml:id="reference.python_general_nn_usage.evaluate_gradients">
+        <title xml:id="reference.python_general_nn_usage.evaluate_gradients.title">Evaluate gradients</title>
+        <para>Gradient information is similarly important as the loss function
+        itself.</para>
+          <example xml:id="quickstart.python_general_nn_usage.evaluate_gradients.example">
+            <title>Evaluate the loss</title>
+            <programlisting><xi:include  href="python/general_nn/evaluate_gradients.py"  parse="text"  
+        xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
+          </example>
+          <para>Remember that all parameters are vectorized, hence, the
+          <quote>gradients_eval</quote> object returned is actually a numpy
+          array containing per component the gradient with respect to the 
+          specific parameter.</para>
+          <para>The procedure is very similar, the only diffence is that we
+          evaluate another node. Keep in mind that <quote>run()</quote> may
+          be given list of nodes, i.e. loss and gradients can be evaluated at
+          the same time!</para>
+        </section>
+
+        <section xml:id="reference.python_general_nn_usage.evaluate_hessians">
+        <title xml:id="reference.python_general_nn_usage.evaluate_hessians.title">Evaluate Hessians</title>
+        <para>Apart from gradient information hessians are also available.
+        Note however that hessians are both very expensive to compute and to
+        setup as many nodes needed to be added to the computational graph. 
+        Therefore, in the initial parameters (<quote>FLAGS</quote>) you need
+        to explicitly state <quote>do_hessians=True</quote> in order to activate
+        their creation before <quote>init_network()</quote> is called!</para>
+          <example xml:id="quickstart.python_general_nn_usage.evaluate_hessians.example">
+            <title>Evaluate the loss</title>
+            <programlisting><xi:include  href="python/general_nn/evaluate_hessians.py"  parse="text"  
+        xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
+          </example>
+          <para>Remember that all parameters are vectorized, hence, the
+          <quote>gradients_eval</quote> object returned is actually a numpy
+          array containing per component the gradient with respect to the 
+          specific parameter.</para>
+          <para>The procedure is very similar, the only diffence is that we
+          evaluate another node. Keep in mind that <quote>run()</quote> may
+          be given list of nodes, i.e. loss and gradients can be evaluated at
+          the same time!</para>
+        </section>
+
+
+        <section xml:id="reference.python_general_nn_usage.evaluate_accuracy">
+        <title xml:id="reference.python_general_nn_usage.evaluate_accuracy.title">Evaluate accuracy</title>
+          <para>Evaluating accuracy is as simple as evaluating the loss. It's
+          just another node.</para>
+          <example xml:id="quickstart.python_general_nn_usage.evaluate_accuracy.example">
+            <title>Evaluate accuracy</title>
+            <programlisting><xi:include  href="python/general_nn/evaluate_accuracy.py"  parse="text"  
+        xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
+          </example>
+        </section>
+
+        <section xml:id="reference.python_general_nn_usage.evaluate_predictions">
+        <title xml:id="reference.python_general_nn_usage.evaluate_predictions.title">Evaluate predicted labels</title>
+          <para>Naturally, obtaining the predictions is now just as simple.</para>
+          <example xml:id="quickstart.python_general_nn_usageevaluate_accuracy.example">
+            <title>Evaluate accuracy</title>
+            <programlisting><xi:include  href="python/general_nn/evaluate_accuracy.py"  parse="text"  
+        xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
+          </example>
+          <para>Note that omitted specifying <quote>labels</quote> in the
+          <quote>feed_dict</quote> as they are not need for evaluating the
+          predictions.</para>
+        </section>
+        
       </section>
+      <section xml:id="reference.python_general_nn_usage.datasets">
+      <title xml:id="reference.python_general_nn_usage.datasets.title">Datasets</title>
+      <para>Last but not least, how to change the dataset when it was already 
+      specified?</para>
 
-      <section xml:id="reference.python_general_nn_usage.evaluate_hessians">
-      <title xml:id="reference.python_general_nn_usage.evaluate_hessians.title">Evaluate Hessians</title>
-      <para>Apart from gradient information hessians are also available.
-      Note however that hessians are both very expensive to compute and to
-      setup as many nodes needed to be added to the computational graph. 
-      Therefore, in the initial parameters (<quote>FLAGS</quote>) you need
-      to explicitly state <quote>do_hessians=True</quote> in order to activate
-      their creation before <quote>init_network()</quote> is called!</para>
-        <example xml:id="quickstart.python_general_nn_usage.evaluate_hessians.example">
-          <title>Evaluate the loss</title>
-          <programlisting><xi:include  href="python/general_nn/evaluate_hessians.py"  parse="text"  
-      xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
-        </example>
-        <para>Remember that all parameters are vectorized, hence, the
-        <quote>gradients_eval</quote> object returned is actually a numpy
-        array containing per component the gradient with respect to the 
-        specific parameter.</para>
-        <para>The procedure is very similar, the only diffence is that we
-        evaluate another node. Keep in mind that <quote>run()</quote> may
-        be given list of nodes, i.e. loss and gradients can be evaluated at
-        the same time!</para>
-      </section>
+        <section xml:id="reference.python_general_nn_usage.change_dataset">
+        <title xml:id="reference.python_general_nn_usage.change_dataset.title">Change the dataset</title>
+          <para>Note all evaluating takes place on the same dataset, once a 
+          network is trained, we might want to see its performance on a test
+          or validation dataset or we might want to see its predictions on an
+          altogether different dataset (which does not have any labels).</para>
+          <para>There are again two different ways because of the two different
+          modes of feeding the dataset: from file and from an array.</para>
+          <example xml:id="quickstart.python_general_nn_usage.change_dataset_csv.example">
+            <title>Change the dataset to read from a CSV file</title>
+            <programlisting><xi:include  href="python/general_nn/change_dataset_csv.py"  parse="text"  
+        xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
+          </example>
+          <para>In the first example, we simply exchange the dataset file(s)
+          in the parameters structure and call <quote>create_input_pipeline</quote>
+          which will reset the internal input pipeline on using the newly given 
+          files.</para>
+          <example xml:id="quickstart.python_general_nn_usage.change_dataset_array.example">
+            <title>Change the dataset to an internal array</title>
+            <programlisting><xi:include  href="python/general_nn/change_dataset_array.py"  parse="text"  
+        xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
+          </example>
+          <para>When switching to (another) dataset from an internal numpy
+          array, then we simply need to call <quote>provide_dataset()</quote>
+          which will reset the internal input pipeline.</para>
+          <note>Note that if you need this dataset only for predictions, then
+          simply given a vector of zeros of the respective size as labels. They 
+          will not be evaluated for the predictions.</note>
+          <note>You must not change the input or output dimension as the 
+          network itself is fixed.</note>
+          <note>Note that changing the dataset actually modifies some nodes in
+          Tensorflow's computational graph. This principally makes things a bit
+          slower as the session object has already been created. Simply keep
+          this in mind if slowness is suddenly bothering. Otherwise you can
+          ignore it.</note>
+        </section>
 
-      <section xml:id="reference.python_general_nn_usage.change_dataset">
-      <title xml:id="reference.python_general_nn_usage.change_dataset.title">Change the dataset</title>
-        <para>Note all evaluating takes place on the same dataset, once a 
-        network is trained, we might want to see its performance on a test
-        or validation dataset or we might want to see its predictions on an
-        altogether different dataset (which does not have any labels).</para>
-        <para>There are again two different ways because of the two different
-        modes of feeding the dataset: from file and from an array.</para>
-        <example xml:id="quickstart.python_general_nn_usage.change_dataset_csv.example">
-          <title>Change the dataset to read from a CSV file</title>
-          <programlisting><xi:include  href="python/general_nn/change_dataset_csv.py"  parse="text"  
-      xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
-        </example>
-        <para>In the first example, we simply exchange the dataset file(s)
-        in the parameters structure and call <quote>create_input_pipeline</quote>
-        which will reset the internal input pipeline on using the newly given 
-        files.</para>
-        <example xml:id="quickstart.python_general_nn_usage.change_dataset_array.example">
-          <title>Change the dataset to an internal array</title>
-          <programlisting><xi:include  href="python/general_nn/change_dataset_array.py"  parse="text"  
-      xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
-        </example>
-        <para>When switching to (another) dataset from an internal numpy
-        array, then we simply need to call <quote>provide_dataset()</quote>
-        which will reset the internal input pipeline.</para>
-        <note>Note that if you need this dataset only for predictions, then
-        simply given a vector of zeros of the respective size as labels. They 
-        will not be evaluated for the predictions.</note>
-        <note>You must not change the input or output dimension as the 
-        network itself is fixed.</note>
-        <note>Note that changing the dataset actually modifies some nodes in
-        Tensorflow's computational graph. This principally makes things a bit
-        slower as the session object has already been created. Simply keep
-        this in mind if slowness is suddenly bothering. Otherwise you can
-        ignore it.</note>
-      </section>
-
-      <section xml:id="reference.python_general_nn_usage.evaluate_accuracy">
-      <title xml:id="reference.python_general_nn_usage.evaluate_accuracy.title">Evaluate accuracy</title>
-        <para>Evaluating accuracy is as simple as evaluating the loss. It's
-        just another node.</para>
-        <example xml:id="quickstart.python_general_nn_usage.evaluate_accuracy.example">
-          <title>Evaluate accuracy</title>
-          <programlisting><xi:include  href="python/general_nn/evaluate_accuracy.py"  parse="text"  
-      xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
-        </example>
-      </section>
-
-      <section xml:id="reference.python_general_nn_usage.evaluate_predictions">
-      <title xml:id="reference.python_general_nn_usage.evaluate_predictions.title">Evaluate predicted labels</title>
-        <para>Naturally, obtaining the predictions is now just as simple.</para>
-        <example xml:id="quickstart.python_general_nn_usageevaluate_accuracy.example">
-          <title>Evaluate accuracy</title>
-          <programlisting><xi:include  href="python/general_nn/evaluate_accuracy.py"  parse="text"  
-      xmlns:xi="http://www.w3.org/2001/XInclude"/></programlisting>
-        </example>
-        <para>Note that omitted specifying <quote>labels</quote> in the
-        <quote>feed_dict</quote> as they are not need for evaluating the
-        predictions.</para>
       </section>
       
       <para>This is all for the moment.</para>
