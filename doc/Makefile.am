@@ -36,6 +36,7 @@ PYTHON_EXAMPLES = \
 
 XSLTPROC=xsltproc
 XSLTPROC_FLAGS=@XSLTPROC_FLAGS@ \
+	--stringparam section.autolabel 1 \
 	--stringparam paper.type A4 \
 	--stringparam glossentry.show.acronym 1 \
 	--stringparam glossary.auto.link 1 \
