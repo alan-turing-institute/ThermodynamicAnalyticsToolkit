@@ -11,7 +11,7 @@ import numpy.polynomial.legendre as legendre
 from TATi.models.basetype import dds_basetype
 from TATi.samplers.geometriclangevinalgorithmfirstordersampler import GeometricLangevinAlgorithmFirstOrderSampler
 
-class InfiniteSwitchSimulatedTemperingSampler(GLAFirstOrderMomentumSampler):
+class InfiniteSwitchSimulatedTemperingSampler(GeometricLangevinAlgorithmFirstOrderSampler):
     """ Implements an Accalerated Geometric Langevin Algorithm Momentum Sampler
     in the form of a TensorFlow Optimizer, overriding tensorflow.python.training.Optimizer.
 
@@ -52,66 +52,73 @@ class InfiniteSwitchSimulatedTemperingSampler(GLAFirstOrderMomentumSampler):
         Gweight = np.multiply(0.5*(b-a),weights)
 
         # convert the numpy arrays into tensors
-        self.isst_beta = ops.convert_to_tensor(Beta, dtype=tf.float64, name="isst_beta")
-        self.gauss_weight = ops.convert_to_tensor(Gweight, dtype=tf.float64, name="gauss_weight")
+        self._isst_beta = ops.convert_to_tensor(Beta, dtype=dds_basetype, name="isst_beta")
+        self._gauss_weight = ops.convert_to_tensor(Gweight, dtype=dds_basetype, name="gauss_weight")
         
         # intialise the isst average
-        self.isst_average = tf.zeros([1,number_of_temperatures], dtype=tf.float64, name="isst_average")
-        
+        self._isst_average = tf.get_variable(shape=[number_of_temperatures],
+                                             dtype=dds_basetype,
+                                             name='isst_average',
+                                             initializer=tf.zeros_initializer)        
+
         # initialise the isst weights
-        self.isst_weight = tf.ones([1,number_of_temperatures], dtype=tf.float64, name="isst_weight")
+        self._isst_weight = tf.get_variable(shape=[number_of_temperatures],
+                                            dtype=dds_basetype,
+                                            name='isst_weight',
+                                            initializer=tf.ones_initializer)
 
         # calculate scaling and reshape to scalar
-        WeightMul = tf.reshape(tf.reduce_sum(tf.multiply(self.gauss_weight,self.isst_weight),1),shape=[])
+        WeightMul = tf.reduce_sum(tf.multiply(self._gauss_weight,self._isst_weight),0)
 
         # resecale the weights
-        self.isst_weight=tf.scalar_mul(1.0/WeightMul,self.isst_weight)
-
-        sess=tf.Session()
-        print(sess.run(self.isst_weight))
-        
+        tf.assign(self._isst_weight,tf.scalar_mul(1.0/WeightMul,self._isst_weight))
         
         # convert alpha into a tensor if given as a float 
         self._alpha_constant = ops.convert_to_tensor(self._alpha_constant, name="alpha_constant")
 
-        # initialise the force scaling
-        self.thermal_scaling = tf.Variable(0.0, dtype=tf.float64, name="thermal_scaling")
-
         # initialise the step index used to calculate the mean
-        self.step_index = 0
+        self._step_index = 0
         
-    def _update_force_rescaling(self,potential):
+    def _get_force_rescaling(self,loss):
         """ Updates the force rescaling needed to rescale the force with 
         to perform the integration.
         """
-        expV = tf.exp(tf.scalar_mul(potential,self.isst_beta))
-                
-        BarNumSum = tf.tensordot(tf.multiply(self.gauss_weight,self.isst_beta), tf.multiply(self.isst_weight,expV), 1)
-        BarDeNumSum = tf.tensordot(self.gauss_weight,tf.multiply(self.isst_weight,expV),1)
+        expV = tf.exp(tf.scalar_mul(loss,self._isst_beta))
 
-        tf.assign(self.thermal_scaling, BarNumSum / (self._inverse_temperature * BarDeNumSum))
+        BarNumSum = tf.reduce_sum(tf.multiply(tf.multiply(self._gauss_weight,self._isst_beta),
+                                              tf.multiply(self._isst_weight,expV)))
+        BarDeNumSum = tf.reduce_sum(tf.multiply(self._gauss_weight,
+                                                tf.multiply(self._isst_weight,expV)))
+        thermal_scaling = 0.0
+        
+        tf.assign(thermal_scaling, BarNumSum / (self._inverse_temperature * BarDeNumSum))
 
-    def _update_learn_weights(self,potential):
+        return thermal_scaling
+        
+    def _update_learn_weights(self,loss):
         """ Updates the isst_weights stored in the InfiniteSwitchSimulatedTemperingSampler
         class. 
         """
         # update the step index counter
-        self.step_index = self.step_index + 1 
-        
-        expV = tf.exp(tf.scalar_mul(potential,self.isst_beta))
-        BarDeNumSum = tf.tensordot(self.gauss_weight,tf.multiply(self.isst_weight,expV),1)
+        self._step_index = self._step_index + 1 
 
-        # update the average
-        tf.assing_add(self.isst_average,tf.scalar_mul(expV,1.0/BarDeNumSum))
+        expV = tf.exp(tf.scalar_mul(loss, self._isst_beta))
+        BarDeNumSum = tf.reduce_sum(tf.multiply(self._gauss_weight,
+                                                tf.multiply(self._isst_weight, expV)))
+
+        # add the the running average
+        tf.assign_add(self._isst_average,tf.scalar_mul(1.0/BarDeNumSum,expV))
 
         # calculate the inverse weights
-        tf.assign(self.isst_weight,tf.reciprocal(tf.add(tf.scalar_mul(1.0-self._alpha_constat * step_width_t, tf.reciprocal(self.isst_weight)), tf.scalar_mul(1.0/self.step_index, self.isst_average))))
+        tf.assign(self._isst_weight,tf.reciprocal(tf.add(tf.scalar_mul(1.0-self._alpha_constant * self._step_width,
+                                                                       tf.reciprocal(self._isst_weight)),
+                                                         tf.scalar_mul(1.0/self._step_index, self._isst_average))))
         
         # calculate scaling
-        WeightMul = tf.reduce_sum(tf.multiply(self.gauss_weight,self.isst_weight),0)
+        WeightMul = tf.reduce_sum(tf.multiply(self._gauss_weight,self._isst_weight),0)
         
         # resecale the weights
-        tf.assign(self.isst_weight,tf.scalar_mul(1.0/WeightMul,self.isst_weight))
+        tf.assign(self._isst_weight,tf.scalar_mul(1.0/WeightMul,self._isst_weight))
         
     def _apply_dense(self, grad, var):
         """ Adds nodes to TensorFlow's computational graph in the case of densely
@@ -119,7 +126,7 @@ class InfiniteSwitchSimulatedTemperingSampler(GLAFirstOrderMomentumSampler):
 
         BAOAB:
             --- force calc
-            next_pn = B(tilde_half_pn, next_gn, h/2)
+            next_pn = B(tilde_half_pn, next_qn, h/2)
             --- calc kinetic energy, calc loss: next_qn -> qn, next_pn -> pn, next_gn -> gn
             half_pn = B(pn, gn, h/2)
             half_qn = A(qn, half_pn, h/2)
@@ -136,28 +143,28 @@ class InfiniteSwitchSimulatedTemperingSampler(GLAFirstOrderMomentumSampler):
         # tilde_half_pn = p^{n}
         momentum = self.get_slot(var, "momentum")
 
-        scaled_gradient = step_width_t * grad
+        # senare - this might not be the right place nor order
+        #
+        ##_____ ISST _____##
+
+        # get the loss scalar
+        with tf.variable_scope("accumulate", reuse=True):
+            loss = tf.get_variable("old_loss", dtype=dds_basetype)
+            
+        # updates the weight learning held by the class
+        self._update_learn_weights(loss)
+
+        # get's the isst_scaling which is a scalar
+        isst_scaling = self._get_force_rescaling(loss)
+
+        ##_____ ISST _____##
+        
+        scaled_gradient = step_width_t * isst_scaling * grad
 
         # next_pn = B(tilde_half_pn, next_gn, h / 2)
         momentum_half_step_t = momentum - 0.5 * scaled_gradient
 
         # --- calc kinetic energy: next_qn -> qn, next_pn -> pn, next_gn -> gn
-        # 1/2 * p^{n}^t * p^{n}
-        momentum_sq = 0.5 * tf.reduce_sum(tf.multiply(momentum_half_step_t, momentum_half_step_t))
-        with tf.variable_scope("accumulate", reuse=True):
-            kinetic_energy = tf.get_variable("kinetic", dtype=dds_basetype)
-            kinetic_energy_t = tf.assign_add(kinetic_energy, momentum_sq)
-
-        with tf.variable_scope("accumulate", reuse=True):
-            gradient_global = tf.get_variable("gradients", dtype=dds_basetype)
-            gradient_global_t = tf.assign_add(gradient_global, tf.reduce_sum(tf.multiply(scaled_gradient, scaled_gradient)))
-            # configurational temperature
-            virial_global = tf.get_variable("virials", dtype=dds_basetype)
-            virial_global_t = tf.assign_add(virial_global, tf.reduce_sum(tf.multiply(grad, var)))
-
-        with tf.variable_scope("accumulate", reuse=True):
-            momentum_global = tf.get_variable("momenta", dtype=dds_basetype)
-            momentum_global_t = tf.assign_add(momentum_global, tf.reduce_sum(tf.multiply(momentum_half_step_t, momentum_half_step_t)))
 
         # half_pn = B(pn, gn, h/2)
         momentum_full_step_t =  momentum_half_step_t - 0.5 * scaled_gradient
@@ -168,9 +175,12 @@ class InfiniteSwitchSimulatedTemperingSampler(GLAFirstOrderMomentumSampler):
         #tilde_half_pn = O(half_pn, rn, alpha1, zeta2)
         alpha_t = tf.exp(-friction_constant_t * step_width_t)
         scaled_noise = tf.sqrt((1.-tf.pow(alpha_t, 2))/inverse_temperature_t) * random_noise_t
+
         with tf.variable_scope("accumulate", reuse=True):
             noise_global = tf.get_variable("noise", dtype=dds_basetype)
-            noise_global_t = tf.assign_add(noise_global, tf.pow(alpha_t, -2)*tf.reduce_sum(tf.multiply(scaled_noise, scaled_noise)))
+            noise_global_t = tf.assign_add(noise_global, tf.pow(alpha_t, -2) *
+                                           tf.reduce_sum(tf.multiply(scaled_noise, scaled_noise)))
+        
         momentum_noise_step_t = alpha_t * momentum_full_step_t + scaled_noise
 
         # next_qn = A(half_qn, tilde_half_pn, h / 2)
@@ -181,19 +191,25 @@ class InfiniteSwitchSimulatedTemperingSampler(GLAFirstOrderMomentumSampler):
         prior_force = step_width_t * (ub_repell + lb_repell)
 
         # make sure virial and gradients are evaluated before we update variables
-        with tf.control_dependencies([virial_global_t, gradient_global_t]):
-            # assign parameters
-            var_update = state_ops.assign(var, position_full_step_t - prior_force)
+        #with tf.control_dependencies([virial_global_t, gradient_global_t]):
+        # assign parameters
+        var_update = state_ops.assign(var, position_full_step_t - prior_force)
 
         # assign moment to slot
-        with tf.control_dependencies([kinetic_energy_t]):
-            momentum_t = momentum.assign(momentum_noise_step_t)
+        #with tf.control_dependencies([kinetic_energy_t]):
+        momentum_t = momentum.assign(momentum_noise_step_t)
 
         # note: these are evaluated in any order, use control_dependencies if required
-        return control_flow_ops.group(*[gradient_global_t, virial_global_t,
-                                        noise_global_t, momentum_global_t,
-                                        kinetic_energy_t,
-                                        var_update, momentum_t])
+        return control_flow_ops.group(*[var_update, momentum_t])
 
-
-test = InfiniteSwitchSimulatedTemperingSampler(0.1,1.0,1.0,3.0,100,1.0)
+    def _apply_sparse(self, grad, var):
+        """ Adds nodes to TensorFlow's computational graph in the case of sparsely
+        occupied tensors to perform the actual sampling.
+        
+        Note that this is not implemented so far.
+        
+        :param grad: gradient nodes, i.e. they contain the gradient per parameter in `var`
+        :param var: parameters of the neural network
+        :return: a group of operations to be added to the graph
+        """
+        raise NotImplementedError("Sparse gradient updates are not supported.")
