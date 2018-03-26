@@ -251,6 +251,7 @@ class model:
 
     @staticmethod
     def setup_parameters(
+            alpha=1.,
             averages_file=None,
             batch_data_files=[],
             batch_data_file_type="csv",
@@ -269,9 +270,11 @@ class model:
             inter_ops_threads=1,
             intra_ops_threads=None,
             inverse_temperature=1.,
+            inverse_temperature_max=1.,
             loss="mean_squared",
             max_steps=1000,
             number_of_eigenvalues=4,
+            number_of_temperatures=10,
             hamiltonian_dynamics_time=10,
             optimizer="GradientDescent",
             output_activation="tanh",
@@ -292,6 +295,7 @@ class model:
             use_reweighting=False,
             verbose=0):
             return MockFlags(
+                alpha=alpha,
                 averages_file=averages_file,
                 batch_data_files=batch_data_files,
                 batch_data_file_type=batch_data_file_type,
@@ -310,9 +314,11 @@ class model:
                 inter_ops_threads=inter_ops_threads,
                 intra_ops_threads=intra_ops_threads,
                 inverse_temperature=inverse_temperature,
+                inverse_temperature_max=inverse_temperature_max,
                 loss=loss,
                 max_steps=max_steps,
                 number_of_eigenvalues=number_of_eigenvalues,
+                number_of_temperatures=number_of_temperatures,
                 hamiltonian_dynamics_time=hamiltonian_dynamics_time,
                 optimizer=optimizer,
                 output_activation=output_activation,

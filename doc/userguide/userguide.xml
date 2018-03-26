@@ -1243,6 +1243,7 @@ sys.path.insert(1,"&lt;path_to_TATi&gt;/lib/python3.5/site-packages/")</programl
     written to file. This will raise an error as the file will contain too few
     values.</note>
   </section>
+
   <section xml:id="reference.samplers">
     <title xml:id="reference.samplers.title">Samplers</title>
     <para>Samplers are at the core of all exploration. In this section we will
@@ -1253,6 +1254,7 @@ sys.path.insert(1,"&lt;path_to_TATi&gt;/lib/python3.5/site-packages/")</programl
     recommend BAOAB at the moment as it is the most accurate with second order
     convergence for average values over the step width size and even fourth
     order in the high-friction limit.</para>
+
     <section xml:id="reference.samplers.sgld">
       <title xml:id="reference.samplers.sgld.title">Stochastic Gradient Langevin Dynamics</title>
       <para>The 
@@ -1271,6 +1273,7 @@ sys.path.insert(1,"&lt;path_to_TATi&gt;/lib/python3.5/site-packages/")</programl
       <command>step_width</command> needs to be small enough with respect
       to the gradient sizes of your problem.</note>
     </section>
+
     <section xml:id="reference.samplers.gla">
       <title xml:id="reference.samplers.gla.title">Geometric Langevin Algorithms</title>
       <para><firstterm linkend="GLA">GLA</firstterm> results from a first-order splitting
@@ -1289,6 +1292,17 @@ sys.path.insert(1,"&lt;path_to_TATi&gt;/lib/python3.5/site-packages/")</programl
       and need to be find by try&amp;error and the moment.</para>
       </note>
     </section>
+
+    <section xml:id="reference.samplers.isst">
+      <title xml:id="reference.samplers.isst.title">Infinite Switch Simulated Tempering</title>
+      <para><firstterm linkend="ISST">ISST</firstterm> is an extension on the
+      Simulated Tempering Technique where basically all temperatures within
+      a given temperature interval is captured simultaneously. Thereby 
+      branching in the loss manifold can be observed as branches in the
+      loss-temperature plots.
+      </para>
+    </section>
+
     <section xml:id="reference.samplers.baoab">
       <title xml:id="reference.samplers.baoab.title">BAOAB</title>
       <para>BAOAB derives from the basic building blocks A (position update),
@@ -1301,6 +1315,7 @@ sys.path.insert(1,"&lt;path_to_TATi&gt;/lib/python3.5/site-packages/")</programl
       <note>BAOAB has the same two additional parameters as the 
       <xref linkend="reference.samplers.gla">GLAs</xref></note>
     </section>
+
     <section xml:id="reference.samplers.hmc">
       <title xml:id="reference.samplers.hmc.title">Hamiltonian Monte Carlo</title>
       <para><firstterm linkend="HMC">HMC</firstterm> is based on Hamiltonian
@@ -1310,6 +1325,7 @@ sys.path.insert(1,"&lt;path_to_TATi&gt;/lib/python3.5/site-packages/")</programl
       </para>
     </section>
   </section>
+
   <section xml:id="reference.exploring">
     <title xml:id="reference.exploring.title">Exploring the manifold</title>
     <para>still empty</para>

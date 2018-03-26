@@ -34,6 +34,16 @@
       samplers noise enters gradually in every step.</para>
     </glossdef>
   </glossentry>
+ 
+ <glossentry xml:id="ISST">
+    <glossterm xml:id="ISST.full">Infinite Switch Simulated Tempering
+    (<acronym xml:id="ISST.acronym">ISST</acronym>)</glossterm>
+    <glossdef>
+      <para>Extension of Simulated Tempering technique where in a given
+      temperature intervall all temperatures are captured simultaneously
+      for a given trajectory.</para>
+    </glossdef>
+  </glossentry>
   
   <glossentry xml:id="SGD">
     <glossterm xml:id="SGD.full">Stochastic Gradient Descent

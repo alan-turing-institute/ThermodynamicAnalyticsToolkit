@@ -221,14 +221,20 @@ def add_sampler_options_to_parser(parser):
     :param parser: argparse's parser object
     """
     # please adhere to alphabetical ordering
+    parser.add_argument('--alpha', type=float, default=1.,
+        help='')
     parser.add_argument('--friction_constant', type=float, default=0.,
         help='friction to scale the influence of momenta')
-    parser.add_argument('--inverse_temperature', type=float, default=1.,
-        help='Inverse temperature that scales the gradients')
     parser.add_argument('--hamiltonian_dynamics_time', type=float, default=10,
         help='Time (steps times step width) between HMC acceptance criterion evaluation')
+    parser.add_argument('--inverse_temperature', type=float, default=1.,
+        help='Inverse temperature that scales the gradients')
+    parser.add_argument('--inverse_temperature_max', type=float, default=1.,
+        help='')
     parser.add_argument('--max_steps', type=int, default=1000,
         help='Number of steps to run trainer.')
+    parser.add_argument('--number_of_temperatures', type=int, default=10,
+        help='')
     parser.add_argument('--sampler', type=str, default="GeometricLangevinAlgorithm_1stOrder",
         help='Choose the sampler to use for sampling: ' \
         + 'GeometricLangevinAlgorithm_1stOrder, GeometricLangevinAlgorithm_2ndOrder,' \

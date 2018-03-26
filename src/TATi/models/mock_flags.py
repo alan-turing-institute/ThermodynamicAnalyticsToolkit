@@ -5,6 +5,7 @@ class MockFlags:
     """
 
     def __init__(self,
+                 alpha=1.,
                  averages_file=None,
                  batch_data_files=[],
                  batch_data_file_type="csv",
@@ -24,9 +25,11 @@ class MockFlags:
                  inter_ops_threads=1,
                  intra_ops_threads=None,
                  inverse_temperature=1.,
+                 inverse_temperature_max=1.,
                  loss="mean_squared",
                  max_steps=1000,
                  number_of_eigenvalues=4,
+                 number_of_temperatures=10,
                  optimizer="GradientDescent",
                  output_activation="tanh",
                  output_dimension=1,
@@ -48,6 +51,7 @@ class MockFlags:
     ):
         """ Init function to set various default values.
 
+        :param alpha:
         :param averages_file: csv file name to write averages to
         :param batch_data_files: set of files to read input from
         :param batch_data_file_type: type of the files to read input from
@@ -67,9 +71,11 @@ class MockFlags:
         :param inter_ops_threads: size of thread pool used for independent ops
         :param intra_ops_threads: size of thread pool used for parallelizing an op
         :param inverse_temperature: Inverse temperature that scales the gradients
+        :param inverse_temperature_max:
         :param loss: Set the loss to be measured during sampling, e.g. mean_squared, log_loss, ...
         :param max_steps: Number of steps to run sampleer.
-        :param number_of_eigenvalues:
+        :param number_of_eigenvalues: number of eigenvalues for exploring manifold landscapes
+        :param number_of_temperatures:
         :param optimizer: Choose the optimizer to use for sampling: GradientDescent
         :param output_activation: Activation function to use for output layer: tanh, relu, linear
         :param output_dimension: number of output nodes/number of classes
@@ -89,6 +95,7 @@ class MockFlags:
         :param use_reweighting:
         :param verbose: how much (debugging) information to print
         """
+        self.alpha = alpha
         self.averages_file = averages_file
         self.batch_data_files = batch_data_files
         self.batch_data_file_type = batch_data_file_type
@@ -108,9 +115,11 @@ class MockFlags:
         self.inter_ops_threads = inter_ops_threads
         self.intra_ops_threads = intra_ops_threads
         self.inverse_temperature = inverse_temperature
+        self.inverse_temperature_max = inverse_temperature_max
         self.loss = loss
         self.max_steps = max_steps
         self.number_of_eigenvalues = number_of_eigenvalues
+        self.number_of_temperatures = number_of_temperatures
         self.hamiltonian_dynamics_time = hamiltonian_dynamics_time
         self.optimizer = optimizer
         self.output_activation = output_activation

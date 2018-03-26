@@ -9,6 +9,7 @@ from TATi.samplers.baoabsampler import BAOABSampler
 from TATi.samplers.geometriclangevinalgorithmfirstordersampler import GeometricLangevinAlgorithmFirstOrderSampler
 from TATi.samplers.geometriclangevinalgorithmsecondordersampler import GeometricLangevinAlgorithmSecondOrderSampler
 from TATi.samplers.hamiltonianmontecarlosampler import HamiltonianMonteCarloSampler
+from TATi.samplers.infinitswitchsimulatedtemperingsampler import InfiniteSwitchSimulatedTemperingSampler
 from TATi.samplers.gradientdescent import GradientDescent
 from TATi.samplers.stochasticgradientlangevindynamicssampler import StochasticGradientLangevinDynamicsSampler
 
@@ -190,7 +191,9 @@ class NeuralNetwork(object):
         tf.summary.scalar('accuracy', accuracy)
 
     def add_sample_method(self, loss, sampling_method, seed,
-                          prior):
+                          prior,
+                          inverse_temperature_max=None,
+                          number_of_temperatures=None, alpha_constant=None):
         """ Adds nodes for training the neural network.
 
         :param loss: node for the desired loss function to minimize during training
@@ -198,6 +201,9 @@ class NeuralNetwork(object):
         :param seed: seed value for the random number generator to obtain reproducible runs
         :param prior: dict with keys factor, lower_boundary and upper_boundary that
                 specifies a wall-repelling force to ensure a prior on the parameters
+        :param inverse_temperature_max:
+        :param number_of_temperatures:
+        :param alpha_constant:
         """
         # have this outside scope as it is used by both training and learning
         if 'global_step' not in self.summary_nodes.keys():
@@ -242,6 +248,10 @@ class NeuralNetwork(object):
                 sampler = HamiltonianMonteCarloSampler(step_width, inverse_temperature, current_step, next_eval_step, accept_seed=accept_seed, seed=seed)
             elif sampling_method == "BAOAB":
                 sampler = BAOABSampler(step_width, inverse_temperature, friction_constant, seed=seed)
+            elif sampling_method == "InfiniteSwitchSimulatedTempering":
+                sampler = InfiniteSwitchSimulatedTemperingSampler(step_width, inverse_temperature, friction_constant,
+                                                                  inverse_temperature_max, number_of_temperatures, alpha_constant,
+                                                                  seed=seed)
             else:
                 raise NotImplementedError("Unknown sampler")
             if len(prior) != 0:
