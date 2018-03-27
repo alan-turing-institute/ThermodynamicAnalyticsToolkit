@@ -4,7 +4,7 @@ TATI_samplers_PYTHON = \
 	geometriclangevinalgorithmfirstordersampler.py \
 	geometriclangevinalgorithmsecondordersampler.py \
 	hamiltonianmontecarlosampler.py \
-	infinitswitchsimulatedtemperingsampler.py \
+	infiniteswitchsimulatedtemperingsampler.py \
 	stochasticgradientlangevindynamicssampler.py \
 	__init__.py
 

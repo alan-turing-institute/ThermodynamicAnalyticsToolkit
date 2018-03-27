@@ -45,8 +45,8 @@ class InfiniteSwitchSimulatedTemperingSampler(GeometricLangevinAlgorithmFirstOrd
 
         # scale the points and the weights into performing
         # integration on the correct region [a,b]
-        a = inverse_temperature
-        b = inverse_temperature_max
+        a = inverse_temperature_max
+        b = inverse_temperature
 
         Beta = np.add(np.multiply(0.5*(b-a), points), 0.5*(a+b))
         Gweight = np.multiply(0.5*(b-a),weights)
