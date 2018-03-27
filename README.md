@@ -19,8 +19,9 @@ In total, we depend on the following python packages:
  * scikit-learn
 
 It has received financial support from a seed funding grant and through a 
-Rutherford fellowship from the Ala Turing Institute in London (R-SIS-003, 
-R-RUT-001) and a british EPSRC grant (Data Driven Sampling).
+Rutherford fellowship from the Alan Turing Institute in London (R-SIS-003, 
+R-RUT-001) and EPSRC grant no. EP/P006175/1 (Data Driven Coarse Graining using
+Space-Time Diffusion Maps, B. Leimkuhler PI)
 
 Please refer to INSTALL for installation instructions. When cloning from
 github please call the bootstrap.sh script (requiring installed autotools and
