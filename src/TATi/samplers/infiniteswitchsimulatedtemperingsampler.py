@@ -43,18 +43,19 @@ class InfiniteSwitchSimulatedTemperingSampler(GeometricLangevinAlgorithmFirstOrd
         # Gauss-Legendre integration on [-1,1]
         points,weights = legendre.leggauss(number_of_temperatures)
 
+        self._isst_beta = ops.convert_to_tensor(points, dtype=dds_basetype, name="isst_beta")
+        self._gauss_weight = ops.convert_to_tensor(weights, dtype=dds_basetype, name="gauss_weight")
+
         # scale the points and the weights into performing
         # integration on the correct region [a,b]
         a = inverse_temperature_max
         b = inverse_temperature
 
-        Beta = np.add(np.multiply(0.5*(b-a), points), 0.5*(a+b))
-        Gweight = np.multiply(0.5*(b-a),weights)
+        self._isst_beta = tf.add(tf.multiply(self._isst_beta, 0.5*(b-a)), 0.5*(a+b))
+        self._gauss_weight = tf.multiply(self._gauss_weight, 0.5*(b-a))
 
         # convert the numpy arrays into tensors
-        self._isst_beta = ops.convert_to_tensor(Beta, dtype=dds_basetype, name="isst_beta")
-        self._gauss_weight = ops.convert_to_tensor(Gweight, dtype=dds_basetype, name="gauss_weight")
-        
+
         # intialise the isst average
         self._isst_average = tf.get_variable(shape=[number_of_temperatures],
                                              dtype=dds_basetype,
@@ -68,17 +69,17 @@ class InfiniteSwitchSimulatedTemperingSampler(GeometricLangevinAlgorithmFirstOrd
                                             initializer=tf.ones_initializer)
 
         # calculate scaling and reshape to scalar
-        WeightMul = tf.reduce_sum(tf.multiply(self._gauss_weight,self._isst_weight),0)
+        WeightMul = tf.reciprocal(tf.reduce_sum(tf.multiply(self._gauss_weight,self._isst_weight),0))
 
         # resecale the weights
-        tf.assign(self._isst_weight,tf.scalar_mul(1.0/WeightMul,self._isst_weight))
-        
-        # convert alpha into a tensor if given as a float 
+        tf.assign(self._isst_weight,tf.multiply(WeightMul,self._isst_weight))
+
+        # convert alpha into a tensor if given as a float
         self._alpha_constant = ops.convert_to_tensor(self._alpha_constant, name="alpha_constant")
 
         # initialise the step index used to calculate the mean
         self._step_index = 0
-        
+
     def _get_force_rescaling(self,loss):
         """ Updates the force rescaling needed to rescale the force with 
         to perform the integration.
@@ -89,9 +90,7 @@ class InfiniteSwitchSimulatedTemperingSampler(GeometricLangevinAlgorithmFirstOrd
                                               tf.multiply(self._isst_weight,expV)))
         BarDeNumSum = tf.reduce_sum(tf.multiply(self._gauss_weight,
                                                 tf.multiply(self._isst_weight,expV)))
-        thermal_scaling = 0.0
-        
-        tf.assign(thermal_scaling, BarNumSum / (self._inverse_temperature * BarDeNumSum))
+        thermal_scaling = BarNumSum / (self._inverse_temperature * BarDeNumSum)
 
         return thermal_scaling
         
@@ -107,18 +106,20 @@ class InfiniteSwitchSimulatedTemperingSampler(GeometricLangevinAlgorithmFirstOrd
                                                 tf.multiply(self._isst_weight, expV)))
 
         # add the the running average
-        tf.assign_add(self._isst_average,tf.scalar_mul(1.0/BarDeNumSum,expV))
+        tf.assign_add(self._isst_average,tf.multiply(1.0/BarDeNumSum,expV))
 
         # calculate the inverse weights
-        tf.assign(self._isst_weight,tf.reciprocal(tf.add(tf.scalar_mul(1.0-self._alpha_constant * self._step_width,
-                                                                       tf.reciprocal(self._isst_weight)),
-                                                         tf.scalar_mul(1.0/self._step_index, self._isst_average))))
+        tf.assign(self._isst_weight,
+                  tf.reciprocal(tf.add(
+                      tf.multiply(1.0-self._alpha_constant * self._step_width,
+                                    tf.reciprocal(self._isst_weight)),
+                      tf.multiply(1.0/self._step_index, self._isst_average))))
         
         # calculate scaling
         WeightMul = tf.reduce_sum(tf.multiply(self._gauss_weight,self._isst_weight),0)
         
         # resecale the weights
-        tf.assign(self._isst_weight,tf.scalar_mul(1.0/WeightMul,self._isst_weight))
+        tf.assign(self._isst_weight,tf.multiply(1.0/WeightMul,self._isst_weight))
         
     def _apply_dense(self, grad, var):
         """ Adds nodes to TensorFlow's computational graph in the case of densely
@@ -154,7 +155,7 @@ class InfiniteSwitchSimulatedTemperingSampler(GeometricLangevinAlgorithmFirstOrd
         # updates the weight learning held by the class
         self._update_learn_weights(loss)
 
-        # get's the isst_scaling which is a scalar
+        # get the isst_scaling which is a scalar
         isst_scaling = self._get_force_rescaling(loss)
 
         ##_____ ISST _____##
@@ -200,7 +201,8 @@ class InfiniteSwitchSimulatedTemperingSampler(GeometricLangevinAlgorithmFirstOrd
         momentum_t = momentum.assign(momentum_noise_step_t)
 
         # note: these are evaluated in any order, use control_dependencies if required
-        return control_flow_ops.group(*[var_update, momentum_t])
+        return control_flow_ops.group(*[noise_global_t,
+                                        var_update, momentum_t])
 
     def _apply_sparse(self, grad, var):
         """ Adds nodes to TensorFlow's computational graph in the case of sparsely
