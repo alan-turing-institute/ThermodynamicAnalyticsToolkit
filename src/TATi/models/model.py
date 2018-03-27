@@ -539,7 +539,8 @@ class model:
                 header += ['ensemble_average_loss', 'average_virials']
             elif self.FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder",
                                         "GeometricLangevinAlgorithm_2ndOrder",
-                                        "BAOAB"]:
+                                        "BAOAB",
+                                        "InfiniteSwitchSimulatedTempering"]:
                 header += ['ensemble_average_loss', 'average_kinetic_energy', 'average_virials']
             elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
                 header += ['ensemble_average_loss', 'average_kinetic_energy', 'average_virials', 'average_rejection_rate']
@@ -553,7 +554,8 @@ class model:
             header += ['scaled_gradient', 'virial', 'scaled_noise']
         elif self.FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder",
                                     "GeometricLangevinAlgorithm_2ndOrder",
-                                    "BAOAB"]:
+                                    "BAOAB",
+                                    "InfiniteSwitchSimulatedTempering"]:
             header += ['total_energy', 'kinetic_energy', 'scaled_momentum',
                       'scaled_gradient', 'virial', 'scaled_noise']
         elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
@@ -606,7 +608,7 @@ class model:
             zero_rejected = rejected_t.assign(0)
 
         placeholder_nodes = self.nn.get_dict_of_nodes(
-            ["friction_constant", "inverse_temperature", "step_width", "current_step", "next_eval_step", "y_"])
+            ["alpha", "friction_constant", "inverse_temperature", "inverse_temperature_max", "step_width", "current_step", "next_eval_step", "y_"])
         test_nodes = self.nn.get_list_of_nodes(["merged", "sample_step", "accuracy", "global_step", "loss", "y_", "y"])
 
         output_width = 8
@@ -658,6 +660,18 @@ class model:
                 placeholder_nodes["inverse_temperature"]: self.FLAGS.inverse_temperature,
                 placeholder_nodes["friction_constant"]: self.FLAGS.friction_constant
             })
+            logging.info("Sampler parameters: gamma = %lg, beta = %lg, delta t = %lg" %
+                  (gamma, beta, deltat))
+        elif self.FLAGS.sampler == "InfiniteSwitchSimulatedTempering":
+            beta, beta_max, alpha, deltat = self.sess.run(self.nn.get_list_of_nodes(
+                ["inverse_temperature", "inverse_temperature_max", "alpha", "step_width"]), feed_dict={
+                placeholder_nodes["step_width"]: self.FLAGS.step_width,
+                placeholder_nodes["inverse_temperature"]: self.FLAGS.inverse_temperature,
+                placeholder_nodes["inverse_temperature_max"]: self.FLAGS.inverse_temperature_max,
+                placeholder_nodes["alpha"]: self.FLAGS.alpha,
+            })
+            logging.info("Sampler parameters: beta = %lg, beta_max = %lg, alpha = %lg, delta t = %lg" %
+                         (beta, beta_max, alpha, deltat))
         elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
             current_step, num_mc_steps, deltat = self.sess.run(self.nn.get_list_of_nodes(
                 ["current_step", "next_eval_step", "step_width"]), feed_dict={
@@ -706,7 +720,10 @@ class model:
                 placeholder_nodes["inverse_temperature"]: self.FLAGS.inverse_temperature,
                 placeholder_nodes["friction_constant"]: self.FLAGS.friction_constant,
                 placeholder_nodes["current_step"]: current_step,
-                placeholder_nodes["next_eval_step"]: HMC_steps
+                placeholder_nodes["next_eval_step"]: HMC_steps,
+                placeholder_nodes["inverse_temperature"]: self.FLAGS.inverse_temperature,
+                placeholder_nodes["inverse_temperature_max"]: self.FLAGS.inverse_temperature_max,
+                placeholder_nodes["alpha"]: self.FLAGS.alpha,
             }
             if self.FLAGS.dropout is not None:
                 feed_dict.update({placeholder_nodes["keep_prob"] : self.FLAGS.dropout})
@@ -732,7 +749,8 @@ class model:
                                       "GeometricLangevinAlgorithm_1stOrder",
                                       "GeometricLangevinAlgorithm_2ndOrder",
                                       "HamiltonianMonteCarlo",
-                                      "BAOAB"]:
+                                      "BAOAB",
+                                      "InfiniteSwitchSimulatedTempering"]:
                 check_total, check_kinetic, check_momenta, check_gradients, check_virials, check_noise = \
                     self.sess.run([total_energy_t, zero_kinetic_energy, zero_momenta, zero_gradients, zero_virials, zero_noise])
                 assert (abs(check_kinetic) < 1e-10)
@@ -766,7 +784,8 @@ class model:
                                       "GeometricLangevinAlgorithm_1stOrder",
                                       "GeometricLangevinAlgorithm_2ndOrder",
                                       "HamiltonianMonteCarlo",
-                                      "BAOAB"]:
+                                      "BAOAB",
+                                      "InfiniteSwitchSimulatedTempering"]:
                 if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
                     gradients, virials, noise = \
                         self.sess.run([gradients_t, virials_t, noise_t])
@@ -829,7 +848,8 @@ class model:
                                               "GeometricLangevinAlgorithm_1stOrder",
                                               "GeometricLangevinAlgorithm_2ndOrder",
                                               "HamiltonianMonteCarlo",
-                                              "BAOAB"]:
+                                              "BAOAB",
+                                              "InfiniteSwitchSimulatedTempering"]:
                         run_line = [0, global_step, current_step] + ['{:1.3f}'.format(acc)] \
                                    + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
                                                                        precision=output_precision)] \

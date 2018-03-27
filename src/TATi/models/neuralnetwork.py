@@ -231,6 +231,14 @@ class NeuralNetwork(object):
             tf.summary.scalar('inverse_temperature', inverse_temperature)
             self.placeholder_nodes['inverse_temperature'] = inverse_temperature
 
+            inverse_temperature_max = tf.placeholder(dds_basetype, name="inverse_temperature_max")
+            tf.summary.scalar('inverse_temperature_max', inverse_temperature_max)
+            self.placeholder_nodes['inverse_temperature_max'] = inverse_temperature_max
+
+            alpha_constant = tf.placeholder(dds_basetype, name="alpha")
+            tf.summary.scalar('alpha', alpha_constant)
+            self.placeholder_nodes['alpha'] = alpha_constant
+
             friction_constant = tf.placeholder(dds_basetype, name="friction_constant")
             tf.summary.scalar('friction_constant', friction_constant)
             self.placeholder_nodes['friction_constant'] = friction_constant
@@ -250,7 +258,9 @@ class NeuralNetwork(object):
                 sampler = BAOABSampler(step_width, inverse_temperature, friction_constant, seed=seed)
             elif sampling_method == "InfiniteSwitchSimulatedTempering":
                 sampler = InfiniteSwitchSimulatedTemperingSampler(step_width, inverse_temperature, friction_constant,
-                                                                  inverse_temperature_max, number_of_temperatures, alpha_constant,
+                                                                  inverse_temperature_max=inverse_temperature_max,
+                                                                  number_of_temperatures=number_of_temperatures, # note is not a tensor
+                                                                  alpha_constant=alpha_constant,
                                                                   seed=seed)
             else:
                 raise NotImplementedError("Unknown sampler")
