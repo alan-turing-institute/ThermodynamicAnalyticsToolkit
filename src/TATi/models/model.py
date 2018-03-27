@@ -115,7 +115,7 @@ class model:
                     width = int(example.features.feature['width']
                                 .int64_list
                                 .value[0])
-                    logging.debug("height is "+str(height)+" and width is "+str(width))
+                    #logging.debug("height is "+str(height)+" and width is "+str(width))
                 dimension += 1
 
         return dimension
