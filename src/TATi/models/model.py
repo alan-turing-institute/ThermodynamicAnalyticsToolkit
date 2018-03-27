@@ -445,7 +445,11 @@ class model:
         if setup == "train":
             self.nn.add_train_method(self.loss, optimizer_method=self.FLAGS.optimizer, prior=prior)
         elif setup == "sample":
-            self.nn.add_sample_method(self.loss, sampling_method=self.FLAGS.sampler, seed=self.FLAGS.seed, prior=prior)
+            self.nn.add_sample_method(self.loss, sampling_method=self.FLAGS.sampler, seed=self.FLAGS.seed,
+                                      inverse_temperature_max=self.FLAGS.inverse_temperature_max,
+                                      number_of_temperatures=self.FLAGS.number_of_temperatures,
+                                      alpha_constant=self.FLAGS.alpha,
+                                      prior=prior)
         else:
             logging.info("Not adding sample or train method.")
 
@@ -665,7 +669,7 @@ class model:
                   (current_step, num_mc_steps, deltat))
 
         # create extra nodes for HMC
-        if self.FLAGS.sampler == "HamiltonianMonteCarlo":
+        if self.FLAGS.sampler in ["HamiltonianMonteCarlo", "InfiniteSwitchSimulatedTempering"]:
             HMC_eval_nodes = self.nn.get_list_of_nodes(["loss"]) + [total_energy_t, kinetic_energy_t]
             var_loss_t = tf.placeholder(old_loss_t.dtype.base_dtype, name="var_loss")
             var_kin_t = tf.placeholder(old_kinetic_energy_t.dtype.base_dtype, name="var_kinetic")
@@ -709,7 +713,7 @@ class model:
             #logging.debug("batch is x: "+str(features[:])+", y: "+str(labels[:]))
 
             # set global variable used in HMC sampler for criterion to initial loss
-            if self.FLAGS.sampler == "HamiltonianMonteCarlo":
+            if self.FLAGS.sampler in ["HamiltonianMonteCarlo", "InfiniteSwitchSimulatedTempering"]:
                 loss_eval, total_eval, kin_eval = self.sess.run(HMC_eval_nodes, feed_dict=feed_dict)
                 HMC_set_dict = {
                     var_kin_t: kin_eval,
