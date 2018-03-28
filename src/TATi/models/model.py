@@ -291,6 +291,7 @@ class model:
             save_model=None,
             seed=None,
             step_width=0.03,
+            summaries_path=None,
             trajectory_file=None,
             use_reweighting=False,
             verbose=0):
@@ -335,6 +336,7 @@ class model:
                 save_model=save_model,
                 seed=seed,
                 step_width=step_width,
+                summaries_path=summaries_path,
                 trajectory_file=trajectory_file,
                 use_reweighting=use_reweighting,
                 verbose=verbose)
@@ -509,6 +511,10 @@ class model:
             header = self.get_sample_header()
         elif setup == "train":
             header = self.get_train_header()
+
+        # merge summaries at very end
+        merged = tf.summary.merge_all()  # Merge all the summaries
+        self.nn.summary_nodes['merged'] = merged
 
         try:
             if self.averages_writer is None:
@@ -697,6 +703,10 @@ class model:
         assert(check_accepted == 0)
         assert(check_rejected == 0)
 
+        # prepare summaries for TensorBoard
+        if self.FLAGS.summaries_path is not None:
+            summary_writer = tf.summary.FileWriter(self.FLAGS.summaries_path, self.sess.graph)
+
         logging.info("Starting to sample")
         logging.info_intervals = max(1, int(self.FLAGS.max_steps / 100))
         last_time = time.process_time()
@@ -802,6 +812,13 @@ class model:
                     accumulated_virials += virials
             accumulated_loss_nominator += loss_eval * exp(- self.FLAGS.inverse_temperature * loss_eval)
             accumulated_loss_denominator += exp(- self.FLAGS.inverse_temperature * loss_eval)
+
+            if self.FLAGS.summaries_path is not None:
+                run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+                run_metadata = tf.RunMetadata()
+                summary_writer.add_run_metadata(run_metadata, 'step%d' % current_step)
+                summary_writer.add_summary(summary, current_step)
+
             if current_step % self.FLAGS.every_nth == 0:
                 current_time = time.process_time()
                 time_elapsed_per_nth_step = current_time - last_time
@@ -896,6 +913,10 @@ class model:
                 #logging.debug('y_ at step %s: %s' % (i, str(y_true_eval[0:9].transpose())))
                 #logging.debug('y at step %s: %s' % (i, str(y_eval[0:9].transpose())))
         logging.info("SAMPLED.")
+
+        # close summaries file
+        if self.FLAGS.summaries_path is not None:
+            summary_writer.close()
 
         return run_info, trajectory, averages
 
