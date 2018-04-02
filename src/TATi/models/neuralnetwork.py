@@ -151,9 +151,6 @@ class NeuralNetwork(object):
         loss = self.set_loss_function(loss_name)
         self.add_accuracy_summary(y, y_)
 
-        merged = tf.summary.merge_all()  # Merge all the summaries
-        self.summary_nodes['merged'] = merged
-
         return loss
 
     def add_true_labels(self, output_dimension):
