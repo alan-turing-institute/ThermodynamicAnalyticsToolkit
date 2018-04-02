@@ -25,11 +25,11 @@ class MockFlags:
                  inter_ops_threads=1,
                  intra_ops_threads=None,
                  inverse_temperature=1.,
-                 inverse_temperature_max=1.,
+                 inverse_temperature_max=5.,
                  loss="mean_squared",
                  max_steps=1000,
                  number_of_eigenvalues=4,
-                 number_of_temperatures=10,
+                 number_of_temperatures=25,
                  optimizer="GradientDescent",
                  output_activation="tanh",
                  output_dimension=1,
@@ -51,7 +51,7 @@ class MockFlags:
     ):
         """ Init function to set various default values.
 
-        :param alpha:
+        :param alpha: step rescaling of weight learning in ISST
         :param averages_file: csv file name to write averages to
         :param batch_data_files: set of files to read input from
         :param batch_data_file_type: type of the files to read input from
@@ -75,7 +75,7 @@ class MockFlags:
         :param loss: Set the loss to be measured during sampling, e.g. mean_squared, log_loss, ...
         :param max_steps: Number of steps to run sampleer.
         :param number_of_eigenvalues: number of eigenvalues for exploring manifold landscapes
-        :param number_of_temperatures:
+        :param number_of_temperatures: number of temperatures to use in the ISST algorithm
         :param optimizer: Choose the optimizer to use for sampling: GradientDescent
         :param output_activation: Activation function to use for output layer: tanh, relu, linear
         :param output_dimension: number of output nodes/number of classes
