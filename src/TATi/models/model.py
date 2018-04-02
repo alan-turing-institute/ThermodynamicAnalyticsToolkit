@@ -270,7 +270,7 @@ class model:
             inter_ops_threads=1,
             intra_ops_threads=None,
             inverse_temperature=1.,
-            inverse_temperature_max=5.,
+            inverse_temperature_min=0.5,
             loss="mean_squared",
             max_steps=1000,
             number_of_eigenvalues=4,
@@ -315,7 +315,7 @@ class model:
                 inter_ops_threads=inter_ops_threads,
                 intra_ops_threads=intra_ops_threads,
                 inverse_temperature=inverse_temperature,
-                inverse_temperature_max=inverse_temperature_max,
+                inverse_temperature_min=inverse_temperature_min,
                 loss=loss,
                 max_steps=max_steps,
                 number_of_eigenvalues=number_of_eigenvalues,
@@ -448,7 +448,7 @@ class model:
             self.nn.add_train_method(self.loss, optimizer_method=self.FLAGS.optimizer, prior=prior)
         elif setup == "sample":
             self.nn.add_sample_method(self.loss, sampling_method=self.FLAGS.sampler, seed=self.FLAGS.seed,
-                                      inverse_temperature_max=self.FLAGS.inverse_temperature_max,
+                                      inverse_temperature_min=self.FLAGS.inverse_temperature_min,
                                       number_of_temperatures=self.FLAGS.number_of_temperatures,
                                       alpha_constant=self.FLAGS.alpha,
                                       prior=prior)
@@ -614,7 +614,7 @@ class model:
             zero_rejected = rejected_t.assign(0)
 
         placeholder_nodes = self.nn.get_dict_of_nodes(
-            ["alpha", "friction_constant", "inverse_temperature", "inverse_temperature_max", "step_width", "current_step", "next_eval_step", "y_"])
+            ["alpha", "friction_constant", "inverse_temperature", "inverse_temperature_min", "step_width", "current_step", "next_eval_step", "y_"])
         test_nodes = self.nn.get_list_of_nodes(["merged", "sample_step", "accuracy", "global_step", "loss", "y_", "y"])
 
         output_width = 8
@@ -670,10 +670,10 @@ class model:
                   (gamma, beta, deltat))
         elif self.FLAGS.sampler == "InfiniteSwitchSimulatedTempering":
             beta, beta_max, alpha, deltat = self.sess.run(self.nn.get_list_of_nodes(
-                ["inverse_temperature", "inverse_temperature_max", "alpha", "step_width"]), feed_dict={
+                ["inverse_temperature", "inverse_temperature_min", "alpha", "step_width"]), feed_dict={
                 placeholder_nodes["step_width"]: self.FLAGS.step_width,
                 placeholder_nodes["inverse_temperature"]: self.FLAGS.inverse_temperature,
-                placeholder_nodes["inverse_temperature_max"]: self.FLAGS.inverse_temperature_max,
+                placeholder_nodes["inverse_temperature_min"]: self.FLAGS.inverse_temperature_min,
                 placeholder_nodes["alpha"]: self.FLAGS.alpha,
             })
             logging.info("Sampler parameters: beta = %lg, beta_max = %lg, alpha = %lg, delta t = %lg" %
@@ -732,7 +732,7 @@ class model:
                 placeholder_nodes["current_step"]: current_step,
                 placeholder_nodes["next_eval_step"]: HMC_steps,
                 placeholder_nodes["inverse_temperature"]: self.FLAGS.inverse_temperature,
-                placeholder_nodes["inverse_temperature_max"]: self.FLAGS.inverse_temperature_max,
+                placeholder_nodes["inverse_temperature_min"]: self.FLAGS.inverse_temperature_min,
                 placeholder_nodes["alpha"]: self.FLAGS.alpha,
             }
             if self.FLAGS.dropout is not None:

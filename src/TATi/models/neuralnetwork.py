@@ -189,7 +189,7 @@ class NeuralNetwork(object):
 
     def add_sample_method(self, loss, sampling_method, seed,
                           prior,
-                          inverse_temperature_max=None,
+                          inverse_temperature_min=None,
                           number_of_temperatures=None, alpha_constant=None):
         """ Adds nodes for training the neural network.
 
@@ -198,7 +198,7 @@ class NeuralNetwork(object):
         :param seed: seed value for the random number generator to obtain reproducible runs
         :param prior: dict with keys factor, lower_boundary and upper_boundary that
                 specifies a wall-repelling force to ensure a prior on the parameters
-        :param inverse_temperature_max:
+        :param inverse_temperature_min: the lowest inverse temperature to use in ISST 
         :param number_of_temperatures:
         :param alpha_constant:
         """
@@ -228,9 +228,9 @@ class NeuralNetwork(object):
             tf.summary.scalar('inverse_temperature', inverse_temperature)
             self.placeholder_nodes['inverse_temperature'] = inverse_temperature
 
-            inverse_temperature_max = tf.placeholder(dds_basetype, name="inverse_temperature_max")
-            tf.summary.scalar('inverse_temperature_max', inverse_temperature_max)
-            self.placeholder_nodes['inverse_temperature_max'] = inverse_temperature_max
+            inverse_temperature_min = tf.placeholder(dds_basetype, name="inverse_temperature_min")
+            tf.summary.scalar('inverse_temperature_min', inverse_temperature_min)
+            self.placeholder_nodes['inverse_temperature_min'] = inverse_temperature_min
 
             alpha_constant = tf.placeholder(dds_basetype, name="alpha")
             tf.summary.scalar('alpha', alpha_constant)
@@ -255,7 +255,7 @@ class NeuralNetwork(object):
                 sampler = BAOABSampler(step_width, inverse_temperature, friction_constant, seed=seed)
             elif sampling_method == "InfiniteSwitchSimulatedTempering":
                 sampler = InfiniteSwitchSimulatedTemperingSampler(step_width, inverse_temperature, friction_constant,
-                                                                  inverse_temperature_max=inverse_temperature_max,
+                                                                  inverse_temperature_min=inverse_temperature_min,
                                                                   number_of_temperatures=number_of_temperatures, # note is not a tensor
                                                                   alpha_constant=alpha_constant,
                                                                   seed=seed)

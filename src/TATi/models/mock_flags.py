@@ -25,7 +25,7 @@ class MockFlags:
                  inter_ops_threads=1,
                  intra_ops_threads=None,
                  inverse_temperature=1.,
-                 inverse_temperature_max=5.,
+                 inverse_temperature_min=0.5,
                  loss="mean_squared",
                  max_steps=1000,
                  number_of_eigenvalues=4,
@@ -72,7 +72,7 @@ class MockFlags:
         :param inter_ops_threads: size of thread pool used for independent ops
         :param intra_ops_threads: size of thread pool used for parallelizing an op
         :param inverse_temperature: Inverse temperature that scales the gradients
-        :param inverse_temperature_max:
+        :param inverse_temperature_min: smallest inverse temperature (inverse of highest temperature) to use in ISST
         :param loss: Set the loss to be measured during sampling, e.g. mean_squared, log_loss, ...
         :param max_steps: Number of steps to run sampleer.
         :param number_of_eigenvalues: number of eigenvalues for exploring manifold landscapes
@@ -117,7 +117,7 @@ class MockFlags:
         self.inter_ops_threads = inter_ops_threads
         self.intra_ops_threads = intra_ops_threads
         self.inverse_temperature = inverse_temperature
-        self.inverse_temperature_max = inverse_temperature_max
+        self.inverse_temperature_min = inverse_temperature_min
         self.loss = loss
         self.max_steps = max_steps
         self.number_of_eigenvalues = number_of_eigenvalues

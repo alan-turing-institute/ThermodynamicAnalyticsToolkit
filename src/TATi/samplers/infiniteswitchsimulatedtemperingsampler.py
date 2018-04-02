@@ -16,16 +16,21 @@ class InfiniteSwitchSimulatedTemperingSampler(GeometricLangevinAlgorithmFirstOrd
     in the form of a TensorFlow Optimizer, overriding tensorflow.python.training.Optimizer.
 
     """
-    def __init__(self, step_width, inverse_temperature, friction_constant,
-                 inverse_temperature_max,
-                 number_of_temperatures, alpha_constant,
-                 seed=None, use_locking=False, name='InfiniteSwitchSimulatedTempering'):
+    def __init__(self, step_width,
+                 inverse_temperature,
+                 friction_constant,
+                 inverse_temperature_min,
+                 number_of_temperatures,
+                 alpha_constant,
+                 seed=None,
+                 use_locking=False,
+                 name='InfiniteSwitchSimulatedTempering'):
         """ Init function for this class.
 
         :param step_width: step width for gradient, also affects inject noise
         :param inverse_temperature: scale for gradients, also lower integration boundary
         :param friction_constant: scales the momenta
-        :param inverse_temperature_max: upper integration boundary
+        :param inverse_temperature_min: lower integration boundary
         :param number_of_temperatures: number of interpolation points for temperature integration
         :param alpha_constant: constant scaling the weight-optimisation timestep
         :param seed: seed value of the random number generator for generating reproducible runs
@@ -33,9 +38,12 @@ class InfiniteSwitchSimulatedTemperingSampler(GeometricLangevinAlgorithmFirstOrd
         :param name: internal name of optimizer
         """
         super(InfiniteSwitchSimulatedTemperingSampler, self).__init__(step_width,
-                                                                      inverse_temperature, friction_constant,
-                                                                      seed, use_locking, name)
-        self._inverse_temperature_max = inverse_temperature_max
+                                                                      inverse_temperature,
+                                                                      friction_constant,
+                                                                      seed,
+                                                                      use_locking,
+                                                                      name)
+        self._inverse_temperature_min = inverse_temperature_min
         self._number_of_temperatures = number_of_temperatures
         self._alpha_constant = alpha_constant
 
@@ -48,7 +56,7 @@ class InfiniteSwitchSimulatedTemperingSampler(GeometricLangevinAlgorithmFirstOrd
 
         # scale the points and the weights into performing
         # integration on the correct region [a,b]
-        a = inverse_temperature_max
+        a = inverse_temperature_min
         b = inverse_temperature
 
         self._isst_beta = tf.add(tf.multiply(self._isst_beta, 0.5*(b-a)), 0.5*(a+b))
@@ -149,18 +157,19 @@ class InfiniteSwitchSimulatedTemperingSampler(GeometricLangevinAlgorithmFirstOrd
         ##_____ ISST _____##
 
         # get the loss scalar
-        with tf.variable_scope("accumulate", reuse=True):
-            loss = tf.get_variable("old_loss", dtype=dds_basetype)
+        #with tf.variable_scope("accumulate", reuse=True):
+            #loss = tf.get_variable("old_loss", dtype=dds_basetype)
             
         # updates the weight learning held by the class
-        self._update_learn_weights(loss)
+        #self._update_learn_weights(loss)
 
         # get the isst_scaling which is a scalar
-        isst_scaling = self._get_force_rescaling(loss)
+        isst_scaling = 1.0 #self._get_force_rescaling(loss)
 
         ##_____ ISST _____##
         
-        scaled_gradient = step_width_t * isst_scaling * grad
+        #scaled_gradient = step_width_t * isst_scaling * grad
+        scaled_gradient = step_width_t * grad
 
         # next_pn = B(tilde_half_pn, next_gn, h / 2)
         momentum_half_step_t = momentum - 0.5 * scaled_gradient

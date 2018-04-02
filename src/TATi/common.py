@@ -231,11 +231,11 @@ def add_sampler_options_to_parser(parser):
         help='Time (steps times step width) between HMC acceptance criterion evaluation')
     parser.add_argument('--inverse_temperature', type=float, default=1.,
         help='Inverse temperature that scales the gradients')
-    parser.add_argument('--inverse_temperature_max', type=float, default=1.,
-        help='The max inverse temperature for use in ISST')
+    parser.add_argument('--inverse_temperature_min', type=float, default=0.5,
+        help='The min inverse temperature for use in ISST')
     parser.add_argument('--max_steps', type=int, default=1000,
         help='Number of steps to run trainer.')
-    parser.add_argument('--number_of_temperatures', type=int, default=10,
+    parser.add_argument('--number_of_temperatures', type=int, default=25,
         help='The number of temperatures to use in ISST')
     parser.add_argument('--sampler', type=str, default="GeometricLangevinAlgorithm_1stOrder",
         help='Choose the sampler to use for sampling: ' \
