@@ -29,10 +29,10 @@ AT_CHECK([../../../TATiSampler \
     --batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/pre/dataset-twoclusters.csv \
     --batch_size 20 \
 	--friction_constant 1 \
-	--inverse_temperature 1e3 \
-	--inverse_temperature_max 1 \
+	--inverse_temperature 1. \
+	--inverse_temperature_min 0.5 \
 	--max_steps 20 \
-	--number_of_temperatures 10 \
+	--number_of_temperatures 25 \
 	--run_file run-ISST.csv \
 	--sampler InfiniteSwitchSimulatedTempering\
 	--seed 426 \
