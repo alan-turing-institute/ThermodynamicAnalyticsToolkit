@@ -157,20 +157,19 @@ class InfiniteSwitchSimulatedTemperingSampler(GeometricLangevinAlgorithmFirstOrd
         ##_____ ISST _____##
 
         # get the loss scalar
-        #with tf.variable_scope("accumulate", reuse=True):
-            #loss = tf.get_variable("old_loss", dtype=dds_basetype)
+        with tf.variable_scope("accumulate", reuse=True):
+            loss = tf.get_variable("old_loss", dtype=dds_basetype)
             
         # updates the weight learning held by the class
-        #self._update_learn_weights(loss)
+        self._update_learn_weights(loss)
 
         # get the isst_scaling which is a scalar
-        isst_scaling = 1.0 #self._get_force_rescaling(loss)
+        isst_scaling = self._get_force_rescaling(loss)
 
         ##_____ ISST _____##
         
-        #scaled_gradient = step_width_t * isst_scaling * grad
-        scaled_gradient = step_width_t * grad
-
+        scaled_gradient = step_width_t * isst_scaling * grad
+        
         # next_pn = B(tilde_half_pn, next_gn, h / 2)
         momentum_half_step_t = momentum - 0.5 * scaled_gradient
 
