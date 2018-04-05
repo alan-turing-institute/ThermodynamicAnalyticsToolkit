@@ -1,5 +1,5 @@
 import numpy as np
-from TATi_neural_newtork import *
+from TATi_neural_network import *
 ################### Prepare data #########################
 
 X = np.asarray([[ 1.1892932,  -0.8064292 ],
