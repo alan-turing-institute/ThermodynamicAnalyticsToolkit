@@ -44,7 +44,7 @@ for n in range(nrsteps):
     loss_n[n] = neural_net.loss(theta)
 
 print("################################")
-print("Final values of the weights are (this is strange):")
+print("Final values of the weights are:")
 print(theta_n[-1])
 print("################################")
 
