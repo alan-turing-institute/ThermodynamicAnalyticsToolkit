@@ -25,14 +25,20 @@ Space-Time Diffusion Maps, B. Leimkuhler PI)
 
 Please refer to INSTALL for installation instructions. When cloning from
 github please call the bootstrap.sh script (requiring installed autotools and
-automake packages). 
+automake packages).
+
+NOTE: If you only want to *use* the package and *do not plan to submit code*, 
+it is strongly advised to *use the "release" tarballs* instead of cloning the 
+repository directly.
 
 Furthermore, for installation from a cloned git repository or a pure source
-tarball, the following non-standard packages are recommended for creating the
+tarball, the following non-standard packages are required for creating the
 userguide:
 
  * xsltproc, fop, docbook-xsl
 
 After installation (configure, make, make install) there is a userguide 
-"thermodynamicanalyticstoolkit.pdf" for full reference to end users.
-Note that there is also a documentation aimed at programmers based on doxygen.
+"thermodynamicanalyticstoolkit.pdf" for full reference to end users. 
+Alternatively, this userguide is always contained in the release tarballs.
+Note that there is also a documentation aimed at programmers based on doxygen
+(make doc).
