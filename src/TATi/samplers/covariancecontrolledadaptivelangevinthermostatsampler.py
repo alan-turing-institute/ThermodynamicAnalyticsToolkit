@@ -78,9 +78,10 @@ class CovarianceControlledAdaptiveLangevinThermostat(GeometricLangevinAlgorithmS
         # sigma * np.random.rand(p.shape[0]) * 0.5 * step_width_t
         scaled_noise = sigma_t * sigma_random_noise_t * 0.5 * step_width_t
         scaled_noiseA = sigmaA_t * sigmaA_random_noise_t * tf.sqrt(step_width_t)
-        with tf.variable_scope("CCAdL", reuse=True):
-            total_noise = tf.get_variable("total_noise")
-            total_noise.assign(2.0 * tf.reduce_sum(tf.multiply(scaled_noise,scaled_noise)))
+        with tf.control_dependencies([scaled_noise]):
+            with tf.variable_scope("CCAdL", reuse=True):
+                total_noise = tf.get_variable("total_noise")
+                total_noise_init_t = total_noise.assign(2.0 * tf.reduce_sum(tf.multiply(scaled_noise,scaled_noise)))
 
         # p^{n}
         momentum = self.get_slot(var, "momentum")
@@ -121,7 +122,7 @@ class CovarianceControlledAdaptiveLangevinThermostat(GeometricLangevinAlgorithmS
         #gammaAdapt = gammaAdapt + (np.dot(p, p) - self.dim * self.T) * 0.5 * self.dt
         with tf.control_dependencies([momentum_half_step_plus_noise_t]):
             half_temperature_difference =  0.5 * (tf.reduce_sum(tf.multiply(momentum_half_step_plus_noise_t, momentum_half_step_plus_noise_t)) \
-                                                  - dim *  inverse_temperature_t)
+                                                  - dim /  inverse_temperature_t)
         with tf.variable_scope("CCAdL", reuse=True):
             gammaAdapt = tf.get_variable("gammaAdapt")
             gammaAdapt_half_step_t = state_ops.assign_add(gammaAdapt,
@@ -135,8 +136,8 @@ class CovarianceControlledAdaptiveLangevinThermostat(GeometricLangevinAlgorithmS
             # p = p +sigmaA* np.random.randn(p.shape[0])*np.sqrt(self.mass*self.dt)
             with tf.control_dependencies([momentum.assign(
                             momentum_half_step_plus_noise_t \
-                            + scaled_noiseA),
-                            total_noise.assign_add(tf.reduce_sum(tf.multiply(scaled_noiseA,scaled_noiseA)))]):
+                            + scaled_noiseA), \
+                    total_noise.assign(total_noise_init_t + tf.reduce_sum(tf.multiply(scaled_noiseA,scaled_noiseA)))]):
                 return tf.identity(momentum)
 
         # alpha= np.exp(-gammaAdapt* self.dt)
@@ -146,7 +147,7 @@ class CovarianceControlledAdaptiveLangevinThermostat(GeometricLangevinAlgorithmS
             # p = alpha*p + sigmaA*np.sqrt(self.mass* (1.0-alpha*alpha)/(2.0*gammaAdapt))*np.random.randn(p.shape[0])
             with tf.control_dependencies([momentum.assign(alpha * momentum_half_step_plus_noise_t \
                                                           + new_noise),
-                            total_noise.assign_add(tf.reduce_sum(tf.pow(alpha, -2)* tf.multiply(new_noise,new_noise)))]):
+                                          total_noise.assign(total_noise_init_t + tf.reduce_sum(tf.pow(alpha, -2)* tf.multiply(new_noise,new_noise)))]):
                 return tf.identity(momentum)
 
         # if (np.abs(gammaAdapt) < 0.1):
@@ -157,7 +158,7 @@ class CovarianceControlledAdaptiveLangevinThermostat(GeometricLangevinAlgorithmS
 
         with tf.control_dependencies([if_block_t]):
            updated_kinetic_energy_t = tf.reduce_sum(tf.multiply(momentum, momentum))
-           full_temperature_difference = 0.5 * (updated_kinetic_energy_t - dim * inverse_temperature_t)
+           full_temperature_difference = 0.5 * (updated_kinetic_energy_t - dim / inverse_temperature_t)
 
         #gammaAdapt = gammaAdapt + (np.dot(p, p) - self.dim * self.T) * 0.5 * self.dt
         with tf.variable_scope("CCAdL", reuse=True):
@@ -168,7 +169,8 @@ class CovarianceControlledAdaptiveLangevinThermostat(GeometricLangevinAlgorithmS
         prior_force = step_width_t * (ub_repell + lb_repell)
 
         #x = step.A(x, p, 0.5 * self.dt, 1.)
-        var_update_full_step_t = state_ops.assign_add(var, 0.5 * step_width_t * momentum - prior_force)
+        with tf.control_dependencies([if_block_t]):
+            var_update_full_step_t = state_ops.assign_add(var, 0.5 * step_width_t * momentum - prior_force)
 
         # we split last B step up into adding noise (such that noise_global_t
         # is complete for this step) and the updated momentum which is done in
@@ -176,7 +178,7 @@ class CovarianceControlledAdaptiveLangevinThermostat(GeometricLangevinAlgorithmS
         # p = p + sigma * np.random.randn(p.shape[0]) * 0.5 * self.dt
         momentum_final_step_plus_noise_t = momentum_final_step_t + scaled_noise
 
-        with tf.control_dependencies([total_noise, if_block_t]):
+        with tf.control_dependencies([if_block_t, total_noise]):
             with tf.variable_scope("accumulate", reuse=True):
                 noise_global = tf.get_variable("noise", dtype=dds_basetype)
                 noise_global_t = noise_global.assign_add(tf.reduce_sum(total_noise))
