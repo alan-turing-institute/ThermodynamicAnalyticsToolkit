@@ -31,12 +31,12 @@ class DatasetPipeline(InputPipeline):
         :param seed: seed used for random shuffle to allow reproducible runs
         '''
 
-        defaults = get_csv_defaults(
-            input_dimension=input_dimension,
-            output_dimension=output_dimension)
-        logging.debug(defaults)
         self.dataset = tf.data.Dataset.from_tensor_slices(filenames)
         if filetype == "csv":
+            defaults = get_csv_defaults(
+                input_dimension=input_dimension,
+                output_dimension=output_dimension)
+            logging.debug(defaults)
             self.dataset = self.dataset.flat_map(
                 lambda filename: (
                     tf.data.TextLineDataset(filename)
