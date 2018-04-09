@@ -377,7 +377,7 @@ def get_csv_defaults(input_dimension, output_dimension=1):
     for i in range(input_dimension):
         defaults.update({"x"+str(i+1): [0.]})
     if output_dimension > 1:
-        for i in range(input_dimension):
+        for i in range(output_dimension):
             defaults.update({"label"+str(i+1): [0]})
     else:
         defaults.update({"label": [0]})
