@@ -622,7 +622,7 @@ class model:
         """
         placeholder_nodes = self.nn.get_dict_of_nodes(
             ["friction_constant", "inverse_temperature", "step_width", "current_step", "next_eval_step", "y_"])
-        test_nodes = self.nn.get_list_of_nodes(["merged", "sample_step", "accuracy", "global_step", "loss", "y_", "y"])
+        test_nodes = self.nn.get_list_of_nodes(["merged", "sample_step", "accuracy", "global_step", "loss"])
 
         output_width = 8
         output_precision = 8
@@ -781,7 +781,7 @@ class model:
             # or
             #   tf.run([loss_eval, train_step], ...)
             # is not important. Only a subsequent, distinct tf.run() call would produce a different loss_eval.
-            summary, _, acc, global_step, loss_eval, y_true_eval, y_eval = \
+            summary, _, acc, global_step, loss_eval = \
                 self.sess.run(test_nodes, feed_dict=feed_dict)
 
             if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics",
@@ -920,8 +920,6 @@ class model:
             #if (i % logging.info_intervals) == 0:
                 #logging.debug('Accuracy at step %s (%s): %s' % (i, global_step, acc))
                 #logging.debug('Loss at step %s: %s' % (i, loss_eval))
-                #logging.debug('y_ at step %s: %s' % (i, str(y_true_eval[0:9].transpose())))
-                #logging.debug('y at step %s: %s' % (i, str(y_eval[0:9].transpose())))
         logging.info("SAMPLED.")
 
         return run_info, trajectory, averages
