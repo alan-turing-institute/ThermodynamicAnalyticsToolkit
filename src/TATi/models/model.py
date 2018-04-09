@@ -803,8 +803,6 @@ class model:
                                        self.variable_dict["momenta"],
                                        self.variable_dict["gradients"],
                                        self.variable_dict["virials"]])
-                    accumulated_kinetic_energy += kinetic_energy
-                    accumulated_virials += virials
                 else:
                     kinetic_energy, momenta, gradients, virials, noise = \
                         self.sess.run([self.variable_dict["kinetic_energy"],
@@ -812,10 +810,14 @@ class model:
                                        self.variable_dict["gradients"],
                                        self.variable_dict["virials"],
                                        self.variable_dict["noise"]])
+
+            if current_step >= self.FLAGS.burn_in_steps:
+                accumulated_loss_nominator += loss_eval * exp(- self.FLAGS.inverse_temperature * loss_eval)
+                accumulated_loss_denominator += exp(- self.FLAGS.inverse_temperature * loss_eval)
+                if self.FLAGS.sampler != "StochasticGradientLangevinDynamics":
                     accumulated_kinetic_energy += kinetic_energy
-                    accumulated_virials += virials
-            accumulated_loss_nominator += loss_eval * exp(- self.FLAGS.inverse_temperature * loss_eval)
-            accumulated_loss_denominator += exp(- self.FLAGS.inverse_temperature * loss_eval)
+                accumulated_virials += virials
+
             if current_step % self.FLAGS.every_nth == 0:
                 current_time = time.process_time()
                 time_elapsed_per_nth_step = current_time - last_time
@@ -837,19 +839,29 @@ class model:
                         trajectory.loc[written_row] = trajectory_line
 
                 if self.config_map["do_write_averages_file"] or return_averages:
+                    if accumulated_loss_denominator > 0:
+                        average_loss = accumulated_loss_nominator/accumulated_loss_denominator
+                    else:
+                        average_loss = 0.
+                    if current_step >= self.FLAGS.burn_in_steps:
+                        divisor = float(current_step + 1. - self.FLAGS.burn_in_steps)
+                        average_kinetic_energy = accumulated_kinetic_energy / divisor
+                        average_virials = abs(0.5 * accumulated_virials) / divisor
+                    else:
+                        average_kinetic_energy = 0.
+                        average_virials = 0.
                     averages_line = [0, global_step, current_step] \
                                     + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
                                                                         precision=output_precision)] \
-                                    + ['{:{width}.{precision}e}'.format(accumulated_loss_nominator/accumulated_loss_denominator, width=output_width,
+                                    + ['{:{width}.{precision}e}'.format(average_loss, width=output_width,
                                                                         precision=output_precision)]
                     if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
-                        averages_line += ['{:{width}.{precision}e}'.format(abs(0.5 * accumulated_virials) / (float(current_step + 1.)), width=output_width,
+                        averages_line += ['{:{width}.{precision}e}'.format(average_virials, width=output_width,
                                                                            precision=output_precision)]
                     else:
                         averages_line += ['{:{width}.{precision}e}'.format(x, width=output_width,
                                                                        precision=output_precision)
-                                      for x in [accumulated_kinetic_energy / float(current_step + 1.),
-                                                abs(0.5 * accumulated_virials) / (float(current_step + 1.))]]
+                                      for x in [average_kinetic_energy,average_virials]]
 
                     if self.config_map["do_write_averages_file"]:
                         self.averages_writer.writerow(averages_line)
@@ -1004,7 +1016,8 @@ class model:
 
             gradients, virials = self.sess.run([self.variable_dict["gradients"],
                                                 self.variable_dict["virials"]])
-            accumulated_virials += virials
+            if current_step >= self.FLAGS.burn_in_steps:
+                accumulated_virials += virials
 
             if current_step % self.FLAGS.every_nth == 0:
                 current_time = time.process_time()
@@ -1027,10 +1040,14 @@ class model:
 
                     run_info.loc[written_row] = run_line
                 if self.config_map["do_write_averages_file"] or return_averages:
+                    if current_step >= self.FLAGS.burn_in_steps:
+                        average_virials = abs(0.5 * accumulated_virials) / (float(current_step + 1. - self.FLAGS.burn_in_steps))
+                    else:
+                        average_virials = 0.
                     averages_line = [0, global_step, current_step] \
                                     + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
                                                                         precision=output_precision)] \
-                                    + ['{:{width}.{precision}e}'.format(abs(0.5 * accumulated_virials) / (float(current_step + 1.)), width=output_width,
+                                    + ['{:{width}.{precision}e}'.format(average_virials, width=output_width,
                                                                         precision=output_precision)]
 
                     if self.config_map["do_write_averages_file"]:

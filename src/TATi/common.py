@@ -193,6 +193,8 @@ def add_common_options_to_parser(parser):
     # please adhere to alphabetical ordering
     parser.add_argument('--averages_file', type=str, default=None,
         help='CSV file name to write ensemble averages information such as average kinetic, potential, virial.')
+    parser.add_argument('--burn_in_steps', type=int, default=0,
+        help='Number of initial steps to discard for averages ("burn in")')
     parser.add_argument('--every_nth', type=int, default=1,
         help='Store only every nth trajectory (and run) point to files, e.g. 10')
     parser.add_argument('--inter_ops_threads', type=int, default=1,

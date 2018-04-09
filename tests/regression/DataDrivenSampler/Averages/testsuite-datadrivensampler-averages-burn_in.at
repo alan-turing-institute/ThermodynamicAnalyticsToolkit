@@ -1,0 +1,45 @@
+#
+#    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
+#    Copyright (C) 2018 The University of Edinburgh
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### test on saved averages
+
+AT_SETUP([Sampler Averages - using burn in])
+AT_KEYWORDS([tatisampler averages burn_in_steps])
+
+# dataset prepared as follows:
+# TATiDatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+
+# run 1
+AT_CHECK([../../../TATiSampler \
+	--averages_file averages-twoclusters-burn_in.csv \
+    --batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Averages/pre/dataset-twoclusters.csv \
+	--batch_size 20 \
+	--burn_in_steps 5 \
+	--friction_constant 1 \
+	--inverse_temperature 1 \
+	--max_steps 10 \
+	--sampler GeometricLangevinAlgorithm_1stOrder \
+	--seed 426 \
+	--step_width 1e-1
+], 0, [stdout], [stderr])
+
+# and compare
+AT_CHECK([../../../NumericalDiff \
+    --general_threshold 1e-7 absolute \
+    -- averages-twoclusters-burn_in.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Averages/post/averages-twoclusters-burn_in.csv], 0, [ignore], [ignore])
+
+AT_CLEANUP

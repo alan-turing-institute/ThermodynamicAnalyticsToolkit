@@ -65,3 +65,4 @@ m4_include([DataDrivenSampler/Pipelines/testsuite-datadrivensampler-pipelines.at
 
 # tests on averages
 m4_include([DataDrivenSampler/Averages/testsuite-datadrivensampler-averages.at])
+m4_include([DataDrivenSampler/Averages/testsuite-datadrivensampler-averages-burn_in.at])

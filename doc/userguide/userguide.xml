@@ -602,10 +602,12 @@ sys.path.insert(1,"&lt;path_to_TATi&gt;/lib/python3.5/site-packages/")</programl
         freedom for each step (or <quote>every_nth</quote> step). Run info
         contains loss, accuracy, norm of gradient, norm of noise and others.
         Finally, in averages we compute averages over the trajectory such as
-        average (ensemble) loss, average kinetic energy, average virial. Some
-        columns depend on whether the sampler provides the specific quantity,
-        e.g. SGLD does not have momentum, hence there will be no average kinetic
-        energy.</para>
+        average (ensemble) loss, average kinetic energy, average virial. There 
+        it is advisable to skip some initial ateps (<quote>burn_in_steps</quote>)
+        to allow for some burn in time, i.e. for kinetic energies to adjust 
+        from initially zero momenta. Some columns depend on whether the 
+        sampler provides the specific quantity, e.g. SGLD does not have 
+        momentum, hence there will be no average kinetic energy.</para>
         <section xml:id="quickstart.python.sampling.supply_dataset">
           <title  xml:id="quickstart.python.sampling.supply_dataset.title">Provide your own dataset</title>
           <para>Using the Python API you can directly supply your own dataset, 
