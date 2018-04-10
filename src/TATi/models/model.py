@@ -664,10 +664,12 @@ class model:
                 columns=header)
 
         # check that sampler's parameters are actually used
-        if self.FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder",
+        if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics",
+                                  "GeometricLangevinAlgorithm_1stOrder",
                                   "GeometricLangevinAlgorithm_2ndOrder",
                                   "BAOAB",
-                                  "CovarianceControlledAdaptiveLangevinThermostat"]:
+                                  "CovarianceControlledAdaptiveLangevinThermostat",
+                                  "HamiltonianMonteCarlo"]:
             gamma, beta, deltat = self.sess.run(self.nn.get_list_of_nodes(
                 ["friction_constant", "inverse_temperature", "step_width"]), feed_dict={
                 placeholder_nodes["step_width"]: self.FLAGS.step_width,

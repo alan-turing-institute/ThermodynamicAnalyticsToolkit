@@ -225,7 +225,7 @@ def add_sampler_options_to_parser(parser):
     # please adhere to alphabetical ordering
     parser.add_argument('--friction_constant', type=float, default=0.,
         help='friction to scale the influence of momenta')
-    parser.add_argument('--inverse_temperature', type=float, default=1.,
+    parser.add_argument('--inverse_temperature', type=float, default=0.,
         help='Inverse temperature that scales the gradients')
     parser.add_argument('--hamiltonian_dynamics_time', type=float, default=10,
         help='Time (steps times step width) between HMC acceptance criterion evaluation')
@@ -278,7 +278,23 @@ def react_to_sampler_options(FLAGS, unparsed):
     :param FLAGS: parsed cmd-line options as produced by argparse.parse_known_args()
     :param unparsed: unparsed cmd-line options as produced by argparse.parse_known_args()
     """
-    pass
+    if FLAGS.sampler in ["StochasticGradientLangevinDynamics",
+                         "GeometricLangevinAlgorithm_1stOrder",
+                         "GeometricLangevinAlgorithm_2ndOrder",
+                         "BAOAB",
+                         "CovarianceControlledAdaptiveLangevinThermostat",
+                         "HamiltonianMonteCarlo"] \
+        and FLAGS.inverse_temperature == 0.:
+        logging.error("You are using a sampler but have not set the inverse_temperature.")
+        sys.exit(255)
+
+    if FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder",
+                         "GeometricLangevinAlgorithm_2ndOrder",
+                         "BAOAB",
+                         "CovarianceControlledAdaptiveLangevinThermostat"] \
+            and FLAGS.friction_constant == 0.:
+        logging.error("You have not set the friction_constant for a sampler that requires it.")
+        sys.exit(255)
 
 
 def file_length(filename):
