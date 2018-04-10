@@ -353,15 +353,15 @@ def read_and_decode_image(serialized_example, num_pixels, num_classes):
   return image, label
 
 
-def decode_csv_line(line, defaults):
+def decode_csv_line(line, defaults, input_dimension, output_dimension):
     """Convert a csv line into a (features_dict,label) pair."""
     # Decode the line to a tuple of items based on the types of
     # csv_header.values().
     items = tf.decode_csv(line, list(defaults.values()))
 
     # reshape into proper tensors
-    features = tf.stack(items[0:-1])
-    label = tf.reshape(tf.convert_to_tensor(items[-1], dtype=tf.int32), [1])
+    features = tf.stack(items[0:input_dimension])
+    label = tf.reshape(tf.convert_to_tensor(items[input_dimension:input_dimension+output_dimension], dtype=tf.int32), [output_dimension])
 
     # return last element as label, rest as features
     return features, label

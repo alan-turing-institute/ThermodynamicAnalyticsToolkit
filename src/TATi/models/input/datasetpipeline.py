@@ -43,7 +43,9 @@ class DatasetPipeline(InputPipeline):
                         .skip(1)
                         .filter(lambda line: tf.not_equal(tf.substr(line, 0, 1), '#'))
                         .cache()))
-            self.dataset = self.dataset.map(functools.partial(decode_csv_line, defaults=defaults))
+            self.dataset = self.dataset.map(functools.partial(decode_csv_line, defaults=defaults,
+                                                              input_dimension=input_dimension,
+                                                              output_dimension=output_dimension))
         elif filetype == "tfrecord":
             self.dataset = self.dataset.flat_map(
                 lambda filename: (tf.data.TFRecordDataset(filename)))

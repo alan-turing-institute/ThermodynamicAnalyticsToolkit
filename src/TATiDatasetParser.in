@@ -30,7 +30,9 @@ def main(_):
             tf.data.TextLineDataset(filename)
             .skip(1)
             .filter(lambda line: tf.not_equal(tf.substr(line, 0,1), '#'))))
-    dataset = dataset.map(functools.partial(decode_csv_line, defaults=defaults))
+    dataset = dataset.map(functools.partial(decode_csv_line, defaults=defaults,
+                                            input_dimension=2,
+                                            output_dimension=1))
 
     iterator = dataset.make_initializable_iterator()
     next_element = iterator.get_next()
