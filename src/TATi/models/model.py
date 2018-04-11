@@ -530,13 +530,13 @@ class model:
                 header += ['average_virials']
         elif setup == "sample":
             if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
-                header += ['ensemble_average_loss', 'average_virials']
+                header += ['ensemble_average_loss', 'accumulated_ensemble_loss', 'average_virials']
             elif self.FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder",
                                         "GeometricLangevinAlgorithm_2ndOrder",
                                         "BAOAB"]:
-                header += ['ensemble_average_loss', 'average_kinetic_energy', 'average_virials']
+                header += ['ensemble_average_loss', 'accumulated_ensemble_loss', 'average_kinetic_energy', 'average_virials']
             elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
-                header += ['ensemble_average_loss', 'average_kinetic_energy', 'average_virials', 'average_rejection_rate']
+                header += ['ensemble_average_loss', 'accumulated_ensemble_loss', 'average_kinetic_energy', 'average_virials', 'average_rejection_rate']
         return header
 
     def get_sample_header(self):
@@ -802,6 +802,8 @@ class model:
                                     + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
                                                                         precision=output_precision)] \
                                     + ['{:{width}.{precision}e}'.format(accumulated_loss_nominator/accumulated_loss_denominator, width=output_width,
+                                                                        precision=output_precision)] \
+                                    + ['{:{width}.{precision}e}'.format(accumulated_loss_denominator, width=output_width,
                                                                         precision=output_precision)]
                     if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
                         averages_line += ['{:{width}.{precision}e}'.format(abs(0.5 * accumulated_virials) / (float(current_step + 1.)), width=output_width,
