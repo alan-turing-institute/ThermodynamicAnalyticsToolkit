@@ -42,7 +42,7 @@ def parse_parameters():
     parser.add_argument('--diffusion_matrix_file', type=str, default=None,
         help='Give file name to write eigenvectors and loss of diffusion map to')
     parser.add_argument('--drop_burnin', type=int, default=0,
-        help='How many values to drop at the beginning of the trajectory.')
+        help='All steps lower than this number are initially discarded and not included in the analysis')
     parser.add_argument('--every_nth', type=int, default=1,
         help='Evaluate only every nth trajectory point to files, e.g. 10')
     parser.add_argument('--free_energy_file', type=str, default=None,
