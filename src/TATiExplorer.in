@@ -118,20 +118,42 @@ def main(_):
     if FLAGS.number_processes > 0:
         explorer.queue.start_processes(network_model, FLAGS)
 
-    print("Creating starting trajectory.")
-    # a. add three legs to queue
-    explorer.spawn_starting_trajectory(network_model, FLAGS.number_of_parallel_trajectories)
+    steps, parameters, losses = None, None, None
+    dmap_eigenvectors, dmap_eigenvalues = None, None
+    ### Start with a very high temperature given by the user
+    for exploration_step in range(FLAGS.max_exploration_steps):
+        # a. add initial legs to queue
+        if  exploration_step==0:
+            print("Creating starting trajectory in given domain.")
+            explorer.spawn_starting_trajectory(network_model, FLAGS.number_of_parallel_trajectories)
+        else:
+            print("Creating starting trajectory in local basin.")
+            index_ev = 0
+            # we look at the first eigenvector only
+            ind = np.argsort(dmap_eigenvectors[:, index_ev])
+            divisor = np.argmin(numpy.absolute(dmap_eigenvectors[ind, index_ev]))
+            logging.debug("Divisor index is "+str(divisor))
+            # pick median element in negative and positive halves
+            medians = [np.median(a) for a in [dmap_eigenvectors[ind[divisor]:, index_ev],
+                                              dmap_eigenvectors[:ind[divisor], index_ev]]]
+            # decrease temperature and start in each basin
+            logging.debug("Medians are "+str(medians))
+            for median in medians:
+                idx = (np.abs(dmap_eigenvectors[:, index_ev]-median)).argmin()
+                step = steps[idx]
+                parameters = parameters[idx]
+                loss = losses[idx]
+                gradient = 1
+                explorer.spawn_new_trajectory(step, parameters, loss, gradient, network_model)
 
-    # b. continue until queue has run dry
-    explorer.run_all_jobs(network_model, FLAGS)
+        # b. continue until queue has run dry
+        explorer.run_all_jobs(network_model, FLAGS)
 
-    print("Starting multiple explorations from starting trajectory.")
-    cornerpoints = []
-    print("Starting multiple explorations from starting trajectory.")
-    # 2. with the initial trajectory done and analyzed,
-    #    find maximally separate points and sample from these
-    steps, parameters, losses, dmap_eigenvectors, dmap_eigenvalues = \
-        explorer.explore_basin(network_model)
+        print("Starting multiple explorations from starting trajectory.")
+        # 2. with the initial trajectory done and analyzed,
+        #    find maximally separate points and sample from these
+        steps, parameters, losses, dmap_eigenvectors, dmap_eigenvalues = \
+            explorer.explore_basin(network_model)
 
     rt.set_train_network_time(time.process_time() - rt.time_init_network)
 
