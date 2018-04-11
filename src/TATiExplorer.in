@@ -126,24 +126,12 @@ def main(_):
     explorer.run_all_jobs(network_model, FLAGS)
 
     print("Starting multiple explorations from starting trajectory.")
+    cornerpoints = []
+    print("Starting multiple explorations from starting trajectory.")
     # 2. with the initial trajectory done and analyzed,
     #    find maximally separate points and sample from these
-    cornerpoints = []
-    exploration_step = 1
-    while exploration_step < FLAGS.max_exploration_steps:
-        # a. combine all trajectories
-        steps, parameters, losses = explorer.combine_sampled_trajectories()
-
-        # b. perform diffusion map analysis for eigenvectors
-        idx_corner = explorer.get_corner_points(parameters, losses, FLAGS, FLAGS.number_of_parallel_trajectories)
-
-        # d. spawn new trajectories from these points
-        cornerpoints.append( explorer.spawn_corner_trajectories(steps, parameters, losses, idx_corner, network_model) )
-
-        # d. run all trajectories till terminated
-        explorer.run_all_jobs(network_model, FLAGS)
-
-        exploration_step += 1
+    steps, parameters, losses, dmap_eigenvectors, dmap_eigenvalues = \
+        explorer.explore_basin(network_model)
 
     rt.set_train_network_time(time.process_time() - rt.time_init_network)
 
