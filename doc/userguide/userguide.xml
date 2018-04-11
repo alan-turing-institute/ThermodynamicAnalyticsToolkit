@@ -252,186 +252,261 @@ cost of all necessary servicing, repair, or correction.</remark>
   <chapter xml.id="quickstart">
     <title  xml.id="quickstart.title">Quickstart</title>
     <section xml.id="quickstart.introduction">
-      <title  xml.id="quickstart.introduction.title">Sampling in neural networks</title>
-      <para>Assume we are given a very simple data set as depicted in 
-      <xref xrefstyle="template:Figure %n" linkend="quickstart.introduction.dataset"/>. 
-      <figure xml:id="quickstart.introduction.dataset">
-        <title>Dataset: two gaussian distributed point clouds</title>
-        <mediaobject>
-          <imageobject>
-            <imagedata width="30%" scalefit="1." entityref="dataset_two_clusters"/>
-          </imageobject>
-        </mediaobject>
-      </figure>
-      The goal is to classify all red and blue dots into two different classes. This
-      problem  is quite simple to solve: a line in the two-dimensional space can 
-      easily separate the two classes.</para>
-      <para>A very simple neural network, a perceptron, is all we need:  it uses 
-      two inputs nodes, namely each coordinate component, 
-      <inlineequation>
-        <mml:math display="inline">
-          <mml:mrow>
-            <mml:msub>
-              <mml:mi>x</mml:mi>
-              <mml:mn>1</mml:mn>
-            </mml:msub>
-          </mml:mrow>
-        </mml:math>
-      </inlineequation>
-      and
-      <inlineequation>
-        <mml:math display="inline">
-          <mml:mrow>
-            <mml:msub>
-              <mml:mi>x</mml:mi>
-              <mml:mn>2</mml:mn>
-            </mml:msub>
-          </mml:mrow>
-        </mml:math>
-      </inlineequation>,
-      and a single output 
-      node with an activation function
-      <inlineequation>
-        <mml:math display="inline">
-          <mml:mrow>
-              <mml:mi>f</mml:mi>
-          </mml:mrow>
-        </mml:math>
-      </inlineequation>
-      whose sign gives the class the input item belongs to. The network is 
-      given in 
-      <xref xrefstyle="template:Figure %n" linkend="quickstart.introduction.perceptron"/>.
-      </para>
-    <figure xml:id="quickstart.introduction.perceptron">
-        <title>Simple single-layer perceptron with weights and biases</title>
-        <mediaobject>
-          <imageobject>
-            <imagedata width="30%" scalefit="1." entityref="simple_single_layer_perceptron"/>
-          </imageobject>
-        </mediaobject>
-      </figure>
-      <para>In the following we want to use the mean square loss, i.e. the 
-      euclidian distance between the output from the network and the expected
-      values per item, as the network's loss function. The loss depends 
-      implicitly on the dataset and explicitly on the weights and biases 
-      associated with the network. In our case, we have two weights for the two
-      edges between input nodes, 
-      <inlineequation>
-        <mml:math display="inline">
-          <mml:mrow>
-            <mml:msub>
-              <mml:mi>w</mml:mi>
-              <mml:mn>1</mml:mn>
-            </mml:msub>
-          </mml:mrow>
-        </mml:math>
-      </inlineequation>
-      and
-      <inlineequation>
-        <mml:math display="inline">
-          <mml:mrow>
-            <mml:msub>
-              <mml:mi>w</mml:mi>
-              <mml:mn>2</mml:mn>
-            </mml:msub>
-          </mml:mrow>
-        </mml:math>
-      </inlineequation>,
-      and the output node and a single bias attached
-      to the output node
-      <inlineequation>
-        <mml:math display="inline">
-          <mml:mrow>
-              <mml:mi>b</mml:mi>
-          </mml:mrow>
-        </mml:math>
-      </inlineequation>.
-      </para>
-      <para>In sampling we look at a system of particles that have two internal
-      properties: location and momentum. The location is simply their current 
-      value, that changes through its momentum over time. The momentum again 
-      changes because the particle is inside a potential that drives it towards
-      the minimum. The system is described by a so-called Hamilton operator
-      that gives rise to its same named dynamics. If noise is additionally taken into 
-      account, then we look at Langevin Dynamics.</para>
-      <para>Returning to the neural networks, the role of the particles is taken
-      by the degrees of freedom of the system: weights and biases. The loss
-      function is called the <emphasis>potential</emphasis> and it is accompanied 
-      by a <emphasis>kinetic energy</emphasis> that is simply the sum of all
-      squared momenta. Adding Momentum to Optimizers in neural networks is a
-      concept known already and inspired by physics. The momentum helps in
-      overcoming areas of the loss function where it is essentially flat.</para>
-      <para>Sampling produces trajectories of particles moving along the
-      manifold. Integrals along these trajectories, if they are long enough, 
-      are equivalent to integrating over the whole manifold, if the system is
-      ergodic.</para>
-      <para>By using sampling we mean to discover more of the loss manifold
-      than just the closest local minimum. The wording seems to indicate that 
-      we would like to explore <emphasis>all</emphasis> of the loss manifold. 
-      However, this is not the case as there are regions we are not interested
-      in, namely those with large loss function values. In other words, we
-      would like to sample in such a way as only to stay in regions of the loss
-      manifold associated with small values. Generating trajectories by 
-      dynamics where the negative of the gradient acts as a driving force onto
-      each particle automatically brings them into regions where the
-      loss's value is small. This is the principle behind Gradient Descent.
-       However, in general all possible minima locations will not form a
-       connected region on the loss manifold. These minima regions may
-       be separated by barriers which are needed to overcome. We distinguish
-       two kinds,</para>
-      <itemizedlist>
-        <listitem>entropic barriers,</listitem>
-        <listitem>enthalpic barriers.</listitem>
-      </itemizedlist>
-      <para>Both of which are conceptually very simple. The enthalpic barrier
-      is simply a ridge that is very high where the particles need a large 
-      momentum to overcome it. Entropic barriers on the other hand are passages
-      very small in volume that are simply very difficult to find. In order to
-      overcome barriers of the first kind, higher temperatures suffice.
-      For the second type of barrer, this is not so easy. Metaphorically
-      speaking, we are looking for possibly very small door.</para>
-      <para>This quick description of the problem of sampling in the context
-      of neural networks in data science should have prepare you now for the
-      following quickstart tutorial on how to actually use ThermodynamicAnalyticsToolkit 
-      to perform sampling.</para>
-      <para>Let us have a closer look at a very simple loss landscape. In
-      <xref linkend="quickstart.introduction.landscape.neuralnetwork">Figure</xref>
-      we look at a very simple network of a single input node, with a single 
-      hidden layer containing just one node and a single output layer. 
-      Activation function is linear everywhere. We set the output node's and 
-      hidden node's bias to zero. The dataset contains two cluster of points,
-      one (label -1) centered at -2, another (label +1) centered at 2 which we 
-      do not depict here. Any product of the two degrees of freedom of the 
-      network, namely its two weights, equal to unity will classify the data 
-      well.</para>
-    <figure xml:id="quickstart.introduction.landscape.neuralnetwork">
-        <title>Neural network with permutation symmetry to provoke multiple minima</title>
-        <mediaobject>
-          <imageobject>
-            <imagedata width="45%" scalefit="1." entityref="neuralnetwork_permutation_symmetry"/>
-          </imageobject>
-        </mediaobject>
-      </figure>
-      <para>In <xref linkend="quickstart.introduction.landscape.loss">Figure</xref>
-      we then turn to the loss landscape depending on either weight. We see
-      two minima basins both of hyperbole or "banane" shape. There is a clear
-      (enthalpic) potential barrier in between. However, the minima basins
-      themselves are to some part entropic barriers as they are elongated and 
-      flat.</para>
-      <para>In the figure we also give a trajectory. Here, we have chosen such
-      a (inverse) temperature value such that it is able to pass the potential
-      barrier and reach the other minima basin.</para>
-    <figure xml:id="quickstart.introduction.landscape.loss">
-        <title>Loss landscape with an example trajectory</title>
-        <mediaobject>
-          <imageobject>
-            <imagedata width="45%" scalefit="1." entityref="losslandscape_permutation_symmetry"/>
-          </imageobject>
-        </mediaobject>
-      </figure>
-      <para>This is the goal of exploration: To find all (local) minima to allow
-      to pick the lowest, namely the global minimum.</para>
-    </section>
+      <title  xml.id="quickstart.introduction.title">Introduction</title>
+      <section xml.id="quickstart.introduction.sampling">
+        <title  xml.id="quickstart.introduction.sampling.title">Sampling in neural networks</title>
+        <para>Assume we are given a very simple data set as depicted in 
+        <xref xrefstyle="template:Figure %n" linkend="quickstart.introduction.sampling.dataset"/>. 
+        <figure xml:id="quickstart.introduction.sampling.dataset">
+          <title>Dataset: two gaussian distributed point clouds</title>
+          <mediaobject>
+            <imageobject>
+              <imagedata width="30%" scalefit="1." entityref="dataset_two_clusters"/>
+            </imageobject>
+          </mediaobject>
+        </figure>
+        The goal is to classify all red and blue dots into two different classes. This
+        problem  is quite simple to solve: a line in the two-dimensional space can 
+        easily separate the two classes.</para>
+        <para>A very simple neural network, a perceptron, is all we need:  it uses 
+        two inputs nodes, namely each coordinate component, 
+        <inlineequation>
+          <mml:math display="inline">
+            <mml:mrow>
+              <mml:msub>
+                <mml:mi>x</mml:mi>
+                <mml:mn>1</mml:mn>
+              </mml:msub>
+            </mml:mrow>
+          </mml:math>
+        </inlineequation>
+        and
+        <inlineequation>
+          <mml:math display="inline">
+            <mml:mrow>
+              <mml:msub>
+                <mml:mi>x</mml:mi>
+                <mml:mn>2</mml:mn>
+              </mml:msub>
+            </mml:mrow>
+          </mml:math>
+        </inlineequation>,
+        and a single output 
+        node with an activation function
+        <inlineequation>
+          <mml:math display="inline">
+            <mml:mrow>
+                <mml:mi>f</mml:mi>
+            </mml:mrow>
+          </mml:math>
+        </inlineequation>
+        whose sign gives the class the input item belongs to. The network is 
+        given in 
+        <xref xrefstyle="template:Figure %n" linkend="quickstart.introduction.sampling.perceptron"/>.
+        </para>
+      <figure xml:id="quickstart.introduction.sampling.perceptron">
+          <title>Simple single-layer perceptron with weights and biases</title>
+          <mediaobject>
+            <imageobject>
+              <imagedata width="30%" scalefit="1." entityref="simple_single_layer_perceptron"/>
+            </imageobject>
+          </mediaobject>
+        </figure>
+        <para>In the following we want to use the mean square loss, i.e. the 
+        euclidian distance between the output from the network and the expected
+        values per item, as the network's loss function. The loss depends 
+        implicitly on the dataset and explicitly on the weights and biases 
+        associated with the network. In our case, we have two weights for the two
+        edges between input nodes, 
+        <inlineequation>
+          <mml:math display="inline">
+            <mml:mrow>
+              <mml:msub>
+                <mml:mi>w</mml:mi>
+                <mml:mn>1</mml:mn>
+              </mml:msub>
+            </mml:mrow>
+          </mml:math>
+        </inlineequation>
+        and
+        <inlineequation>
+          <mml:math display="inline">
+            <mml:mrow>
+              <mml:msub>
+                <mml:mi>w</mml:mi>
+                <mml:mn>2</mml:mn>
+              </mml:msub>
+            </mml:mrow>
+          </mml:math>
+        </inlineequation>,
+        and the output node and a single bias attached
+        to the output node
+        <inlineequation>
+          <mml:math display="inline">
+            <mml:mrow>
+                <mml:mi>b</mml:mi>
+            </mml:mrow>
+          </mml:math>
+        </inlineequation>.
+        </para>
+        <para>In sampling we look at a system of particles that have two internal
+        properties: location and momentum. The location is simply their current 
+        value, that changes through its momentum over time. The momentum again 
+        changes because the particle is inside a potential that drives it towards
+        the minimum. The system is described by a so-called Hamilton operator
+        that gives rise to its same named dynamics. If noise is additionally taken into 
+        account, then we look at Langevin Dynamics.</para>
+        <para>Returning to the neural networks, the role of the particles is taken
+        by the degrees of freedom of the system: weights and biases. The loss
+        function is called the <emphasis>potential</emphasis> and it is accompanied 
+        by a <emphasis>kinetic energy</emphasis> that is simply the sum of all
+        squared momenta. Adding Momentum to Optimizers in neural networks is a
+        concept known already and inspired by physics. The momentum helps in
+        overcoming areas of the loss function where it is essentially flat.</para>
+        <para>Sampling produces trajectories of particles moving along the
+        manifold. Integrals along these trajectories, if they are long enough, 
+        are equivalent to integrating over the whole manifold, if the system is
+        ergodic.</para>
+        <para>By using sampling we mean to discover more of the loss manifold
+        than just the closest local minimum. The wording seems to indicate that 
+        we would like to explore <emphasis>all</emphasis> of the loss manifold. 
+        However, this is not the case as there are regions we are not interested
+        in, namely those with large loss function values. In other words, we
+        would like to sample in such a way as only to stay in regions of the loss
+        manifold associated with small values. Generating trajectories by 
+        dynamics where the negative of the gradient acts as a driving force onto
+        each particle automatically brings them into regions where the
+        loss's value is small. This is the principle behind Gradient Descent.
+         However, in general all possible minima locations will not form a
+         connected region on the loss manifold. These minima regions may
+         be separated by barriers which are needed to overcome. We distinguish
+         two kinds,</para>
+        <itemizedlist>
+          <listitem>entropic barriers,</listitem>
+          <listitem>enthalpic barriers.</listitem>
+        </itemizedlist>
+        <para>Both of which are conceptually very simple. The enthalpic barrier
+        is simply a ridge that is very high where the particles need a large 
+        momentum to overcome it. Entropic barriers on the other hand are passages
+        very small in volume that are simply very difficult to find. In order to
+        overcome barriers of the first kind, higher temperatures suffice.
+        For the second type of barrer, this is not so easy. Metaphorically
+        speaking, we are looking for possibly very small door.</para>
+        <para>This quick description of the problem of sampling in the context
+        of neural networks in data science should have prepare you now for the
+        following quickstart tutorial on how to actually use ThermodynamicAnalyticsToolkit 
+        to perform sampling.</para>
+        <para>Let us have a closer look at a very simple loss landscape. In
+        <xref linkend="quickstart.introduction.sampling.landscape.neuralnetwork">Figure</xref>
+        we look at a very simple network of a single input node, with a single 
+        hidden layer containing just one node and a single output layer. 
+        Activation function is linear everywhere. We set the output node's and 
+        hidden node's bias to zero. The dataset contains two cluster of points,
+        one (label -1) centered at -2, another (label +1) centered at 2 which we 
+        do not depict here. Any product of the two degrees of freedom of the 
+        network, namely its two weights, equal to unity will classify the data 
+        well.</para>
+      <figure xml:id="quickstart.introduction.sampling.landscape.neuralnetwork">
+          <title>Neural network with permutation symmetry to provoke multiple minima</title>
+          <mediaobject>
+            <imageobject>
+              <imagedata width="45%" scalefit="1." entityref="neuralnetwork_permutation_symmetry"/>
+            </imageobject>
+          </mediaobject>
+        </figure>
+        <para>In <xref linkend="quickstart.introduction.sampling.landscape.loss">Figure</xref>
+        we then turn to the loss landscape depending on either weight. We see
+        two minima basins both of hyperbole or "banane" shape. There is a clear
+        (enthalpic) potential barrier in between. However, the minima basins
+        themselves are to some part entropic barriers as they are elongated and 
+        flat.</para>
+        <para>In the figure we also give a trajectory. Here, we have chosen such
+        a (inverse) temperature value such that it is able to pass the potential
+        barrier and reach the other minima basin.</para>
+      <figure xml:id="quickstart.introduction.sampling.landscape.loss">
+          <title>Loss landscape with an example trajectory</title>
+          <mediaobject>
+            <imageobject>
+              <imagedata width="45%" scalefit="1." entityref="losslandscape_permutation_symmetry"/>
+            </imageobject>
+          </mediaobject>
+        </figure>
+        <para>This is the goal of exploration: To find all (local) minima to allow
+        to pick the lowest, namely the global minimum.</para>
+      </section>
+      <section xml.id="quickstart.introduction.exploring">
+        <title  xml.id="quickstart.introduction.exploring.title">Exploring neural networks</title>
+        <section xml.id="quickstart.introduction.exploring.general">
+          <title  xml.id="quickstart.introduction.exploring.title">The General Picture</title>
+          <para>Imagine a submarine in the ocean. All you have is a depth sounder and
+          your pressure gauge. The former tells you how deep the ground is 
+          beneath you , the latter tells you how far above the sea level is.
+          You want to explore the ocean floor. What do you do?</para>
+          <para>
+          Using your pressure gauge you can maintain a constant level beneath the
+          sea level. And then you sample the ocean floor using your depth soounder.
+          Once you have obtained a first idea about the floor beneath you, i.e.
+          how deep it generally is, you go a bit deeper and reiterate.
+          At a certain level you will suddenly be enclosed by walls. You are
+          constrained to a smaller region within the one you want to explore.
+          You have entered a potential minima basin. You continue in this region
+          in the same way as before: scanning and going deeper once you have a
+          rough estimate.</para>
+          <para>
+          In this way you build a hierarchical tree of all minima basins. The
+          generality of the tree will depend on how densely you have sampled the
+          overall region (there may be very small potential wells you possibly
+          overlook).</para>
+        </section>
+        <section xml.id="quickstart.introduction.exploring.approach">
+          <title  xml.id="quickstart.introduction.exploring.title"> The Approach</title>
+          <para>
+          So, now let's start. We initially sample at a very high temperature 
+          which brings us over all potential barriers in a given region we want
+          to explore. We continue sampling for some time.
+          We pick corner points and check whether these lie on the boundary
+          designated by the prior. If not, then we need to continue sampling 
+          the basin. If they do, then we stop.
+          </para>
+          <para>
+          Now, we habe sampled a bit, zigzagged across the manifold at 
+          super-high speed because of the hopefully large enough temperature chosen.
+          Now we have a first rough idea about the potential inside the area
+          designated by the prior.
+          </para>
+
+          <para>
+          This will allow a rough estimate of:
+          <itemizedlist>
+            <listitem>the average ensemble loss, i.e. the mean potential encountered</listitem>
+            <listitem>the average kinetic energy (equivalent to the temperature)</listitem>
+            <listitem>the general shape of this "basin"</listitem>
+          </itemizedlist>
+          </para>
+          <para>
+          Investigating now all the samples where the potential was substantially
+          lower than the mean potential will give use candidates for the
+          subsequent runs.
+          </para>
+
+          <para>
+          We assume that each candidate has possibly encountered a basin in the
+          larger basin that we have jumped around in so far.
+          Now, we need to lower the temperature such that we sample within this
+          basin only. To this end, we need the average ensemble loss. This gives
+          us an estimate of the average potential. The temperature additionally
+          tells us how far above this we have been all the time. The difference
+          between the potential at the sample and its mean value gives use a
+          good estimate of the temperature to set.
+          </para>
+          <para>
+          This hierarchical tree of minimas is also known as the 
+          <emphasis>disconnectivity graph</emphasis>.
+          </para>
+        </section>
+      </section>
+    </section> 
+    
     <section xml:id="quickstart.python">
       <title  xml:id="quickstart.python.title">Using Python</title>
       <para>
