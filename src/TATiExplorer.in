@@ -118,7 +118,7 @@ def main(_):
     if FLAGS.number_processes > 0:
         explorer.queue.start_processes(network_model, FLAGS)
 
-    steps, parameters, losses = None, None, None
+    steps, parameters, losses, ensemble_average_loss = None, None, None, 0.
     dmap_eigenvectors, dmap_eigenvalues = None, None
     ### Start with a very high temperature given by the user
     for exploration_step in range(FLAGS.max_exploration_steps):
@@ -138,13 +138,20 @@ def main(_):
                                               dmap_eigenvectors[:ind[divisor], index_ev]]]
             # decrease temperature and start in each basin
             logging.debug("Medians are "+str(medians))
+            largest_loss = None
             for median in medians:
                 idx = (np.abs(dmap_eigenvectors[:, index_ev]-median)).argmin()
-                step = steps[idx]
-                parameters = parameters[idx]
                 loss = losses[idx]
-                gradient = 1
-                explorer.spawn_new_trajectory(step, parameters, loss, gradient, network_model)
+                if largest_loss is None or largest_loss < loss:
+                    largest_loss = loss
+                explorer.spawn_new_trajectory(steps[idx], parameters[idx],
+                                              loss, 1, network_model)
+
+            # set new inverse temperature
+            FLAGS.inverse_temperature = ensemble_average_loss - largest_loss
+            network_model.reset_parameters(FLAGS)
+            explorer.reset_parameters(FLAGS)
+            logging.info("New inverse temperature is "+str(FLAGS.inverse_temperature))
 
         # b. continue until queue has run dry
         explorer.run_all_jobs(network_model, FLAGS)
@@ -152,7 +159,7 @@ def main(_):
         print("Starting multiple explorations from starting trajectory.")
         # 2. with the initial trajectory done and analyzed,
         #    find maximally separate points and sample from these
-        steps, parameters, losses, dmap_eigenvectors, dmap_eigenvalues = \
+        steps, parameters, losses, ensemble_average_loss, dmap_eigenvectors, dmap_eigenvalues = \
             explorer.explore_basin(network_model)
 
     rt.set_train_network_time(time.process_time() - rt.time_init_network)

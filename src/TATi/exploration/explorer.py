@@ -36,6 +36,9 @@ class Explorer(object):
             self.queue = TrajectoryProcessQueue(parameters, number_pruning, number_processes=use_processes, manager=manager)
         self.max_distance = 0. # helps to estimate when exploration has finished
 
+    def reset_parameters(self, _parameters):
+        self.parameters = _parameters
+
     def add_used_data_ids_list(self, _list):
         """ Pass function through to TrajectoryQueue
 
@@ -294,4 +297,29 @@ class Explorer(object):
             # e. run all trajectories till terminated
             self.run_all_jobs(network_model, self.parameters)
 
-        return steps, parameters, losses, dmap_eigenvectors, dmap_eigenvalues
+        ensemble_average_loss = self._get_ensemble_average_loss()
+
+        return steps, parameters, losses, ensemble_average_loss, dmap_eigenvectors, dmap_eigenvalues
+
+    def _get_ensemble_average_loss(self):
+        """ This is a helper function that computes the ensemble average loss
+        over multiple trajectories.
+
+        :return:
+        """
+        accumulated_loss_nominator = 0.
+        accumulated_loss_denominator = 0.
+        data_container = self.queue.get_data_container()
+        for current_id in data_container.get_ids():
+            data_object = data_container.get_data(current_id)
+            if data_object.type == "sample":
+                averages_lines_per_leg = data_object.averages_lines
+                for leg_nr in range(len(averages_lines_per_leg)):
+                    averages_lines = averages_lines_per_leg[leg_nr]
+                    averages_line = averages_lines.loc[['ensemble_average_loss', 'accumulated_ensemble_loss']]
+                    accumulated_loss_nominator += averages_line[0][-1]*averages_line[1][-1]
+                    accumulated_loss_denominator += averages_line[1][-1]
+        if accumulated_loss_denominator != 0.:
+            return  accumulated_loss_nominator/accumulated_loss_denominator
+        else:
+            return 0.
