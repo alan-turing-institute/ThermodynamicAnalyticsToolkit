@@ -1,5 +1,6 @@
 from collections import deque
 import logging
+import numpy as np
 
 from TATi.exploration.trajectorydatacontainer import TrajectoryDataContainer
 from TATi.exploration.trajectoryjob_analyze import TrajectoryJob_analyze
