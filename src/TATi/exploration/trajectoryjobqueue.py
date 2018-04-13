@@ -1,6 +1,7 @@
 from collections import deque
 import logging
 import numpy as np
+from time import sleep
 
 from TATi.exploration.trajectorydatacontainer import TrajectoryDataContainer
 from TATi.exploration.trajectoryjob_analyze import TrajectoryJob_analyze
@@ -210,6 +211,7 @@ class TrajectoryJobQueue(TrajectoryQueue):
                 if self.number_processes != 0:
                     self.queue.task_done()
                 self._enqueue_job(current_job)
+                sleep(0.1+np.random.uniform(low=0.,high=0.01))
 
         # append data id to list to mark it as in use
         self.used_data_ids.append(data_id)
