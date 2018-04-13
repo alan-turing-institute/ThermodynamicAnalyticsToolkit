@@ -38,6 +38,8 @@ class Explorer(object):
 
     def reset_parameters(self, _parameters):
         self.parameters = _parameters
+        if self.use_processes != 0:
+            self.queue.reset_parameters(_parameters)
 
     def add_used_data_ids_list(self, _list):
         """ Pass function through to TrajectoryQueue
