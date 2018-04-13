@@ -59,11 +59,14 @@ class TrajectoryProcess_train(TrajectoryProcess):
                     "batch_size", "dropout", "fix_parameters", "hidden_activation", \
                     "hidden_dimension", "in_memory_pipeline", "input_columns", "loss", \
                     "output_activation", "prior_factor", "prior_lower_boundary", \
-                    "prior_power", "prior_upper_boundary", "max_steps", "optimizer"])
+                    "prior_power", "prior_upper_boundary", "optimizer"])
         # use a deterministic but different seed for each trajectory
         if self.FLAGS.seed is not None:
             optimizing_flags.extend(
                 ["--seed", str(self.FLAGS.seed+_data.get_id())])
+        # only train for a single step to obtain hessians
+        optimizing_flags.extend(
+            ["--max_steps", str(1)])
         # restore initial point and save end point for next leg
         optimizing_flags.extend(
             ["--step_width", str(self.LEARNING_RATE)])
