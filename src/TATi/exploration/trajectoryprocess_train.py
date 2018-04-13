@@ -7,6 +7,11 @@ import subprocess
 from TATi.exploration.trajectoryprocess import TrajectoryProcess
 from TATi.exploration.get_executables import get_install_path
 
+try:
+    from subprocess import DEVNULL # py3k
+except ImportError:
+    import os
+    DEVNULL = open(os.devnull, 'wb')
 
 class TrajectoryProcess_train(TrajectoryProcess):
     ''' This implements a job that runs a new leg of a given trajectory
@@ -86,7 +91,7 @@ class TrajectoryProcess_train(TrajectoryProcess):
         ])
 
         # run TATiampler
-        p = subprocess.Popen([get_install_path()+"/TATiOptimizer"]+optimizing_flags)
+        p = subprocess.Popen([get_install_path()+"/TATiOptimizer"]+optimizing_flags, stdout=DEVNULL)
         p.communicate(None)
         retcode = p.poll()
         assert( retcode == 0 )
