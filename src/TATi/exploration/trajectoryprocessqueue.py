@@ -31,6 +31,9 @@ class TrajectoryProcessQueue(TrajectoryJobQueue):
         self.current_job_id = manager.TrajectoryJobId(1)
         self.queue = JoinableQueue()
 
+    def reset_parameters(self, _parameters):
+        self.parameters = _parameters
+
     def getUniqueFilename(self, prefix="", suffix=""):
         """ Returns a unique filename
 
