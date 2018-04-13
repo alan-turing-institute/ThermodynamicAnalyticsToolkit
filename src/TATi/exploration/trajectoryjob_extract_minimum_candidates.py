@@ -6,7 +6,12 @@ from TATi.exploration.trajectoryjob import TrajectoryJob
 class TrajectoryJob_extract_minimium_candidates(TrajectoryJob):
     ''' This implements a job that extracts minimum candidates from the trajectory.
 
-    This is done by looking at the gradients along the trajectory.
+    We look through the thresholds 10^[largest_power, smallest_power] in order
+    find sufficiently many but not too many. Therefore, we look for small
+    gradients along the trajectory starting from the smallest power and stop
+    as soon as we find sufficiently many.
+
+    Candidates are stored in the trajectorydata's minimum_candidates variable.
     '''
 
     SMALLEST_TOLERANCE_POWER = -6       # tolerance for gradients being small
@@ -14,16 +19,26 @@ class TrajectoryJob_extract_minimium_candidates(TrajectoryJob):
     MINIMUM_EXTRACT_CANDIDATES = 3      # minimum number of candidates to extract
 
 
-    def __init__(self, data_id, parameters, continue_flag = True):
+    def __init__(self, data_id, parameters, smallest_power=None, largest_power=None, continue_flag = True):
         """ Initializes a extracting minimum candidates job.
 
         :param data_id: id associated with data object
         :param parameters: parameter for analysis
+        :param smallest_power: smallest power for tolerance search, None - use default
+        :param largest_power: largest power for tolerance search, None - use default
         :param continue_flag: flag allowing to override spawning of subsequent job
         """
         super(TrajectoryJob_extract_minimium_candidates, self).__init__(data_id)
         self.job_type = "extract_minimium_candidates"
         self.parameters = parameters
+        if smallest_power is None:
+            self.smallest_power = self.SMALLEST_TOLERANCE_POWER
+        else:
+            self.smallest_power = smallest_power
+        if largest_power is None:
+            self.largest_power = self.LARGEST_TOLERANCE_POWER
+        else:
+            self.largest_power = largest_power
         self.continue_flag = continue_flag
 
     def run(self, _data):
@@ -35,7 +50,7 @@ class TrajectoryJob_extract_minimium_candidates(TrajectoryJob):
         :param _object: FLAGS object that contains sampling parameters
         :return: updated data object
         """
-        for i in range(self.SMALLEST_TOLERANCE_POWER, self.LARGEST_TOLERANCE_POWER+1):
+        for i in range(self.smallest_power, self.largest_power+1):
             tolerance = pow(10,i)
             # delete already present ones
             _data.minimum_candidates[:] = []

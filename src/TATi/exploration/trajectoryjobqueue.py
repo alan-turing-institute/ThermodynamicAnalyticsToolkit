@@ -110,6 +110,8 @@ class TrajectoryJobQueue(TrajectoryQueue):
         extract_job = TrajectoryJob_extract_minimium_candidates(
             data_id=data_object.get_id(),
             parameters=parameters,
+            smallest_power=-12,
+            largest_power=-6,
             continue_flag=continue_flag)
         self._enqueue_job(extract_job)
 
@@ -249,7 +251,8 @@ class TrajectoryJobQueue(TrajectoryQueue):
                     logging.info("Added analyze job")
 
                 elif current_job.job_type == "train":
-                    self.add_check_gradient_job(data_object)
+                    # only do a single train leg (for hessians only)
+                    self.add_check_gradient_job(data_object, continue_flag=False)
                     logging.info("Added check gradient job")
 
                 elif current_job.job_type == "check_gradient":

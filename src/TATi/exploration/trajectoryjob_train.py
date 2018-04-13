@@ -59,8 +59,10 @@ class TrajectoryJob_train(TrajectoryJob_sample):
         """
         # modify max_steps for optimization
         FLAGS = self.network_model.FLAGS
+        sampler_max_steps = FLAGS.max_steps
         sampler_step_width = FLAGS.step_width
         FLAGS.step_width = self.LEARNING_RATE
+        FLAGS.max_steps = 1 # perform a single step for hessians only
         self.network_model.reset_parameters(FLAGS)
 
         if self.parameters is not None:
@@ -103,6 +105,7 @@ class TrajectoryJob_train(TrajectoryJob_sample):
 
         # set FLAGS back to old values
         FLAGS.step_width = sampler_step_width
+        FLAGS.max_steps = sampler_max_steps
         self.network_model.reset_parameters(FLAGS)
 
         return _data, self.continue_flag
