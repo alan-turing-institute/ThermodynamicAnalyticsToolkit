@@ -318,9 +318,13 @@ class Explorer(object):
                 averages_lines_per_leg = data_object.averages_lines
                 for leg_nr in range(len(averages_lines_per_leg)):
                     averages_lines = averages_lines_per_leg[leg_nr]
-                    averages_line = averages_lines.loc[['ensemble_average_loss', 'accumulated_ensemble_loss']]
-                    accumulated_loss_nominator += averages_line[0][-1]*averages_line[1][-1]
-                    accumulated_loss_denominator += averages_line[1][-1]
+                    averages_line = averages_lines.loc[:, ['ensemble_average_loss', 'accumulated_ensemble_loss']].values[-1]
+                    logging.info("Ensemble loss is " + str(averages_line[0]) \
+                                  + "/" + str(averages_line[1]))
+                    accumulated_loss_nominator += averages_line[0]*averages_line[1]
+                    accumulated_loss_denominator += averages_line[1]
+        logging.info("accumulated_loss is "+str(accumulated_loss_nominator) \
+                      +"/"+str(accumulated_loss_denominator))
         if accumulated_loss_denominator != 0.:
             return  accumulated_loss_nominator/accumulated_loss_denominator
         else:

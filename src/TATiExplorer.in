@@ -6,6 +6,7 @@ sys.path.insert(1, '@pythondir@')
 import argparse
 from collections import deque
 import logging
+import math
 import numpy as np
 import tensorflow as tf
 import time
@@ -152,7 +153,17 @@ def main(_):
                                                                     losses, corner_indices, network_model))
 
             # set new inverse temperature
-            FLAGS.inverse_temperature = ensemble_average_loss - largest_loss
+            if ensemble_average_loss != 0.:
+                new_temperature = 1./math.fabs(ensemble_average_loss - largest_loss)
+                if new_temperature > FLAGS.inverse_temperature:
+                    FLAGS.inverse_temperature = new_temperature
+                else:
+                    logging.warning("New inverse temperature "+str(new_temperature) \
+                        +" would be smaller than old one "+str(FLAGS.inverse_temperature))
+                FLAGS.inverse_temperature *= 2.
+            else:
+                logging.warning("Ensemble average loss is zero!")
+                FLAGS.inverse_temperature *= 2.
             network_model.reset_parameters(FLAGS)
             explorer.reset_parameters(FLAGS)
             logging.info("New inverse temperature is "+str(FLAGS.inverse_temperature))
