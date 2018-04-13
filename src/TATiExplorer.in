@@ -149,10 +149,7 @@ def main(_):
                     largest_loss = loss
                 corner_indices.append(idx)
 
-            cornerpoints.extend( explorer.spawn_corner_trajectories(steps, parameters,
-                                                                    losses, corner_indices, network_model))
-
-            # set new inverse temperature
+            # first set new inverse temperature
             if ensemble_average_loss != 0.:
                 new_temperature = 1./math.fabs(ensemble_average_loss - largest_loss)
                 if new_temperature > FLAGS.inverse_temperature:
@@ -167,6 +164,11 @@ def main(_):
             network_model.reset_parameters(FLAGS)
             explorer.reset_parameters(FLAGS)
             logging.info("New inverse temperature is "+str(FLAGS.inverse_temperature))
+
+            # then spawn new trajectories
+            cornerpoints.extend( explorer.spawn_corner_trajectories(steps, parameters,
+                                                                    losses, corner_indices, network_model))
+
 
         # b. continue until queue has run dry
         explorer.run_all_jobs(network_model, FLAGS)
