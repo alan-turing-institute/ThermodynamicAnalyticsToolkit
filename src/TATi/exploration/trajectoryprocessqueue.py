@@ -110,8 +110,16 @@ class TrajectoryProcessQueue(TrajectoryJobQueue):
         # remove the model files when trajectory is done
         data_object = self.data_container.get_data(data_id)
         if os.path.isdir(data_object.model_filename):
-            logging.debug("Removing "+data_object.model_filename)
-            shutil.rmtree(data_object.model_filename)
+            logging.info("Removing "+data_object.model_filename)
+            try:
+                shutil.rmtree(data_object.model_filename)
+            except FileNotFoundError:
+                # this is a bug related to rmtree if a file is removed
+                # between rmtree planning to remove and actually removing
+                # it, this exception is triggered:
+                # see here: https://bugs.python.org/issue29699
+                # As we know that model_filename exists, we simply ignore it
+                pass
 
     def run_next_job_till_queue_empty(self, network_model, parameters):
         """ Run jobs in queue till empty
