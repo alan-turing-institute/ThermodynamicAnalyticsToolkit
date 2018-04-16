@@ -48,12 +48,12 @@ class model:
                 self.FLAGS.dimension = sum([file_length(filename)
                                             for filename in FLAGS.batch_data_files]) \
                                        - len(FLAGS.batch_data_files)
-                self._check_valid_batch_size()
             elif FLAGS.batch_data_file_type == "tfrecord":
                 self.FLAGS.dimension = self._get_dimension_from_tfrecord(FLAGS.batch_data_files)
             else:
                 logging.info("Unknown file type")
                 assert(0)
+            self._check_valid_batch_size()
 
             logging.info("Parsing "+str(FLAGS.batch_data_files))
 
@@ -117,6 +117,8 @@ class model:
                                 .value[0])
                     #logging.debug("height is "+str(height)+" and width is "+str(width))
                 dimension += 1
+
+        logging.info("Scanned " + str(dimension) + " records in tfrecord file.")
 
         return dimension
 
