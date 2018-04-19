@@ -186,9 +186,23 @@ class NeuralNetwork(object):
                 self.summary_nodes['accuracy'] = accuracy
         tf.summary.scalar('accuracy', accuracy)
 
+    def _prepare_global_step(self):
+        """ Adds the global_step node to the graph.
+
+        :return: global_step node
+        """
+        # have this outside scope as it is used by both training and learning
+        if 'global_step' not in self.summary_nodes.keys():
+            global_step = tf.Variable(0, trainable=False, name="global_step")
+            tf.add_to_collection("Variables_to_Save", global_step)
+            self.summary_nodes['global_step'] = global_step
+        else:
+            global_step = self.summary_nodes['global_step']
+        return global_step
+
     def add_sample_method(self, loss, sampling_method, seed,
                           prior, sigma=None, sigmaA=None):
-        """ Adds nodes for training the neural network.
+        """ Prepares adding nodes for training the neural network.
 
         :param loss: node for the desired loss function to minimize during training
         :param sampling_method: name of the sampler method, e.g. GradientDescent
@@ -198,13 +212,23 @@ class NeuralNetwork(object):
         :param sigma: scale of noise injected to momentum per step for CCaDL only
         :param sigmaA: scale of noise in convex combination for CCaDL only
         """
-        # have this outside scope as it is used by both training and learning
-        if 'global_step' not in self.summary_nodes.keys():
-            global_step = tf.Variable(0, trainable=False, name="global_step")
-            tf.add_to_collection("Variables_to_Save", global_step)
-            self.summary_nodes['global_step'] = global_step
-        else:
-            global_step = self.summary_nodes['global_step']
+        global_step = self._prepare_global_step()
+        sampler = self._prepare_sampler(loss, sampling_method, seed, prior, sigma, sigmaA)
+        self._finalize_sample_method(loss, sampler, global_step)
+
+    def _prepare_sampler(self, loss, sampling_method, seed,
+                          prior, sigma=None, sigmaA=None):
+        """ Prepares the sampler instance, adding also all placeholder nodes it requires.
+
+        :param loss: node for the desired loss function to minimize during training
+        :param sampling_method: name of the sampler method, e.g. GradientDescent
+        :param seed: seed value for the random number generator to obtain reproducible runs
+        :param prior: dict with keys factor, lower_boundary and upper_boundary that
+                specifies a wall-repelling force to ensure a prior on the parameters
+        :param sigma: scale of noise injected to momentum per step for CCaDL only
+        :param sigmaA: scale of noise in convex combination for CCaDL only
+        :return: created sampler instance
+        """
         with tf.name_scope('sample'):
             # DON'T add placeholders only sometimes, e.g. when only a specific sampler
             # requires it. Always add them and only sometimes use them!
@@ -248,6 +272,17 @@ class NeuralNetwork(object):
                 raise NotImplementedError("Unknown sampler")
             if len(prior) != 0:
                 sampler.set_prior(prior)
+
+            return sampler
+
+    def _finalize_sample_method(self, loss, sampler, global_step):
+        """ Adds nodes for training the neural network.
+
+        :param loss: node for the desired loss function to minimize during training
+        :param sampler:
+        :param global_step:
+        """
+        with tf.name_scope('sample'):
             trainables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
             train_step = sampler.minimize(loss, global_step=global_step, var_list=trainables)
 
@@ -264,13 +299,21 @@ class NeuralNetwork(object):
         :param prior: dict with keys factor, lower_boundary and upper_boundary that
                 specifies a wall-repelling force to ensure a prior on the parameters
         """
+        global_step = self._prepare_global_step()
+        optimizer = self._prepare_optimizer(loss, optimizer_method, prior)
+        self._finalize_train_method(loss, optimizer, global_step)
+
+    def _prepare_optimizer(self, loss, optimizer_method,
+                          prior):
+        """ Prepares optimizer instances, adding the placeholder it needs.
+
+        :param loss: node for the desired loss function to minimize during training
+        :param optimizer_method: name of the optimizer method, e.g. GradientDescent
+        :param prior: dict with keys factor, lower_boundary and upper_boundary that
+                specifies a wall-repelling force to ensure a prior on the parameters
+        :return: created optimizer instance
+        """
         # have this outside scope as it is used by both training and learning
-        if 'global_step' not in self.summary_nodes.keys():
-            global_step = tf.Variable(0, trainable=False, name="global_step")
-            tf.add_to_collection("Variables_to_Save", global_step)
-            self.summary_nodes['global_step'] = global_step
-        else:
-            global_step = self.summary_nodes['global_step']
         with tf.name_scope('train'):
             # DON'T add placeholders only sometimes, e.g. when only a specific optimizer
             # requires it. Always add them and only sometimes use them!
@@ -284,6 +327,15 @@ class NeuralNetwork(object):
                 raise NotImplementedError("Unknown optimizer_method")
             if len(prior) != 0:
                 optimizer.set_prior(prior)
+
+            return optimizer
+
+    def _finalize_train_method(self, loss, optimizer, global_step):
+        """ Prepares nodes for training the neural network using an optimizer.
+
+        :param loss: node for the desired loss function to minimize during training
+        """
+        with tf.name_scope('train'):
             trainables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
             train_step = optimizer.minimize(loss, global_step=global_step, var_list=trainables)
 
