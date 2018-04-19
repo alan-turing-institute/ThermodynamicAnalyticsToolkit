@@ -276,12 +276,14 @@ class NeuralNetwork(object):
         """ Adds nodes for training the neural network.
 
         :param loss: node for the desired loss function to minimize during training
-        :param sampler:
-        :param global_step:
+        :param sampler: sampler instance to use for sampling
+        :param global_step: global_step node
         """
         with tf.name_scope('sample'):
             trainables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
-            train_step = sampler.minimize(loss, global_step=global_step, var_list=trainables)
+            grads_and_vars = sampler.compute_and_check_gradients(loss, var_list=trainables)
+            train_step = sampler.apply_gradients(grads_and_vars, global_step=global_step,
+                                                 name=sampler.get_name())
 
             # DON'T put the nodes in there before the minimize call!
             # only after minimize was .._apply_dense() called and the nodes are ready
