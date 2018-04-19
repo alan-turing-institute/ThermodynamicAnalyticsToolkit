@@ -403,8 +403,8 @@ class NeuralNetwork(object):
         :param seed: random number see to use for weights
         :return: reference to the output layer
         """
-        y = self.nn_layer(current_hidden_layer, hidden_out_dimension, output_dimension, 'output',
-                          seed=seed, act=activation)
+        y = self._nn_layer(current_hidden_layer, hidden_out_dimension, output_dimension, 'output',
+                           seed=seed, act=activation)
         self.summary_nodes['y'] = y
         logging.debug("y is " + str(y.get_shape()))
         return y
@@ -436,8 +436,8 @@ class NeuralNetwork(object):
             in_dimension = out_dimension
             out_dimension = layer_dimensions[i]
             layer_name = "layer" + number
-            current_hidden = self.nn_layer(last_layer, in_dimension, out_dimension, layer_name,
-                                           seed=current_seed, act=activation)
+            current_hidden = self._nn_layer(last_layer, in_dimension, out_dimension, layer_name,
+                                            seed=current_seed, act=activation)
             logging.debug(layer_name + " is " + str(current_hidden.get_shape()))
 
             if keep_prob is not None:
@@ -523,10 +523,10 @@ class NeuralNetwork(object):
             tf.summary.scalar('min', tf.reduce_min(var))
             tf.summary.histogram('histogram', var)
 
-    def nn_layer(self,
-                 input_tensor, input_dim, output_dim,
-                 layer_name, act=tf.nn.relu,
-                 seed=None):
+    def _nn_layer(self,
+                  input_tensor, input_dim, output_dim,
+                  layer_name, act=tf.nn.relu,
+                  seed=None):
         """Reusable code for making a simple neural net layer.
         It does a matrix multiply, bias add, and then uses ReLU to nonlinearize.
         It also sets up name scoping so that the resultant graph is easy to read,
