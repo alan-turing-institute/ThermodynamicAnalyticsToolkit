@@ -83,6 +83,7 @@ class model:
         self.hessians = None
 
         # mark step assign op as to be created
+        self.step_placeholder = None
         self.global_step_assign_t = None
 
         # mark writer as to be created
@@ -345,6 +346,7 @@ class model:
         self.input_pipeline.reset(self.sess)
 
     def init_network(self, filename = None, setup = None,
+                     replicas=2,
                      add_vectorized_gradients = False):
         """ Initializes the graph, from a stored model if filename is not None.
 
@@ -366,84 +368,98 @@ class model:
             self.xinput, self.x = create_input_layer(self.input_dimension, input_columns)
 
         #if setup == "sample":
-        self.create_resource_variables()
-        self.placeholder_dict = {}
-        self.variable_dict = {}
-        self.assign_dict = {}
-        with tf.variable_scope("accumulate", reuse=True):
-            # global variables for all samplers
-            self.variable_dict["old_loss"] = tf.get_variable("old_loss", dtype=dds_basetype)
-            self.variable_dict["old_kinetic_energy"] = tf.get_variable("old_kinetic", dtype=dds_basetype)
-            self.variable_dict["kinetic_energy"] = tf.get_variable("kinetic", dtype=dds_basetype)
-            self.assign_dict["kinetic_energy"] = self.variable_dict["kinetic_energy"].assign(0.)
-            self.variable_dict["total_energy"] = tf.get_variable("total_energy", dtype=dds_basetype)
-            self.variable_dict["momenta"] = tf.get_variable("momenta", dtype=dds_basetype)
-            self.assign_dict["momenta"] = self.variable_dict["momenta"].assign(0.)
-            self.variable_dict["gradients"] = tf.get_variable("gradients", dtype=dds_basetype)
-            self.assign_dict["gradients"] = self.variable_dict["gradients"].assign(0.)
-            self.variable_dict["virials"] = tf.get_variable("virials", dtype=dds_basetype)
-            self.assign_dict["virials"] = self.variable_dict["virials"].assign(0.)
-            self.variable_dict["noise"] = tf.get_variable("noise", dtype=dds_basetype)
-            self.assign_dict["noise"] = self.variable_dict["noise"].assign(0.)
-            self.variable_dict["accepted"] = tf.get_variable("accepted", dtype=tf.int64)
-            self.assign_dict["accepted"] = self.variable_dict["accepted"].assign(0)
-            self.variable_dict["rejected"] = tf.get_variable("rejected", dtype=tf.int64)
-            self.assign_dict["rejected"] = self.variable_dict["rejected"].assign(0)
-            # global variables specific to HMC
-            self.placeholder_dict["var_loss"] = tf.placeholder(self.variable_dict["old_loss"].dtype.base_dtype, name="var_loss")
-            self.placeholder_dict["var_kin"] = tf.placeholder(self.variable_dict["old_kinetic_energy"].dtype.base_dtype, name="var_kinetic")
-            self.placeholder_dict["var_total"] = tf.placeholder(self.variable_dict["total_energy"].dtype.base_dtype, name="var_total")
-            self.assign_dict["old_loss"] = self.variable_dict["old_loss"].assign(self.placeholder_dict["var_loss"])
-            self.assign_dict["old_kinetic_energy"] = self.variable_dict["old_kinetic_energy"].assign(self.placeholder_dict["var_kin"])
-            self.assign_dict["total_energy"] = self.variable_dict["total_energy"].assign(self.placeholder_dict["var_total"])
-
+        self.placeholder_dict = []
+        self.variable_dict = []
+        self.assign_dict = []
+        for i in range(replicas):
+            self.placeholder_dict.append({})
+            self.variable_dict.append({})
+            self.assign_dict.append({})
+            with tf.name_scope('replica' + str(i + 1)):
+                self.create_resource_variables()
+                with tf.variable_scope("accumulate", reuse=True):
+                    # global variables for all samplers
+                    self.variable_dict[i]["old_loss"] = tf.get_variable("old_loss", dtype=dds_basetype)
+                    self.variable_dict[i]["old_kinetic_energy"] = tf.get_variable("old_kinetic", dtype=dds_basetype)
+                    self.variable_dict[i]["kinetic_energy"] = tf.get_variable("kinetic", dtype=dds_basetype)
+                    self.assign_dict[i]["kinetic_energy"] = self.variable_dict[i]["kinetic_energy"].assign(0.)
+                    self.variable_dict[i]["total_energy"] = tf.get_variable("total_energy", dtype=dds_basetype)
+                    self.variable_dict[i]["momenta"] = tf.get_variable("momenta", dtype=dds_basetype)
+                    self.assign_dict[i]["momenta"] = self.variable_dict[i]["momenta"].assign(0.)
+                    self.variable_dict[i]["gradients"] = tf.get_variable("gradients", dtype=dds_basetype)
+                    self.assign_dict[i]["gradients"] = self.variable_dict[i]["gradients"].assign(0.)
+                    self.variable_dict[i]["virials"] = tf.get_variable("virials", dtype=dds_basetype)
+                    self.assign_dict[i]["virials"] = self.variable_dict[i]["virials"].assign(0.)
+                    self.variable_dict[i]["noise"] = tf.get_variable("noise", dtype=dds_basetype)
+                    self.assign_dict[i]["noise"] = self.variable_dict[i]["noise"].assign(0.)
+                    self.variable_dict[i]["accepted"] = tf.get_variable("accepted", dtype=tf.int64)
+                    self.assign_dict[i]["accepted"] = self.variable_dict[i]["accepted"].assign(0)
+                    self.variable_dict[i]["rejected"] = tf.get_variable("rejected", dtype=tf.int64)
+                    self.assign_dict[i]["rejected"] = self.variable_dict[i]["rejected"].assign(0)
+                    # global variables specific to HMC
+                    self.placeholder_dict[i]["var_loss"] = tf.placeholder(self.variable_dict[i]["old_loss"].dtype.base_dtype, name="var_loss")
+                    self.placeholder_dict[i]["var_kin"] = tf.placeholder(self.variable_dict[i]["old_kinetic_energy"].dtype.base_dtype, name="var_kinetic")
+                    self.placeholder_dict[i]["var_total"] = tf.placeholder(self.variable_dict[i]["total_energy"].dtype.base_dtype, name="var_total")
+                    self.assign_dict[i]["old_loss"] = self.variable_dict[i]["old_loss"].assign(self.placeholder_dict[i]["var_loss"])
+                    self.assign_dict[i]["old_kinetic_energy"] = self.variable_dict[i]["old_kinetic_energy"].assign(self.placeholder_dict[i]["var_kin"])
+                    self.assign_dict[i]["total_energy"] = self.variable_dict[i]["total_energy"].assign(self.placeholder_dict[i]["var_total"])
 
         if self.nn is None:
-            self.nn = NeuralNetwork()
-            hidden_dimension = [int(i) for i in get_list_from_string(self.FLAGS.hidden_dimension)]
-            activations = NeuralNetwork.get_activations()
-            self.loss = self.nn.create(
-                self.x, hidden_dimension, self.output_dimension,
-                seed=self.FLAGS.seed,
-                add_dropped_layer=(self.FLAGS.dropout is not None),
-                hidden_activation=activations[self.FLAGS.hidden_activation],
-                output_activation=activations[self.FLAGS.output_activation],
-                loss_name=self.FLAGS.loss
-            )
-
+            self.nn = []
+            self.loss = []
             if self.FLAGS.do_hessians or add_vectorized_gradients:
-                # create node for gradient and hessian computation only if specifically
-                # requested as the creation along is costly (apart from the expensive part
-                # of evaluating the nodes eventually). This would otherwise slow down
-                # startup quite a bit even when hessians are not evaluated.
-                #print("GRADIENTS")
-                vectorized_gradients = []
-                for tensor in tf.get_collection(tf.GraphKeys.WEIGHTS) + tf.get_collection(tf.GraphKeys.BIASES):
-                    grad = tf.gradients(self.loss, tensor)
-                    print(grad)
-                    vectorized_gradients.append(tf.reshape(grad, [-1]))
-                self.gradients = tf.reshape(tf.concat(vectorized_gradients, axis=0), [-1])
+                self.gradients = []
+                if self.FLAGS.do_hessians:
+                    self.hessians = []
+            for i in range(replicas):
+                with tf.name_scope('replica'+str(i+1)):
+                    self.nn.append(NeuralNetwork())
+                    hidden_dimension = [int(i) for i in get_list_from_string(self.FLAGS.hidden_dimension)]
+                    activations = NeuralNetwork.get_activations()
+                    self.loss.append(self.nn[-1].create(
+                        self.x, hidden_dimension, self.output_dimension,
+                        seed=self.FLAGS.seed,
+                        add_dropped_layer=(self.FLAGS.dropout is not None),
+                        hidden_activation=activations[self.FLAGS.hidden_activation],
+                        output_activation=activations[self.FLAGS.output_activation],
+                        loss_name=self.FLAGS.loss
+                    ))
 
-            if self.FLAGS.do_hessians:
-                #print("HESSIAN")
-                self.hessians = []
-                total_dofs = 0
-                for gradient in vectorized_gradients:
-                    dofs = int(np.cumprod(gradient.shape))
-                    total_dofs += dofs
-                    #print(dofs)
-                    # tensorflow cannot compute the gradient of a multi-dimensional mapping
-                    # only of functions (i.e. one-dimensional output). Hence, we have to
-                    # split the gradients into its components and do gradient on each
-                    split_gradient = tf.split(gradient, num_or_size_splits=dofs)
-                    for splitgrad in split_gradient:
-                        for othertensor in tf.get_collection(tf.GraphKeys.WEIGHTS) + tf.get_collection(tf.GraphKeys.BIASES):
-                            grad = tf.gradients(splitgrad, othertensor)
-                            self.hessians.append(
-                                tf.reshape(grad, [-1]))
-                self.hessians = tf.reshape(tf.concat(self.hessians, axis=0), [total_dofs, total_dofs])
+                    if self.FLAGS.do_hessians or add_vectorized_gradients:
+                        # create node for gradient and hessian computation only if specifically
+                        # requested as the creation along is costly (apart from the expensive part
+                        # of evaluating the nodes eventually). This would otherwise slow down
+                        # startup quite a bit even when hessians are not evaluated.
+                        #print("GRADIENTS")
+                        vectorized_gradients = []
+                        for tensor in tf.get_collection(tf.GraphKeys.WEIGHTS) + tf.get_collection(tf.GraphKeys.BIASES):
+                            grad = tf.gradients(self.loss, tensor)
+                            print(grad)
+                            vectorized_gradients.append(tf.reshape(grad, [-1]))
+                        self.gradients.append(tf.reshape(tf.concat(vectorized_gradients, axis=0), [-1]))
+
+                    if self.FLAGS.do_hessians:
+                        #print("HESSIAN")
+                        self.hessians = []
+                        total_dofs = 0
+                        for gradient in vectorized_gradients:
+                            dofs = int(np.cumprod(gradient.shape))
+                            total_dofs += dofs
+                            #print(dofs)
+                            # tensorflow cannot compute the gradient of a multi-dimensional mapping
+                            # only of functions (i.e. one-dimensional output). Hence, we have to
+                            # split the gradients into its components and do gradient on each
+                            split_gradient = tf.split(gradient, num_or_size_splits=dofs)
+                            for splitgrad in split_gradient:
+                                for othertensor in tf.get_collection(tf.GraphKeys.WEIGHTS) + tf.get_collection(tf.GraphKeys.BIASES):
+                                    grad = tf.gradients(splitgrad, othertensor)
+                                    self.hessians.append(
+                                        tf.reshape(grad, [-1]))
+                        self.hessians.append(tf.reshape(tf.concat(self.hessians, axis=0), [total_dofs, total_dofs]))
         else:
-            self.loss = self.nn.get_list_of_nodes(["loss"])[0]
+            self.loss = []
+            for i in range(replicas):
+                self.loss.append(self.nn[i].get_list_of_nodes(["loss"])[0])
 
         if self.FLAGS.fix_parameters is not None:
             names, values = self.split_parameters_as_names_values(self.FLAGS.fix_parameters)
@@ -472,29 +488,38 @@ class model:
             pass
 
         # setup training/sampling
-        if setup == "train":
-            self.nn.add_train_method(self.loss, optimizer_method=self.FLAGS.optimizer, prior=prior)
-        elif setup == "sample":
-            if self.FLAGS.sampler != "CovarianceControlledAdaptiveLangevinThermostat":
-                self.nn.add_sample_method(self.loss, sampling_method=self.FLAGS.sampler, seed=self.FLAGS.seed, prior=prior)
+        for i in range(replicas):
+            if setup == "train":
+                self.nn[i].add_train_method(self.loss[i], optimizer_method=self.FLAGS.optimizer, prior=prior)
+            elif setup == "sample":
+                if self.FLAGS.sampler != "CovarianceControlledAdaptiveLangevinThermostat":
+                    self.nn[i].add_sample_method(self.loss[i], sampling_method=self.FLAGS.sampler, seed=self.FLAGS.seed, prior=prior)
+                else:
+                    self.nn[i].add_sample_method(self.loss[i], sampling_method=self.FLAGS.sampler, seed=self.FLAGS.seed, prior=prior,
+                                                 sigma=self.FLAGS.sigma, sigmaA=self.FLAGS.sigmaA)
             else:
-                self.nn.add_sample_method(self.loss, sampling_method=self.FLAGS.sampler, seed=self.FLAGS.seed, prior=prior,
-                                          sigma=self.FLAGS.sigma, sigmaA=self.FLAGS.sigmaA)
-        else:
-            logging.info("Not adding sample or train method.")
+                logging.info("Not adding sample or train method.")
 
-        if "step_placeholder" not in self.nn.placeholder_nodes.keys():
-            step_placeholder = tf.placeholder(shape=(), dtype=tf.int32)
-            self.nn.placeholder_nodes["step_placeholder"] = step_placeholder
-        if (self.global_step_assign_t is None) and ('global_step' in self.nn.summary_nodes.keys()):
-            self.global_step_assign_t = tf.assign(self.nn.summary_nodes['global_step'],
-                                                  self.nn.placeholder_nodes["step_placeholder"])
+        if setup == "train" or setup == "sample":
+            if self.step_placeholder is None:
+                self.step_placeholder = []
+                for i in range(replicas):
+                    self.step_placeholder.append(tf.placeholder(shape=(), dtype=tf.int32))
+            if self.global_step_assign_t is None:
+                self.global_step_assign_t = []
+                for i in range(replicas):
+                    self.global_step_assign_t.append(tf.assign(self.nn[i].summary_nodes['global_step'], self.step_placeholder[i]))
+        else:
+            logging.debug("Not adding step placeholder or global step.")
 
         # setup model saving/recovering
         if self.saver is None:
             self.saver = tf.train.Saver(tf.get_collection(tf.GraphKeys.WEIGHTS) +
                                    tf.get_collection(tf.GraphKeys.BIASES) + \
                                    tf.get_collection("Variables_to_Save"))
+        # merge summaries at very end
+        self.summary = tf.summary.merge_all()  # Merge all the summaries
+
         if self.sess is None:
             logging.debug("Using %s, %s threads " % (str(self.FLAGS.intra_ops_threads), str(self.FLAGS.inter_ops_threads)))
             self.sess = tf.Session(
@@ -513,7 +538,7 @@ class model:
         ### Now the session object is created, graph must be done here!
 
         # initialize constants in graph
-        self.nn.init_graph(self.sess)
+        NeuralNetwork.init_graph(self.sess)
 
         # initialize dataset
         #self.input_pipeline.reset(self.sess)
@@ -609,7 +634,7 @@ class model:
     def get_total_bias_dof(self):
         return self.biases.get_total_dof()
 
-    def sample(self, return_run_info = False, return_trajectories = False, return_averages = False):
+    def sample(self, replica_index=0, return_run_info = False, return_trajectories = False, return_averages = False):
         """ Performs the actual sampling of the neural network `nn` given a dataset `ds` and a
         Session `session`.
 
@@ -622,9 +647,10 @@ class model:
         :return: either twice None or a pandas dataframe depending on whether either
                 parameter has evaluated to True
         """
-        placeholder_nodes = self.nn.get_dict_of_nodes(
+
+        placeholder_nodes = self.nn[replica_index].get_dict_of_nodes(
             ["friction_constant", "inverse_temperature", "step_width", "current_step", "next_eval_step", "y_"])
-        test_nodes = self.nn.get_list_of_nodes(["merged", "sample_step", "accuracy", "global_step", "loss"])
+        test_nodes = self.nn[replica_index].get_list_of_nodes(["merged", "sample_step", "accuracy", "global_step", "loss"])
 
         output_width = 8
         output_precision = 8
@@ -672,14 +698,14 @@ class model:
                                   "BAOAB",
                                   "CovarianceControlledAdaptiveLangevinThermostat",
                                   "HamiltonianMonteCarlo"]:
-            gamma, beta, deltat = self.sess.run(self.nn.get_list_of_nodes(
+            gamma, beta, deltat = self.sess.run(self.nn[replica_index].get_list_of_nodes(
                 ["friction_constant", "inverse_temperature", "step_width"]), feed_dict={
                 placeholder_nodes["step_width"]: self.FLAGS.step_width,
                 placeholder_nodes["inverse_temperature"]: self.FLAGS.inverse_temperature,
                 placeholder_nodes["friction_constant"]: self.FLAGS.friction_constant
             })
         elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
-            current_step, num_mc_steps, deltat = self.sess.run(self.nn.get_list_of_nodes(
+            current_step, num_mc_steps, deltat = self.sess.run(self.nn[replica_index].get_list_of_nodes(
                 ["current_step", "next_eval_step", "step_width"]), feed_dict={
                 placeholder_nodes["step_width"]: self.FLAGS.step_width,
                 placeholder_nodes["current_step"]: 0,
@@ -690,14 +716,14 @@ class model:
 
         # create extra nodes for HMC
         if self.FLAGS.sampler == "HamiltonianMonteCarlo":
-            HMC_eval_nodes = self.nn.get_list_of_nodes(["loss"]) \
-                             + [self.variable_dict["total_energy"], self.variable_dict["kinetic_energy"]]
-            HMC_set_nodes = [self.assign_dict["old_loss"], self.assign_dict["old_kinetic_energy"]]
-            HMC_set_all_nodes = [self.assign_dict["total_energy"]] + HMC_set_nodes
+            HMC_eval_nodes = self.nn[replica_index].get_list_of_nodes(["loss"]) \
+                             + [self.variable_dict[replica_index]["total_energy"], self.variable_dict[replica_index]["kinetic_energy"]]
+            HMC_set_nodes = [self.assign_dict[replica_index]["old_loss"], self.assign_dict[replica_index]["old_kinetic_energy"]]
+            HMC_set_all_nodes = [self.assign_dict[replica_index]["total_energy"]] + HMC_set_nodes
 
         # zero rejection rate before sampling start
-        check_accepted, check_rejected = self.sess.run([self.assign_dict["accepted"],
-                                                        self.assign_dict["rejected"]])
+        check_accepted, check_rejected = self.sess.run([self.assign_dict[replica_index]["accepted"],
+                                                        self.assign_dict[replica_index]["rejected"]])
         assert(check_accepted == 0)
         assert(check_rejected == 0)
 
@@ -725,9 +751,9 @@ class model:
                 placeholder_nodes["friction_constant"]: self.FLAGS.friction_constant,
                 placeholder_nodes["current_step"]: current_step,
                 placeholder_nodes["next_eval_step"]: HMC_steps,
-                self.placeholder_dict["var_kin"]: 0.,
-                self.placeholder_dict["var_loss"]: 0.,
-                self.placeholder_dict["var_total"]: 0.
+                self.placeholder_dict[replica_index]["var_kin"]: 0.,
+                self.placeholder_dict[replica_index]["var_loss"]: 0.,
+                self.placeholder_dict[replica_index]["var_total"]: 0.
             }
             if self.FLAGS.dropout is not None:
                 feed_dict.update({placeholder_nodes["keep_prob"] : self.FLAGS.dropout})
@@ -737,9 +763,9 @@ class model:
             if self.FLAGS.sampler == "HamiltonianMonteCarlo":
                 loss_eval, total_eval, kin_eval = self.sess.run(HMC_eval_nodes, feed_dict=feed_dict)
                 HMC_set_dict = {
-                    self.placeholder_dict["var_kin"]: kin_eval,
-                    self.placeholder_dict["var_loss"]: loss_eval,
-                    self.placeholder_dict["var_total"]: loss_eval+kin_eval
+                    self.placeholder_dict[replica_index]["var_kin"]: kin_eval,
+                    self.placeholder_dict[replica_index]["var_loss"]: loss_eval,
+                    self.placeholder_dict[replica_index]["var_total"]: loss_eval+kin_eval
                 }
                 if abs(total_eval) < 1e-10:
                     self.sess.run(HMC_set_all_nodes, feed_dict=HMC_set_dict)
@@ -756,11 +782,11 @@ class model:
                                       "BAOAB",
                                       "CovarianceControlledAdaptiveLangevinThermostat"]:
                 check_kinetic, check_momenta, check_gradients, check_virials, check_noise = \
-                    self.sess.run([self.assign_dict["kinetic_energy"],
-                                   self.assign_dict["momenta"],
-                                   self.assign_dict["gradients"],
-                                   self.assign_dict["virials"],
-                                   self.assign_dict["noise"]])
+                    self.sess.run([self.assign_dict[replica_index]["kinetic_energy"],
+                                   self.assign_dict[replica_index]["momenta"],
+                                   self.assign_dict[replica_index]["gradients"],
+                                   self.assign_dict[replica_index]["virials"],
+                                   self.assign_dict[replica_index]["noise"]])
                 assert (abs(check_kinetic) < 1e-10)
                 assert (abs(check_momenta) < 1e-10)
                 assert (abs(check_gradients) < 1e-10)
@@ -890,8 +916,8 @@ class model:
                                                                           precision=output_precision)
                                          for x in [sqrt(gradients), abs(0.5*virials), sqrt(noise)]]
                         elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
-                            accepted_eval, rejected_eval  = self.sess.run([self.variable_dict["accepted"],
-                                                                           self.variable_dict["rejected"]])
+                            accepted_eval, rejected_eval  = self.sess.run([self.variable_dict[replica_index]["accepted"],
+                                                                           self.variable_dict[replica_index]["rejected"]])
                             if (rejected_eval+accepted_eval) > 0:
                                 rejection_rate = rejected_eval/(rejected_eval+accepted_eval)
                             else:
@@ -928,7 +954,7 @@ class model:
 
         return run_info, trajectory, averages
 
-    def train(self, return_run_info = False, return_trajectories = False, return_averages=False):
+    def train(self, replica_index=0, return_run_info = False, return_trajectories = False, return_averages=False):
         """ Performs the actual training of the neural network `nn` given a dataset `ds` and a
         Session `session`.
 
@@ -941,9 +967,9 @@ class model:
         :return: either twice None or a pandas dataframe depending on whether either
                 parameter has evaluated to True
         """
-        placeholder_nodes = self.nn.get_dict_of_nodes(["learning_rate", "y_"])
-        test_nodes = self.nn.get_list_of_nodes(["merged", "train_step", "accuracy", "global_step",
-                                                "loss", "y_", "y"])+[self.variable_dict["gradients"]]
+        placeholder_nodes = self.nn[replica_index].get_dict_of_nodes(["learning_rate", "y_"])
+        test_nodes = self.nn[replica_index].get_list_of_nodes(["merged", "train_step", "accuracy", "global_step",
+                                                               "loss", "y_", "y"])+[self.variable_dict[replica_index]["gradients"]]
 
         output_width = 8
         output_precision = 8
@@ -1080,8 +1106,8 @@ class model:
 
         return run_info, trajectory, averages
 
-    def compute_optimal_stepwidth(self):
-        placeholder_nodes = self.nn.get_dict_of_nodes(["learning_rate", "y_"])
+    def compute_optimal_stepwidth(self, replica_index=0):
+        placeholder_nodes = self.nn[replica_index].get_dict_of_nodes(["learning_rate", "y_"])
 
         # get first batch of data
         self.reset_dataset()
@@ -1211,10 +1237,10 @@ class model:
                 retlist.append(variable)
         return retlist
 
-    def assign_current_step(self, step):
+    def assign_current_step(self, step, replica_index=0):
         # set step
-        if ('global_step' in self.nn.summary_nodes.keys()):
-            sample_step_placeholder = self.nn.get("step_placeholder")
+        if ('global_step' in self.nn[replica_index].summary_nodes.keys()):
+            sample_step_placeholder = self.nn[replica_index].get("step_placeholder")
             feed_dict = {sample_step_placeholder: step}
             set_step = self.sess.run(self.global_step_assign_t, feed_dict=feed_dict)
 
