@@ -71,6 +71,7 @@ class model:
 
         # mark neuralnetwork, saver and session objects as to be created
         self.nn = None
+        self.trainables = None
         self.saver = None
         self.sess = None
 
@@ -407,17 +408,20 @@ class model:
         if self.nn is None:
             self.nn = []
             self.loss = []
+            self.trainables = []
             if self.FLAGS.do_hessians or add_vectorized_gradients:
                 self.gradients = []
                 if self.FLAGS.do_hessians:
                     self.hessians = []
             for i in range(replicas):
                 with tf.name_scope('replica'+str(i+1)):
+                    self.trainables.append('trainables_replica'+str(i+1))
                     self.nn.append(NeuralNetwork())
                     hidden_dimension = [int(i) for i in get_list_from_string(self.FLAGS.hidden_dimension)]
                     activations = NeuralNetwork.get_activations()
                     self.loss.append(self.nn[-1].create(
                         self.x, hidden_dimension, self.output_dimension,
+                        trainables_collection=self.trainables[-1],
                         seed=self.FLAGS.seed,
                         add_dropped_layer=(self.FLAGS.dropout is not None),
                         hidden_activation=activations[self.FLAGS.hidden_activation],
@@ -488,17 +492,34 @@ class model:
             pass
 
         # setup training/sampling
-        for i in range(replicas):
-            if setup == "train":
+        if setup == "train":
+            for i in range(replicas):
                 self.nn[i].add_train_method(self.loss[i], optimizer_method=self.FLAGS.optimizer, prior=prior)
-            elif setup == "sample":
-                if self.FLAGS.sampler != "CovarianceControlledAdaptiveLangevinThermostat":
-                    self.nn[i].add_sample_method(self.loss[i], sampling_method=self.FLAGS.sampler, seed=self.FLAGS.seed, prior=prior)
-                else:
-                    self.nn[i].add_sample_method(self.loss[i], sampling_method=self.FLAGS.sampler, seed=self.FLAGS.seed, prior=prior,
-                                                 sigma=self.FLAGS.sigma, sigmaA=self.FLAGS.sigmaA)
-            else:
-                logging.info("Not adding sample or train method.")
+        elif setup == "sample":
+            sampler = []
+            for i in range(replicas):
+                sampler.append(self.nn[i]._prepare_sampler(self.loss[i], sampling_method=self.FLAGS.sampler,
+                                                      seed=self.FLAGS.seed, prior=prior,
+                                                      sigma=self.FLAGS.sigma, sigmaA=self.FLAGS.sigmaA))
+            # create gradients
+            grads_and_vars = []
+            for i in range(replicas):
+                with tf.name_scope('gradients_replica'+str(i+1)):
+                    trainables = tf.get_collection(self.trainables[i])
+                    grads_and_vars.append(sampler[i].compute_and_check_gradients(self.loss[i],
+                                                                                 var_list=trainables))
+
+            # combine gradients
+            print(grads_and_vars)
+
+            # add position update nodes
+            for i in range(replicas):
+                global_step = self.nn[i]._prepare_global_step()
+                train_step = sampler[i].apply_gradients(grads_and_vars[i], global_step=global_step,
+                                                     name=sampler[i].get_name())
+                self.nn[i].summary_nodes['sample_step'] = train_step
+        else:
+            logging.info("Not adding sample or train method.")
 
         if setup == "train" or setup == "sample":
             if self.step_placeholder is None:
