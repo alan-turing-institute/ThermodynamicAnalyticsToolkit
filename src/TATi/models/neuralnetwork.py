@@ -94,6 +94,7 @@ class NeuralNetwork(object):
 
     def create(self, input_layer,
                layer_dimensions, output_dimension,
+               trainables_collection=None,
                seed=None,
                add_dropped_layer=False,
                hidden_activation=tf.nn.relu,
@@ -109,6 +110,7 @@ class NeuralNetwork(object):
         :param layer_dimensions: a list of ints giving the number of nodes for
             each hidden layer.
         :param output_dimension: the number of nodes in the output layer
+        :param trainables_collection: specific collection to gather all weights of this layer
         :param seed: seed for reproducible random values
         :param add_dropped_layer: whether to add dropped layer or not to protect against overfitting
         :param hidden_activation: activation function for the hidden layer
@@ -132,13 +134,17 @@ class NeuralNetwork(object):
         if layer_dimensions is not None and len(layer_dimensions) != 0:
             last_hidden_layer = \
                 self.add_hidden_layers(input_layer, input_dimension,
-                                       layer_dimensions, keep_prob, hidden_activation, seed=seed)
+                                       layer_dimensions, keep_prob, hidden_activation,
+                                       trainables_collection=trainables_collection,
+                                       seed=seed)
             y = self.add_output_layer(last_hidden_layer, layer_dimensions[-1],
                                       output_dimension, output_activation,
+                                      trainables_collection=trainables_collection,
                                       seed=output_seed)
         else:
             y = self.add_output_layer(input_layer, input_dimension,
                                       output_dimension, output_activation,
+                                      trainables_collection=trainables_collection,
                                       seed=output_seed)
         self.placeholder_nodes["y"] = y
 
@@ -392,24 +398,27 @@ class NeuralNetwork(object):
         self.loss_nodes["softmax_cross_entropy"] = softmax_cross_entropy
 
     def add_output_layer(self, current_hidden_layer, hidden_out_dimension,
-                         output_dimension, activation, seed=None):
+                         output_dimension, activation, trainables_collection=None,
+                         seed=None):
         """ Add the output layer giving the predicted values.
 
         :param current_hidden_layer: last hidden layer which is to be connected to the output layer
         :param hidden_out_dimension: number of nodes in `current_hidden_layer`
         :param output_dimension: number of output nodes
         :param activation: activation function
+        :param trainables_collection: specific collection to gather all weights of this layer
         :param seed: random number see to use for weights
         :return: reference to the output layer
         """
         y = self._nn_layer(current_hidden_layer, hidden_out_dimension, output_dimension, 'output',
+                           trainables_collection=trainables_collection,
                            seed=seed, act=activation)
         self.summary_nodes['y'] = y
         logging.debug("y is " + str(y.get_shape()))
         return y
 
     def add_hidden_layers(self,input_layer, input_dimension, layer_dimensions, keep_prob = None,
-                          activation=tf.nn.relu, seed=None):
+                          activation=tf.nn.relu, trainables_collection=None, seed=None):
         """ Add fully connected hidden layers each with an additional dropout layer
          (makes the network robust against overfitting).
 
@@ -422,6 +431,7 @@ class NeuralNetwork(object):
         :param keep_prob: reference to the placeholder with the *keep probability* for the dropped layer
         :param layer_dimensions: list of ints giving the number of nodes of each hidden layer
         :param activation: activation function of the hidden layers
+        :param trainables_collection: specific collection to gather all weights of this layer
         :param seed: random number see to use for weights (seed is increased by one per layer)
         :return: reference to the last layer created
         """
@@ -436,6 +446,7 @@ class NeuralNetwork(object):
             out_dimension = layer_dimensions[i]
             layer_name = "layer" + number
             current_hidden = self._nn_layer(last_layer, in_dimension, out_dimension, layer_name,
+                                            trainables_collection=trainables_collection,
                                             seed=current_seed, act=activation)
             logging.debug(layer_name + " is " + str(current_hidden.get_shape()))
 
@@ -525,6 +536,7 @@ class NeuralNetwork(object):
     def _nn_layer(self,
                   input_tensor, input_dim, output_dim,
                   layer_name, act=tf.nn.relu,
+                  trainables_collection=None,
                   seed=None):
         """Reusable code for making a simple neural net layer.
         It does a matrix multiply, bias add, and then uses ReLU to nonlinearize.
@@ -536,19 +548,26 @@ class NeuralNetwork(object):
         :param output_dim: number of nodes in the created layer
         :param layer_name: created layer's name
         :param act: activation function to use for the nodes in the created layer
+        :param trainables_collection: specific collection to gather all weights of this layer
         :param seed: random number seed for initializing weights
         :return: reference to the created layer
         """
-        logging.info("Creating nn layer %s with %d, %d" % (layer_name, input_dim, output_dim))
+        scope_name = tf.get_default_graph().get_name_scope()
+        logging.info("Creating nn layer %s in scope %s with %d, %d" \
+                     % (layer_name, scope_name, input_dim, output_dim))
         # Adding a name scope ensures logical grouping of the layers in the graph.
         with tf.name_scope(layer_name):
             # This Variable will hold the state of the weights for the layer
             with tf.name_scope('weights'):
                 weights = self.weight_variable([input_dim, output_dim], seed)
                 tf.add_to_collection(tf.GraphKeys.WEIGHTS, weights)
+                if trainables_collection is not None:
+                    tf.add_to_collection(trainables_collection, weights)
             with tf.name_scope('biases'):
                 biases = self.bias_variable([output_dim])
                 tf.add_to_collection(tf.GraphKeys.BIASES, biases)
+                if trainables_collection is not None:
+                    tf.add_to_collection(trainables_collection, biases)
             with tf.name_scope('Wx_plus_b'):
                 preactivate = tf.matmul(input_tensor, weights) + biases
                 tf.summary.histogram('pre_activations', preactivate)
