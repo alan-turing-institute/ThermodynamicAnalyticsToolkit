@@ -3,13 +3,13 @@ from tensorflow.python.ops import control_flow_ops
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import state_ops
 from tensorflow.python.framework import ops
-from tensorflow.python.training import optimizer
 import tensorflow as tf
 
 from TATi.models.basetype import dds_basetype
+from TATi.samplers.replicaoptimizer import ReplicaOptimizer
 
 
-class StochasticGradientLangevinDynamicsSampler(optimizer.Optimizer):
+class StochasticGradientLangevinDynamicsSampler(ReplicaOptimizer):
     """ Implements a Stochastic Gradient Langevin Dynamics Sampler
     in the form of a TensorFlow Optimizer, overriding tensorflow.python.training.Optimizer.
 
