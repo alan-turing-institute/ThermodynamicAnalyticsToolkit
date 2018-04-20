@@ -176,6 +176,8 @@ def add_model_options_to_parser(parser):
         help='Set the loss to be measured during sampling, e.g. mean_squared, log_loss, ...')
     parser.add_argument('--output_activation', type=str, default="tanh",
         help='Activation function to use for output layer: tanh, relu, linear')
+    parser.add_argument('--parallel_replica', type=int, default=1,
+        help='Number of parallel replica samplers to run. This will activate ensemble preconditioning if larger tha 1.')
     parser.add_argument('--parse_parameters_file', type=str, default=None,
         help='File to parse initial set of parameters from')
     parser.add_argument('--parse_steps', type=int, nargs='+', default=[],
@@ -244,6 +246,7 @@ def add_sampler_options_to_parser(parser):
     parser.add_argument('--step_width', type=float, default=0.03,
         help='step width \Delta t to use, e.g. 0.01')
 
+
 def react_generally_to_options(FLAGS, unparsed):
     """ Extracted behavior for options shared between sampler and optimizer
     here for convenience.
@@ -270,6 +273,7 @@ def react_generally_to_options(FLAGS, unparsed):
         logging.error("There are unparsed parameters '"+str(unparsed)+"', have you misspelled some?")
         sys.exit(255)
 
+
 def react_to_common_options(FLAGS, unparsed):
     """ Extracted behavior for options shared between sampler and optimizer
     here for convenience.
@@ -278,6 +282,11 @@ def react_to_common_options(FLAGS, unparsed):
     :param unparsed: unparsed cmd-line options as produced by argparse.parse_known_args()
     """
     react_generally_to_options(FLAGS, unparsed)
+
+    if FLAGS.parallel_replica < 1:
+        logging.error("The number of parallel replica needs to be positive.")
+        sys.exit(255)
+
 
 def react_to_sampler_options(FLAGS, unparsed):
     """ Extracted behavior checking validity of sampler options here for convenience.
@@ -302,7 +311,6 @@ def react_to_sampler_options(FLAGS, unparsed):
             and FLAGS.friction_constant == 0.:
         logging.error("You have not set the friction_constant for a sampler that requires it.")
         sys.exit(255)
-
 
 def file_length(filename):
     """ Determines the length of the file designated by `filename`.

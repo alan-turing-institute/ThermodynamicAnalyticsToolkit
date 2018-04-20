@@ -280,6 +280,7 @@ class model:
             optimizer="GradientDescent",
             output_activation="tanh",
             output_dimension=1,
+            parallel_replica=1,
             parse_parameters_file=None,
             parse_steps=[],
             prior_factor=1.,
@@ -323,6 +324,7 @@ class model:
                 optimizer=optimizer,
                 output_activation=output_activation,
                 output_dimension=output_dimension,
+                parallel_replica=parallel_replica,
                 parse_parameters_file=parse_parameters_file,
                 parse_steps=parse_steps,
                 prior_factor=prior_factor,
@@ -347,7 +349,6 @@ class model:
         self.input_pipeline.reset(self.sess)
 
     def init_network(self, filename = None, setup = None,
-                     replicas=2,
                      add_vectorized_gradients = False):
         """ Initializes the graph, from a stored model if filename is not None.
 
@@ -414,7 +415,7 @@ class model:
                 if self.FLAGS.do_hessians:
                     self.hessians = []
             y_ = NeuralNetwork.add_true_labels(self.output_dimension)
-            for i in range(replicas):
+            for i in range(self.FLAGS.parallel_replica):
                 with tf.name_scope('replica'+str(i+1)):
                     self.trainables.append('trainables_replica'+str(i+1))
                     self.nn.append(NeuralNetwork())
@@ -465,7 +466,7 @@ class model:
                         self.hessians.append(tf.reshape(tf.concat(self.hessians, axis=0), [total_dofs, total_dofs]))
         else:
             self.loss = []
-            for i in range(replicas):
+            for i in range(self.FLAGS.parallel_replica):
                 self.loss.append(self.nn[i].get_list_of_nodes(["loss"])[0])
 
         if self.FLAGS.fix_parameters is not None:
@@ -496,19 +497,19 @@ class model:
 
         # setup training/sampling
         if setup == "train":
-            for i in range(replicas):
+            for i in range(self.FLAGS.parallel_replica):
                 self.nn[i].add_train_method(self.loss[i], optimizer_method=self.FLAGS.optimizer, prior=prior)
         elif setup == "sample":
             sampler = []
-            for i in range(replicas):
-                ensemble_precondition = replicas > 1
+            for i in range(self.FLAGS.parallel_replica):
+                ensemble_precondition = self.FLAGS.parallel_replica > 1
                 sampler.append(self.nn[i]._prepare_sampler(self.loss[i], sampling_method=self.FLAGS.sampler,
                                                            seed=self.FLAGS.seed, prior=prior,
                                                            sigma=self.FLAGS.sigma, sigmaA=self.FLAGS.sigmaA,
                                                            ensemble_precondition=ensemble_precondition))
             # create gradients
             grads_and_vars = []
-            for i in range(replicas):
+            for i in range(self.FLAGS.parallel_replica):
                 with tf.name_scope('gradients_replica'+str(i+1)):
                     trainables = tf.get_collection(self.trainables[i])
                     grads_and_vars.append(sampler[i].compute_and_check_gradients(self.loss[i],
@@ -518,7 +519,7 @@ class model:
             print(grads_and_vars)
 
             # add position update nodes
-            for i in range(replicas):
+            for i in range(self.FLAGS.parallel_replica):
                 global_step = self.nn[i]._prepare_global_step()
                 train_step = sampler[i].apply_gradients(grads_and_vars, i, global_step=global_step,
                                                      name=sampler[i].get_name())
@@ -529,14 +530,14 @@ class model:
         if setup == "train" or setup == "sample":
             if self.step_placeholder is None:
                 self.step_placeholder = []
-                for i in range(replicas):
+                for i in range(self.FLAGS.parallel_replica):
                     self.step_placeholder.append(tf.placeholder(shape=(), dtype=tf.int32))
             if self.global_step_assign_t is None:
                 self.global_step_assign_t = []
-                for i in range(replicas):
+                for i in range(self.FLAGS.parallel_replica):
                     self.global_step_assign_t.append(tf.assign(self.nn[i].summary_nodes['global_step'], self.step_placeholder[i]))
-        else:
-            logging.debug("Not adding step placeholder or global step.")
+            else:
+                logging.debug("Not adding step placeholder or global step.")
 
         # setup model saving/recovering
         if self.saver is None:
@@ -673,6 +674,7 @@ class model:
         :return: either twice None or a pandas dataframe depending on whether either
                 parameter has evaluated to True
         """
+        assert( replica_index < self.FLAGS.parallel_replica )
 
         placeholder_nodes = self.nn[replica_index].get_dict_of_nodes(
             ["friction_constant", "inverse_temperature", "step_width", "current_step", "next_eval_step", "y_"])
@@ -993,6 +995,8 @@ class model:
         :return: either twice None or a pandas dataframe depending on whether either
                 parameter has evaluated to True
         """
+        assert( replica_index < self.FLAGS.parallel_replica)
+
         placeholder_nodes = self.nn[replica_index].get_dict_of_nodes(["learning_rate", "y_"])
         test_nodes = self.nn[replica_index].get_list_of_nodes(["merged", "train_step", "accuracy", "global_step",
                                                                "loss", "y_", "y"])+[self.variable_dict[replica_index]["gradients"]]
@@ -1133,6 +1137,7 @@ class model:
         return run_info, trajectory, averages
 
     def compute_optimal_stepwidth(self, replica_index=0):
+        assert( replica_index < self.FLAGS.parallel_replica )
         placeholder_nodes = self.nn[replica_index].get_dict_of_nodes(["learning_rate", "y_"])
 
         # get first batch of data
@@ -1264,6 +1269,7 @@ class model:
         return retlist
 
     def assign_current_step(self, step, replica_index=0):
+        assert( replica_index < self.FLAGS.parallel_replica )
         # set step
         if ('global_step' in self.nn[replica_index].summary_nodes.keys()):
             sample_step_placeholder = self.nn[replica_index].get("step_placeholder")

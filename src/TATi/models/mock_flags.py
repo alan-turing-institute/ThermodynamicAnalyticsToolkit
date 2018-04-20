@@ -31,6 +31,7 @@ class MockFlags:
                  optimizer="GradientDescent",
                  output_activation="tanh",
                  output_dimension=1,
+                 parallel_replica=1,
                  parse_parameters_file=None,
                  parse_steps=[],
                  prior_factor=1.,
@@ -77,6 +78,7 @@ class MockFlags:
         :param optimizer: Choose the optimizer to use for sampling: GradientDescent
         :param output_activation: Activation function to use for output layer: tanh, relu, linear
         :param output_dimension: number of output nodes/number of classes
+        :param parallel_replica: number of parallel replica to activate ensemble preconditioning
         :param parse_parameters_file: parse neural network parameters from this file on network creation
         :param parse_steps: indicates the row (in column "step") of the parse_parameters_file to use
         :param prior_factor: factor for scaling prior force
@@ -122,6 +124,7 @@ class MockFlags:
         self.optimizer = optimizer
         self.output_activation = output_activation
         self.output_dimension = output_dimension
+        self.parallel_replica = parallel_replica
         self.parse_parameters_file = parse_parameters_file
         self.parse_steps = parse_steps
         self.prior_factor = prior_factor
