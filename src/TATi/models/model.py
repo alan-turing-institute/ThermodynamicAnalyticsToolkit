@@ -422,11 +422,15 @@ class model:
                     self.nn[-1].placeholder_nodes['y_'] = y_
                     hidden_dimension = [int(i) for i in get_list_from_string(self.FLAGS.hidden_dimension)]
                     activations = NeuralNetwork.get_activations()
+                    if self.FLAGS.seed is not None:
+                        replica_seed = self.FLAGS.seed+i
+                    else:
+                        replica_seed = self.FLAGS.seed
                     self.loss.append(self.nn[-1].create(
                         self.x, hidden_dimension, self.output_dimension,
                         labels=y_,
                         trainables_collection=self.trainables[-1],
-                        seed=self.FLAGS.seed,
+                        seed=replica_seed,
                         add_dropped_layer=(self.FLAGS.dropout is not None),
                         hidden_activation=activations[self.FLAGS.hidden_activation],
                         output_activation=activations[self.FLAGS.output_activation],
@@ -503,8 +507,12 @@ class model:
             sampler = []
             for i in range(self.FLAGS.parallel_replica):
                 ensemble_precondition = self.FLAGS.parallel_replica > 1
+                if self.FLAGS.seed is not None:
+                    replica_seed = self.FLAGS.seed + i
+                else:
+                    replica_seed = self.FLAGS.seed
                 sampler.append(self.nn[i]._prepare_sampler(self.loss[i], sampling_method=self.FLAGS.sampler,
-                                                           seed=self.FLAGS.seed, prior=prior,
+                                                           seed=replica_seed, prior=prior,
                                                            sigma=self.FLAGS.sigma, sigmaA=self.FLAGS.sigmaA,
                                                            ensemble_precondition=ensemble_precondition))
             # create gradients
