@@ -8,11 +8,11 @@ class MockFlags:
                  averages_file=None,
                  batch_data_files=[],
                  batch_data_file_type="csv",
-                 batch_size=10,
+                 batch_size=None,   # this does not help yet, python API does not check batch_size?
                  burn_in_steps=0,
                  diffusion_map_method="vanilla",
                  do_hessians=False,
-                 dropout=0.9,
+                 dropout=None,
                  every_nth=1,
                  fix_parameters=None,
                  friction_constant=0.,
