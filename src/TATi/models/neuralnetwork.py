@@ -93,7 +93,7 @@ class NeuralNetwork(object):
         return dict(zip(keys, self.get_list_of_nodes(keys)))
 
     def create(self, input_layer,
-               layer_dimensions, output_dimension,
+               layer_dimensions, output_dimension, labels,
                trainables_collection=None,
                seed=None,
                add_dropped_layer=False,
@@ -110,6 +110,7 @@ class NeuralNetwork(object):
         :param layer_dimensions: a list of ints giving the number of nodes for
             each hidden layer.
         :param output_dimension: the number of nodes in the output layer
+        :param labels: node to labels for calculating loss and accuracy
         :param trainables_collection: specific collection to gather all weights of this layer
         :param seed: seed for reproducible random values
         :param add_dropped_layer: whether to add dropped layer or not to protect against overfitting
@@ -126,7 +127,6 @@ class NeuralNetwork(object):
             output_seed = seed+len(layer_dimensions)
 
         input_dimension = int(input_layer.get_shape()[-1])
-        y_ = self.add_true_labels(output_dimension)
         if add_dropped_layer:
             keep_prob = self.add_keep_probability()
         else:
@@ -149,13 +149,14 @@ class NeuralNetwork(object):
         self.placeholder_nodes["y"] = y
 
         logging.debug ("Creating summaries")
-        self.add_losses(y, y_)
+        self.add_losses(y, labels)
         loss = self.set_loss_function(loss_name)
-        self.add_accuracy_summary(y, y_)
+        self.add_accuracy_summary(y, labels)
 
         return loss
 
-    def add_true_labels(self, output_dimension):
+    @staticmethod
+    def add_true_labels(output_dimension):
         """ Adds the known labels as placeholder nodes to the graph.
 
         :param output_dimension: number of output nodes
@@ -163,7 +164,6 @@ class NeuralNetwork(object):
         """
         y_ = tf.placeholder(dds_basetype, [None, output_dimension], name='y-input')
         logging.debug("y_ is "+str(y_.get_shape()))
-        self.placeholder_nodes['y_'] = y_
         return y_
 
     def add_accuracy_summary(self, y, y_):

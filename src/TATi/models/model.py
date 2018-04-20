@@ -413,14 +413,17 @@ class model:
                 self.gradients = []
                 if self.FLAGS.do_hessians:
                     self.hessians = []
+            y_ = NeuralNetwork.add_true_labels(self.output_dimension)
             for i in range(replicas):
                 with tf.name_scope('replica'+str(i+1)):
                     self.trainables.append('trainables_replica'+str(i+1))
                     self.nn.append(NeuralNetwork())
+                    self.nn[-1].placeholder_nodes['y_'] = y_
                     hidden_dimension = [int(i) for i in get_list_from_string(self.FLAGS.hidden_dimension)]
                     activations = NeuralNetwork.get_activations()
                     self.loss.append(self.nn[-1].create(
                         self.x, hidden_dimension, self.output_dimension,
+                        labels=y_,
                         trainables_collection=self.trainables[-1],
                         seed=self.FLAGS.seed,
                         add_dropped_layer=(self.FLAGS.dropout is not None),
