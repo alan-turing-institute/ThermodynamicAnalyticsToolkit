@@ -669,7 +669,7 @@ class model:
     def get_total_bias_dof(self):
         return self.biases.get_total_dof()
 
-    def sample(self, replica_index=0, return_run_info = False, return_trajectories = False, return_averages = False):
+    def sample(self, return_run_info = False, return_trajectories = False, return_averages = False):
         """ Performs the actual sampling of the neural network `nn` given a dataset `ds` and a
         Session `session`.
 
@@ -682,11 +682,13 @@ class model:
         :return: either twice None or a pandas dataframe depending on whether either
                 parameter has evaluated to True
         """
-        assert( replica_index < self.FLAGS.parallel_replica )
 
-        placeholder_nodes = self.nn[replica_index].get_dict_of_nodes(
-            ["friction_constant", "inverse_temperature", "step_width", "current_step", "next_eval_step", "y_"])
-        test_nodes = self.nn[replica_index].get_list_of_nodes(["merged", "sample_step", "accuracy", "global_step", "loss"])
+        placeholder_nodes = []
+        test_nodes = []
+        for replica_index in range(self.FLAGS.parallel_replica):
+            placeholder_nodes.append(self.nn[replica_index].get_dict_of_nodes(
+                ["friction_constant", "inverse_temperature", "step_width", "current_step", "next_eval_step", "y_"]))
+            test_nodes.append(self.nn[replica_index].get_list_of_nodes(["merged", "sample_step", "accuracy", "global_step", "loss"]))
 
         output_width = 8
         output_precision = 8
@@ -728,38 +730,41 @@ class model:
                 columns=header)
 
         # check that sampler's parameters are actually used
-        if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics",
-                                  "GeometricLangevinAlgorithm_1stOrder",
-                                  "GeometricLangevinAlgorithm_2ndOrder",
-                                  "BAOAB",
-                                  "CovarianceControlledAdaptiveLangevinThermostat",
-                                  "HamiltonianMonteCarlo"]:
-            gamma, beta, deltat = self.sess.run(self.nn[replica_index].get_list_of_nodes(
-                ["friction_constant", "inverse_temperature", "step_width"]), feed_dict={
-                placeholder_nodes["step_width"]: self.FLAGS.step_width,
-                placeholder_nodes["inverse_temperature"]: self.FLAGS.inverse_temperature,
-                placeholder_nodes["friction_constant"]: self.FLAGS.friction_constant
-            })
-        elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
-            current_step, num_mc_steps, deltat = self.sess.run(self.nn[replica_index].get_list_of_nodes(
-                ["current_step", "next_eval_step", "step_width"]), feed_dict={
-                placeholder_nodes["step_width"]: self.FLAGS.step_width,
-                placeholder_nodes["current_step"]: 0,
-                placeholder_nodes["next_eval_step"]: self.FLAGS.hamiltonian_dynamics_time
-            })
-            logging.info("Sampler parameters: current_step = %lg, num_mc_steps = %lg, delta t = %lg" %
-                  (current_step, num_mc_steps, deltat))
+        for replica_index in range(self.FLAGS.parallel_replica):
+            logging.info("Parallel replica #"+str(replica_index))
+            if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics",
+                                      "GeometricLangevinAlgorithm_1stOrder",
+                                      "GeometricLangevinAlgorithm_2ndOrder",
+                                      "BAOAB",
+                                      "CovarianceControlledAdaptiveLangevinThermostat",
+                                      "HamiltonianMonteCarlo"]:
+                gamma, beta, deltat = self.sess.run(self.nn[replica_index].get_list_of_nodes(
+                    ["friction_constant", "inverse_temperature", "step_width"]), feed_dict={
+                    placeholder_nodes[replica_index]["step_width"]: self.FLAGS.step_width,
+                    placeholder_nodes[replica_index]["inverse_temperature"]: self.FLAGS.inverse_temperature,
+                    placeholder_nodes[replica_index]["friction_constant"]: self.FLAGS.friction_constant
+                })
+            elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
+                current_step, num_mc_steps, deltat = self.sess.run(self.nn[replica_index].get_list_of_nodes(
+                    ["current_step", "next_eval_step", "step_width"]), feed_dict={
+                    placeholder_nodes[replica_index]["step_width"]: self.FLAGS.step_width,
+                    placeholder_nodes[replica_index]["current_step"]: 0,
+                    placeholder_nodes[replica_index]["next_eval_step"]: self.FLAGS.hamiltonian_dynamics_time
+                })
+                logging.info("Sampler parameters: current_step = %lg, num_mc_steps = %lg, delta t = %lg" %
+                      (current_step, num_mc_steps, deltat))
 
-        # create extra nodes for HMC
-        if self.FLAGS.sampler == "HamiltonianMonteCarlo":
-            HMC_eval_nodes = self.nn[replica_index].get_list_of_nodes(["loss"]) \
-                             + [self.variable_dict[replica_index]["total_energy"], self.variable_dict[replica_index]["kinetic_energy"]]
-            HMC_set_nodes = [self.assign_dict[replica_index]["old_loss"], self.assign_dict[replica_index]["old_kinetic_energy"]]
-            HMC_set_all_nodes = [self.assign_dict[replica_index]["total_energy"]] + HMC_set_nodes
+            # create extra nodes for HMC
+            if self.FLAGS.sampler == "HamiltonianMonteCarlo":
+                HMC_eval_nodes = self.nn[replica_index].get_list_of_nodes(["loss"]) \
+                             + [self.variable_dict["total_energy"][replica_index], self.variable_dict["kinetic_energy"][replica_index]]
+                HMC_set_nodes = [self.assign_dict["old_loss"][replica_index],
+                                 self.assign_dict["old_kinetic_energy"][replica_index]]
+                HMC_set_all_nodes = [self.assign_dict["total_energy"][replica_index]] + HMC_set_nodes
 
         # zero rejection rate before sampling start
-        check_accepted, check_rejected = self.sess.run([self.assign_dict[replica_index]["accepted"],
-                                                        self.assign_dict[replica_index]["rejected"]])
+        check_accepted, check_rejected = self.sess.run([self.assign_dict["accepted"][replica_index],
+                                                        self.assign_dict["rejected"][replica_index]])
         assert(check_accepted == 0)
         assert(check_rejected == 0)
 
@@ -771,216 +776,219 @@ class model:
             # get next batch of data
             features, labels = self.input_pipeline.next_batch(self.sess)
 
-            # pick next evaluation step with a little random variation
-            if self.FLAGS.sampler == "HamiltonianMonteCarlo" and current_step > HMC_steps:
-                HMC_steps += max(1,
-                                round((0.9 + np.random.uniform(low=0., high=0.2)) \
-                                      * self.FLAGS.hamiltonian_dynamics_time/self.FLAGS.step_width))
-                logging.debug("Next evaluation of HMC criterion at step "+str(HMC_steps))
+            for replica_index in range(self.FLAGS.parallel_replica):
+                # pick next evaluation step with a little random variation
+                if self.FLAGS.sampler == "HamiltonianMonteCarlo" and current_step > HMC_steps:
+                    HMC_steps += max(1,
+                                     round((0.9 + np.random.uniform(low=0., high=0.2)) \
+                                           * self.FLAGS.hamiltonian_dynamics_time / self.FLAGS.step_width))
+                    logging.debug("Next evaluation of HMC criterion at step " + str(HMC_steps))
 
-            # place in feed dict
-            feed_dict = {
-                self.xinput: features,
-                placeholder_nodes["y_"]: labels,
-                placeholder_nodes["step_width"]: self.FLAGS.step_width,
-                placeholder_nodes["inverse_temperature"]: self.FLAGS.inverse_temperature,
-                placeholder_nodes["friction_constant"]: self.FLAGS.friction_constant,
-                placeholder_nodes["current_step"]: current_step,
-                placeholder_nodes["next_eval_step"]: HMC_steps,
-                self.placeholder_dict[replica_index]["var_kin"]: 0.,
-                self.placeholder_dict[replica_index]["var_loss"]: 0.,
-                self.placeholder_dict[replica_index]["var_total"]: 0.
-            }
-            if self.FLAGS.dropout is not None:
-                feed_dict.update({placeholder_nodes["keep_prob"] : self.FLAGS.dropout})
-            #logging.debug("batch is x: "+str(features[:])+", y: "+str(labels[:]))
-
-            # set global variable used in HMC sampler for criterion to initial loss
-            if self.FLAGS.sampler == "HamiltonianMonteCarlo":
-                loss_eval, total_eval, kin_eval = self.sess.run(HMC_eval_nodes, feed_dict=feed_dict)
-                HMC_set_dict = {
-                    self.placeholder_dict[replica_index]["var_kin"]: kin_eval,
-                    self.placeholder_dict[replica_index]["var_loss"]: loss_eval,
-                    self.placeholder_dict[replica_index]["var_total"]: loss_eval+kin_eval
+                # place in feed dict
+                feed_dict = {
+                    self.xinput: features,
+                    placeholder_nodes["y_"][replica_index]: labels,
+                    placeholder_nodes["step_width"][replica_index]: self.FLAGS.step_width,
+                    placeholder_nodes["inverse_temperature"][replica_index]: self.FLAGS.inverse_temperature,
+                    placeholder_nodes["friction_constant"][replica_index]: self.FLAGS.friction_constant,
+                    placeholder_nodes["current_step"][replica_index]: current_step,
+                    placeholder_nodes["next_eval_step"][replica_index]: HMC_steps
                 }
-                if abs(total_eval) < 1e-10:
-                    self.sess.run(HMC_set_all_nodes, feed_dict=HMC_set_dict)
-                else:
-                    self.sess.run(HMC_set_nodes, feed_dict=HMC_set_dict)
-                loss_eval, total_eval, kin_eval = self.sess.run(HMC_eval_nodes, feed_dict=feed_dict)
-                logging.debug("#%d: loss is %lg, total is %lg, kinetic is %lg" % (current_step, loss_eval, total_eval, kin_eval))
+                if self.FLAGS.dropout is not None:
+                    feed_dict.update({placeholder_nodes["keep_prob"][replica_index]: self.FLAGS.dropout})
+                # logging.debug("batch is x: "+str(features[:])+", y: "+str(labels[:]))
 
-            # zero kinetic energy
-            if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics",
-                                      "GeometricLangevinAlgorithm_1stOrder",
-                                      "GeometricLangevinAlgorithm_2ndOrder",
-                                      "HamiltonianMonteCarlo",
-                                      "BAOAB",
-                                      "CovarianceControlledAdaptiveLangevinThermostat"]:
-                check_kinetic, check_momenta, check_gradients, check_virials, check_noise = \
-                    self.sess.run([self.assign_dict[replica_index]["kinetic_energy"],
-                                   self.assign_dict[replica_index]["momenta"],
-                                   self.assign_dict[replica_index]["gradients"],
-                                   self.assign_dict[replica_index]["virials"],
-                                   self.assign_dict[replica_index]["noise"]])
-                assert (abs(check_kinetic) < 1e-10)
-                assert (abs(check_momenta) < 1e-10)
-                assert (abs(check_gradients) < 1e-10)
-                assert (abs(check_virials) < 1e-10)
-                assert (abs(check_noise) < 1e-10)
-
-            # get the weights and biases as otherwise the loss won't match
-            # tf first computes loss, then gradient, then performs variable update
-            # hence, after the sample step, we would have updated variables but old loss
-            if current_step % self.FLAGS.every_nth == 0:
-                if self.config_map["do_write_trajectory_file"] or return_trajectories:
-                    weights_eval = self.weights.evaluate(self.sess)
-                    biases_eval = self.biases.evaluate(self.sess)
-                    #[logging.info(str(item)) for item in weights_eval]
-                    #[logging.info(str(item)) for item in biases_eval]
-
-            # NOTE: All values from nodes contained in the same call to tf.run() with train_step
-            # will be evaluated as if before train_step. Nodes that are changed in the update due to
-            # train_step (e.g. momentum_t) however are updated.
-            # In other words, whether we use
-            #   tf.run([train_step, loss_eval], ...)
-            # or
-            #   tf.run([loss_eval, train_step], ...)
-            # is not important. Only a subsequent, distinct tf.run() call would produce a different loss_eval.
-            summary, _, acc, global_step, loss_eval = \
-                self.sess.run(test_nodes, feed_dict=feed_dict)
-
-            if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics",
-                                      "GeometricLangevinAlgorithm_1stOrder",
-                                      "GeometricLangevinAlgorithm_2ndOrder",
-                                      "HamiltonianMonteCarlo",
-                                      "BAOAB",
-                                      "CovarianceControlledAdaptiveLangevinThermostat"]:
-                if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
-                    gradients, virials, noise = \
-                        self.sess.run([self.variable_dict["gradients"],
-                                       self.variable_dict["virials"],
-                                       self.variable_dict["noise"]])
-                    accumulated_virials += virials
-                elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
-                    old_total_energy, kinetic_energy, momenta, gradients, virials = \
-                        self.sess.run([self.variable_dict["total_energy"],
-                                       self.variable_dict["kinetic_energy"],
-                                       self.variable_dict["momenta"],
-                                       self.variable_dict["gradients"],
-                                       self.variable_dict["virials"]])
-                else:
-                    kinetic_energy, momenta, gradients, virials, noise = \
-                        self.sess.run([self.variable_dict["kinetic_energy"],
-                                       self.variable_dict["momenta"],
-                                       self.variable_dict["gradients"],
-                                       self.variable_dict["virials"],
-                                       self.variable_dict["noise"]])
-
-            if current_step >= self.FLAGS.burn_in_steps:
-                accumulated_loss_nominator += loss_eval * exp(- self.FLAGS.inverse_temperature * loss_eval)
-                accumulated_loss_denominator += exp(- self.FLAGS.inverse_temperature * loss_eval)
-                if self.FLAGS.sampler != "StochasticGradientLangevinDynamics":
-                    accumulated_kinetic_energy += kinetic_energy
-                accumulated_virials += virials
-
-            if current_step % self.FLAGS.every_nth == 0:
-                current_time = time.process_time()
-                time_elapsed_per_nth_step = current_time - last_time
-                last_time = current_time
-                logging.debug("Output at step #" + str(current_step) + ", time elapsed till last is " + str(time_elapsed_per_nth_step))
-
-                if self.config_map["do_write_trajectory_file"] or return_trajectories:
-                    trajectory_line = [0, global_step] \
-                                      + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
-                                                                          precision=output_precision)] \
-                                      + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
-                                         for item in weights_eval] \
-                                      + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
-                                         for item in biases_eval]
-
-                    if self.config_map["do_write_trajectory_file"]:
-                        self.trajectory_writer.writerow(trajectory_line)
-                    if return_trajectories:
-                        trajectory.loc[written_row] = trajectory_line
-
-                if self.config_map["do_write_averages_file"] or return_averages:
-                    if accumulated_loss_denominator > 0:
-                        average_loss = accumulated_loss_nominator/accumulated_loss_denominator
+                # set global variable used in HMC sampler for criterion to initial loss
+                if self.FLAGS.sampler == "HamiltonianMonteCarlo":
+                    loss_eval, total_eval, kin_eval = self.sess.run(HMC_eval_nodes, feed_dict=feed_dict)
+                    HMC_set_dict = {
+                        self.placeholder_dict["var_kin"][replica_index]: kin_eval,
+                        self.placeholder_dict["var_loss"][replica_index]: loss_eval,
+                        self.placeholder_dict["var_total"][replica_index]: loss_eval + kin_eval
+                    }
+                    if abs(total_eval) < 1e-10:
+                        self.sess.run(HMC_set_all_nodes, feed_dict=HMC_set_dict)
                     else:
-                        average_loss = 0.
-                    if current_step >= self.FLAGS.burn_in_steps:
-                        divisor = float(current_step + 1. - self.FLAGS.burn_in_steps)
-                        average_kinetic_energy = accumulated_kinetic_energy / divisor
-                        average_virials = abs(0.5 * accumulated_virials) / divisor
-                    else:
-                        average_kinetic_energy = 0.
-                        average_virials = 0.
-                    averages_line = [0, global_step, current_step] \
-                                    + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
-                                                                        precision=output_precision)] \
-                                    + ['{:{width}.{precision}e}'.format(average_loss, width=output_width,
-                                                                        precision=output_precision)]
+                        self.sess.run(HMC_set_nodes, feed_dict=HMC_set_dict)
+                    loss_eval, total_eval, kin_eval = self.sess.run(HMC_eval_nodes, feed_dict=feed_dict)
+                    logging.debug("replica #%d, #%d: loss is %lg, total is %lg, kinetic is %lg" \
+                                  % (replica_index, current_step, loss_eval, total_eval, kin_eval))
+
+                # zero kinetic energy
+                if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics",
+                                          "GeometricLangevinAlgorithm_1stOrder",
+                                          "GeometricLangevinAlgorithm_2ndOrder",
+                                          "HamiltonianMonteCarlo",
+                                          "BAOAB",
+                                          "CovarianceControlledAdaptiveLangevinThermostat"]:
+                    check_kinetic, check_momenta, check_gradients, check_virials, check_noise = \
+                        self.sess.run([self.assign_dict["kinetic_energy"][replica_index],
+                                       self.assign_dict["momenta"][replica_index],
+                                       self.assign_dict["gradients"][replica_index],
+                                       self.assign_dict["virials"][replica_index],
+                                       self.assign_dict["noise"][replica_index]])
+                    assert (abs(check_kinetic) < 1e-10)
+                    assert (abs(check_momenta) < 1e-10)
+                    assert (abs(check_gradients) < 1e-10)
+                    assert (abs(check_virials) < 1e-10)
+                    assert (abs(check_noise) < 1e-10)
+
+                    # get the weights and biases as otherwise the loss won't match
+                    # tf first computes loss, then gradient, then performs variable update
+                    # hence, after the sample step, we would have updated variables but old loss
+                if current_step % self.FLAGS.every_nth == 0:
+                    if self.config_map["do_write_trajectory_file"] or return_trajectories:
+                        weights_eval = self.weights.evaluate(self.sess)
+                        biases_eval = self.biases.evaluate(self.sess)
+                        # [logging.info(str(item)) for item in weights_eval]
+                        # [logging.info(str(item)) for item in biases_eval]
+
+                        # NOTE: All values from nodes contained in the same call to tf.run() with train_step
+                        # will be evaluated as if before train_step. Nodes that are changed in the update due to
+                        # train_step (e.g. momentum_t) however are updated.
+                        # In other words, whether we use
+                        #   tf.run([train_step, loss_eval], ...)
+                        # or
+                        #   tf.run([loss_eval, train_step], ...)
+                        # is not important. Only a subsequent, distinct tf.run() call would produce a different loss_eval.
+                summary, _, acc, global_step, loss_eval = \
+                    self.sess.run(test_nodes, feed_dict=feed_dict)
+
+                if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics",
+                                          "GeometricLangevinAlgorithm_1stOrder",
+                                          "GeometricLangevinAlgorithm_2ndOrder",
+                                          "HamiltonianMonteCarlo",
+                                          "BAOAB",
+                                          "CovarianceControlledAdaptiveLangevinThermostat"]:
                     if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
-                        averages_line += ['{:{width}.{precision}e}'.format(average_virials, width=output_width,
-                                                                           precision=output_precision)]
+                        gradients, virials, noise = \
+                            self.sess.run([self.variable_dict["gradients"][replica_index],
+                                           self.variable_dict["virials"][replica_index],
+                                           self.variable_dict["noise"][replica_index]])
+                        accumulated_virials += virials
+                    elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
+                        old_total_energy, kinetic_energy, momenta, gradients, virials = \
+                            self.sess.run([self.variable_dict["total_energy"][replica_index],
+                                           self.variable_dict["kinetic_energy"][replica_index],
+                                           self.variable_dict["momenta"][replica_index],
+                                           self.variable_dict["gradients"][replica_index],
+                                           self.variable_dict["virials"][replica_index]])
                     else:
-                        averages_line += ['{:{width}.{precision}e}'.format(x, width=output_width,
-                                                                       precision=output_precision)
-                                      for x in [average_kinetic_energy,average_virials]]
+                        kinetic_energy, momenta, gradients, virials, noise = \
+                            self.sess.run([self.variable_dict["kinetic_energy"][replica_index],
+                                           self.variable_dict["momenta"][replica_index],
+                                           self.variable_dict["gradients"][replica_index],
+                                           self.variable_dict["virials"][replica_index],
+                                           self.variable_dict["noise"][replica_index]])
 
-                    if self.config_map["do_write_averages_file"]:
-                        self.averages_writer.writerow(averages_line)
-                    if return_averages:
-                        averages.loc[written_row] = averages_line
+                if current_step >= self.FLAGS.burn_in_steps:
+                    accumulated_loss_nominator += loss_eval * exp(- self.FLAGS.inverse_temperature * loss_eval)
+                    accumulated_loss_denominator += exp(- self.FLAGS.inverse_temperature * loss_eval)
+                    if self.FLAGS.sampler != "StochasticGradientLangevinDynamics":
+                        accumulated_kinetic_energy += kinetic_energy
+                    accumulated_virials += virials
 
-                if self.config_map["do_write_run_file"] or return_run_info:
-                    run_line  = []
-                    if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics",
-                                              "GeometricLangevinAlgorithm_1stOrder",
-                                              "GeometricLangevinAlgorithm_2ndOrder",
-                                              "HamiltonianMonteCarlo",
-                                              "BAOAB",
-                                              "CovarianceControlledAdaptiveLangevinThermostat"]:
-                        run_line = [0, global_step, current_step] + ['{:1.3f}'.format(acc)] \
-                                   + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
-                                                                       precision=output_precision)] \
-                                   + ['{:{width}.{precision}e}'.format(time_elapsed_per_nth_step, width=output_width,
-                                                                       precision=output_precision)]
-                        if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
-                            run_line += ['{:{width}.{precision}e}'.format(x, width=output_width,
-                                                                          precision=output_precision)
-                                         for x in [sqrt(gradients), abs(0.5*virials), sqrt(noise)]]
-                        elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
-                            accepted_eval, rejected_eval  = self.sess.run([self.variable_dict[replica_index]["accepted"],
-                                                                           self.variable_dict[replica_index]["rejected"]])
-                            if (rejected_eval+accepted_eval) > 0:
-                                rejection_rate = rejected_eval/(rejected_eval+accepted_eval)
-                            else:
-                                rejection_rate = 0
-                            run_line += ['{:{width}.{precision}e}'.format(loss_eval + kinetic_energy,
-                                                                          width=output_width,
-                                                                          precision=output_precision)]\
-                                       + ['{:{width}.{precision}e}'.format(old_total_energy,
-                                                                           width=output_width,
-                                                                           precision=output_precision)]\
-                                       + ['{:{width}.{precision}e}'.format(x, width=output_width,
-                                                                           precision=output_precision)
-                                          for x in [kinetic_energy, sqrt(momenta), sqrt(gradients), abs(0.5*virials)]]\
-                                       + ['{:{width}.{precision}e}'.format(rejection_rate, width=output_width,
-                                                                           precision=output_precision)]
+                if current_step % self.FLAGS.every_nth == 0:
+                    current_time = time.process_time()
+                    time_elapsed_per_nth_step = current_time - last_time
+                    last_time = current_time
+                    logging.debug("Output at replica #" + str(replica_index) + ", step #" \
+                                  + str(current_step) + ", time elapsed till last is " + str(time_elapsed_per_nth_step))
+
+                    if self.config_map["do_write_trajectory_file"] or return_trajectories:
+                        trajectory_line = [0, global_step] \
+                                          + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
+                                                                              precision=output_precision)] \
+                                          + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
+                                             for item in weights_eval] \
+                                          + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
+                                             for item in biases_eval]
+
+                        if self.config_map["do_write_trajectory_file"]:
+                            self.trajectory_writer.writerow(trajectory_line)
+                        if return_trajectories:
+                            trajectory.loc[written_row] = trajectory_line
+
+                    if self.config_map["do_write_averages_file"] or return_averages:
+                        if accumulated_loss_denominator > 0:
+                            average_loss = accumulated_loss_nominator/accumulated_loss_denominator
                         else:
-                            run_line += ['{:{width}.{precision}e}'.format(loss_eval + kinetic_energy,
-                                                                          width=output_width,
-                                                                          precision=output_precision)]\
-                                       + ['{:{width}.{precision}e}'.format(x, width=output_width,
+                            average_loss = 0.
+                        if current_step >= self.FLAGS.burn_in_steps:
+                            divisor = float(current_step + 1. - self.FLAGS.burn_in_steps)
+                            average_kinetic_energy = accumulated_kinetic_energy / divisor
+                            average_virials = abs(0.5 * accumulated_virials) / divisor
+                        else:
+                            average_kinetic_energy = 0.
+                            average_virials = 0.
+                        averages_line = [0, global_step, current_step] \
+                                        + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
+                                                                            precision=output_precision)] \
+                                        + ['{:{width}.{precision}e}'.format(average_loss, width=output_width,
+                                                                            precision=output_precision)]
+                        if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
+                            averages_line += ['{:{width}.{precision}e}'.format(average_virials, width=output_width,
+                                                                               precision=output_precision)]
+                        else:
+                            averages_line += ['{:{width}.{precision}e}'.format(x, width=output_width,
                                                                            precision=output_precision)
-                                          for x in [kinetic_energy, sqrt(momenta), sqrt(gradients), abs(0.5*virials), sqrt(noise)]]
+                                          for x in [average_kinetic_energy,average_virials]]
 
-                    if self.config_map["do_write_run_file"]:
-                        self.run_writer.writerow(run_line)
-                    if return_run_info:
-                        run_info.loc[written_row] = run_line
+                        if self.config_map["do_write_averages_file"]:
+                            self.averages_writer.writerow(averages_line)
+                        if return_averages:
+                            averages.loc[written_row] = averages_line
+
+                    if self.config_map["do_write_run_file"] or return_run_info:
+                        run_line  = []
+                        if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics",
+                                                  "GeometricLangevinAlgorithm_1stOrder",
+                                                  "GeometricLangevinAlgorithm_2ndOrder",
+                                                  "HamiltonianMonteCarlo",
+                                                  "BAOAB",
+                                                  "CovarianceControlledAdaptiveLangevinThermostat"]:
+                            run_line = [0, global_step, current_step] + ['{:1.3f}'.format(acc)] \
+                                       + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
+                                                                           precision=output_precision)] \
+                                       + ['{:{width}.{precision}e}'.format(time_elapsed_per_nth_step, width=output_width,
+                                                                           precision=output_precision)]
+                            if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
+                                run_line += ['{:{width}.{precision}e}'.format(x, width=output_width,
+                                                                              precision=output_precision)
+                                             for x in [sqrt(gradients), abs(0.5*virials), sqrt(noise)]]
+                            elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
+                                accepted_eval, rejected_eval = self.sess.run(
+                                    [self.variable_dict["accepted"][replica_index],
+                                     self.variable_dict["rejected"]][replica_index])
+                                if (rejected_eval+accepted_eval) > 0:
+                                    rejection_rate = rejected_eval/(rejected_eval+accepted_eval)
+                                else:
+                                    rejection_rate = 0
+                                run_line += ['{:{width}.{precision}e}'.format(loss_eval + kinetic_energy,
+                                                                              width=output_width,
+                                                                              precision=output_precision)]\
+                                           + ['{:{width}.{precision}e}'.format(old_total_energy,
+                                                                               width=output_width,
+                                                                               precision=output_precision)]\
+                                           + ['{:{width}.{precision}e}'.format(x, width=output_width,
+                                                                               precision=output_precision)
+                                              for x in [kinetic_energy, sqrt(momenta), sqrt(gradients), abs(0.5*virials)]]\
+                                           + ['{:{width}.{precision}e}'.format(rejection_rate, width=output_width,
+                                                                               precision=output_precision)]
+                            else:
+                                run_line += ['{:{width}.{precision}e}'.format(loss_eval + kinetic_energy,
+                                                                              width=output_width,
+                                                                              precision=output_precision)]\
+                                           + ['{:{width}.{precision}e}'.format(x, width=output_width,
+                                                                               precision=output_precision)
+                                              for x in [kinetic_energy, sqrt(momenta), sqrt(gradients), abs(0.5*virials), sqrt(noise)]]
+
+                        if self.config_map["do_write_run_file"]:
+                            self.run_writer.writerow(run_line)
+                        if return_run_info:
+                            run_info.loc[written_row] = run_line
+
+            if current_step % self.FLAGS.every_nth == 0:
                 written_row+=1
 
             #if (i % logging.info_intervals) == 0:
