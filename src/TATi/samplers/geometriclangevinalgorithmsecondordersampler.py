@@ -12,10 +12,12 @@ class GeometricLangevinAlgorithmSecondOrderSampler(GeometricLangevinAlgorithmFir
     in the form of a TensorFlow Optimizer, overriding tensorflow.python.training.Optimizer.
 
     """
-    def __init__(self, step_width, inverse_temperature, friction_constant,
+    def __init__(self, ensemble_precondition, step_width, inverse_temperature, friction_constant,
                  seed=None, use_locking=False, name='GLA_2ndOrder'):
         """ Init function for this class.
 
+        :param ensemble_precondition: whether to precondition the gradient using
+                all the other replica or not
         :param step_width: step width for gradient, also affects inject noise
         :param inverse_temperature: scale for gradients
         :param friction_constant: scales the momenta
@@ -23,11 +25,12 @@ class GeometricLangevinAlgorithmSecondOrderSampler(GeometricLangevinAlgorithmFir
         :param use_locking: whether to lock in the context of multi-threaded operations
         :param name: internal name of optimizer
         """
-        super(GeometricLangevinAlgorithmSecondOrderSampler, self).__init__(step_width, inverse_temperature,
+        super(GeometricLangevinAlgorithmSecondOrderSampler, self).__init__(ensemble_precondition,
+                                                                           step_width, inverse_temperature,
                                                                            friction_constant, seed, use_locking, name)
 
 
-    def _apply_dense(self, grad, var):
+    def _apply_dense(self, grads_and_vars, var):
         """ Adds nodes to TensorFlow's computational graph in the case of densely
         occupied tensors to perform the actual sampling.
 
@@ -38,10 +41,11 @@ class GeometricLangevinAlgorithmSecondOrderSampler(GeometricLangevinAlgorithmFir
         The discretization scheme is according to (1.59) in [dissertation Zofia Trstanova],
         i.e. 2nd order Geometric Langevin Algorithm.
 
-        :param grad: gradient nodes, i.e. they contain the gradient per parameter in `var`
+        :param grads_and_vars: gradient nodes over all replicas and all variables
         :param var: parameters of the neural network
         :return: a group of operations to be added to the graph
         """
+        grad = self._pick_grad(grads_and_vars, var)
         friction_constant_t = math_ops.cast(self._friction_constant_t, var.dtype.base_dtype)
         step_width_t, inverse_temperature_t, random_noise_t = self._prepare_dense(grad, var)
 

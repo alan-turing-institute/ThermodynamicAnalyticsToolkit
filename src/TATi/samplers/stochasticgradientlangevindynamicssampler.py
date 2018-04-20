@@ -17,17 +17,20 @@ class StochasticGradientLangevinDynamicsSampler(ReplicaOptimizer):
     where $\beta$ is the inverse temperature coefficient, $\Delta t$ is the (discretization)
     step width and $\Theta$ is the parameter vector and $U(\Theta)$ the energy or loss function.
     """
-    def __init__(self, step_width, inverse_temperature,
+    def __init__(self, ensemble_precondition, step_width, inverse_temperature,
                  seed=None, use_locking=False, name='SGLD'):
         """ Init function for this class.
 
+        :param ensemble_precondition: whether to precondition the gradient using
+                all the other replica or not
         :param step_width: step width for gradient, also affects inject noise
         :param inverse_temperature: scale for gradients
         :param seed: seed value of the random number generator for generating reproducible runs
         :param use_locking: whether to lock in the context of multi-threaded operations
         :param name: internal name of optimizer
         """
-        super(StochasticGradientLangevinDynamicsSampler, self).__init__(use_locking, name)
+        super(StochasticGradientLangevinDynamicsSampler, self).__init__(ensemble_precondition,
+                                                                        use_locking, name)
         self._step_width = step_width
         self._seed = seed
         self.random_noise = None
@@ -159,7 +162,7 @@ class StochasticGradientLangevinDynamicsSampler(ReplicaOptimizer):
             lb_repell = tf.zeros(shape=var.shape, dtype=var.dtype.base_dtype)
         return ub_repell, lb_repell
 
-    def _apply_dense(self, grad, var):
+    def _apply_dense(self, grads_and_vars, var):
         """ Adds nodes to TensorFlow's computational graph in the case of densely
         occupied tensors to perform the actual sampling.
 
@@ -167,12 +170,15 @@ class StochasticGradientLangevinDynamicsSampler(ReplicaOptimizer):
         for each weight.
         The norm of the injected noise is placed into the TensorFlow summary.
 
-        :param grad: gradient nodes, i.e. they contain the gradient per parameter in `var`
+        :param grads_and_vars: gradient nodes over all replicas and all variables
         :param var: parameters of the neural network
         :return: a group of operations to be added to the graph
         """
+        # Pick correct gradient from grad_list
+        #print(grad)
+        #print(othergrads)
+        grad = self._pick_grad(grads_and_vars, var)
         step_width_t, inverse_temperature_t, random_noise_t = self._prepare_dense(grad, var)
-
         # \nabla V (q^n ) \Delta t
         scaled_gradient = step_width_t * grad
 

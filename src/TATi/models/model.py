@@ -501,9 +501,11 @@ class model:
         elif setup == "sample":
             sampler = []
             for i in range(replicas):
+                ensemble_precondition = replicas > 1
                 sampler.append(self.nn[i]._prepare_sampler(self.loss[i], sampling_method=self.FLAGS.sampler,
-                                                      seed=self.FLAGS.seed, prior=prior,
-                                                      sigma=self.FLAGS.sigma, sigmaA=self.FLAGS.sigmaA))
+                                                           seed=self.FLAGS.seed, prior=prior,
+                                                           sigma=self.FLAGS.sigma, sigmaA=self.FLAGS.sigmaA,
+                                                           ensemble_precondition=ensemble_precondition))
             # create gradients
             grads_and_vars = []
             for i in range(replicas):
@@ -518,7 +520,7 @@ class model:
             # add position update nodes
             for i in range(replicas):
                 global_step = self.nn[i]._prepare_global_step()
-                train_step = sampler[i].apply_gradients(grads_and_vars[i], global_step=global_step,
+                train_step = sampler[i].apply_gradients(grads_and_vars, i, global_step=global_step,
                                                      name=sampler[i].get_name())
                 self.nn[i].summary_nodes['sample_step'] = train_step
         else:

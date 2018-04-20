@@ -26,8 +26,8 @@ class RefVariableReplicaProcessor(_OptimizableVariable):
     def target(self):
         return self._v._ref()  # pylint: disable=protected-access
 
-    def update_op(self, optimizer, g_list):
-        update_op = optimizer._apply_dense(g, self._v)  # pylint: disable=protected-access
+    def update_op(self, optimizer, grads_and_vars):
+        update_op = optimizer._apply_dense(grads_and_vars, self._v)  # pylint: disable=protected-access
         if self._v.constraint is not None:
             with ops.control_dependencies([update_op]):
                 return self._v.assign(self._v.constraint(self._v))
@@ -58,13 +58,16 @@ class ReplicaOptimizer(Optimizer):
     This way the position update may actually rely on the gradients of other
     instances (or any other information) stored in possible replica.
     """
-    def __init__(self, use_locking=False, name='ReplicaOptimizer'):
+    def __init__(self, ensemble_precondition=False, use_locking=False, name='ReplicaOptimizer'):
         """ Init function for this class.
 
+        :param ensemble_precondition: whether to precondition the gradient using
+                all the other replica or not
         :param use_locking: whether to lock in the context of multi-threaded operations
         :param name: internal name of optimizer
         """
         super(ReplicaOptimizer, self).__init__(use_locking, name)
+        self.ensemble_precondition = ensemble_precondition
 
     def compute_and_check_gradients(self, loss, var_list=None,
                  gate_gradients=Optimizer.GATE_GRAPH, aggregation_method=None,
@@ -84,7 +87,7 @@ class ReplicaOptimizer(Optimizer):
 
         return grads_and_vars
 
-    def apply_gradients(self, grads_and_vars, global_step=None, name=None):
+    def apply_gradients(self, replicated_grads_and_vars, index, global_step=None, name=None):
         """Apply gradients to variables.
 
         Here, we actually more gradient nodes than we require, namely addtionally
@@ -98,7 +101,8 @@ class ReplicaOptimizer(Optimizer):
         :param global_step: global_step node for this replica
         :param name: name of this operation
         """
-        grads_and_vars = tuple(grads_and_vars)    # Make sure repeat iteration works.
+        # add processor for each variable
+        grads_and_vars = tuple(replicated_grads_and_vars[index])    # Make sure repeat iteration works.
         if not grads_and_vars:
             raise ValueError("No variables provided.")
         converted_grads_and_vars = []
@@ -117,22 +121,30 @@ class ReplicaOptimizer(Optimizer):
             p = _get_processor(v)
             converted_grads_and_vars.append((g, v, p))
 
+        # check for present gradients
         converted_grads_and_vars = tuple(converted_grads_and_vars)
         var_list = [v for g, v, _ in converted_grads_and_vars if g is not None]
         if not var_list:
             raise ValueError("No gradients provided for any variable: %s." %
                                              ([str(v) for _, _, v in converted_grads_and_vars],))
+
+        # create slots for each variable
         with ops.control_dependencies(None):
             self._create_slots([_get_variable_for(v) for v in var_list])
+
+        # create the (position) update operations
         update_ops = []
         with ops.name_scope(name, self._name) as name:
             self._prepare()
+            # for each variable, call `processor.update_up()`
             for grad, var, processor in converted_grads_and_vars:
                 if grad is None:
                     continue
                 scope_name = var.op.name if context.in_graph_mode() else ""
                 with ops.name_scope("update_" + scope_name), ops.colocate_with(var):
-                    update_ops.append(processor.update_op(self, grad))
+                    update_ops.append(processor.update_op(self, replicated_grads_and_vars))
+
+            # append global_step increment
             if global_step is None:
                 apply_updates = self._finish(update_ops, name)
             else:
@@ -140,8 +152,94 @@ class ReplicaOptimizer(Optimizer):
                     with ops.colocate_with(global_step):
                         apply_updates = state_ops.assign_add(global_step, 1, name=name).op
 
+            # put into collection and return
             train_op = ops.get_collection_ref(ops.GraphKeys.TRAIN_OP)
             if apply_updates not in train_op:
                 train_op.append(apply_updates)
 
             return apply_updates
+
+    def _pick_grad(self, grads_and_vars, var):
+        """ Helper function to extract the gradient associated with `var` from
+        the list containing all gradients and variables in `grads_and_vars`.
+
+        If `do_precondition_gradient` is true, then this will additionally
+        precondition the gradient using the other replica's gradients.
+
+        :param grads_and_vars: list of grad, var tuples over all replica
+        :param var: current variable
+        :return: (preconditioned) grad associated to var
+        """
+        #print(var.name[var.name.find("/"):])
+        grad, othergrads = self._extract_grads(grads_and_vars, var)
+        preconditioned_grad = grad
+        if self.ensemble_precondition:
+            for g in othergrads:
+                preconditioned_grad = preconditioned_grad + self.get_covariance_component(grad, g) * g
+        return preconditioned_grad
+
+    def _extract_grads(self, grads_and_vars, var):
+        """ Helper function to extract the gradient associated with `var` from
+        the list containing all gradients and variables in `grads_and_vars`.
+        Moreover, we return also all other gradiets (in replicas) associated to
+        the same var.
+
+        :param grads_and_vars: list of grad, var tuples over all replica
+        :param var: current variable
+        :return: grad associated to `var`,
+                other grads associated to equivalent var in other replica
+        """
+        #print(var.name[var.name.find("/"):])
+        grad = None
+        othergrads = []
+        for i in range(len(grads_and_vars)):
+            for g, v in grads_and_vars[i]:
+                if g is not None:
+                    if v.name == var.name:
+                        grad = g
+                    elif v.name[v.name.find("/"):] == var.name[var.name.find("/"):]:
+                        othergrads.append(g)
+        return grad, othergrads
+
+    def _apply_covariance(self, grads_and_vars, var):
+        """ Returns node for the covariance between the gradients of all other
+        replica plus the identity.
+
+        :param grads_and_vars: list of grad, var tuples over all replica
+        :param var: current variable
+        :return: node for the covariance matrix
+        """
+        grads = self._stack_gradients(grads_and_vars, var)
+        z, op = tf.contrib.metrics.streaming_covariance(grads, grads)
+        return op, grads
+
+    def _stack_gradients(self, grads_and_vars, var):
+        """ Stacks all gradients together to compute a covariance matrix.
+
+        :param grads_and_vars:
+        :param var:
+        :return:
+        """
+        grads = []
+        for i in range(len(grads_and_vars)):
+            for g, v in grads_and_vars[i]:
+                if g is not None:
+                    if v.name == var.name:
+                        grads.append(tf.zeros(var.shape, dtype=var.dtype))
+                    elif v.name[v.name.find("/"):] == var.name[var.name.find("/"):]:
+                        grads.append(g)
+        print(grads)
+        return tf.stack(grads)
+
+    @staticmethod
+    def get_covariance_component(x,y):
+        """ Calculates the covariance between two variables `x` and `y`.
+
+        :param x: first variable
+        :param y: second variable
+        :return: cov(x,y)
+        """
+        dim = math_ops.cast(tf.size(y), dds_basetype)
+        return 1. / (dim - 1.) * \
+               tf.reduce_sum((x - tf.reduce_mean(x)) * (y - tf.reduce_mean(y)))
+

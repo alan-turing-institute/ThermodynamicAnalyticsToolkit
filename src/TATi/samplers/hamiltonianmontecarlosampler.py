@@ -15,9 +15,11 @@ class HamiltonianMonteCarloSampler(StochasticGradientLangevinDynamicsSampler):
     in the form of a TensorFlow Optimizer, overriding tensorflow.python.training.Optimizer.
 
     """
-    def __init__(self, step_width, inverse_temperature, current_step, next_eval_step, accept_seed, seed=None, use_locking=False, name='HamiltonianMonteCarlo'):
+    def __init__(self, ensemble_precondition, step_width, inverse_temperature, current_step, next_eval_step, accept_seed, seed=None, use_locking=False, name='HamiltonianMonteCarlo'):
         """ Init function for this class.
 
+        :param ensemble_precondition: whether to precondition the gradient using
+                all the other replica or not
         :param step_width: step width for gradient
         :param inverse_temperature: scale for noise
         :param current_step: current step
@@ -26,7 +28,8 @@ class HamiltonianMonteCarloSampler(StochasticGradientLangevinDynamicsSampler):
         :param use_locking: whether to lock in the context of multi-threaded operations
         :param name: internal name of optimizer
         """
-        super(HamiltonianMonteCarloSampler, self).__init__(step_width, inverse_temperature,
+        super(HamiltonianMonteCarloSampler, self).__init__(ensemble_precondition,
+                                                           step_width, inverse_temperature,
                                                            seed, use_locking, name)
         self._accept_seed = accept_seed
         self._current_step = current_step
@@ -79,7 +82,7 @@ class HamiltonianMonteCarloSampler(StochasticGradientLangevinDynamicsSampler):
         uniform_random_t = tf.random_uniform(shape=[], minval=0., maxval=1., dtype=dds_basetype, seed=self._accept_seed)
         return step_width_t, inverse_temperature_t, current_step_t, next_eval_step_t, random_noise_t, uniform_random_t
 
-    def _apply_dense(self, grad, var):
+    def _apply_dense(self, grads_and_vars, var):
         """ Adds nodes to TensorFlow's computational graph in the case of densely
         occupied tensors to perform the actual sampling.
 
@@ -88,10 +91,11 @@ class HamiltonianMonteCarloSampler(StochasticGradientLangevinDynamicsSampler):
         either resetting back to the initial parameters or resetting the
         initial parameters to the current ones.
 
-        :param grad: gradient nodes, i.e. they contain the gradient per parameter in `var`
+        :param grads_and_vars: gradient nodes over all replicas and all variables
         :param var: parameters of the neural network
         :return: a group of operations to be added to the graph
         """
+        grad = self._pick_grad(grads_and_vars, var)
         step_width_t, inverse_temperature_t, current_step_t, next_eval_step_t, random_noise_t, uniform_random_t = \
             self._prepare_dense(grad, var)
         momentum = self.get_slot(var, "momentum")
