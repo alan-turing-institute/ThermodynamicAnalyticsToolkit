@@ -67,7 +67,7 @@ class model:
         self.resources_created = None
 
         # mark already fixes variables
-        self.fixed_variables = []
+        self.fixed_variables = {}
 
         # mark neuralnetwork, saver and session objects as to be created
         self.nn = None
@@ -476,7 +476,7 @@ class model:
         if self.FLAGS.fix_parameters is not None:
             names, values = self.split_parameters_as_names_values(self.FLAGS.fix_parameters)
             fixed_variables = self.fix_parameters(names)
-            logging.debug("Excluded the following degrees of freedom: "+str(fixed_variables))
+            logging.info("Excluded the following degrees of freedom: "+str(fixed_variables))
 
         # set number of degrees of freedom
         self.number_of_parameters = \
@@ -568,7 +568,16 @@ class model:
             self.biases = neuralnet_parameters(tf.get_collection(tf.GraphKeys.BIASES))
 
         if self.FLAGS.fix_parameters is not None:
-            fix_parameter_assigns = self.create_assign_parameters(fixed_variables, values)
+            all_values = []
+            all_variables = []
+            for i in range(len(fixed_variables)):
+                var_name = fixed_variables[i]
+                if var_name in self.fixed_variables.keys():
+                    all_variables.extend(self.fixed_variables[var_name])
+                    all_values.extend([values[i]]*len(self.fixed_variables[var_name]))
+                else:
+                    logging.warning("Could not assign "+var_name+" a value as it was not found before.")
+            fix_parameter_assigns = self.create_assign_parameters(all_variables, all_values)
 
         ### Now the session object is created, graph must be done here!
 
@@ -1222,6 +1231,42 @@ class model:
             pass
 
     @staticmethod
+    def _find_all_in_collections(_collection, _name):
+        """ Helper function to return all indices of variables in a collection
+         that match with the given `_name`. Note that this removes possible
+         replica name scopes.
+
+        :param _collection: collection to search through
+        :param _name: tensor/variable name to look for
+        :return: list of matching indices
+        """
+        variable_indices = []
+        for i in range(len(_collection)):
+            target_name = _collection[i].name
+            replica_target_name = target_name[target_name.find("/")+1:]
+            logging.debug("Comparing to %s and %s" % (target_name, replica_target_name))
+            if target_name == _name or replica_target_name == _name:
+                variable_indices.append(i)
+        return variable_indices
+
+    @staticmethod
+    def _extract_from_collections(_collection, _indices):
+        """ Helper function to remove all elements associated to each index
+        in `indices` from `collections`, gathering them in a list that is
+        returned
+
+        :param _collection: collection to remove elements from
+        :param _indices: list of indices to extract
+        :return: list of elements removed from collection
+        """
+        variables = []
+        _indices.sort(reverse=True)
+        for i in _indices:
+            variables.append(_collection[i])
+            del _collection[i]
+        return variables
+
+    @staticmethod
     def _fix_parameter(_name):
         """ Allows to fix a parameter (not modified during optimization
         or sampling) by removing the first instance named _name from trainables.
@@ -1238,18 +1283,16 @@ class model:
         else:
             logging.warning("Unknown parameter category for "+str(_name) \
                             +"), removing only from trainables.")
-        for i in range(len(trainable_collection)):
-            if trainable_collection[i].name == _name:
-                trainable_variable = trainable_collection[i]
-                del trainable_collection[i]
-                break
-        for i in range(len(other_collection)):
-            if other_collection[i].name == _name:
-                variable = other_collection[i]
-                del other_collection[i]
-                break
-        logging.info("Comparing %s and %s" % (trainable_variable, variable))
-        if trainable_variable is variable:
+        trainable_variable_indices = model._find_all_in_collections(trainable_collection, _name)
+        variable_indices = model._find_all_in_collections(other_collection, _name)
+        logging.debug("Indices matching in trainables with "+_name+": "+str(trainable_variable_indices))
+        logging.debug("Indices matching in others with "+_name+": "+str(variable_indices))
+
+        trainable_variable = model._extract_from_collections(trainable_collection,
+                                                             trainable_variable_indices)
+        variable = model._extract_from_collections(other_collection, variable_indices)
+
+        if trainable_variable == variable:
             return variable
         else:
             return None
@@ -1274,20 +1317,26 @@ class model:
         """
         retlist = []
         for name in names:
+            logging.debug("Looking for variable %s to fix." % (name))
             # look for tensor in already fixed variables
-            variable = None
-            for var in self.fixed_variables:
-                if var.name == name:
-                    variable = var
+            variable_list = None
+            for k in self.fixed_variables.keys():
+                logging.debug("Comparing against fixed variable "+str(k))
+                if k == name:
+                    variable_list = self.fixed_variables[k]
                     break
-            # if not found, fix. Otherwise, simply add
-            if variable is None:
-                retvariable = self._fix_parameter(name)
-                if retvariable is not None:
-                    self.fixed_variables.append(retvariable)
-                    retlist.append(retvariable)
+            # if not found, fix it. Otherwise, simply add
+            if variable_list is None:
+                retvariable_list = self._fix_parameter(name)
+                logging.debug("Updated fixed parameters by: "+str(retvariable_list))
+                if retvariable_list is not None:
+                    if name in self.fixed_variables.keys():
+                        self.fixed_variables[name].extend(retvariable_list)
+                    else:
+                        self.fixed_variables[name] = retvariable_list
+                    retlist.append(name)
             else:
-                retlist.append(variable)
+                retlist.append(name)
         return retlist
 
     def assign_current_step(self, step, replica_index=0):
@@ -1387,9 +1436,12 @@ class model:
     def create_assign_parameters(self, variables, values):
         """ Creates assignment operation for multiple parameters at once.
 
-        :param variables: list of tensorflow variables
+        :param variables: dict of tensorflow variable names and list of variable
+                tensors
         :param values: list of values to assign to
         """
+        print(variables)
+        print(values)
         assert( len(variables) == len(values) )
         assigns=[]
         for i in range(len(variables)):
