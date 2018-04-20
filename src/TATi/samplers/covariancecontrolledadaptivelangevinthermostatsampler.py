@@ -112,7 +112,7 @@ class CovarianceControlledAdaptiveLangevinThermostat(GeometricLangevinAlgorithmS
         # as the loss evaluated with train_step is the "old" (not updated) loss, we
         # therefore also need to the use the old momentum for the kinetic energy
         with tf.variable_scope("accumulate", reuse=True):
-            kinetic_energy = tf.get_variable("kinetic", dtype=dds_basetype)
+            kinetic_energy = tf.get_variable("kinetic_energy", dtype=dds_basetype)
             kinetic_energy_t = tf.assign_add(kinetic_energy, momentum_sq)
 
         #p = step.B(p, f, 0.5 * self.dt) + sigma * np.random.rand(p.shape[0]) * 0.5 * step_width_t

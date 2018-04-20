@@ -210,7 +210,7 @@ class BAOABSampler(GeometricLangevinAlgorithmFirstOrderSampler):
         # 1/2 * p^{n}^t * p^{n}
         momentum_sq = 0.5 * tf.reduce_sum(tf.multiply(momentum_half_step_t, momentum_half_step_t))
         with tf.variable_scope("accumulate", reuse=True):
-            kinetic_energy = tf.get_variable("kinetic", dtype=dds_basetype)
+            kinetic_energy = tf.get_variable("kinetic_energy", dtype=dds_basetype)
             kinetic_energy_t = tf.assign_add(kinetic_energy, momentum_sq)
 
         with tf.variable_scope("accumulate", reuse=True):

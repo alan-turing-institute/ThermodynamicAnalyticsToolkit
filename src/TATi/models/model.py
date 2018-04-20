@@ -72,12 +72,13 @@ class model:
         # mark neuralnetwork, saver and session objects as to be created
         self.nn = None
         self.trainables = None
+        self.true_labels = None
         self.saver = None
         self.sess = None
 
-        # mark placeholder neuralnet_parameters as to be created
-        self.weights = None
-        self.biases = None
+        # mark placeholder neuralnet_parameters as to be created (over replica)
+        self.weights = []
+        self.biases = []
 
         # mark placeholders for gradient and hessian computation as to be created
         self.gradients = None
@@ -194,40 +195,21 @@ class model:
         """ Creates some global resource variables to hold statistical quantities
         during sampling.
         """
-        with tf.variable_scope("accumulate", reuse=self.resources_created):
-            # the following are used for HMC
-            old_loss_t = tf.get_variable("old_loss", shape=[], trainable=False,
-                                               initializer=tf.zeros_initializer,
-                                               use_resource=True, dtype=dds_basetype)
-            old_kinetic_t = tf.get_variable("old_kinetic", shape=[], trainable=False,
-                                               initializer=tf.zeros_initializer,
-                                               use_resource=True, dtype=dds_basetype)
-            total_energy_t = tf.get_variable("total_energy", shape=[], trainable=False,
-                                               initializer=tf.zeros_initializer,
-                                               use_resource=True, dtype=dds_basetype)
-            # used for Langevin samplers
-            kinetic_energy_t = tf.get_variable("kinetic", shape=[], trainable=False,
-                                               initializer=tf.zeros_initializer,
-                                               use_resource=True, dtype=dds_basetype)
-            momenta_t = tf.get_variable("momenta", shape=[], trainable=False,
+        static_vars_float = ["old_loss", "old_kinetic", "kinetic_energy", "total_energy", "momenta", \
+                             "gradients", "virials", "noise"]
+        static_vars_int64 = ["accepted", "rejected"]
+        for i in range(self.FLAGS.parallel_replica):
+            with tf.variable_scope("var_replica"+str(i+1), reuse=self.resources_created):
+                with tf.variable_scope("accumulate", reuse=self.resources_created):
+                    for key in static_vars_float:
+                        tf.get_variable(key, shape=[], trainable=False,
                                         initializer=tf.zeros_initializer,
                                         use_resource=True, dtype=dds_basetype)
-            gradients_t = tf.get_variable("gradients", shape=[], trainable=False,
-                                          initializer=tf.zeros_initializer,
-                                          use_resource=True, dtype=dds_basetype)
-            virials_t = tf.get_variable("virials", shape=[], trainable=False,
+                    for key in static_vars_int64:
+                        # the following are used for HMC to measure rejection rate
+                        tf.get_variable(key, shape=[], trainable=False,
                                         initializer=tf.zeros_initializer,
-                                        use_resource=True, dtype=dds_basetype)
-            noise_t = tf.get_variable("noise", shape=[], trainable=False,
-                                      initializer=tf.zeros_initializer,
-                                      use_resource=True, dtype=dds_basetype)
-            # the following are used for HMC to measure rejection rate
-            rejected_t = tf.get_variable("rejected", shape=[], trainable=False,
-                                      initializer=tf.zeros_initializer,
-                                      use_resource=True, dtype=tf.int64)
-            accepted_t = tf.get_variable("accepted", shape=[], trainable=False,
-                                      initializer=tf.zeros_initializer,
-                                      use_resource=True, dtype=tf.int64)
+                                        use_resource=True, dtype=tf.int64)
         self.resources_created = True
 
     def get_config_map(self, key):
@@ -348,6 +330,24 @@ class model:
         """
         self.input_pipeline.reset(self.sess)
 
+    @staticmethod
+    def _split_collection_per_replica(_collection, number_replica):
+        """ Helper function to split WEIGHTS and BIASES collection from
+        tensorflow into weights and biases per replica.
+
+        :param _collection: collection to split
+        :param number_replica: number of replicas to look for
+        :return: list of split up collections
+        """
+        split_collection = []
+        for i in range(number_replica):
+            split_collection.append([])
+            scope_name = 'replica'+str(i+1)
+            for var in _collection:
+                if scope_name in var.name:
+                    split_collection[-1].append(var)
+        return split_collection
+
     def init_network(self, filename = None, setup = None,
                      add_vectorized_gradients = False):
         """ Initializes the graph, from a stored model if filename is not None.
@@ -369,42 +369,10 @@ class model:
             input_columns = get_list_from_string(self.FLAGS.input_columns)
             self.xinput, self.x = create_input_layer(self.input_dimension, input_columns)
 
-        #if setup == "sample":
-        self.placeholder_dict = []
-        self.variable_dict = []
-        self.assign_dict = []
-        for i in range(replicas):
-            self.placeholder_dict.append({})
-            self.variable_dict.append({})
-            self.assign_dict.append({})
-            with tf.name_scope('replica' + str(i + 1)):
-                self.create_resource_variables()
-                with tf.variable_scope("accumulate", reuse=True):
-                    # global variables for all samplers
-                    self.variable_dict[i]["old_loss"] = tf.get_variable("old_loss", dtype=dds_basetype)
-                    self.variable_dict[i]["old_kinetic_energy"] = tf.get_variable("old_kinetic", dtype=dds_basetype)
-                    self.variable_dict[i]["kinetic_energy"] = tf.get_variable("kinetic", dtype=dds_basetype)
-                    self.assign_dict[i]["kinetic_energy"] = self.variable_dict[i]["kinetic_energy"].assign(0.)
-                    self.variable_dict[i]["total_energy"] = tf.get_variable("total_energy", dtype=dds_basetype)
-                    self.variable_dict[i]["momenta"] = tf.get_variable("momenta", dtype=dds_basetype)
-                    self.assign_dict[i]["momenta"] = self.variable_dict[i]["momenta"].assign(0.)
-                    self.variable_dict[i]["gradients"] = tf.get_variable("gradients", dtype=dds_basetype)
-                    self.assign_dict[i]["gradients"] = self.variable_dict[i]["gradients"].assign(0.)
-                    self.variable_dict[i]["virials"] = tf.get_variable("virials", dtype=dds_basetype)
-                    self.assign_dict[i]["virials"] = self.variable_dict[i]["virials"].assign(0.)
-                    self.variable_dict[i]["noise"] = tf.get_variable("noise", dtype=dds_basetype)
-                    self.assign_dict[i]["noise"] = self.variable_dict[i]["noise"].assign(0.)
-                    self.variable_dict[i]["accepted"] = tf.get_variable("accepted", dtype=tf.int64)
-                    self.assign_dict[i]["accepted"] = self.variable_dict[i]["accepted"].assign(0)
-                    self.variable_dict[i]["rejected"] = tf.get_variable("rejected", dtype=tf.int64)
-                    self.assign_dict[i]["rejected"] = self.variable_dict[i]["rejected"].assign(0)
-                    # global variables specific to HMC
-                    self.placeholder_dict[i]["var_loss"] = tf.placeholder(self.variable_dict[i]["old_loss"].dtype.base_dtype, name="var_loss")
-                    self.placeholder_dict[i]["var_kin"] = tf.placeholder(self.variable_dict[i]["old_kinetic_energy"].dtype.base_dtype, name="var_kinetic")
-                    self.placeholder_dict[i]["var_total"] = tf.placeholder(self.variable_dict[i]["total_energy"].dtype.base_dtype, name="var_total")
-                    self.assign_dict[i]["old_loss"] = self.variable_dict[i]["old_loss"].assign(self.placeholder_dict[i]["var_loss"])
-                    self.assign_dict[i]["old_kinetic_energy"] = self.variable_dict[i]["old_kinetic_energy"].assign(self.placeholder_dict[i]["var_kin"])
-                    self.assign_dict[i]["total_energy"] = self.variable_dict[i]["total_energy"].assign(self.placeholder_dict[i]["var_total"])
+        # create global variable to hold kinetic energy
+        self.create_resource_variables()
+        self.static_vars, self.zero_assigner = \
+            model._create_static_variable_dict(self.FLAGS.parallel_replica)
 
         if self.nn is None:
             self.nn = []
@@ -414,12 +382,12 @@ class model:
                 self.gradients = []
                 if self.FLAGS.do_hessians:
                     self.hessians = []
-            y_ = NeuralNetwork.add_true_labels(self.output_dimension)
+            self.true_labels = NeuralNetwork.add_true_labels(self.output_dimension)
             for i in range(self.FLAGS.parallel_replica):
                 with tf.name_scope('replica'+str(i+1)):
                     self.trainables.append('trainables_replica'+str(i+1))
                     self.nn.append(NeuralNetwork())
-                    self.nn[-1].placeholder_nodes['y_'] = y_
+                    self.nn[-1].placeholder_nodes['y_'] = self.true_labels
                     hidden_dimension = [int(i) for i in get_list_from_string(self.FLAGS.hidden_dimension)]
                     activations = NeuralNetwork.get_activations()
                     if self.FLAGS.seed is not None:
@@ -428,7 +396,7 @@ class model:
                         replica_seed = self.FLAGS.seed
                     self.loss.append(self.nn[-1].create(
                         self.x, hidden_dimension, self.output_dimension,
-                        labels=y_,
+                        labels=self.true_labels,
                         trainables_collection=self.trainables[-1],
                         seed=replica_seed,
                         add_dropped_layer=(self.FLAGS.dropout is not None),
@@ -444,7 +412,7 @@ class model:
                         # startup quite a bit even when hessians are not evaluated.
                         #print("GRADIENTS")
                         vectorized_gradients = []
-                        for tensor in tf.get_collection(tf.GraphKeys.WEIGHTS) + tf.get_collection(tf.GraphKeys.BIASES):
+                        for tensor in self.trainables[-1]:
                             grad = tf.gradients(self.loss, tensor)
                             print(grad)
                             vectorized_gradients.append(tf.reshape(grad, [-1]))
@@ -463,7 +431,7 @@ class model:
                             # split the gradients into its components and do gradient on each
                             split_gradient = tf.split(gradient, num_or_size_splits=dofs)
                             for splitgrad in split_gradient:
-                                for othertensor in tf.get_collection(tf.GraphKeys.WEIGHTS) + tf.get_collection(tf.GraphKeys.BIASES):
+                                for othertensor in self.trainables[-1]:
                                     grad = tf.gradients(splitgrad, othertensor)
                                     self.hessians.append(
                                         tf.reshape(grad, [-1]))
@@ -479,11 +447,14 @@ class model:
             logging.info("Excluded the following degrees of freedom: "+str(fixed_variables))
 
         # set number of degrees of freedom
+        split_weights = self._split_collection_per_replica(
+            tf.get_collection(tf.GraphKeys.WEIGHTS), self.FLAGS.parallel_replica)
+        split_biases = self._split_collection_per_replica(
+            tf.get_collection(tf.GraphKeys.BIASES), self.FLAGS.parallel_replica)
         self.number_of_parameters = \
-            neuralnet_parameters.get_total_dof_from_list(
-                tf.get_collection(tf.GraphKeys.WEIGHTS)) \
-            + neuralnet_parameters.get_total_dof_from_list(
-                tf.get_collection(tf.GraphKeys.BIASES))
+            neuralnet_parameters.get_total_dof_from_list(split_weights[0]) \
+            + neuralnet_parameters.get_total_dof_from_list(split_biases[0])
+        logging.info("Number of dof per replica: "+str(self.number_of_parameters))
 
         # setup priors
         prior = {}
@@ -502,7 +473,9 @@ class model:
         # setup training/sampling
         if setup == "train":
             for i in range(self.FLAGS.parallel_replica):
-                self.nn[i].add_train_method(self.loss[i], optimizer_method=self.FLAGS.optimizer, prior=prior)
+                with tf.variable_scope("var_replica" + str(i + 1)):
+                #with tf.name_scope('gradients_replica'+str(i+1)):
+                    self.nn[i].add_train_method(self.loss[i], optimizer_method=self.FLAGS.optimizer, prior=prior)
         elif setup == "sample":
             sampler = []
             for i in range(self.FLAGS.parallel_replica):
@@ -528,9 +501,10 @@ class model:
 
             # add position update nodes
             for i in range(self.FLAGS.parallel_replica):
-                global_step = self.nn[i]._prepare_global_step()
-                train_step = sampler[i].apply_gradients(grads_and_vars, i, global_step=global_step,
-                                                     name=sampler[i].get_name())
+                with tf.variable_scope("var_replica" + str(i + 1)):
+                    global_step = self.nn[i]._prepare_global_step()
+                    train_step = sampler[i].apply_gradients(grads_and_vars, i, global_step=global_step,
+                                                            name=sampler[i].get_name())
                 self.nn[i].summary_nodes['sample_step'] = train_step
         else:
             logging.info("Not adding sample or train method.")
@@ -539,11 +513,13 @@ class model:
             if self.step_placeholder is None:
                 self.step_placeholder = []
                 for i in range(self.FLAGS.parallel_replica):
-                    self.step_placeholder.append(tf.placeholder(shape=(), dtype=tf.int32))
+                    with tf.name_scope("replica"+str(i+1)):
+                        self.step_placeholder.append(tf.placeholder(shape=(), dtype=tf.int32))
             if self.global_step_assign_t is None:
                 self.global_step_assign_t = []
                 for i in range(self.FLAGS.parallel_replica):
-                    self.global_step_assign_t.append(tf.assign(self.nn[i].summary_nodes['global_step'], self.step_placeholder[i]))
+                    with tf.name_scope("replica"+str(i+1)):
+                        self.global_step_assign_t.append(tf.assign(self.nn[i].summary_nodes['global_step'], self.step_placeholder[i]))
             else:
                 logging.debug("Not adding step placeholder or global step.")
 
@@ -562,10 +538,16 @@ class model:
                     intra_op_parallelism_threads=self.FLAGS.intra_ops_threads,
                     inter_op_parallelism_threads=self.FLAGS.inter_ops_threads))
 
-        if self.weights is None:
-            self.weights = neuralnet_parameters(tf.get_collection(tf.GraphKeys.WEIGHTS))
-        if self.biases is None:
-            self.biases = neuralnet_parameters(tf.get_collection(tf.GraphKeys.BIASES))
+        if len(self.weights) == 0:
+            assert( len(split_weights) == self.FLAGS.parallel_replica )
+            for i in range(self.FLAGS.parallel_replica):
+                self.weights.append(neuralnet_parameters(split_weights[i]))
+                assert( self.weights[i].get_total_dof() == self.get_total_weight_dof() )
+        if len(self.biases) == 0:
+            assert( len(split_biases) == self.FLAGS.parallel_replica )
+            for i in range(self.FLAGS.parallel_replica):
+                self.biases.append(neuralnet_parameters(split_biases[i]))
+            assert (self.biases[i].get_total_dof() == self.get_total_bias_dof())
 
         if self.FLAGS.fix_parameters is not None:
             all_values = []
@@ -605,7 +587,9 @@ class model:
         if self.FLAGS.parse_parameters_file is not None \
                 and (self.FLAGS.parse_steps is not None and (len(self.FLAGS.parse_steps) > 0)):
             step=self.FLAGS.parse_steps[0]
-            self.assign_weights_and_biases_from_file(self.FLAGS.parse_parameters_file, step, do_check=True)
+            for i in range(self.FLAGS.parallel_replica):
+                self.assign_weights_and_biases_from_file(self.FLAGS.parse_parameters_file, step,
+                                                         replica_index=i, do_check=True)
 
         header = None
         logging.info("Setting up output files for "+str(setup))
@@ -623,8 +607,8 @@ class model:
                 self.run_writer = setup_run_file(self.FLAGS.run_file, header, self.config_map)
             if self.trajectory_writer is None:
                 self.trajectory_writer = setup_trajectory_file(self.FLAGS.trajectory_file,
-                                                               self.weights.get_total_dof(),
-                                                               self.biases.get_total_dof(),
+                                                               self.weights[0].get_total_dof(),
+                                                               self.biases[0].get_total_dof(),
                                                                self.config_map)
         except AttributeError:
             pass
@@ -673,10 +657,46 @@ class model:
         return ['id', 'step', 'epoch', 'accuracy', 'loss', 'time_per_nth_step', 'scaled_gradient', 'virial']
 
     def get_total_weight_dof(self):
-        return self.weights.get_total_dof()
+        return self.weights[0].get_total_dof()
 
     def get_total_bias_dof(self):
-        return self.biases.get_total_dof()
+        return self.biases[0].get_total_dof()
+
+    @staticmethod
+    def _dict_append(_dict, _key, _item):
+        if _key in _dict.keys():
+            _dict[_key].append(_item)
+        else:
+            _dict[_key] = [_item]
+
+    @staticmethod
+    def _create_static_variable_dict(parallel_replica):
+        """ Instantiate all sampler's resource variables. Also create
+        assign zero nodes.
+
+        :param parallel_replica: number of parallel replica to instantiate for
+        :return: dict with static_var lists (one per replica), equivalent dict
+                for zero assigners
+        """
+        static_vars_float = ["old_loss", "old_kinetic", "kinetic_energy", "total_energy", "momenta", \
+                             "gradients", "virials", "noise"]
+        static_vars_int64 = ["accepted", "rejected"]
+        static_var_dict = {}
+        zero_assigner_dict = {}
+        for i in range(parallel_replica):
+            with tf.variable_scope("var_replica" + str(i + 1), reuse=True):
+                with tf.variable_scope("accumulate", reuse=True):
+                    for key in static_vars_float:
+                        static_var =  tf.get_variable(key, dtype=dds_basetype)
+                        model._dict_append(static_var_dict, key, static_var)
+                        zero_assigner = static_var.assign(0.)
+                        model._dict_append(zero_assigner_dict, key, zero_assigner)
+                    for key in static_vars_int64:
+                        static_var = tf.get_variable(key, dtype=tf.int64)
+                        model._dict_append(static_var_dict, key, static_var)
+                        zero_assigner = static_var.assign(0)
+                        model._dict_append(zero_assigner_dict, key, zero_assigner)
+        return static_var_dict, zero_assigner_dict
 
     def sample(self, return_run_info = False, return_trajectories = False, return_averages = False):
         """ Performs the actual sampling of the neural network `nn` given a dataset `ds` and a
@@ -691,13 +711,20 @@ class model:
         :return: either thrice None or lists (per replica) of pandas dataframes
                 depending on whether either parameter has evaluated to True
         """
+        placeholder_nodes = [self.nn[replica_index].get_dict_of_nodes(
+            ["friction_constant", "inverse_temperature", "step_width", "current_step", "next_eval_step", "y_"])
+            for replica_index in range(self.FLAGS.parallel_replica)]
 
-        placeholder_nodes = []
+        list_of_nodes = ["merged", "sample_step", "accuracy", "global_step", "loss"]
         test_nodes = []
+        for item in list_of_nodes:
+            test_nodes.append([self.nn[replica_index].get(item) for replica_index in range(self.FLAGS.parallel_replica)])
+
+        all_weights = []
+        all_biases = []
         for replica_index in range(self.FLAGS.parallel_replica):
-            placeholder_nodes.append(self.nn[replica_index].get_dict_of_nodes(
-                ["friction_constant", "inverse_temperature", "step_width", "current_step", "next_eval_step", "y_"]))
-            test_nodes.append(self.nn[replica_index].get_list_of_nodes(["merged", "sample_step", "accuracy", "global_step", "loss"]))
+            all_weights.append(self.weights[replica_index].parameters)
+            all_biases.append(self.biases[replica_index].parameters)
 
         output_width = 8
         output_precision = 8
@@ -712,10 +739,10 @@ class model:
         averages = None
         if return_averages:
             averages = []
+            steps = (self.FLAGS.max_steps % self.FLAGS.every_nth) + 1
+            header = self.get_averages_header(setup="sample")
+            no_params = len(header)
             for replica_index in range(self.FLAGS.parallel_replica):
-                steps = (self.FLAGS.max_steps % self.FLAGS.every_nth)+1
-                header = self.get_averages_header(setup="sample")
-                no_params = len(header)
                 averages.append(pd.DataFrame(
                     np.zeros((steps, no_params)),
                     columns=header))
@@ -723,10 +750,10 @@ class model:
         run_info = None
         if return_run_info:
             run_info = []
+            steps = (self.FLAGS.max_steps % self.FLAGS.every_nth) + 1
+            header = self.get_sample_header()
+            no_params = len(header)
             for replica_index in range(self.FLAGS.parallel_replica):
-                steps = (self.FLAGS.max_steps % self.FLAGS.every_nth)+1
-                header = self.get_sample_header()
-                no_params = len(header)
                 run_info.append(pd.DataFrame(
                     np.zeros((steps, no_params)),
                     columns=header))
@@ -734,15 +761,32 @@ class model:
         trajectory = None
         if return_trajectories:
             trajectory = []
+            steps = (self.FLAGS.max_steps % self.FLAGS.every_nth) + 1
+            header = get_trajectory_header(
+                self.weights[0].get_total_dof(),
+                self.biases[0].get_total_dof())
+            no_params = len(header)
             for replica_index in range(self.FLAGS.parallel_replica):
-                steps = (self.FLAGS.max_steps % self.FLAGS.every_nth)+1
-                header = get_trajectory_header(
-                    self.weights.get_total_dof(),
-                    self.biases.get_total_dof())
-                no_params = self.weights.get_total_dof()+self.biases.get_total_dof()+3
                 trajectory.append(pd.DataFrame(
                     np.zeros((steps, no_params)),
                     columns=header))
+
+        feed_dict = {}
+        # place in feed dict
+        for replica_index in range(self.FLAGS.parallel_replica):
+            feed_dict.update({
+                placeholder_nodes[replica_index]["step_width"]: self.FLAGS.step_width,
+                placeholder_nodes[replica_index]["inverse_temperature"]: self.FLAGS.inverse_temperature,
+                placeholder_nodes[replica_index]["friction_constant"]: self.FLAGS.friction_constant
+            })
+            if self.FLAGS.dropout is not None:
+                feed_dict.update({placeholder_nodes[replica_index]["keep_prob"]: self.FLAGS.dropout})
+            if self.FLAGS.sampler == "HamiltonianMonteCarlo":
+                feed_dict.update({
+                    placeholder_nodes[replica_index]["step_width"]: self.FLAGS.step_width,
+                    placeholder_nodes[replica_index]["current_step"]: 0,
+                    placeholder_nodes[replica_index]["next_eval_step"]: self.FLAGS.hamiltonian_dynamics_time
+                })
 
         # check that sampler's parameters are actually used
         for replica_index in range(self.FLAGS.parallel_replica):
@@ -754,34 +798,37 @@ class model:
                                       "CovarianceControlledAdaptiveLangevinThermostat",
                                       "HamiltonianMonteCarlo"]:
                 gamma, beta, deltat = self.sess.run(self.nn[replica_index].get_list_of_nodes(
-                    ["friction_constant", "inverse_temperature", "step_width"]), feed_dict={
-                    placeholder_nodes[replica_index]["step_width"]: self.FLAGS.step_width,
-                    placeholder_nodes[replica_index]["inverse_temperature"]: self.FLAGS.inverse_temperature,
-                    placeholder_nodes[replica_index]["friction_constant"]: self.FLAGS.friction_constant
-                })
+                    ["friction_constant", "inverse_temperature", "step_width"]), feed_dict=feed_dict)
+                logging.info("LD Sampler parameters, replica #%d: gamma = %lg, beta = %lg, delta t = %lg" %
+                      (replica_index, gamma, beta, deltat))
             elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
                 current_step, num_mc_steps, deltat = self.sess.run(self.nn[replica_index].get_list_of_nodes(
-                    ["current_step", "next_eval_step", "step_width"]), feed_dict={
-                    placeholder_nodes[replica_index]["step_width"]: self.FLAGS.step_width,
-                    placeholder_nodes[replica_index]["current_step"]: 0,
-                    placeholder_nodes[replica_index]["next_eval_step"]: self.FLAGS.hamiltonian_dynamics_time
-                })
-                logging.info("Sampler parameters: current_step = %lg, num_mc_steps = %lg, delta t = %lg" %
-                      (current_step, num_mc_steps, deltat))
+                    ["current_step", "next_eval_step", "step_width"]), feed_dict=feed_dict)
+                logging.info("MC Sampler parameters, replica #%d: current_step = %lg, num_mc_steps = %lg, delta t = %lg" %
+                      (replica_index, current_step, num_mc_steps, deltat))
 
             # create extra nodes for HMC
-            if self.FLAGS.sampler == "HamiltonianMonteCarlo":
-                HMC_eval_nodes = self.nn[replica_index].get_list_of_nodes(["loss"]) \
-                             + [self.variable_dict["total_energy"][replica_index], self.variable_dict["kinetic_energy"][replica_index]]
-                HMC_set_nodes = [self.assign_dict["old_loss"][replica_index],
-                                 self.assign_dict["old_kinetic_energy"][replica_index]]
-                HMC_set_all_nodes = [self.assign_dict["total_energy"][replica_index]] + HMC_set_nodes
+        if self.FLAGS.sampler == "HamiltonianMonteCarlo":
+            HMC_eval_nodes = []
+            HMC_set_nodes = []
+            HMC_set_all_nodes = []
+            for replica_index in range(self.FLAGS.parallel_replica):
+                HMC_eval_nodes.append(self.nn[replica_index].get_list_of_nodes(["loss"]) \
+                                      + [self.static_vars["total_energy"][replica_index],
+                                         self.static_vars["kinetic_energy"][replica_index]])
+                model._dict_append(self.static_vars, "var_loss", tf.placeholder(dds_basetype, name="var_loss"))
+                model._dict_append(self.static_vars, "var_kinetic", tf.placeholder(dds_basetype, name="var_loss"))
+                model._dict_append(self.static_vars, "var_total", tf.placeholder(dds_basetype, name="var_loss"))
+                HMC_set_nodes.append([self.static_vars["old_loss"][replica_index].assign(self.static_vars["var_loss"][replica_index]),
+                                 self.static_vars["old_kinetic_energy"][replica_index].assign(self.static_vars["var_kin"][replica_index])])
+                HMC_set_all_nodes.append([self.static_vars["total_energy"][replica_index].assign(self.static_vars["var_total"][replica_index])]+HMC_set_nodes)
 
-        # zero rejection rate before sampling start
-        check_accepted, check_rejected = self.sess.run([self.assign_dict["accepted"][replica_index],
-                                                        self.assign_dict["rejected"][replica_index]])
-        assert(check_accepted == 0)
-        assert(check_rejected == 0)
+            # zero rejection rate before sampling start
+            check_accepted, check_rejected = self.sess.run([
+                self.static_vars["zero_accepted"], self.static_vars["zero_rejected"]])
+            for replica_index in range(self.FLAGS.parallel_replica):
+                assert(check_accepted[replica_index] == 0)
+                assert(check_rejected[replica_index] == 0)
 
         logging.info("Starting to sample")
         logging.info_intervals = max(1, int(self.FLAGS.max_steps / 100))
@@ -790,134 +837,146 @@ class model:
         for current_step in range(self.FLAGS.max_steps):
             # get next batch of data
             features, labels = self.input_pipeline.next_batch(self.sess)
+            # logging.debug("batch is x: "+str(features[:])+", y: "+str(labels[:]))
 
-            for replica_index in range(self.FLAGS.parallel_replica):
-                # pick next evaluation step with a little random variation
-                if self.FLAGS.sampler == "HamiltonianMonteCarlo" and current_step > HMC_steps:
-                    HMC_steps += max(1,
-                                     round((0.9 + np.random.uniform(low=0., high=0.2)) \
-                                           * self.FLAGS.hamiltonian_dynamics_time / self.FLAGS.step_width))
-                    logging.debug("Next evaluation of HMC criterion at step " + str(HMC_steps))
+            # update feed_dict for this step
+            feed_dict.update({
+                self.xinput: features,
+                self.true_labels: labels
+            })
 
-                # place in feed dict
-                feed_dict = {
-                    self.xinput: features,
-                    placeholder_nodes["y_"][replica_index]: labels,
-                    placeholder_nodes["step_width"][replica_index]: self.FLAGS.step_width,
-                    placeholder_nodes["inverse_temperature"][replica_index]: self.FLAGS.inverse_temperature,
-                    placeholder_nodes["friction_constant"][replica_index]: self.FLAGS.friction_constant,
-                    placeholder_nodes["current_step"][replica_index]: current_step,
-                    placeholder_nodes["next_eval_step"][replica_index]: HMC_steps
-                }
-                if self.FLAGS.dropout is not None:
-                    feed_dict.update({placeholder_nodes["keep_prob"][replica_index]: self.FLAGS.dropout})
-                # logging.debug("batch is x: "+str(features[:])+", y: "+str(labels[:]))
+            # set HMC specific nodes in feed_dict
+            if self.FLAGS.sampler == "HamiltonianMonteCarlo":
+                for replica_index in range(self.FLAGS.parallel_replica):
+                    # pick next evaluation step with a little random variation
+                    if current_step > HMC_steps:
+                        HMC_steps += max(1,
+                                         round((0.9 + np.random.uniform(low=0., high=0.2)) \
+                                               * self.FLAGS.hamiltonian_dynamics_time / self.FLAGS.step_width))
+                        logging.debug("Next evaluation of HMC criterion at step " + str(HMC_steps))
+                        feed_dict.update({
+                            placeholder_nodes[replica_index]["next_eval_step"]: HMC_steps,
+                            placeholder_nodes[replica_index]["current_step"]: current_step
+                        })
 
-                # set global variable used in HMC sampler for criterion to initial loss
-                if self.FLAGS.sampler == "HamiltonianMonteCarlo":
-                    loss_eval, total_eval, kin_eval = self.sess.run(HMC_eval_nodes, feed_dict=feed_dict)
+            # set global variable used in HMC sampler for criterion to initial loss
+            if self.FLAGS.sampler == "HamiltonianMonteCarlo":
+                for replica_index in range(self.FLAGS.parallel_replica):
+                    loss_eval, total_eval, kin_eval = self.sess.run(HMC_eval_nodes[replica_index], feed_dict=feed_dict)
                     HMC_set_dict = {
-                        self.placeholder_dict["var_kin"][replica_index]: kin_eval,
-                        self.placeholder_dict["var_loss"][replica_index]: loss_eval,
-                        self.placeholder_dict["var_total"][replica_index]: loss_eval + kin_eval
+                        self.static_vars["var_kin"][replica_index]: kin_eval,
+                        self.static_vars["var_loss"][replica_index]: loss_eval,
+                        self.static_vars["var_total"][replica_index]: loss_eval+kin_eval
                     }
                     if abs(total_eval) < 1e-10:
-                        self.sess.run(HMC_set_all_nodes, feed_dict=HMC_set_dict)
+                        self.sess.run(HMC_set_all_nodes[replica_index], feed_dict=HMC_set_dict)
                     else:
-                        self.sess.run(HMC_set_nodes, feed_dict=HMC_set_dict)
-                    loss_eval, total_eval, kin_eval = self.sess.run(HMC_eval_nodes, feed_dict=feed_dict)
+                        self.sess.run(HMC_set_nodes[replica_index], feed_dict=HMC_set_dict)
+                    loss_eval, total_eval, kin_eval = self.sess.run(HMC_eval_nodes[replica_index], feed_dict=feed_dict)
                     logging.debug("replica #%d, #%d: loss is %lg, total is %lg, kinetic is %lg" \
                                   % (replica_index, current_step, loss_eval, total_eval, kin_eval))
 
-                # zero kinetic energy
-                if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics",
-                                          "GeometricLangevinAlgorithm_1stOrder",
-                                          "GeometricLangevinAlgorithm_2ndOrder",
-                                          "HamiltonianMonteCarlo",
-                                          "BAOAB",
-                                          "CovarianceControlledAdaptiveLangevinThermostat"]:
-                    check_kinetic, check_momenta, check_gradients, check_virials, check_noise = \
-                        self.sess.run([self.assign_dict["kinetic_energy"][replica_index],
-                                       self.assign_dict["momenta"][replica_index],
-                                       self.assign_dict["gradients"][replica_index],
-                                       self.assign_dict["virials"][replica_index],
-                                       self.assign_dict["noise"][replica_index]])
-                    assert (abs(check_kinetic) < 1e-10)
-                    assert (abs(check_momenta) < 1e-10)
-                    assert (abs(check_gradients) < 1e-10)
-                    assert (abs(check_virials) < 1e-10)
-                    assert (abs(check_noise) < 1e-10)
+            # zero kinetic energy
+            if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics",
+                                      "GeometricLangevinAlgorithm_1stOrder",
+                                      "GeometricLangevinAlgorithm_2ndOrder",
+                                      "HamiltonianMonteCarlo",
+                                      "BAOAB",
+                                      "CovarianceControlledAdaptiveLangevinThermostat"]:
+                check_kinetic, check_momenta, check_gradients, check_virials, check_noise = \
+                    self.sess.run([
+                        self.zero_assigner["kinetic_energy"],
+                        self.zero_assigner["momenta"],
+                        self.zero_assigner["gradients"],
+                        self.zero_assigner["virials"],
+                        self.zero_assigner["noise"]])
+                for replica_index in range(self.FLAGS.parallel_replica):
+                    assert (abs(check_kinetic[replica_index]) < 1e-10)
+                    assert (abs(check_momenta[replica_index]) < 1e-10)
+                    assert (abs(check_gradients[replica_index]) < 1e-10)
+                    assert (abs(check_virials[replica_index]) < 1e-10)
+                    assert (abs(check_noise[replica_index]) < 1e-10)
 
-                    # get the weights and biases as otherwise the loss won't match
-                    # tf first computes loss, then gradient, then performs variable update
-                    # hence, after the sample step, we would have updated variables but old loss
-                if current_step % self.FLAGS.every_nth == 0:
-                    if self.config_map["do_write_trajectory_file"] or return_trajectories:
-                        weights_eval = self.weights.evaluate(self.sess)
-                        biases_eval = self.biases.evaluate(self.sess)
-                        # [logging.info(str(item)) for item in weights_eval]
-                        # [logging.info(str(item)) for item in biases_eval]
+            # get the weights and biases as otherwise the loss won't match
+            # tf first computes loss, then gradient, then performs variable update
+            # henc+ after the sample step, we would have updated variables but old loss
+            if current_step % self.FLAGS.every_nth == 0:
+                if self.config_map["do_write_trajectory_file"] or return_trajectories:
+                    weights_eval, biases_eval = self.sess.run([all_weights, all_biases])
+                    #[logging.info(str(item)) for item in weights_eval]
+                    #[logging.info(str(item)) for item in biases_eval]
 
-                        # NOTE: All values from nodes contained in the same call to tf.run() with train_step
-                        # will be evaluated as if before train_step. Nodes that are changed in the update due to
-                        # train_step (e.g. momentum_t) however are updated.
-                        # In other words, whether we use
-                        #   tf.run([train_step, loss_eval], ...)
-                        # or
-                        #   tf.run([loss_eval, train_step], ...)
-                        # is not important. Only a subsequent, distinct tf.run() call would produce a different loss_eval.
-                summary, _, acc, global_step, loss_eval = \
-                    self.sess.run(test_nodes, feed_dict=feed_dict)
+            # NOTE: All values from nodes contained in the same call to tf.run() with train_step
+            # will be evaluated as if before train_step. Nodes that are changed in the update due to
+            # train_step (e.g. momentum_t) however are updated.
+            # In other words, whether we use
+            #   tf.run([train_step, loss_eval], ...)
+            # or
+            #   tf.run([loss_eval, train_step], ...)
+            # is not important. Only a subsequent, distinct tf.run() call would produce a different loss_eval.
+            summary, _, acc, global_step, loss_eval = \
+                self.sess.run(test_nodes, feed_dict=feed_dict)
 
-                if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics",
-                                          "GeometricLangevinAlgorithm_1stOrder",
-                                          "GeometricLangevinAlgorithm_2ndOrder",
-                                          "HamiltonianMonteCarlo",
-                                          "BAOAB",
-                                          "CovarianceControlledAdaptiveLangevinThermostat"]:
-                    if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
-                        gradients, virials, noise = \
-                            self.sess.run([self.variable_dict["gradients"][replica_index],
-                                           self.variable_dict["virials"][replica_index],
-                                           self.variable_dict["noise"][replica_index]])
-                        accumulated_virials[replica_index] += virials
-                    elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
-                        old_total_energy, kinetic_energy, momenta, gradients, virials = \
-                            self.sess.run([self.variable_dict["total_energy"][replica_index],
-                                           self.variable_dict["kinetic_energy"][replica_index],
-                                           self.variable_dict["momenta"][replica_index],
-                                           self.variable_dict["gradients"][replica_index],
-                                           self.variable_dict["virials"][replica_index]])
-                    else:
-                        kinetic_energy, momenta, gradients, virials, noise = \
-                            self.sess.run([self.variable_dict["kinetic_energy"][replica_index],
-                                           self.variable_dict["momenta"][replica_index],
-                                           self.variable_dict["gradients"][replica_index],
-                                           self.variable_dict["virials"][replica_index],
-                                           self.variable_dict["noise"][replica_index]])
+            if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics",
+                                      "GeometricLangevinAlgorithm_1stOrder",
+                                      "GeometricLangevinAlgorithm_2ndOrder",
+                                      "HamiltonianMonteCarlo",
+                                      "BAOAB",
+                                      "CovarianceControlledAdaptiveLangevinThermostat"]:
+                if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
+                    gradients, virials, noise = \
+                        self.sess.run([
+                            self.static_vars["gradients"],
+                            self.static_vars["virials"],
+                            self.static_vars["noise"]])
+                elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
+                    old_total_energy, kinetic_energy, momenta, gradients, virials = \
+                        self.sess.run([
+                            self.static_vars["total_energy"],
+                            self.static_vars["kinetic_energy"],
+                            self.static_vars["momenta"],
+                            self.static_vars["gradients"],
+                            self.static_vars["virials"]])
+                else:
+                    kinetic_energy, momenta, gradients, virials, noise = \
+                        self.sess.run([
+                            self.static_vars["kinetic_energy"],
+                            self.static_vars["momenta"],
+                            self.static_vars["gradients"],
+                            self.static_vars["virials"],
+                            self.static_vars["noise"]])
 
+            for replica_index in range(self.FLAGS.parallel_replica):
                 if current_step >= self.FLAGS.burn_in_steps:
-                    accumulated_loss_nominator[replica_index] += loss_eval * exp(- self.FLAGS.inverse_temperature * loss_eval)
-                    accumulated_loss_denominator[replica_index] += exp(- self.FLAGS.inverse_temperature * loss_eval)
+                    accumulated_loss_nominator[replica_index] += loss_eval[replica_index] * exp(- self.FLAGS.inverse_temperature * loss_eval[replica_index])
+                    accumulated_loss_denominator[replica_index] += exp(- self.FLAGS.inverse_temperature * loss_eval[replica_index])
                     if self.FLAGS.sampler != "StochasticGradientLangevinDynamics":
-                        accumulated_kinetic_energy[replica_index] += kinetic_energy
-                    accumulated_virials[replica_index] += virials
+                        accumulated_kinetic_energy[replica_index] += kinetic_energy[replica_index]
+                    accumulated_virials[replica_index] += virials[replica_index]
 
-                if current_step % self.FLAGS.every_nth == 0:
-                    current_time = time.process_time()
-                    time_elapsed_per_nth_step = current_time - last_time
-                    last_time = current_time
-                    logging.debug("Output at replica #" + str(replica_index) + ", step #" \
-                                  + str(current_step) + ", time elapsed till last is " + str(time_elapsed_per_nth_step))
+            if current_step % self.FLAGS.every_nth == 0:
+                current_time = time.process_time()
+                time_elapsed_per_nth_step = current_time - last_time
+                last_time = current_time
+                logging.debug("Output step  # " \
+                              + str(current_step) + ", time elapsed till last is " + str(time_elapsed_per_nth_step))
+                if self.FLAGS.sampler == "HamiltonianMonteCarlo":
+                    accepted_eval, rejected_eval = self.sess.run([
+                        self.static_vars["accepted"], self.static_vars["rejected"]])
 
+                for replica_index in range(self.FLAGS.parallel_replica):
                     if self.config_map["do_write_trajectory_file"] or return_trajectories:
-                        trajectory_line = [0, replica_index, global_step] \
-                                          + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
-                                                                              precision=output_precision)] \
-                                          + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
-                                             for item in weights_eval] \
-                                          + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
-                                             for item in biases_eval]
+                        trajectory_line = [0, replica_index, global_step[replica_index]] \
+                                          + ['{:{width}.{precision}e}'.format(loss_eval[replica_index], width=output_width,
+                                                                              precision=output_precision)]
+                        if len(weights_eval[replica_index]) > 0:
+                            flat_array = neuralnet_parameters.flatten_list_of_arrays(weights_eval[replica_index])
+                            trajectory_line += ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision) \
+                                                for item in flat_array[:]]
+                        if len(biases_eval[replica_index]) > 0:
+                            flat_array = neuralnet_parameters.flatten_list_of_arrays(biases_eval[replica_index])
+                            trajectory_line += ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision) \
+                                                for item in flat_array[:]]
 
                         if self.config_map["do_write_trajectory_file"]:
                             self.trajectory_writer.writerow(trajectory_line)
@@ -936,8 +995,8 @@ class model:
                         else:
                             average_kinetic_energy = 0.
                             average_virials = 0.
-                        averages_line = [0, replica_index, global_step, current_step] \
-                                        + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
+                        averages_line = [0, replica_index, global_step[replica_index], current_step] \
+                                        + ['{:{width}.{precision}e}'.format(loss_eval[replica_index], width=output_width,
                                                                             precision=output_precision)] \
                                         + ['{:{width}.{precision}e}'.format(average_loss, width=output_width,
                                                                             precision=output_precision)]
@@ -962,41 +1021,39 @@ class model:
                                                   "HamiltonianMonteCarlo",
                                                   "BAOAB",
                                                   "CovarianceControlledAdaptiveLangevinThermostat"]:
-                            run_line = [0, replica_index, global_step, current_step] + ['{:1.3f}'.format(acc)] \
-                                       + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
+                            run_line = [0, replica_index, global_step[replica_index], current_step] \
+                                       + ['{:1.3f}'.format(acc[replica_index])] \
+                                       + ['{:{width}.{precision}e}'.format(loss_eval[replica_index], width=output_width,
                                                                            precision=output_precision)] \
                                        + ['{:{width}.{precision}e}'.format(time_elapsed_per_nth_step, width=output_width,
                                                                            precision=output_precision)]
                             if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
                                 run_line += ['{:{width}.{precision}e}'.format(x, width=output_width,
                                                                               precision=output_precision)
-                                             for x in [sqrt(gradients), abs(0.5*virials), sqrt(noise)]]
+                                             for x in [sqrt(gradients[replica_index]), abs(0.5*virials[replica_index]), sqrt(noise[replica_index])]]
                             elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
-                                accepted_eval, rejected_eval = self.sess.run(
-                                    [self.variable_dict["accepted"][replica_index],
-                                     self.variable_dict["rejected"]][replica_index])
-                                if (rejected_eval+accepted_eval) > 0:
-                                    rejection_rate = rejected_eval/(rejected_eval+accepted_eval)
+                                if (rejected_eval[replica_index]+accepted_eval[replica_index]) > 0:
+                                    rejection_rate = rejected_eval[replica_index]/(rejected_eval[replica_index]+accepted_eval[replica_index])
                                 else:
                                     rejection_rate = 0
-                                run_line += ['{:{width}.{precision}e}'.format(loss_eval + kinetic_energy,
+                                run_line += ['{:{width}.{precision}e}'.format(loss_eval[replica_index] + kinetic_energy[replica_index],
                                                                               width=output_width,
                                                                               precision=output_precision)]\
-                                           + ['{:{width}.{precision}e}'.format(old_total_energy,
+                                           + ['{:{width}.{precision}e}'.format(old_total_energy[replica_index],
                                                                                width=output_width,
                                                                                precision=output_precision)]\
                                            + ['{:{width}.{precision}e}'.format(x, width=output_width,
                                                                                precision=output_precision)
-                                              for x in [kinetic_energy, sqrt(momenta), sqrt(gradients), abs(0.5*virials)]]\
+                                              for x in [kinetic_energy[replica_index], sqrt(momenta[replica_index]), sqrt(gradients[replica_index]), abs(0.5*virials[replica_index])]]\
                                            + ['{:{width}.{precision}e}'.format(rejection_rate, width=output_width,
                                                                                precision=output_precision)]
                             else:
-                                run_line += ['{:{width}.{precision}e}'.format(loss_eval + kinetic_energy,
+                                run_line += ['{:{width}.{precision}e}'.format(loss_eval[replica_index] + kinetic_energy[replica_index],
                                                                               width=output_width,
                                                                               precision=output_precision)]\
                                            + ['{:{width}.{precision}e}'.format(x, width=output_width,
                                                                                precision=output_precision)
-                                              for x in [kinetic_energy, sqrt(momenta), sqrt(gradients), abs(0.5*virials), sqrt(noise)]]
+                                              for x in [kinetic_energy[replica_index], sqrt(momenta[replica_index]), sqrt(gradients[replica_index]), abs(0.5*virials[replica_index]), sqrt(noise[replica_index])]]
 
                         if self.config_map["do_write_run_file"]:
                             self.run_writer.writerow(run_line)
@@ -1061,9 +1118,9 @@ class model:
         if return_trajectories:
             steps = (self.FLAGS.max_steps % self.FLAGS.every_nth)+1
             header = get_trajectory_header(
-                self.weights.get_total_dof(),
-                self.biases.get_total_dof())
-            no_params = self.weights.get_total_dof()+self.biases.get_total_dof()+3
+                self.weights[0].get_total_dof(),
+                self.biases[0].get_total_dof())
+            no_params = self.weights[0].get_total_dof()+self.biases[0].get_total_dof()+3
             trajectory = pd.DataFrame(
                 np.zeros((steps, no_params)),
                 columns=header)
@@ -1087,8 +1144,8 @@ class model:
             #logging.debug("batch is x: "+str(features[:])+", y: "+str(labels[:]))
 
             # zero accumulated gradient
-            check_gradients, check_virials = self.sess.run([self.assign_dict["gradients"],
-                                                            self.assign_dict["virials"]])
+            check_gradients, check_virials = self.sess.run([self.zero_assigner["gradients"][replica_index],
+                                                            self.zero_assigner["virials"][replica_index]])
             assert (abs(check_gradients) < 1e-10)
             assert (abs(check_virials) < 1e-10)
 
@@ -1097,14 +1154,14 @@ class model:
             # hence, after the sample step, we would have updated variables but old loss
             if current_step % self.FLAGS.every_nth == 0:
                 if self.config_map["do_write_trajectory_file"] or return_trajectories:
-                    weights_eval = self.weights.evaluate(self.sess)
-                    biases_eval = self.biases.evaluate(self.sess)
+                    weights_eval = self.weights[replica_index].evaluate(self.sess)
+                    biases_eval = self.biases[replica_index].evaluate(self.sess)
 
             summary, _, acc, global_step, loss_eval, y_true_eval, y_eval, scaled_grad = \
                 self.sess.run(test_nodes, feed_dict=feed_dict)
 
-            gradients, virials = self.sess.run([self.variable_dict["gradients"],
-                                                self.variable_dict["virials"]])
+            gradients, virials = self.sess.run([self.static_vars["gradients"][replica_index],
+                                                self.static_vars["virials"][replica_index]])
             if current_step >= self.FLAGS.burn_in_steps:
                 accumulated_virials += virials
 
@@ -1184,7 +1241,7 @@ class model:
         if self.FLAGS.dropout is not None:
             feed_dict.update({placeholder_nodes["keep_prob"] : self.FLAGS.dropout})
 
-        hessian_eval = self.sess.run(self.hessians, feed_dict=feed_dict)
+        hessian_eval = self.sess.run(self.hessians[replica_index], feed_dict=feed_dict)
         lambdas, _ = sps.linalg.eigs(hessian_eval, k=1)
         optimal_step_width = 2/sqrt(lambdas[0])
         logging.info("Optimal step width would be "+str(optimal_step_width))
@@ -1343,45 +1400,51 @@ class model:
         assert( replica_index < self.FLAGS.parallel_replica )
         # set step
         if ('global_step' in self.nn[replica_index].summary_nodes.keys()):
-            sample_step_placeholder = self.nn[replica_index].get("step_placeholder")
+            sample_step_placeholder = self.step_placeholder[replica_index]
             feed_dict = {sample_step_placeholder: step}
-            set_step = self.sess.run(self.global_step_assign_t, feed_dict=feed_dict)
+            set_step = self.sess.run(self.global_step_assign_t[replica_index], feed_dict=feed_dict)
+            assert (set_step == step)
 
-    def assign_neural_network_parameters(self, parameters):
+    def assign_neural_network_parameters(self, parameters, replica_index=0):
         """ Assigns the parameters of the neural network from
         the given array.
 
         :param parameters: list of values, one for each weight and bias
+        :param replica_index: index of the replicated network (in the graph)
         """
-        weights_dof = self.weights.get_total_dof()
-        self.weights.assign(self.sess, parameters[0:weights_dof])
-        self.biases.assign(self.sess, parameters[weights_dof:])
+        weights_dof = self.weights[replica_index].get_total_dof()
+        self.weights[replica_index].assign(self.sess, parameters[0:weights_dof])
+        self.biases[replica_index].assign(self.sess, parameters[weights_dof:])
 
-    def assign_weights_and_biases(self, weights_vals, biases_vals, do_check=False):
+    def assign_weights_and_biases(self, weights_vals, biases_vals, replica_index=0, do_check=False):
         """ Assigns weights and biases of a neural network.
 
         :param weights_vals: flat weights parameters
         :param biases_vals: flat bias parameters
+        :param replica_index: index of the replicated network (in the graph)
         :param do_check: whether to check set values (and print) or not
         :return evaluated weights and bias on do_check or None otherwise
         """
-        self.weights.assign(self.sess, weights_vals)
-        self.biases.assign(self.sess, biases_vals)
+        self.weights[replica_index].assign(self.sess, weights_vals)
+        self.biases[replica_index].assign(self.sess, biases_vals)
 
         # get the input and biases to check against what we set
         if do_check:
-            weights_eval = self.weights.evaluate(self.sess)
-            biases_eval = self.biases.evaluate(self.sess)
-            logging.info("Evaluating at weights " + str(weights_eval[0:10]) + ", biases " + str(biases_eval[0:10]))
+            weights_eval = self.weights[replica_index].evaluate(self.sess)
+            biases_eval = self.biases[replica_index].evaluate(self.sess)
+            logging.info("Evaluating replica #"+str(replica_index) \
+                         +" at weights " + str(weights_eval[0:10]) \
+                         + ", biases " + str(biases_eval[0:10]))
             return weights_eval, biases_eval
         return None
 
-    def assign_weights_and_biases_from_dataframe(self, df_parameters, rownr, do_check=False):
+    def assign_weights_and_biases_from_dataframe(self, df_parameters, rownr, replica_index=0, do_check=False):
         """ Parse weight and bias values from a dataframe given a specific step
         to set the neural network's parameters.
 
         :param df_parameters: pandas dataframe
         :param rownr: rownr to set
+        :param replica_index: index of the replicated network (in the graph)
         :param do_check: whether to evaluate (and print) set parameters
         :return evaluated weights and bias on do_check or None otherwise
         """
@@ -1404,18 +1467,19 @@ class model:
         logging.info("Read row " + str(rownr) + ":" + str(parameters))
 
         # create internal array to store parameters
-        weights_vals = self.weights.create_flat_vector()
-        biases_vals = self.biases.create_flat_vector()
+        weights_vals = self.weights[replica_index].create_flat_vector()
+        biases_vals = self.biases[replica_index].create_flat_vector()
         weights_vals[:weights_vals.size] = [parameters[key] for key in sorted(parameters.keys()) if "w" in key]
         biases_vals[:biases_vals.size] = [parameters[key] for key in sorted(parameters.keys()) if "b" in key]
-        return self.assign_weights_and_biases(weights_vals, biases_vals, do_check)
+        return self.assign_weights_and_biases(weights_vals, biases_vals, replica_index, do_check)
 
-    def assign_weights_and_biases_from_file(self, filename, step, do_check=False):
+    def assign_weights_and_biases_from_file(self, filename, step, replica_index=0, do_check=False):
         """ Parse weight and bias values from a CSV file given a specific step
         to set the neural network's parameters.
 
         :param filename: filename to parse
         :param step: step to set (i.e. value in "step" column designates row)
+        :param replica_index: index of the replicated network (in the graph)
         :param do_check: whether to evaluate (and print) set parameters
         :return evaluated weights and bias on do_check or None otherwise
         """
@@ -1423,10 +1487,11 @@ class model:
         df_parameters = pd.read_csv(filename, sep=',', header=0)
         if step in df_parameters.loc[:, ['step']].values:
             rownr = np.where(df_parameters.loc[:, ['step']].values == step)[0]
-            self.assign_current_step(step)
+            self.assign_current_step(step, replica_index=replica_index)
             return self.assign_weights_and_biases_from_dataframe(
                 df_parameters=df_parameters,
                 rownr=rownr,
+                replica_index=replica_index,
                 do_check=do_check
             )
         else:

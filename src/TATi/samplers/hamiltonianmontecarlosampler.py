@@ -140,7 +140,7 @@ class HamiltonianMonteCarloSampler(StochasticGradientLangevinDynamicsSampler):
 
         momentum_sq = 0.5 * tf.reduce_sum(tf.multiply(momentum_criterion_block_t, momentum_criterion_block_t))
         with tf.variable_scope("accumulate", reuse=True):
-            kinetic_energy = tf.get_variable("kinetic", dtype=dds_basetype)
+            kinetic_energy = tf.get_variable("kinetic_energy", dtype=dds_basetype)
             kinetic_energy_t = tf.assign_add(kinetic_energy, momentum_sq)
 
         with tf.variable_scope("accumulate", reuse=True):
