@@ -47,18 +47,13 @@ class NeuralNetwork(object):
      that depend on other nodes, such as the weight of each layer, the input
      and output layer and the true labels.
     """
-    
-    placeholder_nodes = {}
-    """Lookup dictionary for input nodes, in TensorFlow parlance called placeholders."""
-    summary_nodes = {}
-    """Lookup dictionary for summary nodes, specific to TensorFlow. """
-    loss_nodes = {}
-    """ Lookup dictionary for the loss nodes, to tell TensorFlow which to train on"""
-    collection_weights_name = "nn_parameters_w"
-    """ Name for the tensorflow collection containing all weights flattened ."""
-    collection_biases_name = "nn_parameters_b"
-    """ Name for the tensorflow collection containing all biases flattened ."""
-
+    def __init__(self):
+        self.placeholder_nodes = {}
+        """Lookup dictionary for input nodes, in TensorFlow parlance called placeholders."""
+        self.summary_nodes = {}
+        """Lookup dictionary for summary nodes, specific to TensorFlow. """
+        self.loss_nodes = {}
+        """ Lookup dictionary for the loss nodes, to tell TensorFlow which to train on"""
 
     def get(self, keyname):
         """ Retrieve a node by name from the TensorFlow computational graph.
