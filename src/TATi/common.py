@@ -88,7 +88,7 @@ def get_trajectory_header(no_weights, no_biases):
     :param no_biases: number of biases of the network
     :return: list of strings with column names
     """
-    return ['id', 'step', 'loss']\
+    return ['id', 'replica_index', 'step', 'loss']\
            + [str("weight")+str(i) for i in range(0,no_weights)]\
            + [str("bias") + str(i) for i in range(0, no_biases)]
 

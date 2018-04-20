@@ -625,7 +625,7 @@ class model:
 
         :param setup: sample, train or None
         """
-        header = ['id', 'step', 'epoch', 'loss']
+        header = ['id', 'replica_index', 'step', 'epoch', 'loss']
         if setup == "train":
             if self.FLAGS.optimizer == "GradientDescent":
                 header += ['average_virials']
@@ -644,7 +644,7 @@ class model:
     def get_sample_header(self):
         """ Prepares the distinct header for the run file for sampling
         """
-        header = ['id', 'step', 'epoch', 'accuracy', 'loss', 'time_per_nth_step']
+        header = ['id', 'replica_index', 'step', 'epoch', 'accuracy', 'loss', 'time_per_nth_step']
         if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
             header += ['scaled_gradient', 'virial', 'scaled_noise']
         elif self.FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder",
@@ -679,8 +679,8 @@ class model:
                 inside a numpy array and returned (adhering to FLAGS.every_nth)
         :param return_averages: if set to true, accumulated average values will be
                 returned as numpy array
-        :return: either twice None or a pandas dataframe depending on whether either
-                parameter has evaluated to True
+        :return: either thrice None or lists (per replica) of pandas dataframes
+                depending on whether either parameter has evaluated to True
         """
 
         placeholder_nodes = []
@@ -695,39 +695,45 @@ class model:
 
         written_row = 0
 
-        accumulated_kinetic_energy = 0.
-        accumulated_loss_nominator = 0.
-        accumulated_loss_denominator = 0.
-        accumulated_virials = 0.
+        accumulated_kinetic_energy = [0.]*self.FLAGS.parallel_replica
+        accumulated_loss_nominator = [0.]*self.FLAGS.parallel_replica
+        accumulated_loss_denominator = [0.]*self.FLAGS.parallel_replica
+        accumulated_virials = [0.]*self.FLAGS.parallel_replica
 
         averages = None
         if return_averages:
-            steps = (self.FLAGS.max_steps % self.FLAGS.every_nth)+1
-            header = self.get_averages_header(setup="sample")
-            no_params = len(header)
-            averages = pd.DataFrame(
-                np.zeros((steps, no_params)),
-                columns=header)
+            averages = []
+            for replica_index in range(self.FLAGS.parallel_replica):
+                steps = (self.FLAGS.max_steps % self.FLAGS.every_nth)+1
+                header = self.get_averages_header(setup="sample")
+                no_params = len(header)
+                averages.append(pd.DataFrame(
+                    np.zeros((steps, no_params)),
+                    columns=header))
 
         run_info = None
         if return_run_info:
-            steps = (self.FLAGS.max_steps % self.FLAGS.every_nth)+1
-            header = self.get_sample_header()
-            no_params = len(header)
-            run_info = pd.DataFrame(
-                np.zeros((steps, no_params)),
-                columns=header)
+            run_info = []
+            for replica_index in range(self.FLAGS.parallel_replica):
+                steps = (self.FLAGS.max_steps % self.FLAGS.every_nth)+1
+                header = self.get_sample_header()
+                no_params = len(header)
+                run_info.append(pd.DataFrame(
+                    np.zeros((steps, no_params)),
+                    columns=header))
 
         trajectory = None
         if return_trajectories:
-            steps = (self.FLAGS.max_steps % self.FLAGS.every_nth)+1
-            header = get_trajectory_header(
-                self.weights.get_total_dof(),
-                self.biases.get_total_dof())
-            no_params = self.weights.get_total_dof()+self.biases.get_total_dof()+3
-            trajectory = pd.DataFrame(
-                np.zeros((steps, no_params)),
-                columns=header)
+            trajectory = []
+            for replica_index in range(self.FLAGS.parallel_replica):
+                steps = (self.FLAGS.max_steps % self.FLAGS.every_nth)+1
+                header = get_trajectory_header(
+                    self.weights.get_total_dof(),
+                    self.biases.get_total_dof())
+                no_params = self.weights.get_total_dof()+self.biases.get_total_dof()+3
+                trajectory.append(pd.DataFrame(
+                    np.zeros((steps, no_params)),
+                    columns=header))
 
         # check that sampler's parameters are actually used
         for replica_index in range(self.FLAGS.parallel_replica):
@@ -865,7 +871,7 @@ class model:
                             self.sess.run([self.variable_dict["gradients"][replica_index],
                                            self.variable_dict["virials"][replica_index],
                                            self.variable_dict["noise"][replica_index]])
-                        accumulated_virials += virials
+                        accumulated_virials[replica_index] += virials
                     elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
                         old_total_energy, kinetic_energy, momenta, gradients, virials = \
                             self.sess.run([self.variable_dict["total_energy"][replica_index],
@@ -882,11 +888,11 @@ class model:
                                            self.variable_dict["noise"][replica_index]])
 
                 if current_step >= self.FLAGS.burn_in_steps:
-                    accumulated_loss_nominator += loss_eval * exp(- self.FLAGS.inverse_temperature * loss_eval)
-                    accumulated_loss_denominator += exp(- self.FLAGS.inverse_temperature * loss_eval)
+                    accumulated_loss_nominator[replica_index] += loss_eval * exp(- self.FLAGS.inverse_temperature * loss_eval)
+                    accumulated_loss_denominator[replica_index] += exp(- self.FLAGS.inverse_temperature * loss_eval)
                     if self.FLAGS.sampler != "StochasticGradientLangevinDynamics":
-                        accumulated_kinetic_energy += kinetic_energy
-                    accumulated_virials += virials
+                        accumulated_kinetic_energy[replica_index] += kinetic_energy
+                    accumulated_virials[replica_index] += virials
 
                 if current_step % self.FLAGS.every_nth == 0:
                     current_time = time.process_time()
@@ -896,7 +902,7 @@ class model:
                                   + str(current_step) + ", time elapsed till last is " + str(time_elapsed_per_nth_step))
 
                     if self.config_map["do_write_trajectory_file"] or return_trajectories:
-                        trajectory_line = [0, global_step] \
+                        trajectory_line = [0, replica_index, global_step] \
                                           + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
                                                                               precision=output_precision)] \
                                           + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
@@ -907,21 +913,21 @@ class model:
                         if self.config_map["do_write_trajectory_file"]:
                             self.trajectory_writer.writerow(trajectory_line)
                         if return_trajectories:
-                            trajectory.loc[written_row] = trajectory_line
+                            trajectory[replica_index].loc[written_row] = trajectory_line
 
                     if self.config_map["do_write_averages_file"] or return_averages:
-                        if accumulated_loss_denominator > 0:
-                            average_loss = accumulated_loss_nominator/accumulated_loss_denominator
+                        if accumulated_loss_denominator[replica_index] > 0:
+                            average_loss = accumulated_loss_nominator[replica_index]/accumulated_loss_denominator[replica_index]
                         else:
                             average_loss = 0.
                         if current_step >= self.FLAGS.burn_in_steps:
                             divisor = float(current_step + 1. - self.FLAGS.burn_in_steps)
-                            average_kinetic_energy = accumulated_kinetic_energy / divisor
-                            average_virials = abs(0.5 * accumulated_virials) / divisor
+                            average_kinetic_energy = accumulated_kinetic_energy[replica_index] / divisor
+                            average_virials = abs(0.5 * accumulated_virials[replica_index]) / divisor
                         else:
                             average_kinetic_energy = 0.
                             average_virials = 0.
-                        averages_line = [0, global_step, current_step] \
+                        averages_line = [0, replica_index, global_step, current_step] \
                                         + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
                                                                             precision=output_precision)] \
                                         + ['{:{width}.{precision}e}'.format(average_loss, width=output_width,
@@ -937,7 +943,7 @@ class model:
                         if self.config_map["do_write_averages_file"]:
                             self.averages_writer.writerow(averages_line)
                         if return_averages:
-                            averages.loc[written_row] = averages_line
+                            averages[replica_index].loc[written_row] = averages_line
 
                     if self.config_map["do_write_run_file"] or return_run_info:
                         run_line  = []
@@ -947,7 +953,7 @@ class model:
                                                   "HamiltonianMonteCarlo",
                                                   "BAOAB",
                                                   "CovarianceControlledAdaptiveLangevinThermostat"]:
-                            run_line = [0, global_step, current_step] + ['{:1.3f}'.format(acc)] \
+                            run_line = [0, replica_index, global_step, current_step] + ['{:1.3f}'.format(acc)] \
                                        + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
                                                                            precision=output_precision)] \
                                        + ['{:{width}.{precision}e}'.format(time_elapsed_per_nth_step, width=output_width,
@@ -986,7 +992,7 @@ class model:
                         if self.config_map["do_write_run_file"]:
                             self.run_writer.writerow(run_line)
                         if return_run_info:
-                            run_info.loc[written_row] = run_line
+                            run_info[replica_index].loc[written_row] = run_line
 
             if current_step % self.FLAGS.every_nth == 0:
                 written_row+=1
