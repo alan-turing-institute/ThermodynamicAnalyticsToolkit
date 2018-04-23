@@ -87,9 +87,10 @@ def main(_):
         df_trajectory = pd.read_csv(FLAGS.trajectory_file, sep=',', header=0)
         trajectoryLoaded=np.asarray(df_trajectory)
 
-        if (len(trajectoryLoaded[:,0]) > 1) and (FLAGS.drop_burnin >= trajectoryLoaded[1,0]):
-            if FLAGS.drop_burnin < trajectoryLoaded[-1,0]:
-                start = next(x[0] for x in enumerate(trajectoryLoaded[:,0]) if x[1] > FLAGS.drop_burnin)
+        index_step = df_trajectory.columns.get_loc("step")
+        if (len(trajectoryLoaded[:,index_step]) > 1) and (FLAGS.drop_burnin >= trajectoryLoaded[1,index_step]):
+            if FLAGS.drop_burnin < trajectoryLoaded[-1,index_step]:
+                start = next(x[0] for x in enumerate(trajectoryLoaded[:,index_step]) if x[1] > FLAGS.drop_burnin)
             else:
                 sys.stderr.write("FLAGS.drop_burnin is too large, no data points left.")
                 sys.exit(1)
