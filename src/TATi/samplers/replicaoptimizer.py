@@ -260,7 +260,16 @@ class ReplicaOptimizer(Optimizer):
         :param y: second variable
         :return: cov(x,y)
         """
-        dim = math_ops.cast(tf.size(y), dds_basetype)
-        return 1. / (dim - 1.) * \
-               tf.reduce_sum((x - tf.reduce_mean(x)) * (y - tf.reduce_mean(y)))
+        dim = math_ops.cast(tf.size(x), dds_basetype)
+        def accept_block():
+            return tf.reciprocal(dim - 1.)
 
+        def reject_block():
+            return tf.constant(1.)
+
+        norm_factor = tf.cond(
+            tf.greater(tf.size(x), 1),
+            accept_block, reject_block)
+
+        return norm_factor * \
+               tf.reduce_sum((x - tf.reduce_mean(x)) * (y - tf.reduce_mean(y)))
