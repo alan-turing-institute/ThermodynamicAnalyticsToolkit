@@ -167,15 +167,19 @@ class ReplicaOptimizer(Optimizer):
         precondition the gradient using the other replica's gradients.
 
         :param grads_and_vars: list of grad, var tuples over all replica
-        :param var: current variable
+        :param var: current variable to associated to grad of this replica instance
         :return: (preconditioned) grad associated to var
         """
         #print(var.name[var.name.find("/"):])
+        eta = 1.
         grad, othergrads = self._extract_grads(grads_and_vars, var)
         preconditioned_grad = grad
         if self.ensemble_precondition:
+            stacked_othergrads, cov = self._apply_covariance(othergrads)
+            preconditioner = tf.cholesky(tf.ones_like(cov) + eta * cov)
             for g in othergrads:
-                preconditioned_grad = preconditioned_grad + self.get_covariance_component(grad, g) * g
+                #preconditioned_grad = preconditioned_grad + self.get_covariance_component(grad, g) * g
+                preconditioned_grad = preconditioned_grad + preconditioner * stacked_othergrads
         return preconditioned_grad
 
     def _extract_grads(self, grads_and_vars, var):
@@ -201,24 +205,41 @@ class ReplicaOptimizer(Optimizer):
                         othergrads.append(g)
         return grad, othergrads
 
-    def _apply_covariance(self, grads_and_vars, var):
+    def _apply_covariance(self, othergrads):
         """ Returns node for the covariance between the gradients of all other
         replica plus the identity.
 
-        :param grads_and_vars: list of grad, var tuples over all replica
-        :param var: current variable
-        :return: node for the covariance matrix
+        :param othergrads: list of all other gradients
+        :return: node for the stacked gradients and the covariance matrix
         """
-        grads = self._stack_gradients(grads_and_vars, var)
-        z, op = tf.contrib.metrics.streaming_covariance(grads, grads)
-        return op, grads
+        grads = tf.stack(othergrads)
+        number_replica = len(othergrads)
+        # store mean nodes for ref within cov
+        means = []
+        for i in range(number_replica):
+            means.append(tf.reduce_mean(grads[:, i]))
+        # calculate cov as matrix between grads
+        dim = math_ops.cast(tf.size(othergrads[0]), dds_basetype)
+        norm_factor = 1. / (dim - 1.)
+        cov = []
+        # fill lower triangular and diagonal part
+        for i in range(number_replica):
+            cov.append([])
+            for j in range(i+1):
+                cov[-1].append(norm_factor * tf.reduce_sum((grads[:, i] - means[i]) * (grads[:,j] - means[j])))
+        # fill in symmetric upper triangular part
+        for i in range(number_replica):
+            for j in range(i + 1, number_replica):
+                cov[i].append(cov[j][i])
+        return grads, cov
 
     def _stack_gradients(self, grads_and_vars, var):
-        """ Stacks all gradients together to compute a covariance matrix.
+        """ Stacks all (other) gradients together to compute a covariance matrix.
 
-        :param grads_and_vars:
-        :param var:
-        :return:
+        :param grads_and_vars: list of gradients and vars from all replica
+        :param var: this replicas variable
+        :return: stacked gradients from _other_ replica (excluding the one
+                associated to var)
         """
         grads = []
         for i in range(len(grads_and_vars)):
@@ -234,7 +255,7 @@ class ReplicaOptimizer(Optimizer):
     @staticmethod
     def get_covariance_component(x,y):
         """ Calculates the covariance between two variables `x` and `y`.
-
+-
         :param x: first variable
         :param y: second variable
         :return: cov(x,y)
