@@ -221,7 +221,7 @@ class NeuralNetwork(object):
 
     def _prepare_sampler(self, loss, sampling_method, seed,
                          prior, sigma=None, sigmaA=None,
-                         ensemble_precondition=False):
+                         covariance_blending=0.):
         """ Prepares the sampler instance, adding also all placeholder nodes it requires.
 
         :param loss: node for the desired loss function to minimize during training
@@ -231,8 +231,8 @@ class NeuralNetwork(object):
                 specifies a wall-repelling force to ensure a prior on the parameters
         :param sigma: scale of noise injected to momentum per step for CCaDL only
         :param sigmaA: scale of noise in convex combination for CCaDL only
-        :param ensemble_precondition: whether to activate ensemble preconditioning
-            over parallel replica
+        :param covariance_blending: eta value for blending of identity and covariance
+                matrix from other replica
         :return: created sampler instance
         """
         with tf.name_scope('sample'):
@@ -258,26 +258,30 @@ class NeuralNetwork(object):
             tf.summary.scalar('friction_constant', friction_constant)
             self.placeholder_nodes['friction_constant'] = friction_constant
 
+            covariance_blending = tf.placeholder(dds_basetype, name="covariance_blending")
+            tf.summary.scalar('covariance_blending', covariance_blending)
+            self.placeholder_nodes['covariance_blending'] = covariance_blending
+
             if sampling_method == "StochasticGradientLangevinDynamics":
-                sampler = StochasticGradientLangevinDynamicsSampler(ensemble_precondition,
+                sampler = StochasticGradientLangevinDynamicsSampler(covariance_blending,
                                                                     step_width, inverse_temperature, seed=seed)
             elif sampling_method == "GeometricLangevinAlgorithm_1stOrder":
-                sampler = GeometricLangevinAlgorithmFirstOrderSampler(ensemble_precondition,
+                sampler = GeometricLangevinAlgorithmFirstOrderSampler(covariance_blending,
                                                                       step_width, inverse_temperature, friction_constant, seed=seed)
             elif sampling_method == "GeometricLangevinAlgorithm_2ndOrder":
-                sampler = GeometricLangevinAlgorithmSecondOrderSampler(ensemble_precondition,
+                sampler = GeometricLangevinAlgorithmSecondOrderSampler(covariance_blending,
                                                                        step_width, inverse_temperature, friction_constant, seed=seed)
             elif sampling_method == "HamiltonianMonteCarlo":
                 if seed is not None:
                     np.random.seed(seed)
                 accept_seed = np.random.uniform(low=0,high=67108864)
-                sampler = HamiltonianMonteCarloSampler(ensemble_precondition,
+                sampler = HamiltonianMonteCarloSampler(covariance_blending,
                                                        step_width, inverse_temperature, current_step, next_eval_step, accept_seed=accept_seed, seed=seed)
             elif sampling_method == "BAOAB":
-                sampler = BAOABSampler(ensemble_precondition,
+                sampler = BAOABSampler(covariance_blending,
                                        step_width, inverse_temperature, friction_constant, seed=seed)
             elif sampling_method == "CovarianceControlledAdaptiveLangevinThermostat":
-                sampler = CCAdLSampler(ensemble_precondition,
+                sampler = CCAdLSampler(covariance_blending,
                                        step_width, inverse_temperature, friction_constant,
                                        sigma=sigma, sigmaA=sigmaA, seed=seed)
             else:

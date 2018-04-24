@@ -60,16 +60,17 @@ class ReplicaOptimizer(Optimizer):
     This way the position update may actually rely on the gradients of other
     instances (or any other information) stored in possible replica.
     """
-    def __init__(self, ensemble_precondition=False, use_locking=False, name='ReplicaOptimizer'):
+    def __init__(self, covariance_blending=0., use_locking=False, name='ReplicaOptimizer'):
         """ Init function for this class.
 
-        :param ensemble_precondition: whether to precondition the gradient using
-                all the other replica or not
+        :param covariance_blending: mixing for preconditioning matrix to gradient
+                update, identity matrix plus this times the covariance matrix obtained
+                from the other replica
         :param use_locking: whether to lock in the context of multi-threaded operations
         :param name: internal name of optimizer
         """
         super(ReplicaOptimizer, self).__init__(use_locking, name)
-        self.ensemble_precondition = ensemble_precondition
+        self.covariance_blending = covariance_blending
 
     def compute_and_check_gradients(self, loss, var_list=None,
                  gate_gradients=Optimizer.GATE_GRAPH, aggregation_method=None,
@@ -173,13 +174,8 @@ class ReplicaOptimizer(Optimizer):
         :return: (preconditioned) grad associated to var
         """
         #print(var.name[var.name.find("/"):])
-        eta = tf.constant(1., dtype=dds_basetype)
         grad, _ = self._extract_grads(grads_and_vars, var)
-        #print("grad: "+str(grad))
-        #print("othergrads: "+str(othergrads))
-        _, flat_othervars = self._extract_vars(grads_and_vars, var)
-        #print("picked_var: "+str(picked_var))
-        #print("flat_othervars: "+str(flat_othervars))
+        picked_var, flat_othervars = self._extract_vars(grads_and_vars, var)
         if len(flat_othervars) != 0:
             _, cov = self._apply_covariance(flat_othervars, var)
             # \sqrt{ 1_D + \eta cov(flat_othervars)}, see [Matthews, Weare, Leimkuhler, 2016]

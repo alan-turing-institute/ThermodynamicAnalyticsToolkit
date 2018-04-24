@@ -241,6 +241,7 @@ class model:
             batch_data_files=[],
             batch_data_file_type="csv",
             batch_size=None,
+            covariance_blending=0.,
             diffusion_map_method="vanilla",
             do_hessians=False,
             dropout=None,
@@ -285,6 +286,7 @@ class model:
                 batch_data_files=batch_data_files,
                 batch_data_file_type=batch_data_file_type,
                 batch_size=batch_size,
+                covariance_blending=covariance_blending,
                 diffusion_map_method=diffusion_map_method,
                 do_hessians=do_hessians,
                 dropout=dropout,
@@ -479,7 +481,6 @@ class model:
         elif setup == "sample":
             sampler = []
             for i in range(self.FLAGS.parallel_replica):
-                ensemble_precondition = self.FLAGS.parallel_replica > 1
                 if self.FLAGS.seed is not None:
                     replica_seed = self.FLAGS.seed + i
                 else:
@@ -487,7 +488,7 @@ class model:
                 sampler.append(self.nn[i]._prepare_sampler(self.loss[i], sampling_method=self.FLAGS.sampler,
                                                            seed=replica_seed, prior=prior,
                                                            sigma=self.FLAGS.sigma, sigmaA=self.FLAGS.sigmaA,
-                                                           ensemble_precondition=ensemble_precondition))
+                                                           covariance_blending=self.FLAGS.covariance_blending))
             # create gradients
             grads_and_vars = []
             for i in range(self.FLAGS.parallel_replica):
@@ -712,7 +713,7 @@ class model:
                 depending on whether either parameter has evaluated to True
         """
         placeholder_nodes = [self.nn[replica_index].get_dict_of_nodes(
-            ["friction_constant", "inverse_temperature", "step_width", "current_step", "next_eval_step", "y_"])
+            ["covariance_blending", "friction_constant", "inverse_temperature", "step_width", "current_step", "next_eval_step", "y_"])
             for replica_index in range(self.FLAGS.parallel_replica)]
 
         list_of_nodes = ["merged", "sample_step", "accuracy", "global_step", "loss"]
@@ -775,6 +776,7 @@ class model:
         # place in feed dict
         for replica_index in range(self.FLAGS.parallel_replica):
             feed_dict.update({
+                placeholder_nodes[replica_index]["covariance_blending"]: self.FLAGS.covariance_blending,
                 placeholder_nodes[replica_index]["step_width"]: self.FLAGS.step_width,
                 placeholder_nodes[replica_index]["inverse_temperature"]: self.FLAGS.inverse_temperature,
                 placeholder_nodes[replica_index]["friction_constant"]: self.FLAGS.friction_constant

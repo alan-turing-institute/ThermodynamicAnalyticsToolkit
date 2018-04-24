@@ -176,8 +176,6 @@ def add_model_options_to_parser(parser):
         help='Set the loss to be measured during sampling, e.g. mean_squared, log_loss, ...')
     parser.add_argument('--output_activation', type=str, default="tanh",
         help='Activation function to use for output layer: tanh, relu, linear')
-    parser.add_argument('--parallel_replica', type=int, default=1,
-        help='Number of parallel replica samplers to run. This will activate ensemble preconditioning if larger tha 1.')
     parser.add_argument('--parse_parameters_file', type=str, default=None,
         help='File to parse initial set of parameters from')
     parser.add_argument('--parse_steps', type=int, nargs='+', default=[],
@@ -197,12 +195,17 @@ def add_common_options_to_parser(parser):
         help='CSV file name to write ensemble averages information such as average kinetic, potential, virial.')
     parser.add_argument('--burn_in_steps', type=int, default=0,
         help='Number of initial steps to discard for averages ("burn in")')
+    parser.add_argument('--collapse_after_steps', type=int, default=100,
+        help='Number of steps after which to regularly collapse all parallel replica to restart from a single position '
+             'again, maintaining harmonic approximation for ensemble preconditioning. 0 will never collapse.')
     parser.add_argument('--every_nth', type=int, default=1,
         help='Store only every nth trajectory (and run) point to files, e.g. 10')
     parser.add_argument('--inter_ops_threads', type=int, default=1,
         help='Sets the number of threads to split up ops in between. NOTE: This hurts reproducibility to some extent because of parallelism.')
     parser.add_argument('--intra_ops_threads', type=int, default=None,
         help='Sets the number of threads to use within an op, i.e. Eigen threads for linear algebra routines.')
+    parser.add_argument('--parallel_replica', type=int, default=1,
+        help='Number of parallel replica samplers to run. This will activate ensemble preconditioning if larger tha 1.')
     parser.add_argument('--restore_model', type=str, default=None,
         help='Restore model (weights and biases) from a file.')
     parser.add_argument('--run_file', type=str, default=None,
@@ -225,6 +228,9 @@ def add_sampler_options_to_parser(parser):
     :param parser: argparse's parser object
     """
     # please adhere to alphabetical ordering
+    parser.add_argument('--covariance_blending', type=float, default=0.,
+        help='Blending between unpreconditioned gradient (0.) and preconditioning through covariance matrix from other '
+             'parallel replicas')
     parser.add_argument('--friction_constant', type=float, default=0.,
         help='friction to scale the influence of momenta')
     parser.add_argument('--inverse_temperature', type=float, default=0.,
@@ -311,6 +317,11 @@ def react_to_sampler_options(FLAGS, unparsed):
             and FLAGS.friction_constant == 0.:
         logging.error("You have not set the friction_constant for a sampler that requires it.")
         sys.exit(255)
+
+    if FLAGS.covariance_blending < 0.:
+        logging.error("The covariance blending needs to be non-negative.")
+        sys.exit(255)
+
 
 def file_length(filename):
     """ Determines the length of the file designated by `filename`.

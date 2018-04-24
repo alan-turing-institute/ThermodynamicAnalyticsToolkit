@@ -10,6 +10,7 @@ class MockFlags:
                  batch_data_file_type="csv",
                  batch_size=None,   # this does not help yet, python API does not check batch_size?
                  burn_in_steps=0,
+                 covariance_blending=0.,
                  diffusion_map_method="vanilla",
                  do_hessians=False,
                  dropout=None,
@@ -57,6 +58,9 @@ class MockFlags:
         :param batch_data_file_type: type of the files to read input from
         :param batch_size: The number of samples used to divide sample set into batches in one sampleing step.
         :param burn_in_steps: number of initial steps to drop when computing averages
+        :param covariance_blending: mixing for preconditioning matrix to gradient
+                update, identity matrix plus this times the covariance matrix obtained
+                from the other replica
         :param diffusion_map_method:
         :param do_hessians: whether to add hessian evaluation nodes to graph, used bz optimzier and explorer
         :param dropout: Keep probability for sampleing dropout, e.g. 0.9
@@ -102,6 +106,7 @@ class MockFlags:
         self.batch_data_file_type = batch_data_file_type
         self.batch_size = batch_size
         self.burn_in_steps = burn_in_steps
+        self.covariance_blending = covariance_blending
         self.diffusion_map_method = diffusion_map_method
         self.dimension = 0 # keeps the input dimension later
         self.do_hessians = do_hessians
