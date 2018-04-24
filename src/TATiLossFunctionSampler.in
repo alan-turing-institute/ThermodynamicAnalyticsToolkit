@@ -15,7 +15,7 @@ from TATi.datasets.classificationdatasets import ClassificationDatasets
 
 from TATi.common import add_common_options_to_parser, add_data_options_to_parser, \
         add_model_options_to_parser, file_length, get_filename_from_fullpath, \
-        get_list_from_string, react_to_common_options, setup_csv_file
+        get_list_from_string, react_generally_to_options, setup_csv_file
 from TATi.models.model import model
 from TATi.models.neuralnet_parameters import neuralnet_parameters
 from TATi.version import get_package_version, get_build_hash
@@ -322,7 +322,7 @@ if __name__ == '__main__':
 
     FLAGS, unparsed = parse_parameters()
 
-    react_to_common_options(FLAGS, unparsed)
+    react_generally_to_options(FLAGS, unparsed)
 
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
 

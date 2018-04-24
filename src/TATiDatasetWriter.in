@@ -17,7 +17,7 @@ import logging
 import numpy as np
 
 from TATi.datasets.classificationdatasets import ClassificationDatasets as DatasetGenerator
-from TATi.common import react_to_common_options
+from TATi.common import react_generally_to_options
 
 FLAGS = None
 
@@ -48,7 +48,7 @@ if __name__ == '__main__':
         help='Gives version information')
     FLAGS, unparsed = parser.parse_known_args()
 
-    react_to_common_options(FLAGS, unparsed)
+    react_generally_to_options(FLAGS, unparsed)
 
     # init random: None will use random seed
     if FLAGS.seed is not None:

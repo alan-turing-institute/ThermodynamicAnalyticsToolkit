@@ -19,7 +19,7 @@ import tensorflow as tf
 import collections
 
 from TATi.common import file_length, \
-    decode_csv_line, get_csv_defaults, react_to_common_options
+    decode_csv_line, get_csv_defaults, react_generally_to_options
 
 def main(_):
 
@@ -67,7 +67,7 @@ if __name__ == '__main__':
         help='Gives version information')
     FLAGS, unparsed = parser.parse_known_args()
 
-    react_to_common_options(FLAGS, unparsed)
+    react_generally_to_options(FLAGS, unparsed)
 
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
 

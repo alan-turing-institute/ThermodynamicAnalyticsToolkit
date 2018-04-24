@@ -7,7 +7,7 @@ import argparse
 import logging
 import pandas as pd
 
-from TATi.common import react_to_common_options
+from TATi.common import react_generally_to_options
 
 FLAGS = None
 
@@ -43,7 +43,7 @@ if __name__ == '__main__':
         help='Gives version information')
     FLAGS, unparsed = parser.parse_known_args()
 
-    react_to_common_options(FLAGS, unparsed)
+    react_generally_to_options(FLAGS, unparsed)
 
     if (len(FLAGS.general_threshold) != 2):
         print("Exactly two items specify the general threshold.")

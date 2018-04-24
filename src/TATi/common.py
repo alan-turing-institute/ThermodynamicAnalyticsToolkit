@@ -244,8 +244,7 @@ def add_sampler_options_to_parser(parser):
     parser.add_argument('--step_width', type=float, default=0.03,
         help='step width \Delta t to use, e.g. 0.01')
 
-
-def react_to_common_options(FLAGS, unparsed):
+def react_generally_to_options(FLAGS, unparsed):
     """ Extracted behavior for options shared between sampler and optimizer
     here for convenience.
 
@@ -271,6 +270,14 @@ def react_to_common_options(FLAGS, unparsed):
         logging.error("There are unparsed parameters '"+str(unparsed)+"', have you misspelled some?")
         sys.exit(255)
 
+def react_to_common_options(FLAGS, unparsed):
+    """ Extracted behavior for options shared between sampler and optimizer
+    here for convenience.
+
+    :param FLAGS: parsed cmd-line options as produced by argparse.parse_known_args()
+    :param unparsed: unparsed cmd-line options as produced by argparse.parse_known_args()
+    """
+    react_generally_to_options(FLAGS, unparsed)
 
 def react_to_sampler_options(FLAGS, unparsed):
     """ Extracted behavior checking validity of sampler options here for convenience.
