@@ -183,10 +183,16 @@ class ReplicaOptimizer(Optimizer):
         if len(flat_othervars) != 0:
             _, cov = self._apply_covariance(flat_othervars, var)
             # \sqrt{ 1_D + \eta cov(flat_othervars)}, see [Matthews, Weare, Leimkuhler, 2016]
-            preconditioner = tf.cholesky(tf.ones_like(cov, dtype=dds_basetype) + eta * cov)
+            unity = tf.matrix_band_part(tf.ones_like(cov, dtype=dds_basetype), 0, 0)
+            matrix = unity + self.covariance_blending * cov
+            preconditioner = tf.cholesky(matrix)
             # apply the covariance matrix to the flattened gradient and then return to
             # original shape to match for variable update
-            preconditioned_grad = tf.reshape(preconditioner * tf.reshape(grad, [-1]),
+
+            # matrix-vector multiplication is however a bit more complicated, see
+            # https://stackoverflow.com/a/43285258/1967646
+            preconditioned_grad = tf.reshape(
+                tf.matmul(tf.expand_dims(tf.reshape(grad, [-1]), 0), preconditioner),
                                              grad.get_shape())
         else:
             preconditioned_grad = grad
@@ -323,7 +329,17 @@ class ReplicaOptimizer(Optimizer):
             return (li, cov_copy)
 
         dim = math_ops.cast(number_dim, dtype=dds_basetype)
-        norm_factor = 1. / (dim - 1.)
+
+        def accept_block():
+            return tf.reciprocal(dim - 1.)
+
+        def reject_block():
+            return tf.constant(1.)
+
+        norm_factor = tf.cond(
+            tf.greater(tf.size(number_dim), 1),
+            accept_block, reject_block)
+
         p = Pair(tf.constant(0), tf.constant(0))
         c = lambda p, _: tf.less(p.i, number_dim, name="outer_check")
         r, cov = tf.while_loop(c, body_cov, loop_vars=(p, cov), name="cov_loop")
