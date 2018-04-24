@@ -618,7 +618,7 @@ class model:
 
         :param setup: sample, train or None
         """
-        header = ['id', 'replica_index', 'step', 'epoch', 'loss']
+        header = ['id', 'step', 'epoch', 'loss']
         if setup == "train":
             if self.FLAGS.optimizer == "GradientDescent":
                 header += ['average_virials']
@@ -637,7 +637,7 @@ class model:
     def get_sample_header(self):
         """ Prepares the distinct header for the run file for sampling
         """
-        header = ['id', 'replica_index', 'step', 'epoch', 'accuracy', 'loss', 'time_per_nth_step']
+        header = ['id', 'step', 'epoch', 'accuracy', 'loss', 'time_per_nth_step']
         if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
             header += ['scaled_gradient', 'virial', 'scaled_noise']
         elif self.FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder",
@@ -966,7 +966,7 @@ class model:
 
                 for replica_index in range(self.FLAGS.parallel_replica):
                     if self.config_map["do_write_trajectory_file"] or return_trajectories:
-                        trajectory_line = [0, replica_index, global_step[replica_index]] \
+                        trajectory_line = [replica_index, global_step[replica_index]] \
                                           + ['{:{width}.{precision}e}'.format(loss_eval[replica_index], width=output_width,
                                                                               precision=output_precision)]
                         if len(weights_eval[replica_index]) > 0:
@@ -995,7 +995,7 @@ class model:
                         else:
                             average_kinetic_energy = 0.
                             average_virials = 0.
-                        averages_line = [0, replica_index, global_step[replica_index], current_step] \
+                        averages_line = [replica_index, global_step[replica_index], current_step] \
                                         + ['{:{width}.{precision}e}'.format(loss_eval[replica_index], width=output_width,
                                                                             precision=output_precision)] \
                                         + ['{:{width}.{precision}e}'.format(average_loss, width=output_width,
@@ -1021,7 +1021,7 @@ class model:
                                                   "HamiltonianMonteCarlo",
                                                   "BAOAB",
                                                   "CovarianceControlledAdaptiveLangevinThermostat"]:
-                            run_line = [0, replica_index, global_step[replica_index], current_step] \
+                            run_line = [replica_index, global_step[replica_index], current_step] \
                                        + ['{:1.3f}'.format(acc[replica_index])] \
                                        + ['{:{width}.{precision}e}'.format(loss_eval[replica_index], width=output_width,
                                                                            precision=output_precision)] \
