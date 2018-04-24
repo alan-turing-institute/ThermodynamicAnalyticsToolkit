@@ -9,6 +9,8 @@ from tensorflow.python.training.optimizer import Optimizer, _DenseResourceVariab
     _OptimizableVariable, _StreamingModelPortProcessor, _get_variable_for
 import tensorflow as tf
 
+import collections
+
 from TATi.models.basetype import dds_basetype
 
 class RefVariableReplicaProcessor(_OptimizableVariable):
@@ -171,21 +173,29 @@ class ReplicaOptimizer(Optimizer):
         :return: (preconditioned) grad associated to var
         """
         #print(var.name[var.name.find("/"):])
-        eta = 1.
-        grad, othergrads = self._extract_grads(grads_and_vars, var)
-        preconditioned_grad = grad
-        if self.ensemble_precondition:
-            stacked_othergrads, cov = self._apply_covariance(othergrads)
-            preconditioner = tf.cholesky(tf.ones_like(cov) + eta * cov)
-            for g in othergrads:
-                #preconditioned_grad = preconditioned_grad + self.get_covariance_component(grad, g) * g
-                preconditioned_grad = preconditioned_grad + preconditioner * stacked_othergrads
+        eta = tf.constant(1., dtype=dds_basetype)
+        grad, _ = self._extract_grads(grads_and_vars, var)
+        #print("grad: "+str(grad))
+        #print("othergrads: "+str(othergrads))
+        _, flat_othervars = self._extract_vars(grads_and_vars, var)
+        #print("picked_var: "+str(picked_var))
+        #print("flat_othervars: "+str(flat_othervars))
+        if len(flat_othervars) != 0:
+            _, cov = self._apply_covariance(flat_othervars, var)
+            # \sqrt{ 1_D + \eta cov(flat_othervars)}, see [Matthews, Weare, Leimkuhler, 2016]
+            preconditioner = tf.cholesky(tf.ones_like(cov, dtype=dds_basetype) + eta * cov)
+            # apply the covariance matrix to the flattened gradient and then return to
+            # original shape to match for variable update
+            preconditioned_grad = tf.reshape(preconditioner * tf.reshape(grad, [-1]),
+                                             grad.get_shape())
+        else:
+            preconditioned_grad = grad
         return preconditioned_grad
 
     def _extract_grads(self, grads_and_vars, var):
         """ Helper function to extract the gradient associated with `var` from
         the list containing all gradients and variables in `grads_and_vars`.
-        Moreover, we return also all other gradiets (in replicas) associated to
+        Moreover, we return also all other gradients (in replicas) associated to
         the same var.
 
         :param grads_and_vars: list of grad, var tuples over all replica
@@ -205,33 +215,123 @@ class ReplicaOptimizer(Optimizer):
                         othergrads.append(g)
         return grad, othergrads
 
-    def _apply_covariance(self, othergrads):
-        """ Returns node for the covariance between the gradients of all other
+    def _extract_vars(self, grads_and_vars, var):
+        """ Helper function to extract the variable associated with `var` from
+        the list containing all gradients and variables in `grads_and_vars`.
+        Moreover, we return also all other gradients (in replicas) associated to
+        the same var.
+
+        :param grads_and_vars: list of grad, var tuples over all replica
+        :param var: current variable
+        :return: other vars associated to equivalent var in other replica
+        """
+        #print(var.name[var.name.find("/"):])
+        othervars = []
+        for i in range(len(grads_and_vars)):
+            for g, v in grads_and_vars[i]:
+                if g is not None:
+                    if v.name == var.name:
+                        pass
+                    elif v.name[v.name.find("/"):] == var.name[var.name.find("/"):]:
+                        othervars.append(tf.reshape(v, [-1]))
+        return var, othervars
+
+    def _apply_covariance(self, flat_othervars, var):
+        """ Returns node for the covariance between the variables of all other
         replica plus the identity.
 
-        :param othergrads: list of all other gradients
-        :return: node for the stacked gradients and the covariance matrix
+        :param flat_othervars: list of all other variables
+        :return: node for the stacked variables and the covariance matrix
         """
-        grads = tf.stack(othergrads)
-        number_replica = len(othergrads)
-        # store mean nodes for ref within cov
-        means = []
-        for i in range(number_replica):
-            means.append(tf.reduce_mean(grads[:, i]))
-        # calculate cov as matrix between grads
-        dim = math_ops.cast(tf.size(othergrads[0]), dds_basetype)
+        # we need a flat vars tensor as otherwise the index arithmetics becomes
+        # very complicate for the "matrix * vector" product (covariance matrix
+        # times the gradient) in the end. This is undone in `_pick_grad()`
+        vars = tf.stack(flat_othervars)
+        number_dim = tf.size(flat_othervars[0])
+
+        # means are needed for every component. Hence, we save a bit by
+        # creating all means beforehand
+        means = tf.Variable(tf.zeros_like(flat_othervars[0], dtype=dds_basetype),
+                            trainable=False, dtype=dds_basetype, name="mean")
+
+        def body_mean(i, mean_copy):
+            with tf.control_dependencies([tf.Print(means[i].assign(
+                    tf.reduce_mean(vars[:, i], name="reduce_mean"),
+                    name="assign_mean_component"), [var.name, vars[:, i]], "vars for mean: ")]):
+                return (tf.add(i, 1), mean_copy)
+
+        i = tf.constant(0)
+        c = lambda i, x: tf.less(i, number_dim)
+        r, mean_eval = tf.while_loop(c, body_mean, (i, means), name="means_loop")
+        means = tf.Print(mean_eval, [mean_eval.name, tf.size(mean_eval), mean_eval], "mean_eval: ")
+        print(means)
+
+        # complicated way of constructing a D \times D matrix when we cannot use
+        # D directly and only have a D vector as template: use an outer product
+        # with the known vector
+        template = tf.zeros_like(flat_othervars[0], dtype=dds_basetype)
+        expanded_template =  tf.expand_dims(template, -1)
+        # Use tf.shape() to get the runtime size of `x` in the 0th dimension.
+        cov = tf.Variable(
+            expanded_template * tf.transpose(expanded_template), dtype=dds_basetype, name="covariance_bias")
+        print(cov)
+
+        # pair of indices for the covariance loop
+        Pair = collections.namedtuple('Pair', 'i, j')
+
+        # in the following we implement two nested loops to go through every
+        # component of the covariance matrix. The inner loop uses an extra
+        # tf.cond as I don't want to use anymore tf.while. There, the problem is
+        # that the body needs to return exactly the loop_vars. With an additional
+        # inner loop however, there is another loop var and the "structures" do
+        # not match anymore.
+
+        # only on cov we can use sliced assignment, cov_copy seems to be some
+        # ref object (or other) which does not have this functionality
+
+        # note that the assigns modifies directly the node cov which lives
+        # outside the accept() function's scope.
+        def body_cov(p, cov_copy):
+            def accept():
+                # implement the assign as side effect when i,j is still valid:
+                # if we implement it in the scope of body_cov(), then it would
+                # also be applied when (i,j) is not a valid index pair.
+
+                # the return statements of both accept and reject need to have
+                # an identical structure. Therefore, we always return the
+                # # tuple (i,j).
+                with tf.control_dependencies([cov[p.i, p.j].assign(
+                                norm_factor * tf.reduce_sum(
+                                    (vars[:, p.i] - means[p.i])
+                                * (vars[:, p.j] - means[p.j]),
+                            name="cov_sum_reduction"),
+                        name="cov_assign_component")]):
+                    #return Pair(tf.Print(tf.identity(p.i, name="id"), [p.i], "i: "),
+                    #            tf.Print(tf.add(p.j, 1, name="j_add"), [p.j], "j: "))
+                    return Pair(tf.identity(p.i, name="id"),
+                                tf.add(p.j, 1, name="j_add"))
+
+            def reject():
+                # assign is not allowed, hence we use subtract to set to zero
+                #return Pair(tf.Print(tf.add(p.i, 1, name="i_add"), [p.i], "i: "),
+                #            tf.Print(tf.subtract(p.j, p.j, name="j_reset"), [p.j], "j: "))
+                return Pair(tf.add(p.i, 1, name="i_add"),
+                            tf.subtract(p.j, p.j, name="j_reset"))
+
+            ci = tf.less(p.j, number_dim, name="inner_check")
+            li = tf.cond(ci, accept, reject, name="inner_conditional")
+            return (li, cov_copy)
+
+        dim = math_ops.cast(number_dim, dtype=dds_basetype)
         norm_factor = 1. / (dim - 1.)
-        cov = []
-        # fill lower triangular and diagonal part
-        for i in range(number_replica):
-            cov.append([])
-            for j in range(i+1):
-                cov[-1].append(norm_factor * tf.reduce_sum((grads[:, i] - means[i]) * (grads[:,j] - means[j])))
-        # fill in symmetric upper triangular part
-        for i in range(number_replica):
-            for j in range(i + 1, number_replica):
-                cov[i].append(cov[j][i])
-        return grads, cov
+        p = Pair(tf.constant(0), tf.constant(0))
+        c = lambda p, _: tf.less(p.i, number_dim, name="outer_check")
+        r, cov = tf.while_loop(c, body_cov, loop_vars=(p, cov), name="cov_loop")
+
+        # note that cov will trigger the whole loop and also the loop to obtain
+        # the means because of the dependency graph inside tensorflow.
+
+        return vars, tf.Print(cov, [cov.name, cov], "cov: ")
 
     def _stack_gradients(self, grads_and_vars, var):
         """ Stacks all (other) gradients together to compute a covariance matrix.
