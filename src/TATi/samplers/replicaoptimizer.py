@@ -181,7 +181,15 @@ class ReplicaOptimizer(Optimizer):
             # \sqrt{ 1_D + \eta cov(flat_othervars)}, see [Matthews, Weare, Leimkuhler, 2016]
             unity = tf.matrix_band_part(tf.ones_like(cov, dtype=dds_basetype), 0, 0)
             matrix = unity + self.covariance_blending * cov
-            preconditioner = tf.cholesky(matrix)
+            max_matrix = tf.reduce_max(tf.abs(matrix))
+            def accept():
+                return tf.reciprocal(max_matrix)
+            def reject():
+                return max_matrix
+            normalizing_factor = tf.cond(tf.greater(max_matrix, 1.),
+                                         accept, reject)
+            preconditioner = tf.sqrt(tf.reciprocal(normalizing_factor)) * \
+                             tf.cholesky(normalizing_factor * matrix)
             # apply the covariance matrix to the flattened gradient and then return to
             # original shape to match for variable update
 
