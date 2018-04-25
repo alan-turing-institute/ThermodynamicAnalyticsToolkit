@@ -1380,6 +1380,12 @@ class model:
         trainable_variable = model._fix_parameter_in_collection(trainable_collection, _name)
         variable = model._fix_parameter_in_collection(other_collection, _name)
 
+        #print(tf.get_collection_ref(tf.GraphKeys.TRAINABLE_VARIABLES))
+        #if "weight" in _name:
+        #    print(tf.get_collection_ref(tf.GraphKeys.WEIGHTS))
+        #else:
+        #    print(tf.get_collection_ref(tf.GraphKeys.BIASES))
+
         if trainable_variable == variable:
             return variable
         else:
@@ -1495,7 +1501,7 @@ class model:
             else:
                 if ("weight" in keyname) or ("bias" in keyname):
                     parameters[keyname] = df_parameters.loc[rownr, [keyname]].values[0]
-        logging.info("Read row " + str(rownr) + ":" + str(parameters))
+        logging.debug("Read row " + str(rownr) + ":" + str(parameters))
 
         # create internal array to store parameters
         weights_vals = self.weights[replica_index].create_flat_vector()
@@ -1536,8 +1542,8 @@ class model:
                 tensors
         :param values: list of values to assign to
         """
-        print(variables)
-        print(values)
+        logging.debug("Assigning to vars: "+str(variables))
+        logging.debug("Assigning values :"+str(values))
         assert( len(variables) == len(values) )
         assigns=[]
         for i in range(len(variables)):

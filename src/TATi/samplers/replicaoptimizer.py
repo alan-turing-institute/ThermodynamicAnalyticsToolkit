@@ -271,15 +271,18 @@ class ReplicaOptimizer(Optimizer):
                             trainable=False, dtype=dds_basetype, name="mean")
 
         def body_mean(i, mean_copy):
-            with tf.control_dependencies([tf.Print(means[i].assign(
+            with tf.control_dependencies([ #tf.Print(
+                    means[i].assign(
                     tf.reduce_mean(vars[:, i], name="reduce_mean"),
-                    name="assign_mean_component"), [var.name, vars[:, i]], "vars for mean: ")]):
+                    name="assign_mean_component"),
+                    #[var.name, vars[:, i]], "vars for mean: ")
+                    ]):
                 return (tf.add(i, 1), mean_copy)
 
         i = tf.constant(0)
         c = lambda i, x: tf.less(i, number_dim)
         r, mean_eval = tf.while_loop(c, body_mean, (i, means), name="means_loop")
-        means = tf.Print(mean_eval, [mean_eval.name, tf.size(mean_eval), mean_eval], "mean_eval: ")
+        means = mean_eval # tf.Print(mean_eval, [mean_eval.name, tf.size(mean_eval), mean_eval], "mean_eval: ")
         print(means)
 
         # complicated way of constructing a D \times D matrix when we cannot use
@@ -289,7 +292,8 @@ class ReplicaOptimizer(Optimizer):
         expanded_template =  tf.expand_dims(template, -1)
         # Use tf.shape() to get the runtime size of `x` in the 0th dimension.
         cov = tf.Variable(
-            expanded_template * tf.transpose(expanded_template), dtype=dds_basetype, name="covariance_bias")
+            expanded_template * tf.transpose(expanded_template),
+            trainable=False, dtype=dds_basetype, name="covariance_bias")
         print(cov)
 
         # pair of indices for the covariance loop
@@ -357,7 +361,7 @@ class ReplicaOptimizer(Optimizer):
         # note that cov will trigger the whole loop and also the loop to obtain
         # the means because of the dependency graph inside tensorflow.
 
-        return vars, tf.Print(cov, [cov.name, cov], "cov: ")
+        return vars, cov # tf.Print(cov, [cov.name, cov], "cov: ")
 
     def _stack_gradients(self, grads_and_vars, var):
         """ Stacks all (other) gradients together to compute a covariance matrix.
