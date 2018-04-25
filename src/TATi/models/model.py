@@ -498,7 +498,12 @@ class model:
                                                                                  var_list=trainables))
 
             # combine gradients
-            print(grads_and_vars)
+            for i in range(self.FLAGS.parallel_replica):
+                #print("Replica "+str(i))
+                var_list = [v for g, v in grads_and_vars[i] if g is not None]
+                grad_list = [g for g, v in grads_and_vars[i] if g is not None]
+                #for j in range(len(grad_list)):
+                #    print(grad_list[j])
 
             # add position update nodes
             for i in range(self.FLAGS.parallel_replica):

@@ -175,7 +175,11 @@ class ReplicaOptimizer(Optimizer):
         """
         #print(var.name[var.name.find("/"):])
         grad, _ = self._extract_grads(grads_and_vars, var)
-        picked_var, flat_othervars = self._extract_vars(grads_and_vars, var)
+        #print("grad: "+str(grad))
+        #print("othergrads: "+str(othergrads))
+        _, flat_othervars = self._extract_vars(grads_and_vars, var)
+        #print("picked_var: "+str(picked_var))
+        #print("flat_othervars: "+str(flat_othervars))
         if len(flat_othervars) != 0:
             _, cov = self._apply_covariance(flat_othervars, var)
             # \sqrt{ 1_D + \eta cov(flat_othervars)}, see [Matthews, Weare, Leimkuhler, 2016]
@@ -213,7 +217,8 @@ class ReplicaOptimizer(Optimizer):
         :return: grad associated to `var`,
                 other grads associated to equivalent var in other replica
         """
-        #print(var.name[var.name.find("/"):])
+        #print("var: "+str(var))
+        #print("truncated var: "+str(var.name[var.name.find("/"):]))
         grad = None
         othergrads = []
         for i in range(len(grads_and_vars)):
@@ -235,7 +240,6 @@ class ReplicaOptimizer(Optimizer):
         :param var: current variable
         :return: other vars associated to equivalent var in other replica
         """
-        #print(var.name[var.name.find("/"):])
         othervars = []
         for i in range(len(grads_and_vars)):
             for g, v in grads_and_vars[i]:
@@ -243,6 +247,7 @@ class ReplicaOptimizer(Optimizer):
                     if v.name == var.name:
                         pass
                     elif v.name[v.name.find("/"):] == var.name[var.name.find("/"):]:
+                        #print("Appending to othervars: "+str(v))
                         othervars.append(tf.reshape(v, [-1]))
         return var, othervars
 
@@ -256,6 +261,7 @@ class ReplicaOptimizer(Optimizer):
         # we need a flat vars tensor as otherwise the index arithmetics becomes
         # very complicate for the "matrix * vector" product (covariance matrix
         # times the gradient) in the end. This is undone in `_pick_grad()`
+        #print(flat_othervars)
         vars = tf.stack(flat_othervars)
         number_dim = tf.size(flat_othervars[0])
 
@@ -369,7 +375,7 @@ class ReplicaOptimizer(Optimizer):
                         grads.append(tf.zeros(var.shape, dtype=var.dtype))
                     elif v.name[v.name.find("/"):] == var.name[var.name.find("/"):]:
                         grads.append(g)
-        print(grads)
+        #print(grads)
         return tf.stack(grads)
 
     @staticmethod
