@@ -8,6 +8,8 @@ import scipy.sparse as sps
 import tensorflow as tf
 import time
 
+from tensorflow.python.ops import variables
+
 from TATi.common import create_input_layer, file_length, get_list_from_string, \
     get_trajectory_header, initialize_config_map, setup_csv_file, setup_run_file, \
     setup_trajectory_file
@@ -447,12 +449,23 @@ class model:
             names, values = self.split_parameters_as_names_values(self.FLAGS.fix_parameters)
             fixed_variables = self.fix_parameters(names)
             logging.info("Excluded the following degrees of freedom: "+str(fixed_variables))
+            # exclude fixed degrees also from trainables_per_replica sets
+            for i in range(self.FLAGS.parallel_replica):
+                trainables = tf.get_collection_ref(self.trainables[i])
+                for var in fixed_variables:
+                    removed_vars = model._fix_parameter_in_collection(trainables, var)
+                    # make sure we remove one per replica
+                    assert( len(removed_vars) == 1 )
+                logging.debug("Remaining trainable variables in replica "+str(i+1)
+                             +": "+str(tf.get_collection_ref(self.trainables[i])))
+
+        logging.debug("Remaining global trainable variables: "+str(variables.trainable_variables()))
 
         # set number of degrees of freedom
         split_weights = self._split_collection_per_replica(
-            tf.get_collection(tf.GraphKeys.WEIGHTS), self.FLAGS.parallel_replica)
+            tf.get_collection_ref(tf.GraphKeys.WEIGHTS), self.FLAGS.parallel_replica)
         split_biases = self._split_collection_per_replica(
-            tf.get_collection(tf.GraphKeys.BIASES), self.FLAGS.parallel_replica)
+            tf.get_collection_ref(tf.GraphKeys.BIASES), self.FLAGS.parallel_replica)
         self.number_of_parameters = \
             neuralnet_parameters.get_total_dof_from_list(split_weights[0]) \
             + neuralnet_parameters.get_total_dof_from_list(split_biases[0])
@@ -493,17 +506,17 @@ class model:
             grads_and_vars = []
             for i in range(self.FLAGS.parallel_replica):
                 with tf.name_scope('gradients_replica'+str(i+1)):
-                    trainables = tf.get_collection(self.trainables[i])
+                    trainables = tf.get_collection_ref(self.trainables[i])
                     grads_and_vars.append(sampler[i].compute_and_check_gradients(self.loss[i],
                                                                                  var_list=trainables))
 
             # combine gradients
-            for i in range(self.FLAGS.parallel_replica):
-                #print("Replica "+str(i))
-                var_list = [v for g, v in grads_and_vars[i] if g is not None]
-                grad_list = [g for g, v in grads_and_vars[i] if g is not None]
-                #for j in range(len(grad_list)):
-                #    print(grad_list[j])
+            #for i in range(self.FLAGS.parallel_replica):
+            #    print("Replica "+str(i))
+            #    var_list = [v for g, v in grads_and_vars[i] if g is not None]
+            #    grad_list = [g for g, v in grads_and_vars[i] if g is not None]
+            #    for j in range(len(grad_list)):
+            #         print(var_list[j])
 
             # add position update nodes
             for i in range(self.FLAGS.parallel_replica):
@@ -531,9 +544,10 @@ class model:
 
         # setup model saving/recovering
         if self.saver is None:
-            self.saver = tf.train.Saver(tf.get_collection(tf.GraphKeys.WEIGHTS) +
-                                   tf.get_collection(tf.GraphKeys.BIASES) + \
-                                   tf.get_collection("Variables_to_Save"))
+            self.saver = tf.train.Saver(tf.get_collection_ref(tf.GraphKeys.WEIGHTS) +
+                                   tf.get_collection_ref(tf.GraphKeys.BIASES) + \
+                                   tf.get_collection_ref("Variables_to_Save"))
+
         # merge summaries at very end
         self.summary = tf.summary.merge_all()  # Merge all the summaries
 
@@ -1331,6 +1345,21 @@ class model:
         return variables
 
     @staticmethod
+    def _fix_parameter_in_collection(_collection, _name, _collection_name="collection"):
+        """ Allows to fix a parameter (not modified during optimization
+        or sampling) by removing the first instance named _name from trainables.
+
+        :param _collection: (trainables or other) collection to remove parameter from
+        :param _name: name of parameter to fix
+        :return: None or Variable ref that was fixed
+        """
+        variable_indices = model._find_all_in_collections(_collection, _name)
+        logging.debug("Indices matching in "+_collection_name+" with "
+                     +_name+": "+str(variable_indices))
+        fixed_variable = model._extract_from_collections(_collection, variable_indices)
+        return fixed_variable
+
+    @staticmethod
     def _fix_parameter(_name):
         """ Allows to fix a parameter (not modified during optimization
         or sampling) by removing the first instance named _name from trainables.
@@ -1347,14 +1376,9 @@ class model:
         else:
             logging.warning("Unknown parameter category for "+str(_name) \
                             +"), removing only from trainables.")
-        trainable_variable_indices = model._find_all_in_collections(trainable_collection, _name)
-        variable_indices = model._find_all_in_collections(other_collection, _name)
-        logging.debug("Indices matching in trainables with "+_name+": "+str(trainable_variable_indices))
-        logging.debug("Indices matching in others with "+_name+": "+str(variable_indices))
 
-        trainable_variable = model._extract_from_collections(trainable_collection,
-                                                             trainable_variable_indices)
-        variable = model._extract_from_collections(other_collection, variable_indices)
+        trainable_variable = model._fix_parameter_in_collection(trainable_collection, _name)
+        variable = model._fix_parameter_in_collection(other_collection, _name)
 
         if trainable_variable == variable:
             return variable
