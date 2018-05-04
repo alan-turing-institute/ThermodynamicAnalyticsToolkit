@@ -122,15 +122,14 @@ def main(_):
     # a. add three legs to queue
     explorer.spawn_starting_trajectory(network_model, FLAGS.number_of_parallel_trajectories)
 
-    # b. continue until queue has run dry
-    explorer.run_all_jobs(network_model, FLAGS)
-
     print("Starting multiple explorations from starting trajectory.")
     # 2. with the initial trajectory done and analyzed,
     #    find maximally separate points and sample from these
     cornerpoints = []
-    exploration_step = 1
+    exploration_step = 0
     while exploration_step < FLAGS.max_exploration_steps:
+        explorer.run_all_jobs(network_model, FLAGS)
+
         # a. combine all trajectories
         steps, parameters, losses = explorer.combine_sampled_trajectories()
 
@@ -139,9 +138,6 @@ def main(_):
 
         # d. spawn new trajectories from these points
         cornerpoints.append( explorer.spawn_corner_trajectories(steps, parameters, losses, idx_corner, network_model) )
-
-        # d. run all trajectories till terminated
-        explorer.run_all_jobs(network_model, FLAGS)
 
         exploration_step += 1
 
