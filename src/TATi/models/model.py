@@ -243,6 +243,7 @@ class model:
             batch_data_files=[],
             batch_data_file_type="csv",
             batch_size=None,
+            collapse_after_steps=100,
             covariance_blending=0.,
             diffusion_map_method="vanilla",
             do_hessians=False,
@@ -288,6 +289,7 @@ class model:
                 batch_data_files=batch_data_files,
                 batch_data_file_type=batch_data_file_type,
                 batch_size=batch_size,
+                collapse_after_steps=collapse_after_steps,
                 covariance_blending=covariance_blending,
                 diffusion_map_method=diffusion_map_method,
                 do_hessians=do_hessians,
@@ -1087,6 +1089,34 @@ class model:
             #if (i % logging.info_intervals) == 0:
                 #logging.debug('Accuracy at step %s (%s): %s' % (i, global_step, acc))
                 #logging.debug('Loss at step %s: %s' % (i, loss_eval))
+
+            if (self.FLAGS.parallel_replica > 1) and (self.FLAGS.collapse_after_steps != 0) and \
+                    (current_step % self.FLAGS.collapse_after_steps == 0):
+                # get walker 0's position
+                weights_eval, biases_eval = self.sess.run([
+                    self.weights[0].parameters, self.biases[0].parameters])
+
+                # reset positions of walker 1 till end to that of walker 0
+                # assign all in a single session run to allow parallelization
+                collapse_feed_dict = {}
+                assigns = []
+                for replica_index in range(1,self.FLAGS.parallel_replica):
+                    # directly connecting the flat parameters tensor with the respective
+                    # other replica's parameters' placeholder does not seem to work, i.e.
+                    # replacing weights_eval -> self.weights[0].parameters
+                    assert( len(self.weights[0].parameters) == len(self.weights[replica_index].placeholders))
+                    for weight, weight_placeholder in zip(weights_eval,
+                                                          self.weights[replica_index].placeholders):
+                        collapse_feed_dict[weight_placeholder] = weight
+                    assert( len(self.biases[0].parameters) == len(self.biases[replica_index].placeholders))
+                    for bias, bias_placeholder in zip(biases_eval,
+                                                      self.biases[replica_index].placeholders):
+                        collapse_feed_dict[bias_placeholder] = bias
+                    assigns.append(self.weights[replica_index].assign_all_t)
+                    assigns.append(self.biases[replica_index].assign_all_t)
+                # evaluate and assign all at once
+                self.sess.run(assigns, feed_dict=collapse_feed_dict)
+
         logging.info("SAMPLED.")
 
         return run_info, trajectory, averages

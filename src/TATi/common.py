@@ -201,7 +201,8 @@ def add_common_options_to_parser(parser):
     parser.add_argument('--every_nth', type=int, default=1,
         help='Store only every nth trajectory (and run) point to files, e.g. 10')
     parser.add_argument('--inter_ops_threads', type=int, default=1,
-        help='Sets the number of threads to split up ops in between. NOTE: This hurts reproducibility to some extent because of parallelism.')
+        help='Sets the number of threads to split up ops in between. NOTE: This hurts reproducibility to some extent '
+             'because of parallelism.')
     parser.add_argument('--intra_ops_threads', type=int, default=None,
         help='Sets the number of threads to use within an op, i.e. Eigen threads for linear algebra routines.')
     parser.add_argument('--parallel_replica', type=int, default=1,
