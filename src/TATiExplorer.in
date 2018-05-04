@@ -204,7 +204,7 @@ def main(_):
 
     # write minima to file
     if FLAGS.minima_file is not None:
-        header = trajectory_header
+        header = trajectory_header[:]
         header.insert(header.index("loss")+1, "gradient")
         if FLAGS.do_hessians:
             insert_index = header.index("gradient")+1
@@ -231,7 +231,7 @@ def main(_):
 
     # write corner points to file
     if FLAGS.cornerpoints_file is not None:
-        header = trajectory_header
+        header = trajectory_header[:]
         cornerpoints_writer, cornerpoints_file = setup_csv_file(
             FLAGS.cornerpoints_file, header)
         for id in range(len(cornerpoints)):
