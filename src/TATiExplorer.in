@@ -15,7 +15,7 @@ from TATi.common import add_common_options_to_parser, add_data_options_to_parser
         add_model_options_to_parser, add_prior_options_to_parser, add_sampler_options_to_parser, \
         get_filename_from_fullpath, get_trajectory_header,\
         react_to_common_options, react_to_sampler_options, \
-        setup_csv_file
+        setup_csv_file, str2bool
 from TATi.exploration.explorer import Explorer
 from TATi.exploration.trajectorydatacontainer import TrajectoryDataContainer
 from TATi.exploration.trajectoryjobid import TrajectoryJobId
@@ -69,7 +69,7 @@ def parse_parameters():
         help='Number of pruning stages through metropolis criterion after end of trajectory')
     parser.add_argument('--optimizer', type=str, default="GradientDescent",
         help='Choose the optimizer to use for sampling: GradientDescent')
-    parser.add_argument('--use_reweighting', type=bool, default=False,
+    parser.add_argument('--use_reweighting', type=str2bool, default=False,
         help='Use reweighting of the kernel matrix of diffusion maps by the target distribution.')
 
     return parser.parse_known_args()
