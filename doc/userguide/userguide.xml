@@ -867,7 +867,9 @@ sys.path.insert(1,"&lt;path_to_TATi&gt;/lib/python3.5/site-packages/")</programl
         The eigenvector to the largest (but one) eigenvalue will give the dominant 
         direction in which the trajectory is moving.</para>
         <note>The largest eigenvalue is usually unity and its eigenvector is 
-        constant.</note>
+        constant. Therefore, it is omitted. That's why indexing for the 
+        diffusion maps eigenvectors starts at 1 (omitted the constant
+        eigenvector 0).</note>
         <para>The analysis can perform three different tasks:</para>
         <itemizedlist>
           <listitem>Calculating averages.</listitem>

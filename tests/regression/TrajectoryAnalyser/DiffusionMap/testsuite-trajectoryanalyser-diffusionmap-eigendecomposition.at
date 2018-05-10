@@ -45,7 +45,7 @@ AT_CHECK([../../../TATiAnalyser \
     --trajectory_file ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/pre/trajectory-two_clusters-dim_500-gamma_10-beta_1e4-max_steps_1000-noise_0.1-linear-seed_426.csv
 ], 0, [stdout], [stderr])
 AT_CHECK([../../../NumericalDiff eigenvalues.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/post/eigenvalues-method_vanilla.csv], 0, [ignore], [ignore])
-AT_CHECK([../../../NumericalDiff --column_ignore_sign "ev_0" "ev_1" "ev_2" "ev_3" -- eigenvectors.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/post/eigenvectors-method_vanilla.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff --column_ignore_sign "ev_1" "ev_2" "ev_3" "ev_4" -- eigenvectors.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/post/eigenvectors-method_vanilla.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
 
@@ -77,7 +77,7 @@ AT_CHECK([../../../TATiAnalyser \
     --trajectory_file ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/pre/trajectory-two_clusters-dim_500-gamma_10-beta_1e1-max_steps_1000-noise_0.1-linear-seed_426.csv
 ], 0, [stdout], [stderr])
 AT_CHECK([../../../NumericalDiff eigenvalues.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/post/eigenvalues-method_TMDMap.csv], 0, [ignore], [ignore])
-AT_CHECK([../../../NumericalDiff --column_ignore_sign "ev_0" "ev_1" "ev_2" "ev_3" -- eigenvectors.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/post/eigenvectors-method_TMDMap.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff --column_ignore_sign "ev_1" "ev_2" "ev_3" "ev_4" -- eigenvectors.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/post/eigenvectors-method_TMDMap.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
 
@@ -110,7 +110,7 @@ AT_CHECK([../../../TATiAnalyser \
     --trajectory_file ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/pre/trajectory-two_clusters-dim_500-gamma_10-beta_1e1-max_steps_1000-noise_0.1-linear-seed_426.csv
 ], 0, [stdout], [stderr])
 AT_CHECK([../../../NumericalDiff eigenvalues.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/post/eigenvalues-method_pydiffmap.csv], 0, [ignore], [ignore])
-AT_CHECK([../../../NumericalDiff --column_ignore_sign "ev_0" "ev_1" "ev_2" "ev_3" -- eigenvectors.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/post/eigenvectors-method_pydiffmap.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff --column_ignore_sign "ev_1" "ev_2" "ev_3" "ev_4" -- eigenvectors.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/post/eigenvectors-method_pydiffmap.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
 

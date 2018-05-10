@@ -134,6 +134,13 @@ def main(_):
                 sys.exit(255)
 
             print("Computing diffusion map")
+            # NOTE: As the very first eigenvector of the diffusion map kernel is
+            # constant, it is omitted in the following. To convey this to the user,
+            # we start indexing at 1, not at 0, making clear that "ev_0" has been
+            # omitted.
+            # The first eigenvector and its eigenvalue are directly discarded by
+            # :method:`compute_diffusion_maps()`, hence we only adjust the column's
+            # header and the file names accordingly.
             try:
                 vectors, values, q = compute_diffusion_maps( \
                     traj=trajectory, \
@@ -160,7 +167,7 @@ def main(_):
                 for i in range(np.shape(trajectory)[1]):
                     header.append("dof_"+str(i))
                 for i in range(np.shape(vectors)[1]):
-                    header.append("ev_"+str(i))
+                    header.append("ev_"+str(i+1))   # we omit ev_0 as it's constant
                 csv_writer, csv_file = setup_csv_file(FLAGS.diffusion_matrix_file, header)
                 for i in range(np.shape(vectors)[0]):
                     csv_writer.writerow([i] \
@@ -201,8 +208,8 @@ def main(_):
                     for i in range(np.shape(trajectory)[1]):
                         header.append("dof_"+str(i))
                     header.append("free_energy")
-                    header.append("ev_"+str(ev_index))
-                    csv_writer, csv_file = setup_csv_file(FLAGS.landmark_prefix+"-ev_"+str(ev_index)+".csv", header)
+                    header.append("ev_"+str(ev_index+1))
+                    csv_writer, csv_file = setup_csv_file(FLAGS.landmark_prefix+"-ev_"+str(ev_index+1)+".csv", header)
                     for k in range(np.shape(landmarks[ev_index])[0]):
                         i = landmarks[ev_index][k]
                         csv_writer.writerow([steps[i,0]]
@@ -228,7 +235,7 @@ def main(_):
                     print("freeEnergies: "+str(freeEnergies))
                     print("HistogramBins: "+str(HistogramBins))
                     header = ["bin", "free_energy"]
-                    csv_writer, csv_file = setup_csv_file(FLAGS.free_energy_prefix+"-ev_"+str(ev_index)+".csv", header)
+                    csv_writer, csv_file = setup_csv_file(FLAGS.free_energy_prefix+"-ev_"+str(ev_index+1)+".csv", header)
                     for k in range(len(freeEnergies)):
                         csv_writer.writerow(
                             ['{:{width}.{precision}e}'.format(HistogramBins[k], \

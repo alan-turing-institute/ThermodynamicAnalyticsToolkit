@@ -46,13 +46,13 @@ def parse_parameters():
     parser.add_argument('--every_nth', type=int, default=1,
         help='Evaluate only every nth trajectory point to files, e.g. 10')
     parser.add_argument('--free_energy_file', type=str, default=None,
-        help='Give file name ending in "-ev_0.csv" to write free energy over bins per eigenvector to')
+        help='Give file name ending in "-ev_1.csv" to write free energy over bins per eigenvector to')
     parser.add_argument('--inverse_temperature', type=float, default=None,
         help='Inverse temperature at which the sampling was executed for target Boltzmann distribution')
     parser.add_argument('--landmarks', type=int, default=None,
         help='How many landmark points to computer for the trajectory (if any)')
     parser.add_argument('--landmark_file', type=str, default=None,
-        help='Give file name ending in "-ev_0.csv" to write trajectory at obtained landmark points per eigenvector to')
+        help='Give file name ending in "-ev_1.csv" to write trajectory at obtained landmark points per eigenvector to')
     parser.add_argument('--number_of_eigenvalues', type=int, default=4,
         help='How many largest eigenvalues to compute')
     parser.add_argument('--run_file', type=str, default=None,
