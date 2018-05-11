@@ -127,9 +127,10 @@ class NeuralNetwork(object):
             output_seed = seed+len(layer_dimensions)
 
         input_dimension = int(input_layer.get_shape()[-1])
-        if add_dropped_layer:
-            keep_prob = self.add_keep_probability()
-        else:
+        # always create the placeholder ("keep_prob") ...
+        keep_prob = self.add_keep_probability()
+        # ... but only sometimes use it, see `_prepare_sampler()`
+        if not add_dropped_layer:
             keep_prob = None
         if layer_dimensions is not None and len(layer_dimensions) != 0:
             last_hidden_layer = \

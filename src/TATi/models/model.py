@@ -734,13 +734,14 @@ class model:
                 depending on whether either parameter has evaluated to True
         """
         placeholder_nodes = [self.nn[replica_index].get_dict_of_nodes(
-            ["covariance_blending", "friction_constant", "inverse_temperature", "step_width", "current_step", "next_eval_step", "y_"])
+            ["covariance_blending", "keep_prob", "friction_constant", "inverse_temperature", "step_width", "current_step", "next_eval_step", "y_"])
             for replica_index in range(self.FLAGS.parallel_replica)]
 
-        list_of_nodes = ["merged", "sample_step", "accuracy", "global_step", "loss"]
-        test_nodes = []
+        list_of_nodes = ["sample_step", "accuracy", "global_step", "loss"]
+        test_nodes = [[self.summary]*self.FLAGS.parallel_replica]
         for item in list_of_nodes:
-            test_nodes.append([self.nn[replica_index].get(item) for replica_index in range(self.FLAGS.parallel_replica)])
+            test_nodes.append([self.nn[replica_index].get(item) \
+                               for replica_index in range(self.FLAGS.parallel_replica)])
 
         all_weights = []
         all_biases = []
@@ -794,22 +795,30 @@ class model:
                     columns=header))
 
         feed_dict = {}
-        # place in feed dict
+        # place in feed dict: We have to supply all placeholders (regardless of
+        # which the employed sampler actually requires) because of the evaluated
+        # summary! All of the placeholder nodes are also summary nodes.
         for replica_index in range(self.FLAGS.parallel_replica):
             feed_dict.update({
                 placeholder_nodes[replica_index]["covariance_blending"]: self.FLAGS.covariance_blending,
                 placeholder_nodes[replica_index]["step_width"]: self.FLAGS.step_width,
                 placeholder_nodes[replica_index]["inverse_temperature"]: self.FLAGS.inverse_temperature,
-                placeholder_nodes[replica_index]["friction_constant"]: self.FLAGS.friction_constant
+                placeholder_nodes[replica_index]["friction_constant"]: self.FLAGS.friction_constant,
             })
             if self.FLAGS.dropout is not None:
-                feed_dict.update({placeholder_nodes[replica_index]["keep_prob"]: self.FLAGS.dropout})
-            if self.FLAGS.sampler == "HamiltonianMonteCarlo":
                 feed_dict.update({
-                    placeholder_nodes[replica_index]["step_width"]: self.FLAGS.step_width,
-                    placeholder_nodes[replica_index]["current_step"]: 0,
-                    placeholder_nodes[replica_index]["next_eval_step"]: self.FLAGS.hamiltonian_dynamics_time
+                    placeholder_nodes[replica_index]["keep_prob"]: self.FLAGS.dropout,
                 })
+            else:
+                feed_dict.update({
+                    placeholder_nodes[replica_index]["keep_prob"]: 0.,
+                })
+            #if self.FLAGS.sampler == "HamiltonianMonteCarlo":
+            feed_dict.update({
+                placeholder_nodes[replica_index]["step_width"]: self.FLAGS.step_width,
+                placeholder_nodes[replica_index]["current_step"]: 0,
+                placeholder_nodes[replica_index]["next_eval_step"]: self.FLAGS.hamiltonian_dynamics_time
+            })
 
         # check that sampler's parameters are actually used
         for replica_index in range(self.FLAGS.parallel_replica):
@@ -1137,8 +1146,9 @@ class model:
         assert( replica_index < self.FLAGS.parallel_replica)
 
         placeholder_nodes = self.nn[replica_index].get_dict_of_nodes(["learning_rate", "y_"])
-        test_nodes = self.nn[replica_index].get_list_of_nodes(["merged", "train_step", "accuracy", "global_step",
-                                                               "loss", "y_", "y"])+[self.variable_dict[replica_index]["gradients"]]
+        test_nodes = [self.summary]+self.nn[replica_index].get_list_of_nodes(
+            ["train_step", "accuracy", "global_step", "loss", "y_", "y"]) \
+                     +[self.static_vars["gradients"]]
 
         output_width = 8
         output_precision = 8
