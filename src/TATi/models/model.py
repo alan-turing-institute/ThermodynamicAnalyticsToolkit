@@ -212,6 +212,7 @@ class model:
                         tf.get_variable(key, shape=[], trainable=False,
                                         initializer=tf.zeros_initializer,
                                         use_resource=True, dtype=tf.int64)
+
         self.resources_created = True
 
     def get_config_map(self, key):
@@ -377,7 +378,7 @@ class model:
 
         # create global variable to hold kinetic energy
         self.create_resource_variables()
-        self.static_vars, self.zero_assigner = \
+        self.static_vars, self.zero_assigner, self.placeholder_vars, self.assigner = \
             model._create_static_variable_dict(self.FLAGS.parallel_replica)
 
         if self.nn is None:
@@ -703,8 +704,11 @@ class model:
         static_vars_float = ["old_loss", "old_kinetic", "kinetic_energy", "total_energy", "momenta", \
                              "gradients", "virials", "noise"]
         static_vars_int64 = ["accepted", "rejected"]
+        placeholder_vars = {"var_loss": "old_loss", "var_kinetic" : "old_kinetic", "var_total": "total_energy"}
         static_var_dict = {}
         zero_assigner_dict = {}
+        placeholder_dict = {}
+        assigner_dict = {}
         for i in range(parallel_replica):
             with tf.variable_scope("var_replica" + str(i + 1), reuse=True):
                 with tf.variable_scope("accumulate", reuse=True):
@@ -718,7 +722,15 @@ class model:
                         model._dict_append(static_var_dict, key, static_var)
                         zero_assigner = static_var.assign(0)
                         model._dict_append(zero_assigner_dict, key, zero_assigner)
-        return static_var_dict, zero_assigner_dict
+
+                    for key in placeholder_vars.keys():
+                        placeholder_var = tf.placeholder(dds_basetype, name=key)
+                        model._dict_append(placeholder_dict, key, placeholder_var)
+                        value_name = placeholder_vars[key]
+                        assigner_var = static_var_dict[value_name][i].assign(placeholder_var)
+                        model._dict_append(assigner_dict, value_name, assigner_var)
+
+        return static_var_dict, zero_assigner_dict, placeholder_dict, assigner_dict
 
     def sample(self, return_run_info = False, return_trajectories = False, return_averages = False):
         """ Performs the actual sampling of the neural network `nn` given a dataset `ds` and a
@@ -848,16 +860,14 @@ class model:
                 HMC_eval_nodes.append(self.nn[replica_index].get_list_of_nodes(["loss"]) \
                                       + [self.static_vars["total_energy"][replica_index],
                                          self.static_vars["kinetic_energy"][replica_index]])
-                model._dict_append(self.static_vars, "var_loss", tf.placeholder(dds_basetype, name="var_loss"))
-                model._dict_append(self.static_vars, "var_kinetic", tf.placeholder(dds_basetype, name="var_loss"))
-                model._dict_append(self.static_vars, "var_total", tf.placeholder(dds_basetype, name="var_loss"))
-                HMC_set_nodes.append([self.static_vars["old_loss"][replica_index].assign(self.static_vars["var_loss"][replica_index]),
-                                 self.static_vars["old_kinetic_energy"][replica_index].assign(self.static_vars["var_kin"][replica_index])])
-                HMC_set_all_nodes.append([self.static_vars["total_energy"][replica_index].assign(self.static_vars["var_total"][replica_index])]+HMC_set_nodes)
+
+            HMC_set_nodes.extend([self.assigner["old_loss"],
+                                  self.assigner["old_kinetic"]])
+            HMC_set_all_nodes.extend([self.assigner["total_energy"]] + HMC_set_nodes)
 
             # zero rejection rate before sampling start
             check_accepted, check_rejected = self.sess.run([
-                self.static_vars["zero_accepted"], self.static_vars["zero_rejected"]])
+                self.zero_assigner["accepted"], self.zero_assigner["rejected"]])
             for replica_index in range(self.FLAGS.parallel_replica):
                 assert(check_accepted[replica_index] == 0)
                 assert(check_rejected[replica_index] == 0)
@@ -896,9 +906,9 @@ class model:
                 for replica_index in range(self.FLAGS.parallel_replica):
                     loss_eval, total_eval, kin_eval = self.sess.run(HMC_eval_nodes[replica_index], feed_dict=feed_dict)
                     HMC_set_dict = {
-                        self.static_vars["var_kin"][replica_index]: kin_eval,
-                        self.static_vars["var_loss"][replica_index]: loss_eval,
-                        self.static_vars["var_total"][replica_index]: loss_eval+kin_eval
+                        self.placeholder_vars["var_kinetic"][replica_index]: kin_eval,
+                        self.placeholder_vars["var_loss"][replica_index]: loss_eval,
+                        self.placeholder_vars["var_total"][replica_index]: loss_eval+kin_eval
                     }
                     if abs(total_eval) < 1e-10:
                         self.sess.run(HMC_set_all_nodes[replica_index], feed_dict=HMC_set_dict)
