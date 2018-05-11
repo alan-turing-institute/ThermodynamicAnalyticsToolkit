@@ -5,6 +5,7 @@ sys.path.insert(1, '@pythondir@')
 
 import logging
 import numpy as np
+import os.path
 import pandas as pd
 import scipy
 import tensorflow as tf
@@ -158,11 +159,11 @@ def main(_):
                 FLAGS.landmarks = 0
             kernel_diff = np.asarray(q)
 
-            if FLAGS.diffusion_map_file is not None:
+            if FLAGS.diffusion_map_file is not None and not os.path.isfile(FLAGS.diffusion_map_file):
                 print("Eigenvalues are "+str(values))
                 write_values_as_csv(values, FLAGS.diffusion_map_file, output_width, output_precision)
 
-            if FLAGS.diffusion_matrix_file is not None:
+            if FLAGS.diffusion_matrix_file is not None and not os.path.isfile(FLAGS.diffusion_matrix_file):
                 header = ["i", "loss", "kernel_diff"]
                 for i in range(np.shape(trajectory)[1]):
                     header.append("dof_"+str(i))
