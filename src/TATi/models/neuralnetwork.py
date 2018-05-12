@@ -96,7 +96,7 @@ class NeuralNetwork(object):
                layer_dimensions, output_dimension, labels,
                trainables_collection=None,
                seed=None,
-               add_dropped_layer=False,
+               keep_prob=None,
                hidden_activation=tf.nn.relu,
                output_activation=tf.nn.tanh,
                loss_name="mean_squared"):
@@ -113,7 +113,7 @@ class NeuralNetwork(object):
         :param labels: node to labels for calculating loss and accuracy
         :param trainables_collection: specific collection to gather all weights of this layer
         :param seed: seed for reproducible random values
-        :param add_dropped_layer: whether to add dropped layer or not to protect against overfitting
+        :param keep_prob: ref to placeholder for keep probability or None
         :param hidden_activation: activation function for the hidden layer
         :param output_activation: activation function for the output layer
         :param loss_name: name of loss to use in training, see :method:`NeuralNetwork.add_losses`
@@ -127,11 +127,6 @@ class NeuralNetwork(object):
             output_seed = seed+len(layer_dimensions)
 
         input_dimension = int(input_layer.get_shape()[-1])
-        # always create the placeholder ("keep_prob") ...
-        keep_prob = self.add_keep_probability()
-        # ... but only sometimes use it, see `_prepare_sampler()`
-        if not add_dropped_layer:
-            keep_prob = None
         if layer_dimensions is not None and len(layer_dimensions) != 0:
             last_hidden_layer = \
                 self.add_hidden_layers(input_layer, input_dimension,
@@ -473,7 +468,8 @@ class NeuralNetwork(object):
 
         return last_layer
 
-    def add_keep_probability(self):
+    @staticmethod
+    def add_keep_probability():
         """ Adds a placeholder node for the keep probability of dropped layers.
 
         See :method:`neuralnetwork.add_hidden_layers`
@@ -481,7 +477,6 @@ class NeuralNetwork(object):
         :return: reference to created node
         """
         keep_prob = tf.placeholder(dds_basetype, name="keep_probability")
-        self.placeholder_nodes['keep_prob'] = keep_prob
         with tf.name_scope('dropout'):
             tf.summary.scalar('dropout_keep_probability', keep_prob)
         return keep_prob

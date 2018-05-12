@@ -390,6 +390,9 @@ class model:
                 if self.FLAGS.do_hessians:
                     self.hessians = []
             self.true_labels = NeuralNetwork.add_true_labels(self.output_dimension)
+            # always create the placeholder ("keep_prob") ...
+            self.keep_prob = NeuralNetwork.add_keep_probability()
+            keep_prob = None if self.FLAGS.dropout is None else self.keep_prob
             for i in range(self.FLAGS.parallel_replica):
                 with tf.name_scope('replica'+str(i+1)):
                     self.trainables.append('trainables_replica'+str(i+1))
@@ -406,7 +409,7 @@ class model:
                         labels=self.true_labels,
                         trainables_collection=self.trainables[-1],
                         seed=replica_seed,
-                        add_dropped_layer=(self.FLAGS.dropout is not None),
+                        keep_prob=keep_prob,
                         hidden_activation=activations[self.FLAGS.hidden_activation],
                         output_activation=activations[self.FLAGS.output_activation],
                         loss_name=self.FLAGS.loss
@@ -746,7 +749,7 @@ class model:
                 depending on whether either parameter has evaluated to True
         """
         placeholder_nodes = [self.nn[replica_index].get_dict_of_nodes(
-            ["covariance_blending", "keep_prob", "friction_constant", "inverse_temperature", "step_width", "current_step", "next_eval_step", "y_"])
+            ["covariance_blending", "friction_constant", "inverse_temperature", "step_width", "current_step", "next_eval_step", "y_"])
             for replica_index in range(self.FLAGS.parallel_replica)]
 
         list_of_nodes = ["sample_step", "accuracy", "global_step", "loss"]
@@ -819,11 +822,11 @@ class model:
             })
             if self.FLAGS.dropout is not None:
                 feed_dict.update({
-                    placeholder_nodes[replica_index]["keep_prob"]: self.FLAGS.dropout,
+                    self.keep_prob: self.FLAGS.dropout,
                 })
             else:
                 feed_dict.update({
-                    placeholder_nodes[replica_index]["keep_prob"]: 0.,
+                    self.keep_prob: 0.,
                 })
             #if self.FLAGS.sampler == "HamiltonianMonteCarlo":
             feed_dict.update({
@@ -1211,7 +1214,9 @@ class model:
                 placeholder_nodes["learning_rate"]: self.FLAGS.step_width
             }
             if self.FLAGS.dropout is not None:
-                feed_dict.update({placeholder_nodes["keep_prob"] : self.FLAGS.dropout})
+                feed_dict.update({self.keep_prob: self.FLAGS.dropout})
+            else:
+                feed_dict.update({self.keep_prob: 0.})
             #logging.debug("batch is x: "+str(features[:])+", y: "+str(labels[:]))
 
             # zero accumulated gradient
