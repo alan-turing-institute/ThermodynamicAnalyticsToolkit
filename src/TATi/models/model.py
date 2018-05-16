@@ -281,7 +281,7 @@ class model:
             hidden_activation="relu",
             hidden_dimension="",
             in_memory_pipeline=False,
-            input_columns="1 2",
+            input_columns="",
             input_dimension=2,
             inter_ops_threads=1,
             intra_ops_threads=None,
