@@ -381,7 +381,7 @@ class model:
 
         if self.nn is None:
             self.nn = NeuralNetwork()
-            hidden_dimension = [int(i) for i in get_list_from_string(self.FLAGS.hidden_dimension)]
+            hidden_dimension = [int(i) for i in get_list_from_string(self.FLAGS.hidden_dimension) if int(i) != 0]
             activations = NeuralNetwork.get_activations()
             self.loss = self.nn.create(
                 self.x, hidden_dimension, self.output_dimension,
