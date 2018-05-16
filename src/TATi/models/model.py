@@ -49,7 +49,6 @@ class model:
                 self.FLAGS.dimension = sum([file_length(filename)
                                             for filename in FLAGS.batch_data_files]) \
                                        - len(FLAGS.batch_data_files)
-                self._check_valid_batch_size()
                 if self.output_dimension == 1:
                     self.output_type = "binary_classification"  # labels in {-1,1}
                 else:
@@ -60,6 +59,7 @@ class model:
             else:
                 logging.info("Unknown file type")
                 assert(0)
+            self._check_valid_batch_size()
 
             logging.info("Parsing "+str(FLAGS.batch_data_files))
 
