@@ -148,7 +148,6 @@ class NeuralNetwork(object):
         logging.debug ("Creating summaries")
         self.add_losses(y, y_)
         loss = self.set_loss_function(loss_name)
-        self.add_accuracy_summary(y, y_)
 
         merged = tf.summary.merge_all()  # Merge all the summaries
         self.summary_nodes['merged'] = merged
@@ -166,7 +165,8 @@ class NeuralNetwork(object):
         self.placeholder_nodes['y_'] = y_
         return y_
 
-    def add_accuracy_summary(self, y, y_):
+    @staticmethod
+    def add_accuracy_summary(y, y_, output_type = 0):
         """ Add nodes to the graph to calculate the accuracy for the dataset.
 
         The accuracy is the difference between the predicted label and the true
@@ -179,15 +179,23 @@ class NeuralNetwork(object):
 
         :param y: predicted labels
         :param y_: true labels
+        :param output_type: type of label set (i.e. {-1,1} or {0,1}^c)
+        :return: accuracy node
         """
         with tf.name_scope('accuracy'):
             with tf.name_scope('correct_prediction'):
-                correct_prediction = tf.equal(tf.sign(y), tf.sign(y_))
-                self.summary_nodes['correct_prediction'] = correct_prediction
+                if output_type == "binary_classification":
+                    correct_prediction = tf.equal(tf.sign(y), tf.sign(y_))
+                elif output_type == "onehot_multi_classification":
+                    correct_prediction = tf.equal(tf.argmax(y,1),
+                                                  tf.argmax(y_,1))
+                else:
+                    logging.error("Unknown output type.")
+                    assert(0)
             with tf.name_scope('accuracy'):
                 accuracy = tf.reduce_mean(tf.cast(correct_prediction, dds_basetype))
-                self.summary_nodes['accuracy'] = accuracy
         tf.summary.scalar('accuracy', accuracy)
+        return accuracy
 
     def add_sample_method(self, loss, sampling_method, seed,
                           prior):
