@@ -108,7 +108,6 @@ class DatasetPipeline(InputPipeline):
         :param session: session object as input might be retrieved through the
                 computational graph
         '''
-        logging.warning(" Needing to reset the iterator running over the dataset.")
         session.run(self.iterator.initializer)
 
     def shuffle(self, seed):
