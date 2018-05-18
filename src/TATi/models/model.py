@@ -376,11 +376,6 @@ class model:
             input_columns = get_list_from_string(self.FLAGS.input_columns)
             self.xinput, self.x = create_input_layer(self.input_dimension, input_columns)
 
-        # create global variable to hold kinetic energy
-        self.create_resource_variables()
-        self.static_vars, self.zero_assigner, self.placeholder_vars, self.assigner = \
-            model._create_static_variable_dict(self.FLAGS.parallel_replica)
-
         if self.nn is None:
             self.nn = []
             self.loss = []
@@ -449,6 +444,11 @@ class model:
             self.loss = []
             for i in range(self.FLAGS.parallel_replica):
                 self.loss.append(self.nn[i].get_list_of_nodes(["loss"])[0])
+
+        # create global variable to hold kinetic energy
+        self.create_resource_variables()
+        self.static_vars, self.zero_assigner, self.assigner = \
+            self._create_static_variable_dict(self.FLAGS.parallel_replica)
 
         if self.FLAGS.fix_parameters is not None:
             names, values = self.split_parameters_as_names_values(self.FLAGS.fix_parameters)
@@ -694,22 +694,22 @@ class model:
         else:
             _dict[_key] = [_item]
 
-    @staticmethod
-    def _create_static_variable_dict(parallel_replica):
+    def _create_static_variable_dict(self, parallel_replica):
         """ Instantiate all sampler's resource variables. Also create
         assign zero nodes.
 
+        This returns a dictionary with lists as values where the lists contain
+        the created variable for each replica.
+
         :param parallel_replica: number of parallel replica to instantiate for
         :return: dict with static_var lists (one per replica), equivalent dict
-                for zero assigners
+                for zero assigners, dict with assigners (required for HMC)
         """
         static_vars_float = ["old_loss", "old_kinetic", "kinetic_energy", "total_energy", "momenta", \
                              "gradients", "virials", "noise"]
         static_vars_int64 = ["accepted", "rejected"]
-        placeholder_vars = {"var_loss": "old_loss", "var_kinetic" : "old_kinetic", "var_total": "total_energy"}
         static_var_dict = {}
         zero_assigner_dict = {}
-        placeholder_dict = {}
         assigner_dict = {}
         for i in range(parallel_replica):
             with tf.variable_scope("var_replica" + str(i + 1), reuse=True):
@@ -725,14 +725,15 @@ class model:
                         zero_assigner = static_var.assign(0)
                         model._dict_append(zero_assigner_dict, key, zero_assigner)
 
-                    for key in placeholder_vars.keys():
-                        placeholder_var = tf.placeholder(dds_basetype, name=key)
-                        model._dict_append(placeholder_dict, key, placeholder_var)
-                        value_name = placeholder_vars[key]
-                        assigner_var = static_var_dict[value_name][i].assign(placeholder_var)
-                        model._dict_append(assigner_dict, value_name, assigner_var)
+                    assigner_loss = static_var_dict["old_loss"][i].assign(self.nn[i].get("loss"))
+                    model._dict_append(assigner_dict, "old_loss", assigner_loss)
+                    assigner_kinetic = static_var_dict["old_kinetic"][i].assign(static_var_dict["kinetic_energy"][i])
+                    model._dict_append(assigner_dict, "old_kinetic", assigner_kinetic)
+                    assigner_total = static_var_dict["total_energy"][i].assign(
+                        tf.add(self.nn[i].get("loss"), static_var_dict["kinetic_energy"][i]))
+                    model._dict_append(assigner_dict, "total_energy", assigner_total)
 
-        return static_var_dict, zero_assigner_dict, placeholder_dict, assigner_dict
+        return static_var_dict, zero_assigner_dict, assigner_dict
 
     def sample(self, return_run_info = False, return_trajectories = False, return_averages = False):
         """ Performs the actual sampling of the neural network `nn` given a dataset `ds` and a
@@ -841,8 +842,7 @@ class model:
                                       "GeometricLangevinAlgorithm_1stOrder",
                                       "GeometricLangevinAlgorithm_2ndOrder",
                                       "BAOAB",
-                                      "CovarianceControlledAdaptiveLangevinThermostat",
-                                      "HamiltonianMonteCarlo"]:
+                                      "CovarianceControlledAdaptiveLangevinThermostat"]:
                 gamma, beta, deltat = self.sess.run(self.nn[replica_index].get_list_of_nodes(
                     ["friction_constant", "inverse_temperature", "step_width"]), feed_dict=feed_dict)
                 logging.info("LD Sampler parameters, replica #%d: gamma = %lg, beta = %lg, delta t = %lg" %
@@ -853,18 +853,15 @@ class model:
                 logging.info("MC Sampler parameters, replica #%d: current_step = %lg, num_mc_steps = %lg, delta t = %lg" %
                       (replica_index, current_step, num_mc_steps, deltat))
 
-            # create extra nodes for HMC
+        # create extra nodes for HMC
         if self.FLAGS.sampler == "HamiltonianMonteCarlo":
-            HMC_eval_nodes = []
-            HMC_set_nodes = []
-            HMC_set_all_nodes = []
-            for replica_index in range(self.FLAGS.parallel_replica):
-                HMC_eval_nodes.append(self.nn[replica_index].get_list_of_nodes(["loss"]) \
-                                      + [self.static_vars["total_energy"][replica_index],
-                                         self.static_vars["kinetic_energy"][replica_index]])
+            HMC_eval_nodes = [[self.nn[i].get("loss") for i in range(self.FLAGS.parallel_replica)]] \
+                            +[self.static_vars[key] for key in ["old_kinetic", "total_energy"]]
 
+            HMC_set_nodes = []
             HMC_set_nodes.extend([self.assigner["old_loss"],
                                   self.assigner["old_kinetic"]])
+            HMC_set_all_nodes = []
             HMC_set_all_nodes.extend([self.assigner["total_energy"]] + HMC_set_nodes)
 
             # zero rejection rate before sampling start
@@ -877,7 +874,8 @@ class model:
         logging.info("Starting to sample")
         logging.info_intervals = max(1, int(self.FLAGS.max_steps / 100))
         last_time = time.process_time()
-        HMC_steps = 0
+        HMC_steps = [0]*self.FLAGS.parallel_replica
+        HMC_current_set_nodes = []
         for current_step in range(self.FLAGS.max_steps):
             # get next batch of data
             features, labels = self.input_pipeline.next_batch(self.sess)
@@ -893,32 +891,33 @@ class model:
             if self.FLAGS.sampler == "HamiltonianMonteCarlo":
                 for replica_index in range(self.FLAGS.parallel_replica):
                     # pick next evaluation step with a little random variation
-                    if current_step > HMC_steps:
-                        HMC_steps += max(1,
+                    if current_step > HMC_steps[replica_index]:
+                        HMC_steps[replica_index] += max(1,
                                          round((0.9 + np.random.uniform(low=0., high=0.2)) \
                                                * self.FLAGS.hamiltonian_dynamics_time / self.FLAGS.step_width))
                         logging.debug("Next evaluation of HMC criterion at step " + str(HMC_steps))
                         feed_dict.update({
-                            placeholder_nodes[replica_index]["next_eval_step"]: HMC_steps,
-                            placeholder_nodes[replica_index]["current_step"]: current_step
+                            placeholder_nodes[replica_index]["next_eval_step"]: HMC_steps[replica_index]
                         })
+                    feed_dict.update({
+                        placeholder_nodes[replica_index]["current_step"]: current_step
+                    })
 
             # set global variable used in HMC sampler for criterion to initial loss
             if self.FLAGS.sampler == "HamiltonianMonteCarlo":
+                loss_eval, kin_eval, total_eval = self.sess.run(HMC_eval_nodes, feed_dict=feed_dict)
                 for replica_index in range(self.FLAGS.parallel_replica):
-                    loss_eval, total_eval, kin_eval = self.sess.run(HMC_eval_nodes[replica_index], feed_dict=feed_dict)
-                    HMC_set_dict = {
-                        self.placeholder_vars["var_kinetic"][replica_index]: kin_eval,
-                        self.placeholder_vars["var_loss"][replica_index]: loss_eval,
-                        self.placeholder_vars["var_total"][replica_index]: loss_eval+kin_eval
-                    }
-                    if abs(total_eval) < 1e-10:
-                        self.sess.run(HMC_set_all_nodes[replica_index], feed_dict=HMC_set_dict)
-                    else:
-                        self.sess.run(HMC_set_nodes[replica_index], feed_dict=HMC_set_dict)
-                    loss_eval, total_eval, kin_eval = self.sess.run(HMC_eval_nodes[replica_index], feed_dict=feed_dict)
                     logging.debug("replica #%d, #%d: loss is %lg, total is %lg, kinetic is %lg" \
-                                  % (replica_index, current_step, loss_eval, total_eval, kin_eval))
+                                  % (replica_index, current_step, loss_eval[replica_index], total_eval[replica_index], kin_eval[replica_index]))
+                HMC_current_set_nodes[:] = HMC_set_nodes
+                for replica_index in range(self.FLAGS.parallel_replica):
+                    if abs(total_eval[replica_index]) < 1e-10:
+                        HMC_current_set_nodes.extend([self.assigner["total_energy"][replica_index]])
+                self.sess.run(HMC_current_set_nodes, feed_dict=feed_dict)
+                loss_eval, kin_eval, total_eval = self.sess.run(HMC_eval_nodes, feed_dict=feed_dict)
+                for replica_index in range(self.FLAGS.parallel_replica):
+                    logging.debug("replica #%d, #%d: loss is %lg, total is %lg, kinetic is %lg" \
+                                  % (replica_index, current_step, loss_eval[replica_index], total_eval[replica_index], kin_eval[replica_index]))
 
             # zero kinetic energy
             if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics",
