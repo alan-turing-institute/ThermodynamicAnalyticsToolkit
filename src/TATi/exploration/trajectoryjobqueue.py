@@ -138,8 +138,9 @@ class TrajectoryJobQueue(TrajectoryQueue):
             initial_step = data_object.legs_at_step[-1]
         else:
             initial_step = 0
+        # TODO: parameters needs to be properly adapted to parallel replica case
         if len(data_object.parameters) > 0:
-            parameters = data_object.parameters[-1]
+            parameters = [data_object.parameters[-1]]
         else:
             parameters = None
         sample_job = TrajectoryJob_sample(data_id=data_object.get_id(),
@@ -159,10 +160,11 @@ class TrajectoryJobQueue(TrajectoryQueue):
         :param continue_flag: flag whether job should spawn more jobs or not
         """
         data_object = self.instantiate_data_object(data_object)
+        # TODO: parameters needs to be properly adapted to parallel replica case
         train_job = TrajectoryJob_train(data_id=data_object.get_id(),
                                         network_model=run_object,
                                         initial_step=data_object.steps[-1],
-                                        parameters=data_object.parameters[-1],
+                                        parameters=[data_object.parameters[-1]],
                                         continue_flag=continue_flag)
         self._enqueue_job(train_job)
 

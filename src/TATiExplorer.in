@@ -79,6 +79,10 @@ def main(_):
     rt = runtime(FLAGS)
     time_zero = time.process_time()
 
+    if FLAGS.parallel_replica != 1:
+        print("At the moment the exploration code is not adapted to multiple dependent walkers.")
+        sys.exit(255)
+
     # setup neural network
     if FLAGS.number_processes == 0:
         network_model = model(FLAGS)

@@ -27,16 +27,21 @@ class TrajectoryJob_sample(TrajectoryJob):
     def _set_parameters(self):
         # set parameters to ones from old leg (if exists)
         sess = self.network_model.sess
-        weights_dof = self.network_model.weights.get_total_dof()
-        self.network_model.weights.assign(sess, self.parameters[0:weights_dof])
-        self.network_model.biases.assign(sess, self.parameters[weights_dof:])
+        # TODO: make this into a single session run call (i.e. over all replica at once)
+        for replica_index in range(self.network_model.FLAGS.parallel_replica):
+            weights_dof = self.network_model.weights[replica_index].get_total_dof()
+            self.network_model.weights[replica_index].assign(sess, self.parameters[replica_index][0:weights_dof])
+            self.network_model.biases[replica_index].assign(sess, self.parameters[replica_index][weights_dof:])
 
     def _set_initial_step(self):
         # set step
-        sample_step_placeholder = self.network_model.nn.get("step_placeholder")
-        feed_dict = {sample_step_placeholder: self.initial_step}
-        set_step = self.network_model.sess.run(self.network_model.global_step_assign_t, feed_dict=feed_dict)
-        logging.debug("Set initial step to " + str(set_step))
+        for replica_index in range(self.network_model.FLAGS.parallel_replica):
+            sample_step_placeholder = self.network_model.step_placeholder[replica_index]
+            feed_dict = {sample_step_placeholder: self.initial_step}
+            set_step = self.network_model.sess.run(
+                self.network_model.global_step_assign_t[replica_index], feed_dict=feed_dict)
+            logging.debug("Set initial step for replica #"+str(replica_index) \
+                          +" to " + str(set_step))
 
     def run(self, _data):
         """ This implements running a new leg of a given trajectory stored
@@ -47,7 +52,8 @@ class TrajectoryJob_sample(TrajectoryJob):
         """
 
         if self.parameters is not None:
-            logging.debug("Setting initial parameters to (first ten shown) " + str(self.parameters[0:10]))
+            logging.debug("Setting initial parameters to (first ten of first replica shown) " \
+                          + str(self.parameters[0][0:10]))
             self._set_parameters()
 
         self._set_initial_step()
@@ -62,22 +68,23 @@ class TrajectoryJob_sample(TrajectoryJob):
         return _data, self.continue_flag
 
     def _store_trajectory(self, _data, averages, run_info, trajectory):
-        steps = [int(i) for i in np.asarray(run_info.loc[:, 'step'])]
-        losses = [float(i) for i in np.asarray(run_info.loc[:, 'loss'])]
-        gradients = [float(i) for i in np.asarray(run_info.loc[:, 'scaled_gradient'])]
-        assert ("weight" not in trajectory.columns[2])
-        assert ("weight" in trajectory.columns[3])
-        parameters = np.asarray(trajectory)[:, 3:]
-        logging.debug("Steps (first and last five): " + str(steps[:5]) + "\n ... \n" + str(steps[-5:]))
-        logging.debug("Losses (first and last five): " + str(losses[:5]) + "\n ... \n" + str(losses[-5:]))
-        logging.debug("Gradients (first and last five): " + str(gradients[:5]) + "\n ... \n" + str(gradients[-5:]))
-        logging.debug("Parameters (first and last five, first ten component shown): " + str(
-            parameters[:5, 0:10]) + "\n ... \n" + str(parameters[-5:, 0:10]))
-        # append parameters to data
-        _data.add_run_step(_steps=steps,
-                           _losses=losses,
-                           _gradients=gradients,
-                           _parameters=parameters,
-                           _averages_lines=averages,
-                           _run_lines=run_info,
-                           _trajectory_lines=trajectory)
+        for replica_index in range(self.network_model.FLAGS.parallel_replica):
+            steps = [int(i) for i in np.asarray(run_info[replica_index].loc[:, 'step'])]
+            losses = [float(i) for i in np.asarray(run_info[replica_index].loc[:, 'loss'])]
+            gradients = [float(i) for i in np.asarray(run_info[replica_index].loc[:, 'scaled_gradient'])]
+            assert ("weight" not in trajectory[replica_index].columns[2])
+            assert ("weight" in trajectory[replica_index].columns[3])
+            parameters = np.asarray(trajectory[replica_index])[:, 3:]
+            logging.debug("Steps (first and last five): " + str(steps[:5]) + "\n ... \n" + str(steps[-5:]))
+            logging.debug("Losses (first and last five): " + str(losses[:5]) + "\n ... \n" + str(losses[-5:]))
+            logging.debug("Gradients (first and last five): " + str(gradients[:5]) + "\n ... \n" + str(gradients[-5:]))
+            logging.debug("Parameters (first and last five, first ten component shown): " + str(
+                parameters[:5, 0:10]) + "\n ... \n" + str(parameters[-5:, 0:10]))
+            # append parameters to data
+            _data.add_run_step(_steps=steps,
+                               _losses=losses,
+                               _gradients=gradients,
+                               _parameters=parameters,
+                               _averages_lines=averages[replica_index],
+                               _run_lines=run_info[replica_index],
+                               _trajectory_lines=trajectory[replica_index])

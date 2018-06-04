@@ -31,24 +31,25 @@ class TrajectoryJob_train(TrajectoryJob_sample):
         self.job_type = "train"
 
     def _store_last_step_of_trajectory(self, _data, averages, run_info, trajectory):
-        step = [int(np.asarray(run_info.loc[:, 'step'])[-1])]
-        loss = [float(np.asarray(run_info.loc[:, 'loss'])[-1])]
-        gradient = [float(np.asarray(run_info.loc[:, 'scaled_gradient'])[-1])]
-        assert ("weight" not in trajectory.columns[2])
-        assert ("weight" in trajectory.columns[3])
-        parameters = np.asarray(trajectory)[-1:, 3:]
-        logging.debug("Step : " + str(step[-1]))
-        logging.debug("Loss : " + str(loss[-1]))
-        logging.debug("Gradient : " + str(gradient[-1]))
-        logging.debug("Parameter (first ten component shown): " + str(parameters[-1,0:10]))
-        # append parameters to data
-        _data.add_run_step(_steps=step,
-                           _losses=loss,
-                           _gradients=gradient,
-                           _parameters=parameters,
-                           _averages_lines=averages,
-                           _run_lines=run_info,
-                           _trajectory_lines=trajectory)
+        for replica_index in range(self.network_model.FLAGS.parallel_replica):
+            step = [int(np.asarray(run_info.loc[:, 'step'])[-1])]
+            loss = [float(np.asarray(run_info.loc[:, 'loss'])[-1])]
+            gradient = [float(np.asarray(run_info.loc[:, 'scaled_gradient'])[-1])]
+            assert ("weight" not in trajectory.columns[2])
+            assert ("weight" in trajectory.columns[3])
+            parameters = np.asarray(trajectory)[-1:, 3:]
+            logging.debug("Step : " + str(step[-1]))
+            logging.debug("Loss : " + str(loss[-1]))
+            logging.debug("Gradient : " + str(gradient[-1]))
+            logging.debug("Parameter (first ten component shown): " + str(parameters[-1,0:10]))
+            # append parameters to data
+            _data.add_run_step(_steps=step,
+                               _losses=loss,
+                               _gradients=gradient,
+                               _parameters=parameters,
+                               _averages_lines=averages,
+                               _run_lines=run_info,
+                               _trajectory_lines=trajectory)
 
     def run(self, _data):
         """ This implements running a new leg of a given trajectory stored
@@ -86,27 +87,30 @@ class TrajectoryJob_train(TrajectoryJob_sample):
         if self.network_model.FLAGS.do_hessians:
             self.network_model.reset_dataset()
             features, labels = self.network_model.input_pipeline.next_batch(self.network_model.sess)
-            feed_dict = {
-                self.network_model.xinput: features,
-                self.network_model.nn.placeholder_nodes["y_"]: labels,
-            }
-            if self.network_model.FLAGS.dropout is not None:
-                feed_dict.update({
-                    self.network_model.nn.placeholder_nodes["keep_prob"]: self.FLAGS.dropout})
 
-            #self.network_model.reset_dataset()
-            # gradient_eval = self.network_model.sess.run(
-            #     self.network_model.gradients,
-            #     feed_dict=feed_dict)
-            # print(gradient_eval)
+            # TODO: make this into a single session run call (i.e. over all replica at once)
+            for replica_index in range(self.network_model.FLAGS.parallel_replica):
+                feed_dict = {
+                    self.network_model.xinput: features,
+                    self.network_model.nn[replica_index].placeholder_nodes["y_"]: labels,
+                }
+                if self.network_model.FLAGS.dropout is not None:
+                    feed_dict.update({
+                        self.network_model.nn[replica_index].placeholder_nodes["keep_prob"]: self.FLAGS.dropout})
 
-            hessian_eval = self.network_model.sess.run(
-                self.network_model.hessians,
-                feed_dict=feed_dict)
-            #print(hessian_eval)
-            _data.hessian_eigenvalues.append(np.linalg.eigvals(hessian_eval))
-            logging.info("Max and min eigenvalues of hessian: "+str(_data.hessian_eigenvalues[0:2]) \
-                         +"..."+str(_data.hessian_eigenvalues[-3:-1]))
+                #self.network_model.reset_dataset()
+                # gradient_eval = self.network_model.sess.run(
+                #     self.network_model.gradients[replica_index],
+                #     feed_dict=feed_dict)
+                # print(gradient_eval)
+
+                hessian_eval = self.network_model.sess.run(
+                    self.network_model.hessians[replica_index],
+                    feed_dict=feed_dict)
+                #print(hessian_eval)
+                _data.hessian_eigenvalues.append(np.linalg.eigvals(hessian_eval))
+                logging.info("Max and min eigenvalues of hessian: "+str(_data.hessian_eigenvalues[0:2]) \
+                             +"..."+str(_data.hessian_eigenvalues[-3:-1]))
 
         # set FLAGS back to old values
         FLAGS.step_width = sampler_step_width

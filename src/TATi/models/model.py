@@ -750,8 +750,16 @@ class model:
                 depending on whether either parameter has evaluated to True
         """
         placeholder_nodes = [self.nn[replica_index].get_dict_of_nodes(
-            ["covariance_blending", "friction_constant", "inverse_temperature", "step_width", "current_step", "next_eval_step", "y_"])
+            ["covariance_blending", "friction_constant", "inverse_temperature", \
+             "step_width", "current_step", "next_eval_step", "y_"])
             for replica_index in range(self.FLAGS.parallel_replica)]
+        # since learning_rate is a summary node we need to feed it although it is
+        # used in training, not sampling
+        for replica_index in range(self.FLAGS.parallel_replica):
+            if "learning_rate" in self.nn[replica_index].placeholder_nodes.keys():
+                placeholder_nodes[replica_index].update({
+                    "learning_rate": self.nn[replica_index].placeholder_nodes["learning_rate"]
+                })
 
         list_of_nodes = ["sample_step", "accuracy", "global_step", "loss"]
         test_nodes = [[self.summary]*self.FLAGS.parallel_replica]
@@ -821,6 +829,10 @@ class model:
                 placeholder_nodes[replica_index]["inverse_temperature"]: self.FLAGS.inverse_temperature,
                 placeholder_nodes[replica_index]["friction_constant"]: self.FLAGS.friction_constant,
             })
+            if "learning_rate" in placeholder_nodes[replica_index].keys():
+                feed_dict.update({
+                    placeholder_nodes[replica_index]["learning_rate"]: self.FLAGS.step_width,
+                })
             if self.FLAGS.dropout is not None:
                 feed_dict.update({
                     self.keep_prob: self.FLAGS.dropout,
@@ -831,7 +843,6 @@ class model:
                 })
             #if self.FLAGS.sampler == "HamiltonianMonteCarlo":
             feed_dict.update({
-                placeholder_nodes[replica_index]["step_width"]: self.FLAGS.step_width,
                 placeholder_nodes[replica_index]["current_step"]: 0,
                 placeholder_nodes[replica_index]["next_eval_step"]: self.FLAGS.hamiltonian_dynamics_time
             })
