@@ -416,7 +416,8 @@ class model:
                         # startup quite a bit even when hessians are not evaluated.
                         #print("GRADIENTS")
                         vectorized_gradients = []
-                        for tensor in self.trainables[-1]:
+                        trainables = tf.get_collection_ref(self.trainables[-1])
+                        for tensor in trainables:
                             grad = tf.gradients(self.loss, tensor)
                             print(grad)
                             vectorized_gradients.append(tf.reshape(grad, [-1]))
@@ -424,8 +425,8 @@ class model:
 
                     if self.FLAGS.do_hessians:
                         #print("HESSIAN")
-                        self.hessians = []
                         total_dofs = 0
+                        hessians = []
                         for gradient in vectorized_gradients:
                             dofs = int(np.cumprod(gradient.shape))
                             total_dofs += dofs
@@ -435,11 +436,11 @@ class model:
                             # split the gradients into its components and do gradient on each
                             split_gradient = tf.split(gradient, num_or_size_splits=dofs)
                             for splitgrad in split_gradient:
-                                for othertensor in self.trainables[-1]:
+                                for othertensor in trainables:
                                     grad = tf.gradients(splitgrad, othertensor)
-                                    self.hessians.append(
+                                    hessians.append(
                                         tf.reshape(grad, [-1]))
-                        self.hessians.append(tf.reshape(tf.concat(self.hessians, axis=0), [total_dofs, total_dofs]))
+                        self.hessians.append(tf.reshape(tf.concat(hessians, axis=0), [total_dofs, total_dofs]))
         else:
             self.loss = []
             for i in range(self.FLAGS.parallel_replica):

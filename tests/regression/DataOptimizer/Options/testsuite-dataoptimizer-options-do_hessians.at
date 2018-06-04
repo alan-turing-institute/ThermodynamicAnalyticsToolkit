@@ -36,7 +36,7 @@ AT_CHECK([../../../TATiOptimizer \
 	--trajectory_file trajectory-do_hessians.csv
 ], 0, [stdout], [stderr])
 
-AT_CHECK([grep "Optimal step width would be " stdout], 0, [ignore], [ignore])
+AT_CHECK([grep "Optimal step width would be 1.0" stdout], 0, [ignore], [ignore])
 
 AT_CLEANUP
 
