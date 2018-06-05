@@ -750,16 +750,8 @@ class model:
                 depending on whether either parameter has evaluated to True
         """
         placeholder_nodes = [self.nn[replica_index].get_dict_of_nodes(
-            ["covariance_blending", "friction_constant", "inverse_temperature", \
-             "step_width", "current_step", "next_eval_step", "y_"])
+            ["current_step", "next_eval_step"])
             for replica_index in range(self.FLAGS.parallel_replica)]
-        # since learning_rate is a summary node we need to feed it although it is
-        # used in training, not sampling
-        for replica_index in range(self.FLAGS.parallel_replica):
-            if "learning_rate" in self.nn[replica_index].placeholder_nodes.keys():
-                placeholder_nodes[replica_index].update({
-                    "learning_rate": self.nn[replica_index].placeholder_nodes["learning_rate"]
-                })
 
         list_of_nodes = ["sample_step", "accuracy", "global_step", "loss"]
         test_nodes = [[self.summary]*self.FLAGS.parallel_replica]
@@ -818,34 +810,12 @@ class model:
                     np.zeros((steps, no_params)),
                     columns=header))
 
-        feed_dict = {}
         # place in feed dict: We have to supply all placeholders (regardless of
         # which the employed sampler actually requires) because of the evaluated
         # summary! All of the placeholder nodes are also summary nodes.
+        feed_dict = {}
         for replica_index in range(self.FLAGS.parallel_replica):
-            feed_dict.update({
-                placeholder_nodes[replica_index]["covariance_blending"]: self.FLAGS.covariance_blending,
-                placeholder_nodes[replica_index]["step_width"]: self.FLAGS.step_width,
-                placeholder_nodes[replica_index]["inverse_temperature"]: self.FLAGS.inverse_temperature,
-                placeholder_nodes[replica_index]["friction_constant"]: self.FLAGS.friction_constant,
-            })
-            if "learning_rate" in placeholder_nodes[replica_index].keys():
-                feed_dict.update({
-                    placeholder_nodes[replica_index]["learning_rate"]: self.FLAGS.step_width,
-                })
-            if self.FLAGS.dropout is not None:
-                feed_dict.update({
-                    self.keep_prob: self.FLAGS.dropout,
-                })
-            else:
-                feed_dict.update({
-                    self.keep_prob: 0.,
-                })
-            #if self.FLAGS.sampler == "HamiltonianMonteCarlo":
-            feed_dict.update({
-                placeholder_nodes[replica_index]["current_step"]: 0,
-                placeholder_nodes[replica_index]["next_eval_step"]: self.FLAGS.hamiltonian_dynamics_time
-            })
+            feed_dict.update(self._create_default_feed_dict_with_constants(replica_index))
 
         # check that sampler's parameters are actually used
         for replica_index in range(self.FLAGS.parallel_replica):
@@ -1153,6 +1123,49 @@ class model:
 
         return run_info, trajectory, averages
 
+    def _create_default_feed_dict_with_constants(self, replica_index=0):
+        """ Construct an initial feed dict from all constant parameters
+        such as step width, ...
+
+        Here, we check whether the respective placeholder node is contained
+        in the neural network and only in that case add the value to the
+        feed_dict.
+
+        Basically, we connect entries in the "FLAGS" structure that is parsed
+        from cmd-line or created through `setup_parameters()` with the slew of
+        placeholders in tensorflow's neural network.
+
+        :param replica_index: index of walker whose placeholders to feed
+        :return: feed_dict with constant parameters
+        """
+
+        # add sampler options only when they are present in parameter struct
+        param_dict = {}
+        for key in ["covariance_blending", "friction_constant", "inverse_temperature", "sigma", "sigmaA"]:
+            if hasattr(self.FLAGS, key):
+                param_dict[key] = getattr(self.FLAGS, key)
+        # special case because key and attribute's name differ
+        if hasattr(self.FLAGS, "hamiltonian_dynamics_time"):
+            param_dict["next_eval_step"] = self.FLAGS.hamiltonian_dynamics_time
+
+        # add other options that are present in any case
+        param_dict.update({
+            "current_step": 0,
+            "keep_probability": self.FLAGS.dropout if self.FLAGS.dropout is not None else 0.,
+            "learning_rate": self.FLAGS.step_width,
+            "step_width": self.FLAGS.step_width,
+        })
+
+        # for each parameter check for placeholder and add to dict on its presence
+        default_feed_dict = {}
+        for key in param_dict.keys():
+            if key in self.nn[replica_index].placeholder_nodes.keys():
+                default_feed_dict.update({
+                    self.nn[replica_index].placeholder_nodes[key]: param_dict[key]})
+
+        return default_feed_dict
+
+
     def train(self, replica_index=0, return_run_info = False, return_trajectories = False, return_averages=False):
         """ Performs the actual training of the neural network `nn` given a dataset `ds` and a
         Session `session`.
@@ -1209,6 +1222,8 @@ class model:
                 np.zeros((steps, no_params)),
                 columns=header)
 
+        default_feed_dict = self._create_default_feed_dict_with_constants(replica_index)
+
         logging.info("Starting to train")
         last_time = time.process_time()
         for current_step in range(self.FLAGS.max_steps):
@@ -1218,15 +1233,11 @@ class model:
             features, labels = self.input_pipeline.next_batch(self.sess)
 
             # place in feed dict
-            feed_dict = {
+            feed_dict = default_feed_dict.copy()
+            feed_dict.update({
                 self.xinput: features,
-                placeholder_nodes["y_"]: labels,
-                placeholder_nodes["learning_rate"]: self.FLAGS.step_width
-            }
-            if self.FLAGS.dropout is not None:
-                feed_dict.update({self.keep_prob: self.FLAGS.dropout})
-            else:
-                feed_dict.update({self.keep_prob: 0.})
+                self.true_labels: labels
+            })
             #logging.debug("batch is x: "+str(features[:])+", y: "+str(labels[:]))
 
             # zero accumulated gradient
