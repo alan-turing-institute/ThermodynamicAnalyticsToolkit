@@ -32,7 +32,7 @@ features, labels = nn.input_pipeline.next_batch(nn.sess,
                                                 auto_reset=True)
 feed_dict = {
     nn.xinput: features,
-    nn.nn.placeholder_nodes["y_"]: labels}
+    nn.nn[0].placeholder_nodes["y_"]: labels}
 
 # simply evaluate loss
 loss_eval = nn.sess.run(nn.loss, feed_dict=feed_dict)

@@ -37,5 +37,5 @@ run_info, trajectory, _ = nn.sample(return_run_info=True, \
 nn.finish()
 
 print("Sample results")
-print(np.asarray(run_info[0:10]))
-print(np.asarray(trajectory[0:10]))
+print(np.asarray(run_info[0][0:10]))
+print(np.asarray(trajectory[0][0:10]))

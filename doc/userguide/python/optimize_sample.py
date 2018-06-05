@@ -35,5 +35,5 @@ sample_run_info, sample_trajectory, _ = nn.sample( \
 nn.finish()
 
 print("Sample results")
-print(np.asarray(sample_run_info[0:10]))
-print(np.asarray(sample_trajectory[0:10]))
+print(np.asarray(sample_run_info[0][0:10]))
+print(np.asarray(sample_trajectory[0][0:10]))
