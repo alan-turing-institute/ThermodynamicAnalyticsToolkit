@@ -189,8 +189,9 @@ class HamiltonianMonteCarloSampler(StochasticGradientLangevinDynamicsSampler):
 
         # DONT use nodes in the control_dependencies, always functions!
         def step_block():
-            with tf.control_dependencies([state_ops.assign_add(var, scaled_momentum)]):
-                return tf.identity(old_total_energy_t)
+            with tf.control_dependencies([virial_global_t]):
+                with tf.control_dependencies([state_ops.assign_add(var, scaled_momentum)]):
+                    return tf.identity(old_total_energy_t)
 
         # make sure virial and gradients are evaluated before we update variables
         with tf.control_dependencies([virial_global_t, gradient_global_t]):

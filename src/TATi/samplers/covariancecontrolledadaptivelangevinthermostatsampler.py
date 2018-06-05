@@ -117,7 +117,8 @@ class CovarianceControlledAdaptiveLangevinThermostat(GeometricLangevinAlgorithmS
         momentum_half_step_plus_noise_t = momentum_half_step_t + scaled_noise
 
         #x = step.A(x, p, 0.5 * self.dt, 1.)
-        var_update_half_step_t = state_ops.assign_add(var, 0.5 * step_width_t * momentum_half_step_plus_noise_t)
+        with tf.control_dependencies([virial_global_t]):
+            var_update_half_step_t = state_ops.assign_add(var, 0.5 * step_width_t * momentum_half_step_plus_noise_t)
 
         #gammaAdapt = gammaAdapt + (np.dot(p, p) - self.dim * self.T) * 0.5 * self.dt
         with tf.control_dependencies([momentum_half_step_plus_noise_t]):

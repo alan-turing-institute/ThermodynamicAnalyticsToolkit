@@ -87,7 +87,7 @@ class GeometricLangevinAlgorithmSecondOrderSampler(GeometricLangevinAlgorithmFir
         prior_force = step_width_t * (ub_repell + lb_repell)
 
         # make sure virial and gradients are evaluated before we update variables
-        with tf.control_dependencies([virial_global_t, gradient_global_t]):
+        with tf.control_dependencies([virial_global_t]):
             # q=^{n+1} = q^n + M^{-1} p_{n+1/2} ∆t
             var_update = state_ops.assign_add(var, step_width_t * momentum_t - prior_force)
 
@@ -97,6 +97,7 @@ class GeometricLangevinAlgorithmSecondOrderSampler(GeometricLangevinAlgorithmFir
             momentum_global_t = tf.assign_add(momentum_global, tf.reduce_sum(tf.multiply(momentum_t, momentum_t)))
 
         # note: these are evaluated in any order, use control_dependencies if required
-        return control_flow_ops.group(*[gradient_global_t, virial_global_t, var_update,
-                                        noise_global_t, momentum_t, momentum_global_t,
-                                        kinetic_energy_t])
+        return control_flow_ops.group(*[noise_global_t, gradient_global_t, virial_global_t, kinetic_energy_t,
+                                        var_update,
+                                        momentum_t, momentum_global_t,
+                                        ])

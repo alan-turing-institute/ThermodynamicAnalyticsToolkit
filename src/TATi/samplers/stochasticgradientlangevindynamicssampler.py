@@ -193,11 +193,12 @@ class StochasticGradientLangevinDynamicsSampler(optimizer.Optimizer):
         prior_force = step_width_t * (ub_repell + lb_repell)
 
         # make sure virial and gradients are evaluated before we update variables
-        with tf.control_dependencies([virial_global_t, gradient_global_t, noise_global_t]):
+        with tf.control_dependencies([virial_global_t]):
             var_update = state_ops.assign_sub(var, scaled_gradient + scaled_noise + prior_force)
 
         # note: these are evaluated in any order, use control_dependencies if required
-        return control_flow_ops.group(*[virial_global_t, var_update, gradient_global_t, noise_global_t])
+        return control_flow_ops.group(*[virial_global_t, gradient_global_t, noise_global_t,
+                                        var_update])
 
     def _apply_sparse(self, grad, var):
         """ Adds nodes to TensorFlow's computational graph in the case of sparsely
