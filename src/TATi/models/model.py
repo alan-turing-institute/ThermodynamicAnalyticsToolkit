@@ -390,14 +390,13 @@ class model:
                 if self.FLAGS.do_hessians:
                     self.hessians = []
             self.true_labels = NeuralNetwork.add_true_labels(self.output_dimension)
-            # always create the placeholder ("keep_prob") ...
-            self.keep_prob = NeuralNetwork.add_keep_probability()
-            keep_prob = None if self.FLAGS.dropout is None else self.keep_prob
             for i in range(self.FLAGS.parallel_replica):
                 with tf.name_scope('replica'+str(i+1)):
                     self.trainables.append('trainables_replica'+str(i+1))
                     self.nn.append(NeuralNetwork())
                     self.nn[-1].placeholder_nodes['y_'] = self.true_labels
+                    keep_prob_node = self.nn[-1].add_keep_probability()
+                    keep_prob = None if self.FLAGS.dropout is None else keep_prob_node
                     hidden_dimension = [int(i) for i in get_list_from_string(self.FLAGS.hidden_dimension)]
                     activations = NeuralNetwork.get_activations()
                     if self.FLAGS.seed is not None:

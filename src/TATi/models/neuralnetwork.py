@@ -468,8 +468,7 @@ class NeuralNetwork(object):
 
         return last_layer
 
-    @staticmethod
-    def add_keep_probability():
+    def add_keep_probability(self):
         """ Adds a placeholder node for the keep probability of dropped layers.
 
         See :method:`neuralnetwork.add_hidden_layers`
@@ -479,6 +478,7 @@ class NeuralNetwork(object):
         keep_prob = tf.placeholder(dds_basetype, name="keep_probability")
         with tf.name_scope('dropout'):
             tf.summary.scalar('dropout_keep_probability', keep_prob)
+        self.placeholder_nodes['keep_probability'] = keep_prob
         return keep_prob
 
     def add_writers(self, sess, log_dir):
