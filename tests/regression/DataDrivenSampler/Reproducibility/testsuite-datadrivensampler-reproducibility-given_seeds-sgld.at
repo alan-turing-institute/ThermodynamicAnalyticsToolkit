@@ -1,0 +1,52 @@
+#
+#    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
+#    Copyright (C) 2017 The University of Edinburgh
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### test on reproducible runs using two clusters dataset
+
+AT_SETUP([Sampler Reproducibility SGLD - same and different seed])
+AT_KEYWORDS([reproducibility seed twoclusters tatisampler sgld])
+
+# dataset prepared as follows:
+# TATiDatasetWriter --data_type 2 --dimension 10 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+
+seeds=("426" "426" "427")
+sampler="StochasticGradientLangevinDynamics"
+
+for i in `seq 0 $((${#seeds[*]}-1))`; do
+    seed=${seeds[[$i]]}
+    AT_CHECK([../../../TATiSampler \
+        --batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Reproducibility/pre/dataset-twoclusters.csv \
+        --batch_size 10 \
+        --hidden_dimension 2 \
+        --inverse_temperature 1 \
+        --max_steps 20 \
+        --run_file run-$i.csv \
+        --sampler $sampler \
+        --seed $seed \
+        --step_width 0.03
+    ], 0, [stdout], [stderr])
+done
+
+# now compare all (exclude time_per_nth_step column)
+AT_CHECK([../../../NumericalDiff \
+    --column_drop time_per_nth_step id -- \
+    run-0.csv run-1.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff \
+    --column_drop time_per_nth_step id -- \
+    run-0.csv run-2.csv], 1, [ignore], [ignore])
+
+AT_CLEANUP

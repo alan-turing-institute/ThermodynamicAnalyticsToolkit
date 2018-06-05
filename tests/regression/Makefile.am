@@ -36,7 +36,12 @@ TESTSCRIPTS += \
 	$(srcdir)/DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-tethering.at \
 	$(srcdir)/DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-tethering-squared.at \
 	$(srcdir)/DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-upper_boundary.at \
-	$(srcdir)/DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-given_seeds.at \
+	$(srcdir)/DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-given_seeds-baoab.at \
+	$(srcdir)/DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-given_seeds-ccadl.at \
+	$(srcdir)/DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-given_seeds-gla1.at \
+	$(srcdir)/DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-given_seeds-gla2.at \
+	$(srcdir)/DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-given_seeds-sgld.at \
+	$(srcdir)/DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-given_seeds-hmc.at \
 	$(srcdir)/DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-no_seeds.at \
 	$(srcdir)/DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-baoab.at \
 	$(srcdir)/DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-ccadl.at \
