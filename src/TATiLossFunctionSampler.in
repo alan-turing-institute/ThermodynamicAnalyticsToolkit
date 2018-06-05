@@ -85,11 +85,13 @@ def getNumberFromParameter(key, name):
     return int(name[start:])
 
 def main(_):
+    FLAGS.parallel_replica = 1
+
     network_model = model(FLAGS)
     network_model.init_network(FLAGS.restore_model, setup=None)
 
-    nn_weights = network_model.weights
-    nn_biases = network_model.biases
+    nn_weights = network_model.weights[0]
+    nn_biases = network_model.biases[0]
 
     weights_vals = nn_weights.create_flat_vector()
     biases_vals = nn_biases.create_flat_vector()
@@ -130,8 +132,8 @@ def main(_):
     network_model.reset_dataset()
     print(FLAGS)
 
-    loss = network_model.nn.get_list_of_nodes(["loss"])
-    acc = network_model.nn.get_list_of_nodes(["accuracy"])
+    loss = network_model.nn[0].get_list_of_nodes(["loss"])
+    acc = network_model.nn[0].get_list_of_nodes(["accuracy"])
     sess = network_model.sess
 
     ## set up output csv file
@@ -155,7 +157,7 @@ def main(_):
         # place in feed dict
         feed_dict = {
             network_model.xinput: features,
-            network_model.nn.placeholder_nodes["y_"]: labels
+            network_model.nn[0].placeholder_nodes["y_"]: labels
         }
 
         loss_eval, acc_eval = sess.run([loss, acc], feed_dict=feed_dict)
@@ -183,8 +185,8 @@ def main(_):
             FLAGS.parse_steps is not None and (len(FLAGS.parse_steps) == 1):
 
         # evaluate weights and biases to obtain interval centers from parsed file
-        weights_eval = network_model.weights.evaluate(network_model.sess)
-        biases_eval = network_model.biases.evaluate(network_model.sess)
+        weights_eval = nn_weights.evaluate(network_model.sess)
+        biases_eval = nn_biases.evaluate(network_model.sess)
 
         weights_index_grid = np.zeros(weights_vals.size, dtype=int)
         biases_index_grid = np.zeros(biases_vals.size, dtype=int)
