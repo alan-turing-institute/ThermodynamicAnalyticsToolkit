@@ -124,12 +124,13 @@ def main(_):
 
     FLAGS.batch_size=1
     FLAGS.max_steps=input_total_vals
+    FLAGS.parallel_replica=1
     network_model = model(FLAGS)
     network_model.init_input_pipeline()
     network_model.init_network(FLAGS.restore_model, setup=None)
     network_model.reset_dataset()
 
-    y = network_model.nn.get_list_of_nodes(["y"])
+    y = network_model.nn[0].get_list_of_nodes(["y"])
     sess = network_model.sess
 
     if FLAGS.csv_file is not None:
@@ -154,7 +155,7 @@ def main(_):
         print(np.asarray(features[0]))
 
         label = network_model.sess.run(
-            network_model.nn.placeholder_nodes["y"],
+            network_model.nn[0].placeholder_nodes["y"],
             feed_dict=feed_dict)
 
         if FLAGS.csv_file is not None:
