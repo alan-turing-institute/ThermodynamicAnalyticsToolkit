@@ -92,7 +92,7 @@ class model:
 
     def init_input_pipeline(self):
         self.batch_next = self.create_input_pipeline(self.FLAGS)
-        self.input_pipeline.reset(self.sess)
+        #self.input_pipeline.reset(self.sess)
 
     @staticmethod
     def _get_dimension_from_tfrecord(filenames):
@@ -365,6 +365,36 @@ class model:
 
         #if setup == "sample":
         self.create_resource_variables()
+        self.placeholder_dict = {}
+        self.variable_dict = {}
+        self.assign_dict = {}
+        with tf.variable_scope("accumulate", reuse=True):
+            # global variables for all samplers
+            self.variable_dict["old_loss"] = tf.get_variable("old_loss", dtype=dds_basetype)
+            self.variable_dict["old_kinetic_energy"] = tf.get_variable("old_kinetic", dtype=dds_basetype)
+            self.variable_dict["kinetic_energy"] = tf.get_variable("kinetic", dtype=dds_basetype)
+            self.assign_dict["kinetic_energy"] = self.variable_dict["kinetic_energy"].assign(0.)
+            self.variable_dict["total_energy"] = tf.get_variable("total_energy", dtype=dds_basetype)
+            self.variable_dict["momenta"] = tf.get_variable("momenta", dtype=dds_basetype)
+            self.assign_dict["momenta"] = self.variable_dict["momenta"].assign(0.)
+            self.variable_dict["gradients"] = tf.get_variable("gradients", dtype=dds_basetype)
+            self.assign_dict["gradients"] = self.variable_dict["gradients"].assign(0.)
+            self.variable_dict["virials"] = tf.get_variable("virials", dtype=dds_basetype)
+            self.assign_dict["virials"] = self.variable_dict["virials"].assign(0.)
+            self.variable_dict["noise"] = tf.get_variable("noise", dtype=dds_basetype)
+            self.assign_dict["noise"] = self.variable_dict["noise"].assign(0.)
+            self.variable_dict["accepted"] = tf.get_variable("accepted", dtype=tf.int64)
+            self.assign_dict["accepted"] = self.variable_dict["accepted"].assign(0)
+            self.variable_dict["rejected"] = tf.get_variable("rejected", dtype=tf.int64)
+            self.assign_dict["rejected"] = self.variable_dict["rejected"].assign(0)
+            # global variables specific to HMC
+            self.placeholder_dict["var_loss"] = tf.placeholder(self.variable_dict["old_loss"].dtype.base_dtype, name="var_loss")
+            self.placeholder_dict["var_kin"] = tf.placeholder(self.variable_dict["old_kinetic_energy"].dtype.base_dtype, name="var_kinetic")
+            self.placeholder_dict["var_total"] = tf.placeholder(self.variable_dict["total_energy"].dtype.base_dtype, name="var_total")
+            self.assign_dict["old_loss"] = self.variable_dict["old_loss"].assign(self.placeholder_dict["var_loss"])
+            self.assign_dict["old_kinetic_energy"] = self.variable_dict["old_kinetic_energy"].assign(self.placeholder_dict["var_kin"])
+            self.assign_dict["total_energy"] = self.variable_dict["total_energy"].assign(self.placeholder_dict["var_total"])
+
 
         if self.nn is None:
             self.nn = NeuralNetwork()
@@ -470,6 +500,16 @@ class model:
                     intra_op_parallelism_threads=self.FLAGS.intra_ops_threads,
                     inter_op_parallelism_threads=self.FLAGS.inter_ops_threads))
 
+        if self.weights is None:
+            self.weights = neuralnet_parameters(tf.get_collection(tf.GraphKeys.WEIGHTS))
+        if self.biases is None:
+            self.biases = neuralnet_parameters(tf.get_collection(tf.GraphKeys.BIASES))
+
+        if self.FLAGS.fix_parameters is not None:
+            fix_parameter_assigns = self.create_assign_parameters(fixed_variables, values)
+
+        ### Now the session object is created, graph must be done here!
+
         # initialize constants in graph
         self.nn.init_graph(self.sess)
 
@@ -478,7 +518,7 @@ class model:
 
         if self.FLAGS.fix_parameters is not None:
             logging.debug("Assigning the following values to fixed degrees of freedom: "+str(values))
-            self.assign_parameters(fixed_variables, values)
+            self.sess.run(fix_parameter_assigns)
 
         # assign state of model from file if given
         if filename is not None:
@@ -489,11 +529,6 @@ class model:
             restore_path = filename.replace('.meta', '')
             self.saver.restore(self.sess, restore_path)
             logging.info("Model restored from file: %s" % restore_path)
-
-        if self.weights is None:
-            self.weights = neuralnet_parameters(tf.get_collection(tf.GraphKeys.WEIGHTS))
-        if self.biases is None:
-            self.biases = neuralnet_parameters(tf.get_collection(tf.GraphKeys.BIASES))
 
         # assign parameters of NN from step in given file
         if self.FLAGS.parse_parameters_file is not None \
@@ -585,26 +620,6 @@ class model:
         :return: either twice None or a pandas dataframe depending on whether either
                 parameter has evaluated to True
         """
-        # create global variable to hold kinetic energy
-        with tf.variable_scope("accumulate", reuse=True):
-            old_loss_t = tf.get_variable("old_loss", dtype=dds_basetype)
-            old_kinetic_energy_t = tf.get_variable("old_kinetic", dtype=dds_basetype)
-            kinetic_energy_t = tf.get_variable("kinetic", dtype=dds_basetype)
-            zero_kinetic_energy = kinetic_energy_t.assign(0.)
-            total_energy_t = tf.get_variable("total_energy", dtype=dds_basetype)
-            momenta_t = tf.get_variable("momenta", dtype=dds_basetype)
-            zero_momenta = momenta_t.assign(0.)
-            gradients_t = tf.get_variable("gradients", dtype=dds_basetype)
-            zero_gradients = gradients_t.assign(0.)
-            virials_t = tf.get_variable("virials", dtype=dds_basetype)
-            zero_virials = virials_t.assign(0.)
-            noise_t = tf.get_variable("noise", dtype=dds_basetype)
-            zero_noise = noise_t.assign(0.)
-            accepted_t = tf.get_variable("accepted", dtype=tf.int64)
-            zero_accepted = accepted_t.assign(0)
-            rejected_t = tf.get_variable("rejected", dtype=tf.int64)
-            zero_rejected = rejected_t.assign(0)
-
         placeholder_nodes = self.nn.get_dict_of_nodes(
             ["friction_constant", "inverse_temperature", "step_width", "current_step", "next_eval_step", "y_"])
         test_nodes = self.nn.get_list_of_nodes(["merged", "sample_step", "accuracy", "global_step", "loss", "y_", "y"])
@@ -671,16 +686,14 @@ class model:
 
         # create extra nodes for HMC
         if self.FLAGS.sampler == "HamiltonianMonteCarlo":
-            HMC_eval_nodes = self.nn.get_list_of_nodes(["loss"]) + [total_energy_t, kinetic_energy_t]
-            var_loss_t = tf.placeholder(old_loss_t.dtype.base_dtype, name="var_loss")
-            var_kin_t = tf.placeholder(old_kinetic_energy_t.dtype.base_dtype, name="var_kinetic")
-            var_total_t = tf.placeholder(total_energy_t.dtype.base_dtype, name="var_total")
-            HMC_set_nodes = [old_loss_t.assign(var_loss_t),
-                             old_kinetic_energy_t.assign(var_kin_t)]
-            HMC_set_all_nodes = [total_energy_t.assign(var_total_t)]+HMC_set_nodes
+            HMC_eval_nodes = self.nn.get_list_of_nodes(["loss"]) \
+                             + [self.variable_dict["total_energy"], self.variable_dict["kinetic_energy"]]
+            HMC_set_nodes = [self.assign_dict["old_loss"], self.assign_dict["old_kinetic_energy"]]
+            HMC_set_all_nodes = [self.assign_dict["total_energy"]] + HMC_set_nodes
 
         # zero rejection rate before sampling start
-        check_accepted, check_rejected = self.sess.run([zero_accepted, zero_rejected])
+        check_accepted, check_rejected = self.sess.run([self.assign_dict["accepted"],
+                                                        self.assign_dict["rejected"]])
         assert(check_accepted == 0)
         assert(check_rejected == 0)
 
@@ -707,7 +720,10 @@ class model:
                 placeholder_nodes["inverse_temperature"]: self.FLAGS.inverse_temperature,
                 placeholder_nodes["friction_constant"]: self.FLAGS.friction_constant,
                 placeholder_nodes["current_step"]: current_step,
-                placeholder_nodes["next_eval_step"]: HMC_steps
+                placeholder_nodes["next_eval_step"]: HMC_steps,
+                self.placeholder_dict["var_kin"]: 0.,
+                self.placeholder_dict["var_loss"]: 0.,
+                self.placeholder_dict["var_total"]: 0.
             }
             if self.FLAGS.dropout is not None:
                 feed_dict.update({placeholder_nodes["keep_prob"] : self.FLAGS.dropout})
@@ -717,9 +733,9 @@ class model:
             if self.FLAGS.sampler == "HamiltonianMonteCarlo":
                 loss_eval, total_eval, kin_eval = self.sess.run(HMC_eval_nodes, feed_dict=feed_dict)
                 HMC_set_dict = {
-                    var_kin_t: kin_eval,
-                    var_loss_t: loss_eval,
-                    var_total_t: loss_eval+kin_eval
+                    self.placeholder_dict["var_kin"]: kin_eval,
+                    self.placeholder_dict["var_loss"]: loss_eval,
+                    self.placeholder_dict["var_total"]: loss_eval+kin_eval
                 }
                 if abs(total_eval) < 1e-10:
                     self.sess.run(HMC_set_all_nodes, feed_dict=HMC_set_dict)
@@ -735,8 +751,12 @@ class model:
                                       "HamiltonianMonteCarlo",
                                       "BAOAB",
                                       "CovarianceControlledAdaptiveLangevinThermostat"]:
-                check_total, check_kinetic, check_momenta, check_gradients, check_virials, check_noise = \
-                    self.sess.run([total_energy_t, zero_kinetic_energy, zero_momenta, zero_gradients, zero_virials, zero_noise])
+                check_kinetic, check_momenta, check_gradients, check_virials, check_noise = \
+                    self.sess.run([self.assign_dict["kinetic_energy"],
+                                   self.assign_dict["momenta"],
+                                   self.assign_dict["gradients"],
+                                   self.assign_dict["virials"],
+                                   self.assign_dict["noise"]])
                 assert (abs(check_kinetic) < 1e-10)
                 assert (abs(check_momenta) < 1e-10)
                 assert (abs(check_gradients) < 1e-10)
@@ -772,16 +792,26 @@ class model:
                                       "CovarianceControlledAdaptiveLangevinThermostat"]:
                 if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
                     gradients, virials, noise = \
-                        self.sess.run([gradients_t, virials_t, noise_t])
+                        self.sess.run([self.variable_dict["gradients"],
+                                       self.variable_dict["virials"],
+                                       self.variable_dict["noise"]])
                     accumulated_virials += virials
                 elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
                     old_total_energy, kinetic_energy, momenta, gradients, virials = \
-                        self.sess.run([total_energy_t, kinetic_energy_t, momenta_t, gradients_t, virials_t])
+                        self.sess.run([self.variable_dict["total_energy"],
+                                       self.variable_dict["kinetic_energy"],
+                                       self.variable_dict["momenta"],
+                                       self.variable_dict["gradients"],
+                                       self.variable_dict["virials"]])
                     accumulated_kinetic_energy += kinetic_energy
                     accumulated_virials += virials
                 else:
                     kinetic_energy, momenta, gradients, virials, noise = \
-                        self.sess.run([kinetic_energy_t, momenta_t, gradients_t, virials_t, noise_t])
+                        self.sess.run([self.variable_dict["kinetic_energy"],
+                                       self.variable_dict["momenta"],
+                                       self.variable_dict["gradients"],
+                                       self.variable_dict["virials"],
+                                       self.variable_dict["noise"]])
                     accumulated_kinetic_energy += kinetic_energy
                     accumulated_virials += virials
             accumulated_loss_nominator += loss_eval * exp(- self.FLAGS.inverse_temperature * loss_eval)
@@ -844,7 +874,8 @@ class model:
                                                                           precision=output_precision)
                                          for x in [sqrt(gradients), abs(0.5*virials), sqrt(noise)]]
                         elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
-                            accepted_eval, rejected_eval  = self.sess.run([accepted_t, rejected_t])
+                            accepted_eval, rejected_eval  = self.sess.run([self.variable_dict["accepted"],
+                                                                           self.variable_dict["rejected"]])
                             if (rejected_eval+accepted_eval) > 0:
                                 rejection_rate = rejected_eval/(rejected_eval+accepted_eval)
                             else:
@@ -896,15 +927,9 @@ class model:
         :return: either twice None or a pandas dataframe depending on whether either
                 parameter has evaluated to True
         """
-        with tf.variable_scope("accumulate", reuse=True):
-            gradients_t = tf.get_variable("gradients", dtype=dds_basetype)
-            zero_gradients = gradients_t.assign(0.)
-            virials_t = tf.get_variable("virials", dtype=dds_basetype)
-            zero_virials = virials_t.assign(0.)
-
         placeholder_nodes = self.nn.get_dict_of_nodes(["learning_rate", "y_"])
         test_nodes = self.nn.get_list_of_nodes(["merged", "train_step", "accuracy", "global_step",
-                                                "loss", "y_", "y"])+[gradients_t]
+                                                "loss", "y_", "y"])+[self.variable_dict["gradients"]]
 
         output_width = 8
         output_precision = 8
@@ -961,7 +986,8 @@ class model:
             #logging.debug("batch is x: "+str(features[:])+", y: "+str(labels[:]))
 
             # zero accumulated gradient
-            check_gradients, check_virials = self.sess.run([zero_gradients, zero_virials])
+            check_gradients, check_virials = self.sess.run([self.assign_dict["gradients"],
+                                                            self.assign_dict["virials"]])
             assert (abs(check_gradients) < 1e-10)
             assert (abs(check_virials) < 1e-10)
 
@@ -976,7 +1002,8 @@ class model:
             summary, _, acc, global_step, loss_eval, y_true_eval, y_eval, scaled_grad = \
                 self.sess.run(test_nodes, feed_dict=feed_dict)
 
-            gradients, virials = self.sess.run([gradients_t, virials_t])
+            gradients, virials = self.sess.run([self.variable_dict["gradients"],
+                                                self.variable_dict["virials"]])
             accumulated_virials += virials
 
             if current_step % self.FLAGS.every_nth == 0:
@@ -1258,8 +1285,8 @@ class model:
             logging.debug("Step " + str(step) + " not found in file.")
             return None
 
-    def assign_parameters(self, variables, values):
-        """ Allows to assign multiple parameters at once.
+    def create_assign_parameters(self, variables, values):
+        """ Creates assignment operation for multiple parameters at once.
 
         :param variables: list of tensorflow variables
         :param values: list of values to assign to
@@ -1271,7 +1298,8 @@ class model:
                 variables[i],
                 np.reshape(values[i], newshape=variables[i].shape))
             assigns.append(assign_t)
-        self.sess.run(assigns)
+
+        return assigns
 
     @staticmethod
     def split_parameters_as_names_values(_string):

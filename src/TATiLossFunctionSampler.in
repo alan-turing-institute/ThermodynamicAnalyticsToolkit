@@ -127,6 +127,7 @@ def main(_):
     network_model.reset_parameters(FLAGS)
 
     network_model.init_input_pipeline()
+    network_model.reset_dataset()
     print(FLAGS)
 
     loss = network_model.nn.get_list_of_nodes(["loss"])

@@ -12,8 +12,9 @@ FLAGS = model.setup_parameters(
     step_width=1e-2
 )
 nn = model(FLAGS)
-nn.init_network(None, setup="train")
 nn.init_input_pipeline()
+nn.init_network(None, setup="train")
+nn.reset_dataset()
 opt_run_info, opt_trajectory, _ = nn.train( \
     return_run_info=True, return_trajectories=True)
 
@@ -21,10 +22,12 @@ FLAGS.max_steps = 1000
 FLAGS.sampler = "GeometricLangevinAlgorithm_2ndOrder"
 nn.reset_parameters(FLAGS)
 nn.init_network(None, setup="sample")
+nn.reset_dataset()
 
 # redo the input pipeline and its dataset as max_steps has changed
 # and this the number of internal copies of the dataset.
 nn.init_input_pipeline()
+nn.reset_dataset()
 
 sample_run_info, sample_trajectory, _ = nn.sample( \
     return_run_info=True, return_trajectories=True)

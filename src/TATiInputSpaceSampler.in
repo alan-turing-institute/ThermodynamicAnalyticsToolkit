@@ -125,8 +125,9 @@ def main(_):
     FLAGS.batch_size=1
     FLAGS.max_steps=input_total_vals
     network_model = model(FLAGS)
-    network_model.init_network(FLAGS.restore_model, setup=None)
     network_model.init_input_pipeline()
+    network_model.init_network(FLAGS.restore_model, setup=None)
+    network_model.reset_dataset()
 
     y = network_model.nn.get_list_of_nodes(["y"])
     sess = network_model.sess

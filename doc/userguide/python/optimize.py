@@ -12,8 +12,9 @@ FLAGS = model.setup_parameters(
     step_width=1e-2
 )
 nn = model(FLAGS)
-nn.init_network(None, setup="train")
 nn.init_input_pipeline()
+nn.init_network(None, setup="train")
+nn.reset_dataset()
 run_info, trajectory, averages = nn.train(return_run_info=True, \
   return_trajectories=True, return_averages=True)
 nn.finish()

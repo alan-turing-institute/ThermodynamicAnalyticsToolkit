@@ -15,9 +15,10 @@ FLAGS = model.setup_parameters(
 nn = model(FLAGS)
 
 # prepare network and input pipeline
+nn.init_input_pipeline()
 nn.init_network(None, setup="sample",
                 add_vectorized_gradients=True)
-nn.init_input_pipeline()
+nn.reset_dataset()
 
 # assign parameters of NN
 total_dof = nn.get_total_weight_dof()+nn.get_total_bias_dof()
