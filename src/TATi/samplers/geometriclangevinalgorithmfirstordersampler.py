@@ -92,7 +92,7 @@ class GeometricLangevinAlgorithmFirstOrderSampler(StochasticGradientLangevinDyna
         ub_repell, lb_repell = self._apply_prior(var)
         prior_force = step_width_t * (ub_repell + lb_repell)
 
-        # make sure virial and gradients are evaluated before we update variables
+        # make sure virial is evaluated before we update variables
         with tf.control_dependencies([virial_global_t]):
             # q=^{n+1} = q^n + M^{-1} p_{n+1} ∆t
             var_update = state_ops.assign_add(var, step_width_t * momentum_full_step_t - prior_force)

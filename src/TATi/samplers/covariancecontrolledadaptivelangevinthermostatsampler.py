@@ -152,10 +152,11 @@ class CovarianceControlledAdaptiveLangevinThermostat(GeometricLangevinAlgorithmS
                 return tf.identity(momentum)
 
         # if (np.abs(gammaAdapt) < 0.1):
-        if_block_t = tf.cond(
-            tf.less(tf.abs(gammaAdapt_half_step_t), tf.constant(0.1, dtype=dds_basetype)),
-            accept_block,
-            reject_block)
+        with tf.control_dependencies([total_noise_init_t, momentum_half_step_plus_noise_t, scaled_noiseA, new_noise]):
+            if_block_t = tf.cond(
+                tf.less(tf.abs(gammaAdapt_half_step_t), tf.constant(0.1, dtype=dds_basetype)),
+                accept_block,
+                reject_block)
 
         with tf.control_dependencies([if_block_t]):
            updated_kinetic_energy_t = tf.reduce_sum(tf.multiply(momentum, momentum))

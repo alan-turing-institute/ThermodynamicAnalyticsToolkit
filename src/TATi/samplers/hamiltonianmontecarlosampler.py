@@ -161,16 +161,18 @@ class HamiltonianMonteCarloSampler(StochasticGradientLangevinDynamicsSampler):
         # need to be hidden away inside tf.control_dependencies.
         # I.E. DONT PLACE INSIDE NODES (confusing indeed)
         def accept_block():
-            with tf.control_dependencies([old_total_energy_t.assign(current_energy),
-                                          initial_parameters.assign(var),
-                                          accepted_t.assign_add(1)]):
-                return tf.identity(old_total_energy_t)
+            with tf.control_dependencies([virial_global_t]):
+                with tf.control_dependencies([old_total_energy_t.assign(current_energy),
+                                              initial_parameters.assign(var),
+                                              accepted_t.assign_add(1)]):
+                    return tf.identity(old_total_energy_t)
 
         # DONT use nodes in the control_dependencies, always functions!
         def reject_block():
-            with tf.control_dependencies([var.assign(initial_parameters),
-                                          rejected_t.assign_add(1)]):
-                return tf.identity(old_total_energy_t)
+            with tf.control_dependencies([virial_global_t]):
+                with tf.control_dependencies([var.assign(initial_parameters),
+                                              rejected_t.assign_add(1)]):
+                    return tf.identity(old_total_energy_t)
 
         max_value_t = tf.constant(1.0, dtype=dds_basetype)
         p_accept = tf.minimum(max_value_t, tf.exp(old_total_energy_t - current_energy))
@@ -194,10 +196,9 @@ class HamiltonianMonteCarloSampler(StochasticGradientLangevinDynamicsSampler):
                     return tf.identity(old_total_energy_t)
 
         # make sure virial and gradients are evaluated before we update variables
-        with tf.control_dependencies([virial_global_t, gradient_global_t]):
-            criterion_block_t = tf.cond(
-                tf.equal(current_step_t, next_eval_step_t),
-                accept_reject_block, step_block)
+        criterion_block_t = tf.cond(
+            tf.equal(current_step_t, next_eval_step_t),
+            accept_reject_block, step_block)
 
         # note: these are evaluated in any order, use control_dependencies if required
         return control_flow_ops.group(*([momentum_criterion_block_t, criterion_block_t,

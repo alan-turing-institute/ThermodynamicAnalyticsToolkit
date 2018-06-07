@@ -192,7 +192,7 @@ class StochasticGradientLangevinDynamicsSampler(optimizer.Optimizer):
         ub_repell, lb_repell = self._apply_prior(var)
         prior_force = step_width_t * (ub_repell + lb_repell)
 
-        # make sure virial and gradients are evaluated before we update variables
+        # make sure virial is evaluated before we update variables
         with tf.control_dependencies([virial_global_t]):
             var_update = state_ops.assign_sub(var, scaled_gradient + scaled_noise + prior_force)
 
