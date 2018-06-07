@@ -80,7 +80,7 @@ class CovarianceControlledAdaptiveLangevinThermostat(GeometricLangevinAlgorithmS
         scaled_noiseA = sigmaA_t * sigmaA_random_noise_t * tf.sqrt(step_width_t)
         with tf.control_dependencies([scaled_noise]):
             with tf.variable_scope("CCAdL", reuse=True):
-                total_noise = tf.get_variable("total_noise")
+                total_noise = tf.get_variable("total_noise", dtype=dds_basetype)
                 total_noise_init_t = total_noise.assign(2.0 * tf.reduce_sum(tf.multiply(scaled_noise,scaled_noise)))
 
         # p^{n}
@@ -124,7 +124,7 @@ class CovarianceControlledAdaptiveLangevinThermostat(GeometricLangevinAlgorithmS
             half_temperature_difference =  0.5 * (tf.reduce_sum(tf.multiply(momentum_half_step_plus_noise_t, momentum_half_step_plus_noise_t)) \
                                                   - dim /  inverse_temperature_t)
         with tf.variable_scope("CCAdL", reuse=True):
-            gammaAdapt = tf.get_variable("gammaAdapt")
+            gammaAdapt = tf.get_variable("gammaAdapt", dtype=dds_basetype)
             gammaAdapt_half_step_t = state_ops.assign_add(gammaAdapt,
                                                           half_temperature_difference * step_width_t)
 
@@ -152,7 +152,7 @@ class CovarianceControlledAdaptiveLangevinThermostat(GeometricLangevinAlgorithmS
 
         # if (np.abs(gammaAdapt) < 0.1):
         if_block_t = tf.cond(
-            tf.less(tf.abs(gammaAdapt_half_step_t), tf.constant(0.1)),
+            tf.less(tf.abs(gammaAdapt_half_step_t), tf.constant(0.1, dtype=dds_basetype)),
             accept_block,
             reject_block)
 
