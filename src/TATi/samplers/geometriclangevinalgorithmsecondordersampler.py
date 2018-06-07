@@ -51,6 +51,17 @@ class GeometricLangevinAlgorithmSecondOrderSampler(GeometricLangevinAlgorithmFir
         # \nabla V (q^n ) \Delta t + prior constraining force
         scaled_gradient = step_width_t * grad
 
+        with tf.variable_scope("accumulate", reuse=True):
+            gradient_global = tf.get_variable("gradients", dtype=dds_basetype)
+            gradient_global_t = tf.assign_add(gradient_global,
+                                              tf.reduce_sum(tf.multiply(scaled_gradient, scaled_gradient)),
+                                              use_locking=True)
+            # configurational temperature
+            virial_global = tf.get_variable("virials", dtype=dds_basetype)
+            virial_global_t = tf.assign_add(virial_global,
+                                            tf.reduce_sum(tf.multiply(grad, var)),
+                                            use_locking=True)
+
         # p^{n+1/2} = p^{n} − \nabla V (q^n ) \Delta t/2
         momentum_half_step_t = momentum - 0.5 * scaled_gradient
 
@@ -65,13 +76,6 @@ class GeometricLangevinAlgorithmSecondOrderSampler(GeometricLangevinAlgorithmFir
 
         # 1/2 * p^{n}^t * p^{n}
         momentum_sq = 0.5 * tf.reduce_sum(tf.multiply(momentum_noise_step_t, momentum_noise_step_t))
-
-        with tf.variable_scope("accumulate", reuse=True):
-            gradient_global = tf.get_variable("gradients", dtype=dds_basetype)
-            gradient_global_t = tf.assign_add(gradient_global, tf.reduce_sum(tf.multiply(scaled_gradient, scaled_gradient)))
-            # configurational temperature
-            virial_global = tf.get_variable("virials", dtype=dds_basetype)
-            virial_global_t = tf.assign_add(virial_global, tf.reduce_sum(tf.multiply(grad, var)))
 
         # as the loss evaluated with train_step is the "old" (not updated) loss, we
         # therefore also need to the use the old momentum for the kinetic energy
