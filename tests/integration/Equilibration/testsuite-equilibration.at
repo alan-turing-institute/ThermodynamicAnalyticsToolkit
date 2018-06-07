@@ -58,10 +58,12 @@ AT_CHECK([../../../TATiSampler \
 
 AT_CHECK([grep "11," run-restore_model.csv], 0, [ignore], [ignore])
 # compare (exclude time_per_nth_step column)
+# using decreased accuracy of 3e-7 for rounding issues, see tensorflaw sum test
 AT_CHECK([../../../NumericalDiff \
     --general_threshold 3e-7 relative \
     --column_drop time_per_nth_step id -- run-save_model.csv ${abs_top_srcdir}/tests/integration/Equilibration/post/run-save_model.csv], 0, [ignore], [ignore])
 AT_CHECK([../../../NumericalDiff \
+    --general_threshold 3e-7 relative \
     --column_drop time_per_nth_step id -- run-restore_model.csv ${abs_top_srcdir}/tests/integration/Equilibration/post/run-restore_model.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP

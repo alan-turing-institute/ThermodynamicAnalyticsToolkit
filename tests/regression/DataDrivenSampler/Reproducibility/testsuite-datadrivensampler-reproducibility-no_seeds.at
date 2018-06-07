@@ -46,7 +46,11 @@ AT_CHECK([../../../TATiSampler \
 ], 0, [stdout], [stderr])
 
 # now compare (exclude time_per_nth_step column)
-AT_CHECK([../../../NumericalDiff --column_drop time_per_nth_step id -- run-first.csv run-second.csv], 1, [ignore], [ignore])
+# using decreased accuracy of 1e-7 for rounding issues, see tensorflaw sum test
+AT_CHECK([../../../NumericalDiff \
+    --general_threshold 1e-7 relative \
+    --column_drop time_per_nth_step id -- \
+    run-first.csv run-second.csv], 1, [ignore], [ignore])
 
 AT_CLEANUP
 

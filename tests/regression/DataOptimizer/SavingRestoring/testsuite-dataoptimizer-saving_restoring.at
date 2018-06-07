@@ -51,7 +51,9 @@ AT_CHECK([../../../TATiOptimizer \
 
 AT_CHECK([grep "11," run-restore_model.csv], 0, [ignore], [ignore])
 # and compare (exclude time_per_nth_step column)
+# using decreased accuracy of 3e-7 for rounding issues, see tensorflaw sum test
 AT_CHECK([../../../NumericalDiff \
+    --general_threshold 3e-7 relative \
     --column_drop time_per_nth_step id -- \
     run-restore_model.csv ${abs_top_srcdir}/tests/regression/DataOptimizer/SavingRestoring/post/run-restore_model.csv], 0, [ignore], [ignore])
 

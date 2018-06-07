@@ -61,10 +61,13 @@ AT_CHECK([../../../TATiOptimizer \
 ], 0, [stdout], [stderr])
 
 # now compare all (exclude time_per_nth_step column)
+# using decreased accuracy of 3e-7 for rounding issues, see tensorflaw sum test
 AT_CHECK([../../../NumericalDiff \
+    --general_threshold 3e-7 relative \
     --column_drop time_per_nth_step id \
     -- run-base.csv run-sameseed.csv], 0, [ignore], [ignore])
 AT_CHECK([../../../NumericalDiff \
+    --general_threshold 3e-7 relative \
     --column_drop time_per_nth_step id \
     -- run-base.csv run-otherseed.csv], 1, [ignore], [ignore])
 
