@@ -14,7 +14,21 @@ TESTSCRIPTS += \
 	$(srcdir)/Reproducibility/testsuite-reproducibility.at \
 	$(srcdir)/Reproducibility/testsuite-reproducibility-global_seed.at \
 	$(srcdir)/Reproducibility/testsuite-reproducibility-numerical_rounding.at \
-	$(srcdir)/Reproducibility/testsuite-reproducibility-repeat_shuffle_reproducibility.at
+	$(srcdir)/Reproducibility/testsuite-reproducibility-repeat_shuffle_reproducibility.at \
+    $(srcdir)/testsuite-cholesky.at \
+    $(srcdir)/testsuite-get_momenta_slots.at \
+    $(srcdir)/testsuite-multiple_models.at \
+    $(srcdir)/testsuite-read_MNIST.at \
+    $(srcdir)/testsuite-stack_means_cov.at \
+    $(srcdir)/testsuite-test_assign.at \
+    $(srcdir)/testsuite-test_covariance.at \
+    $(srcdir)/testsuite-test_covariance_tf.at \
+    $(srcdir)/testsuite-test_matrix_vector.at \
+    $(srcdir)/testsuite-test_stack.at \
+    $(srcdir)/testsuite-tf_cond.at \
+    $(srcdir)/testsuite-tf_size.at \
+    $(srcdir)/testsuite-train_MNIST_pipeline_in_graph.at
+
 
 EXTRA_DIST = \
 	testsuite.at \

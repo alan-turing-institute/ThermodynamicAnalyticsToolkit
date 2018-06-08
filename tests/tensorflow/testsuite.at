@@ -28,3 +28,18 @@ m4_include(Reproducibility/testsuite-reproducibility.at)
 
 # tests on flaws were variables aren't actually variables anymore
 m4_include(NonVariables/testsuite-nonvariables.at)
+
+# various small test scripts
+m4_include(testsuite-cholesky.at)
+m4_include(testsuite-get_momenta_slots.at)
+m4_include(testsuite-multiple_models.at)
+m4_include(testsuite-read_MNIST.at)
+m4_include(testsuite-stack_means_cov.at)
+m4_include(testsuite-test_assign.at)
+m4_include(testsuite-test_covariance.at)
+m4_include(testsuite-test_covariance_tf.at)
+m4_include(testsuite-test_matrix_vector.at)
+m4_include(testsuite-test_stack.at)
+m4_include(testsuite-tf_cond.at)
+m4_include(testsuite-tf_size.at)
+m4_include(testsuite-train_MNIST_pipeline_in_graph.at)

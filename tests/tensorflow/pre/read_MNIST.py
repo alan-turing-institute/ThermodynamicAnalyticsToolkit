@@ -1,0 +1,69 @@
+from TATi.models.model import model
+
+import logging
+import numpy as np
+import sys
+
+import tensorflow as tf
+
+FLAGS = model.setup_parameters(
+    batch_data_files=[sys.argv[1]],
+    batch_data_file_type="tfrecord",
+    batch_size=500,
+    hidden_dimension=["10"],
+    hidden_activation="relu",
+    input_dimension=784,
+    loss="softmax_cross_entropy",
+    max_steps=100,
+    optimizer="GradientDescent",
+    output_activation="relu",
+    output_dimension=10,
+    seed=426,
+    step_width=1e-2
+)
+logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+
+print(FLAGS.input_columns)
+
+# nn = model(FLAGS)
+# nn.init_network(None, setup="train")
+# nn.init_input_pipeline()
+#
+# nn.train(False, False, False)
+#
+# nn_parameters = np.append(nn.weights.evaluate(nn.sess),nn.biases.evaluate(nn.sess))
+# np.save("parameters.npy", nn_parameters)
+#
+#sys.exit(0)
+
+nn = model(FLAGS)
+nn.init_network(None, setup="none")
+nn.init_input_pipeline()
+
+# load parameters
+nn_parameters = np.load(sys.argv[2])
+# assign parameters of NN
+# ... assign parameters e.g. through parameter update directly
+# in the np array, then call ...
+nn.assign_neural_network_parameters(nn_parameters)
+
+
+i=0
+continue_flag = True
+while continue_flag:
+	try:
+		features, labels = nn.input_pipeline.next_batch(nn.sess,
+				                                auto_reset=False)
+	except tf.errors.OutOfRangeError:
+		continue_flag = False
+
+	feed_dict = {
+	    nn.xinput: features,
+	    nn.nn.placeholder_nodes["y_"]: labels}
+
+	loss_eval, acc, yeval, y_eval = nn.sess.run([nn.loss, nn.nn.summary_nodes["accuracy"], nn.nn.placeholder_nodes["y"], nn.nn.placeholder_nodes["y_"]], feed_dict=feed_dict)
+
+	i+=1
+	print(str(i)+": "+str(loss_eval)+", "+str(acc)+", "+str(np.linalg.norm(yeval-y_eval)/50))
+
+
