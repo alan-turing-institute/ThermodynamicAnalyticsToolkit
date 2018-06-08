@@ -31,12 +31,13 @@
 # then this output will change as well.
 
 
-AT_SETUP([Tensorflow - global seed on changed network])
+AT_SETUP([Tensorflaw - global seed on changed network])
 AT_KEYWORDS([tensorflaw reproducibility set_seed])
+AT_XFAIL_IF([/bin/true])
 
 AT_CHECK([../../run \
-	${abs_top_srcdir}/tests/tensorflow_flaws/Reproducibility/pre/global_seed.py
-], 1, [stdout], [stderr])
+	${abs_top_srcdir}/tests/tensorflow/Reproducibility/pre/global_seed.py
+], 0, [stdout], [stderr])
 
 AT_CLEANUP
 

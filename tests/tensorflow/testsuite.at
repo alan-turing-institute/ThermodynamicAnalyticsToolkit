@@ -15,9 +15,9 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-### all tests on flaws (IMHO) on the tensorflow module
+### all tests  on the tensorflow module
 
-AT_INIT([Tensorflaw tests])
+AT_INIT([Tensorflow tests])
 #AT_TESTED(gawk)
 
 # Use colored output with new-enough Autotest.

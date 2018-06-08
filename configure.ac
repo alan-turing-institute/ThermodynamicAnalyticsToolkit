@@ -40,9 +40,9 @@ AC_CONFIG_FILES(
 	tests/regression/atlocal
 	tests/regression/Makefile)
 AC_CONFIG_FILES(
-	tests/tensorflow_flaws/atlocal
-	tests/tensorflow_flaws/Makefile)
-AC_CONFIG_TESTDIR([tests/tensorflow_flaws])
+	tests/tensorflow/atlocal
+	tests/tensorflow/Makefile)
+AC_CONFIG_TESTDIR([tests/tensorflow])
 AC_CONFIG_FILES(
 	tests/userguide/atlocal
 	tests/userguide/Makefile)
@@ -58,7 +58,7 @@ AC_CONFIG_FILES([tests/TATiInputSpaceSampler], [chmod +x tests/TATiInputSpaceSam
 AC_CONFIG_FILES([tests/TATiLossFunctionSampler], [chmod +x tests/TATiLossFunctionSampler])
 AC_CONFIG_FILES([tests/NumericalDiff], [chmod +x tests/NumericalDiff])
 AC_CONFIG_FILES([tests/userguide/run], [chmod +x tests/userguide/run])
-AC_CONFIG_FILES([tests/tensorflow_flaws/run], [chmod +x tests/tensorflow_flaws/run])
+AC_CONFIG_FILES([tests/tensorflow/run], [chmod +x tests/tensorflow/run])
 AC_CONFIG_FILES([
         doc/Makefile
         doc/userguide/Makefile

@@ -30,13 +30,14 @@
 # tf.Dataset.shuffle() and ..batch() replace tf.train.shuffle_batch().
 # We modified the test to still illustrate the behavior.
 
-AT_SETUP([Tensorflow - repeat, shuffle non-unique values])
+AT_SETUP([Tensorflaw - repeat, shuffle non-unique values])
 AT_KEYWORDS([tensorflaw reproducibility repeat shuffle])
+AT_XFAIL_IF([/bin/true])
 
 AT_CHECK([../../run \
-	${abs_top_srcdir}/tests/tensorflow_flaws/Reproducibility/pre/repeat_shuffle_reproducibility.py \
-	${abs_top_srcdir}/tests/tensorflow_flaws/Reproducibility/pre/dataset-twoclusters.csv
-], 255, [stdout], [stderr])
+	${abs_top_srcdir}/tests/tensorflow/Reproducibility/pre/repeat_shuffle_reproducibility.py \
+	${abs_top_srcdir}/tests/tensorflow/Reproducibility/pre/dataset-twoclusters.csv
+], 0, [stdout], [stderr])
 
 AT_CLEANUP
 

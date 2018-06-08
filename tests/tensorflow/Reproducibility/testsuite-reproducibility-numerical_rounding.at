@@ -27,12 +27,13 @@
 # as the kinetic_energy. As weights and biases per layer are independent
 # of another, the order of summing their contribution is arbitrary.
 
-AT_SETUP([Tensorflow - rounding error on summation])
+AT_SETUP([Tensorflaw - rounding error on summation])
 AT_KEYWORDS([tensorflaw reproducibility numerical rounding])
+AT_XFAIL_IF([/bin/true])
 
 AT_CHECK([../../run \
-	${abs_top_srcdir}/tests/tensorflow_flaws/Reproducibility/pre/numerical_rounding.py
-], 255, [stdout], [stderr])
+	${abs_top_srcdir}/tests/tensorflow/Reproducibility/pre/numerical_rounding.py
+], 0, [stdout], [stderr])
 
 AT_CLEANUP
 
