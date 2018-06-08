@@ -18,4 +18,5 @@
 ### all tests on reproducibility flaws on the tensorflow module
 
 m4_include(Reproducibility/testsuite-reproducibility-global_seed.at)
+m4_include(Reproducibility/testsuite-reproducibility-numerical_rounding.at)
 m4_include(Reproducibility/testsuite-reproducibility-repeat_shuffle_reproducibility.at)

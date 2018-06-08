@@ -13,6 +13,7 @@ TESTSCRIPTS += \
 	$(srcdir)/NonVariables/testsuite-nonvariables-concat_not_variable.at \
 	$(srcdir)/Reproducibility/testsuite-reproducibility.at \
 	$(srcdir)/Reproducibility/testsuite-reproducibility-global_seed.at \
+	$(srcdir)/Reproducibility/testsuite-reproducibility-numerical_rounding.at \
 	$(srcdir)/Reproducibility/testsuite-reproducibility-repeat_shuffle_reproducibility.at
 
 EXTRA_DIST = \
