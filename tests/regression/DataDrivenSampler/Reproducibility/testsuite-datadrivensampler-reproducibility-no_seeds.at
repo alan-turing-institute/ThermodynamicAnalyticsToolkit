@@ -47,8 +47,10 @@ AT_CHECK([../../../TATiSampler \
 
 # now compare (exclude time_per_nth_step column)
 # using decreased accuracy of 1e-7 for rounding issues, see tensorflaw sum test
+# using even more decreased accuracy of 1e-7 due to additional cancellation effects for virials
 AT_CHECK([../../../NumericalDiff \
     --general_threshold 1e-7 relative \
+    --column_threshold virial 2e-6 relative \
     --column_drop time_per_nth_step id -- \
     run-first.csv run-second.csv], 1, [ignore], [ignore])
 
