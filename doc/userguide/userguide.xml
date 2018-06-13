@@ -1334,6 +1334,25 @@ sys.path.insert(1,"&lt;path_to_TATi&gt;/lib/python3.5/site-packages/")</programl
       It has first been proposed by <citation role="REFDB">Duane1987</citation>.
       </para>
     </section>
+
+    <section xml:id="reference.samplers.walkerensemble">
+      <title xml:id="reference.samplers.walkerensemble.title">Ensemble of Walkers</title>
+      <para><firstterm linkend="walkerensemble">Ensemble of Walkers</firstterm>
+      uses a collection of walkers that exchange gradient and parameter 
+      information in each step in order to calculate a preconditioning matrix.
+      This preconditioning allows to explore elongated minimum basins faster
+      than independent walkers would do alone, see <citation role="REFDB">Matthews2018</citation>.
+      </para>
+      <para>This is activated by setting the <command>number_walkers</command>
+      to a value larger than 1. Note that <command>covariance_blending</command>
+      controls the magnitude of the covariance matrix approximation and
+      <command>collapse_after_steps</command> controls after how many steps
+      the walkers are restarted at the parameter configuration of the first 
+      walker to ensure that the harmonic approximation still holds.
+      </para>
+      <para>This works for all of the aforementioned samplers as simply the
+      gradient of each walker is rescaled.</para>
+    </section>
     
   </section>
   <section xml:id="reference.exploring">

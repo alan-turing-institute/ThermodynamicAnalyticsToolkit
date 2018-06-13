@@ -103,4 +103,24 @@
   </biblioset>
 </biblioentry>
 
+<biblioentry role="article" id="walkerensemble">
+  <abbrev id="walkerensemble.abbrev">Matthews2018</abbrev>
+  <biblioset role="article">
+    <author>
+      <firstname>C.</firstname><surname>Matthews</surname>
+      <firstname>J.</firstname><surname>Weare</surname>
+      <firstname>B.</firstname><surname>Leimkuhler</surname>
+    </author>
+    <title>Ensemble preconditioning for Markov chain Monte Carlo simulation</title>
+    <pagenums>277-290</pagenums>
+    <bibliosource class="doi">http://doi.acm.org/10.1007/s11222-017-9730-1</bibliosource>
+  </biblioset>
+    
+  <biblioset role="article">
+    <title>Statistics and Computing</title>
+    <pubdate>2018</pubdate>
+
+  </biblioset>
+</biblioentry>
+
 </bibliography>
