@@ -17,7 +17,7 @@ class BAOABSampler(GeometricLangevinAlgorithmFirstOrderSampler):
         """ Init function for this class.
 
         :param ensemble_precondition: whether to precondition the gradient using
-                all the other replica or not
+                all the other walkers or not
         :param step_width: step width for gradient, also affects inject noise
         :param inverse_temperature: scale for gradients
         :param friction_constant: scales the momenta
@@ -190,7 +190,7 @@ class BAOABSampler(GeometricLangevinAlgorithmFirstOrderSampler):
             tilde_half_pn = O(half_pn, rn, alpha1, zeta2)
             next_qn = A(half_qn, tilde_half_pn, h/2)
 
-        :param grads_and_vars: gradient nodes over all replicas and all variables
+        :param grads_and_vars: gradient nodes over all walkers and all variables
         :param var: parameters of the neural network
         :return: a group of operations to be added to the graph
         """

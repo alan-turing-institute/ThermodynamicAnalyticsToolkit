@@ -196,7 +196,7 @@ def add_common_options_to_parser(parser):
     parser.add_argument('--burn_in_steps', type=int, default=0,
         help='Number of initial steps to discard for averages ("burn in")')
     parser.add_argument('--collapse_after_steps', type=int, default=100,
-        help='Number of steps after which to regularly collapse all parallel replica to restart from a single position '
+        help='Number of steps after which to regularly collapse all dependent walkers to restart from a single position '
              'again, maintaining harmonic approximation for ensemble preconditioning. 0 will never collapse.')
     parser.add_argument('--every_nth', type=int, default=1,
         help='Store only every nth trajectory (and run) point to files, e.g. 10')
@@ -231,7 +231,7 @@ def add_sampler_options_to_parser(parser):
     # please adhere to alphabetical ordering
     parser.add_argument('--covariance_blending', type=float, default=0.,
         help='Blending between unpreconditioned gradient (0.) and preconditioning through covariance matrix from other '
-             'parallel replicas')
+             'dependent walkers')
     parser.add_argument('--friction_constant', type=float, default=0.,
         help='friction to scale the influence of momenta')
     parser.add_argument('--inverse_temperature', type=float, default=0.,

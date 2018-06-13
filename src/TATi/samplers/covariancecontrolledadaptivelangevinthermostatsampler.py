@@ -19,7 +19,7 @@ class CovarianceControlledAdaptiveLangevinThermostat(GeometricLangevinAlgorithmS
         """ Init function for this class.
 
         :param ensemble_precondition: whether to precondition the gradient using
-                all the other replica or not
+                all the other walkers or not
         :param step_width: step width for gradient, also affects inject noise
         :param inverse_temperature: scale for gradients
         :param friction_constant: scales the momenta
@@ -60,7 +60,7 @@ class CovarianceControlledAdaptiveLangevinThermostat(GeometricLangevinAlgorithmS
         The discretization scheme is according to (1.59) in [dissertation Zofia Trstanova],
         i.e. 2nd order Geometric Langevin Algorithm.
 
-        :param grads_and_vars: gradient nodes over all replicas and all variables
+        :param grads_and_vars: gradient nodes over all walkers and all variables
         :param var: parameters of the neural network
         :return: a group of operations to be added to the graph
         """

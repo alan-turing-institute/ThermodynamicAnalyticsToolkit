@@ -62,7 +62,7 @@ class MockFlags:
         :param collapse_after_steps: collapse all walkers into a single position again after this many steps
         :param covariance_blending: mixing for preconditioning matrix to gradient
                 update, identity matrix plus this times the covariance matrix obtained
-                from the other replica, 0 - will never collapse
+                from the other walkers, 0 - will never collapse
         :param diffusion_map_method:
         :param do_hessians: whether to add hessian evaluation nodes to graph, used bz optimzier and explorer
         :param dropout: Keep probability for sampleing dropout, e.g. 0.9

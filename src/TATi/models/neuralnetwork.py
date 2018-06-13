@@ -228,7 +228,7 @@ class NeuralNetwork(object):
         :param sigma: scale of noise injected to momentum per step for CCaDL only
         :param sigmaA: scale of noise in convex combination for CCaDL only
         :param covariance_blending: eta value for blending of identity and covariance
-                matrix from other replica
+                matrix from other walkers
         :return: created sampler instance
         """
         with tf.name_scope('sample'):

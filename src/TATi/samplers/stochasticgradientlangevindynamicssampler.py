@@ -6,10 +6,10 @@ from tensorflow.python.framework import ops
 import tensorflow as tf
 
 from TATi.models.basetype import dds_basetype
-from TATi.samplers.replicaoptimizer import ReplicaOptimizer
+from TATi.samplers.walkerensembleoptimizer import WalkerEnsembleOptimizer
 
 
-class StochasticGradientLangevinDynamicsSampler(ReplicaOptimizer):
+class StochasticGradientLangevinDynamicsSampler(WalkerEnsembleOptimizer):
     """ Implements a Stochastic Gradient Langevin Dynamics Sampler
     in the form of a TensorFlow Optimizer, overriding tensorflow.python.training.Optimizer.
 

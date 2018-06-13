@@ -88,7 +88,7 @@ class TrajectoryJob_train(TrajectoryJob_sample):
             self.network_model.reset_dataset()
             features, labels = self.network_model.input_pipeline.next_batch(self.network_model.sess)
 
-            # TODO: make this into a single session run call (i.e. over all replica at once)
+            # TODO: make this into a single session run call (i.e. over all walkers at once)
             for walker_index in range(self.network_model.FLAGS.number_walkers):
                 feed_dict = {
                     self.network_model.xinput: features,

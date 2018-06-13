@@ -1,9 +1,7 @@
-from tensorflow.python.ops import control_flow_ops
 from tensorflow.python.ops import math_ops
 from tensorflow.python.eager import context
 from tensorflow.python.ops import state_ops
 from tensorflow.python.framework import ops
-from tensorflow.python.ops import resource_variable_ops
 from tensorflow.python.ops import variables
 from tensorflow.python.training.optimizer import Optimizer, _DenseResourceVariableProcessor, \
     _OptimizableVariable, _StreamingModelPortProcessor, _get_variable_for
@@ -13,13 +11,14 @@ import collections
 
 from TATi.models.basetype import dds_basetype
 
-class RefVariableReplicaProcessor(_OptimizableVariable):
-    """Processor for List of replicated Variable.
+class RefVariableWalkerEnsembleProcessor(_OptimizableVariable):
+    """Processor for List of WalkerEnsemble Variable.
 
     This variable has multiple related gradients coming from the replicated
-    versions which might be used in the update scheme. This class overrides
-    the default `update_op` of `tensorflow`'s `Optimzer` to allow for list
-    of tensor to be passed down.
+    versions of the neural network, each one associated to a walker in an
+    ensemble of walkers, which might be used in the update scheme. This class
+    overrides the default `update_op` of `tensorflow`'s `Optimzer` to allow
+    for list of tensor to be passed down.
     """
 
     def __init__(self, v):
@@ -43,13 +42,13 @@ def _get_processor(v):
     if v.op.type == "VarHandleOp":
         return _DenseResourceVariableProcessor(v)
     if isinstance(v, variables.Variable):
-        return RefVariableReplicaProcessor(v)
+        return RefVariableWalkerEnsembleProcessor(v)
     if v.op.type == "SubmodelPort":
         return _StreamingModelPortProcessor(v)
     raise NotImplementedError("Trying to optimize unsupported type ", v)
 
-class ReplicaOptimizer(Optimizer):
-    """ This implements a version of the optimizer that has more than one replica
+class WalkerEnsembleOptimizer(Optimizer):
+    """ This implements a version of the optimizer that has more than one walkers
     that exchange their gradients among one another.
 
     We override the `Optimizer` class in `tensorflow` in order to wedge in
@@ -58,18 +57,18 @@ class ReplicaOptimizer(Optimizer):
     gradients for doing the position update.
 
     This way the position update may actually rely on the gradients of other
-    instances (or any other information) stored in possible replica.
+    instances (or any other information) stored in possible walkers.
     """
-    def __init__(self, covariance_blending=0., use_locking=False, name='ReplicaOptimizer'):
+    def __init__(self, covariance_blending=0., use_locking=False, name='WalkerEnsembleOptimizer'):
         """ Init function for this class.
 
         :param covariance_blending: mixing for preconditioning matrix to gradient
                 update, identity matrix plus this times the covariance matrix obtained
-                from the other replica
+                from the other walkers
         :param use_locking: whether to lock in the context of multi-threaded operations
         :param name: internal name of optimizer
         """
-        super(ReplicaOptimizer, self).__init__(use_locking, name)
+        super(WalkerEnsembleOptimizer, self).__init__(use_locking, name)
         self.covariance_blending = covariance_blending
 
     def compute_and_check_gradients(self, loss, var_list=None,
@@ -90,22 +89,22 @@ class ReplicaOptimizer(Optimizer):
 
         return grads_and_vars
 
-    def apply_gradients(self, replicated_grads_and_vars, index, global_step=None, name=None):
+    def apply_gradients(self, walkers_grads_and_vars, index, global_step=None, name=None):
         """Apply gradients to variables.
 
         Here, we actually more gradient nodes than we require, namely addtionally
-        those from all other replica. We pick the ones associated with each
+        those from all other walkers. We pick the ones associated with each
         specific variable, e.g. all gradients to each layer1 weights in all
-        replica. And these are given to the internally called `apply_dense`
+        walkers. And these are given to the internally called `apply_dense`
         function.
 
         :param grads_and_vars: gradients and variables as a list over all parallel
-                        replica
-        :param global_step: global_step node for this replica
+                        walkers
+        :param global_step: global_step node for this walkers
         :param name: name of this operation
         """
         # add processor for each variable
-        grads_and_vars = tuple(replicated_grads_and_vars[index])    # Make sure repeat iteration works.
+        grads_and_vars = tuple(walkers_grads_and_vars[index])    # Make sure repeat iteration works.
         if not grads_and_vars:
             raise ValueError("No variables provided.")
         converted_grads_and_vars = []
@@ -145,7 +144,7 @@ class ReplicaOptimizer(Optimizer):
                     continue
                 scope_name = var.op.name if context.in_graph_mode() else ""
                 with ops.name_scope("update_" + scope_name), ops.colocate_with(var):
-                    update_ops.append(processor.update_op(self, replicated_grads_and_vars))
+                    update_ops.append(processor.update_op(self, walkers_grads_and_vars))
 
             # append global_step increment
             if global_step is None:
@@ -167,10 +166,10 @@ class ReplicaOptimizer(Optimizer):
         the list containing all gradients and variables in `grads_and_vars`.
 
         If `do_precondition_gradient` is true, then this will additionally
-        precondition the gradient using the other replica's gradients.
+        precondition the gradient using the other walkers' gradients.
 
-        :param grads_and_vars: list of grad, var tuples over all replica
-        :param var: current variable to associated to grad of this replica instance
+        :param grads_and_vars: list of grad, var tuples over all walkers
+        :param var: current variable to associated to grad of this walker instance
         :return: (preconditioned) grad associated to var
         """
         #print(var.name[var.name.find("/"):])
@@ -209,13 +208,13 @@ class ReplicaOptimizer(Optimizer):
     def _extract_grads(self, grads_and_vars, var):
         """ Helper function to extract the gradient associated with `var` from
         the list containing all gradients and variables in `grads_and_vars`.
-        Moreover, we return also all other gradients (in replicas) associated to
+        Moreover, we return also all other gradients (in walkers) associated to
         the same var.
 
-        :param grads_and_vars: list of grad, var tuples over all replica
+        :param grads_and_vars: list of grad, var tuples over all walkers
         :param var: current variable
         :return: grad associated to `var`,
-                other grads associated to equivalent var in other replica
+                other grads associated to equivalent var in other walkers
         """
         #print("var: "+str(var))
         #print("truncated var: "+str(var.name[var.name.find("/"):]))
@@ -233,12 +232,12 @@ class ReplicaOptimizer(Optimizer):
     def _extract_vars(self, grads_and_vars, var):
         """ Helper function to extract the variable associated with `var` from
         the list containing all gradients and variables in `grads_and_vars`.
-        Moreover, we return also all other gradients (in replicas) associated to
+        Moreover, we return also all other gradients (in walkers) associated to
         the same var.
 
-        :param grads_and_vars: list of grad, var tuples over all replica
+        :param grads_and_vars: list of grad, var tuples over all walkers
         :param var: current variable
-        :return: other vars associated to equivalent var in other replica
+        :return: other vars associated to equivalent var in other walkers
         """
         othervars = []
         for i in range(len(grads_and_vars)):
@@ -253,7 +252,7 @@ class ReplicaOptimizer(Optimizer):
 
     def _apply_covariance(self, flat_othervars, var):
         """ Returns node for the covariance between the variables of all other
-        replica plus the identity.
+        walkers plus the identity.
 
         :param flat_othervars: list of all other variables
         :return: node for the stacked variables and the covariance matrix
@@ -366,9 +365,9 @@ class ReplicaOptimizer(Optimizer):
     def _stack_gradients(self, grads_and_vars, var):
         """ Stacks all (other) gradients together to compute a covariance matrix.
 
-        :param grads_and_vars: list of gradients and vars from all replica
-        :param var: this replicas variable
-        :return: stacked gradients from _other_ replica (excluding the one
+        :param grads_and_vars: list of gradients and vars from all walkers
+        :param var: this walker's variable
+        :return: stacked gradients from _other_ walkers (excluding the one
                 associated to var)
         """
         grads = []

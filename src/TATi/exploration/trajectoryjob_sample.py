@@ -27,7 +27,7 @@ class TrajectoryJob_sample(TrajectoryJob):
     def _set_parameters(self):
         # set parameters to ones from old leg (if exists)
         sess = self.network_model.sess
-        # TODO: make this into a single session run call (i.e. over all replica at once)
+        # TODO: make this into a single session run call (i.e. over all walkers at once)
         for walker_index in range(self.network_model.FLAGS.number_walkers):
             weights_dof = self.network_model.weights[walker_index].get_total_dof()
             self.network_model.weights[walker_index].assign(sess, self.parameters[walker_index][0:weights_dof])
@@ -40,7 +40,7 @@ class TrajectoryJob_sample(TrajectoryJob):
             feed_dict = {sample_step_placeholder: self.initial_step}
             set_step = self.network_model.sess.run(
                 self.network_model.global_step_assign_t[walker_index], feed_dict=feed_dict)
-            logging.debug("Set initial step for replica #"+str(walker_index) \
+            logging.debug("Set initial step for walker #"+str(walker_index) \
                           +" to " + str(set_step))
 
     def run(self, _data):
@@ -52,7 +52,7 @@ class TrajectoryJob_sample(TrajectoryJob):
         """
 
         if self.parameters is not None:
-            logging.debug("Setting initial parameters to (first ten of first replica shown) " \
+            logging.debug("Setting initial parameters to (first ten of first walker shown) " \
                           + str(self.parameters[0][0:10]))
             self._set_parameters()
 

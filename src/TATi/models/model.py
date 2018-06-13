@@ -78,7 +78,7 @@ class model:
         self.saver = None
         self.sess = None
 
-        # mark placeholder neuralnet_parameters as to be created (over replica)
+        # mark placeholder neuralnet_parameters as to be created (over walker)
         self.weights = []
         self.biases = []
 
@@ -201,7 +201,7 @@ class model:
                              "gradients", "virials", "noise"]
         static_vars_int64 = ["accepted", "rejected"]
         for i in range(self.FLAGS.number_walkers):
-            with tf.variable_scope("var_replica"+str(i+1), reuse=self.resources_created):
+            with tf.variable_scope("var_walker"+str(i+1), reuse=self.resources_created):
                 with tf.variable_scope("accumulate", reuse=self.resources_created):
                     for key in static_vars_float:
                         tf.get_variable(key, shape=[], trainable=False,
@@ -338,18 +338,18 @@ class model:
         self.input_pipeline.reset(self.sess)
 
     @staticmethod
-    def _split_collection_per_replica(_collection, number_replica):
+    def _split_collection_per_walker(_collection, number_walkers):
         """ Helper function to split WEIGHTS and BIASES collection from
-        tensorflow into weights and biases per replica.
+        tensorflow into weights and biases per walker.
 
         :param _collection: collection to split
-        :param number_replica: number of replicas to look for
+        :param number_walkers: number of walkers to look for
         :return: list of split up collections
         """
         split_collection = []
-        for i in range(number_replica):
+        for i in range(number_walkers):
             split_collection.append([])
-            scope_name = 'replica'+str(i+1)
+            scope_name = 'walker'+str(i+1)
             for var in _collection:
                 if scope_name in var.name:
                     split_collection[-1].append(var)
@@ -386,8 +386,8 @@ class model:
                     self.hessians = []
             self.true_labels = NeuralNetwork.add_true_labels(self.output_dimension)
             for i in range(self.FLAGS.number_walkers):
-                with tf.name_scope('replica'+str(i+1)):
-                    self.trainables.append('trainables_replica'+str(i+1))
+                with tf.name_scope('walker'+str(i+1)):
+                    self.trainables.append('trainables_walker'+str(i+1))
                     self.nn.append(NeuralNetwork())
                     self.nn[-1].placeholder_nodes['y_'] = self.true_labels
                     keep_prob_node = self.nn[-1].add_keep_probability()
@@ -395,14 +395,14 @@ class model:
                     hidden_dimension = [int(i) for i in get_list_from_string(self.FLAGS.hidden_dimension)]
                     activations = NeuralNetwork.get_activations()
                     if self.FLAGS.seed is not None:
-                        replica_seed = self.FLAGS.seed+i
+                        walker_seed = self.FLAGS.seed+i
                     else:
-                        replica_seed = self.FLAGS.seed
+                        walker_seed = self.FLAGS.seed
                     self.loss.append(self.nn[-1].create(
                         self.x, hidden_dimension, self.output_dimension,
                         labels=self.true_labels,
                         trainables_collection=self.trainables[-1],
-                        seed=replica_seed,
+                        seed=walker_seed,
                         keep_prob=keep_prob,
                         hidden_activation=activations[self.FLAGS.hidden_activation],
                         output_activation=activations[self.FLAGS.output_activation],
@@ -455,27 +455,27 @@ class model:
             names, values = self.split_parameters_as_names_values(self.FLAGS.fix_parameters)
             fixed_variables = self.fix_parameters(names)
             logging.info("Excluded the following degrees of freedom: "+str(fixed_variables))
-            # exclude fixed degrees also from trainables_per_replica sets
+            # exclude fixed degrees also from trainables_per_walker sets
             for i in range(self.FLAGS.number_walkers):
                 trainables = tf.get_collection_ref(self.trainables[i])
                 for var in fixed_variables:
                     removed_vars = model._fix_parameter_in_collection(trainables, var)
-                    # make sure we remove one per replica
+                    # make sure we remove one per walker
                     assert( len(removed_vars) == 1 )
-                logging.debug("Remaining trainable variables in replica "+str(i+1)
+                logging.debug("Remaining trainable variables in walker "+str(i+1)
                              +": "+str(tf.get_collection_ref(self.trainables[i])))
 
         logging.debug("Remaining global trainable variables: "+str(variables.trainable_variables()))
 
         # set number of degrees of freedom
-        split_weights = self._split_collection_per_replica(
+        split_weights = self._split_collection_per_walker(
             tf.get_collection_ref(tf.GraphKeys.WEIGHTS), self.FLAGS.number_walkers)
-        split_biases = self._split_collection_per_replica(
+        split_biases = self._split_collection_per_walker(
             tf.get_collection_ref(tf.GraphKeys.BIASES), self.FLAGS.number_walkers)
         self.number_of_parameters = \
             neuralnet_parameters.get_total_dof_from_list(split_weights[0]) \
             + neuralnet_parameters.get_total_dof_from_list(split_biases[0])
-        logging.info("Number of dof per replica: "+str(self.number_of_parameters))
+        logging.info("Number of dof per walker: "+str(self.number_of_parameters))
 
         # setup priors
         prior = {}
@@ -494,31 +494,31 @@ class model:
         # setup training/sampling
         if setup == "train":
             for i in range(self.FLAGS.number_walkers):
-                with tf.variable_scope("var_replica" + str(i + 1)):
-                #with tf.name_scope('gradients_replica'+str(i+1)):
+                with tf.variable_scope("var_walker" + str(i + 1)):
+                #with tf.name_scope('gradients_walker'+str(i+1)):
                     self.nn[i].add_train_method(self.loss[i], optimizer_method=self.FLAGS.optimizer, prior=prior)
         elif setup == "sample":
             sampler = []
             for i in range(self.FLAGS.number_walkers):
                 if self.FLAGS.seed is not None:
-                    replica_seed = self.FLAGS.seed + i
+                    walker_seed = self.FLAGS.seed + i
                 else:
-                    replica_seed = self.FLAGS.seed
+                    walker_seed = self.FLAGS.seed
                 sampler.append(self.nn[i]._prepare_sampler(self.loss[i], sampling_method=self.FLAGS.sampler,
-                                                           seed=replica_seed, prior=prior,
+                                                           seed=walker_seed, prior=prior,
                                                            sigma=self.FLAGS.sigma, sigmaA=self.FLAGS.sigmaA,
                                                            covariance_blending=self.FLAGS.covariance_blending))
             # create gradients
             grads_and_vars = []
             for i in range(self.FLAGS.number_walkers):
-                with tf.name_scope('gradients_replica'+str(i+1)):
+                with tf.name_scope('gradients_walker'+str(i+1)):
                     trainables = tf.get_collection_ref(self.trainables[i])
                     grads_and_vars.append(sampler[i].compute_and_check_gradients(self.loss[i],
                                                                                  var_list=trainables))
 
             # combine gradients
             #for i in range(self.FLAGS.number_walkers):
-            #    print("Replica "+str(i))
+            #    print("walker "+str(i))
             #    var_list = [v for g, v in grads_and_vars[i] if g is not None]
             #    grad_list = [g for g, v in grads_and_vars[i] if g is not None]
             #    for j in range(len(grad_list)):
@@ -526,7 +526,7 @@ class model:
 
             # add position update nodes
             for i in range(self.FLAGS.number_walkers):
-                with tf.variable_scope("var_replica" + str(i + 1)):
+                with tf.variable_scope("var_walker" + str(i + 1)):
                     global_step = self.nn[i]._prepare_global_step()
                     train_step = sampler[i].apply_gradients(grads_and_vars, i, global_step=global_step,
                                                             name=sampler[i].get_name())
@@ -538,12 +538,12 @@ class model:
             if self.step_placeholder is None:
                 self.step_placeholder = []
                 for i in range(self.FLAGS.number_walkers):
-                    with tf.name_scope("replica"+str(i+1)):
+                    with tf.name_scope("walker"+str(i+1)):
                         self.step_placeholder.append(tf.placeholder(shape=(), dtype=tf.int32))
             if self.global_step_assign_t is None:
                 self.global_step_assign_t = []
                 for i in range(self.FLAGS.number_walkers):
-                    with tf.name_scope("replica"+str(i+1)):
+                    with tf.name_scope("walker"+str(i+1)):
                         self.global_step_assign_t.append(tf.assign(self.nn[i].summary_nodes['global_step'], self.step_placeholder[i]))
             else:
                 logging.debug("Not adding step placeholder or global step.")
@@ -700,10 +700,10 @@ class model:
         assign zero nodes.
 
         This returns a dictionary with lists as values where the lists contain
-        the created variable for each replica.
+        the created variable for each replicated graph associated to a walker.
 
         :param number_replicated_graphs: number of replicated graphs to instantiate for
-        :return: dict with static_var lists (one per replica), equivalent dict
+        :return: dict with static_var lists (one per walker), equivalent dict
                 for zero assigners, dict with assigners (required for HMC)
         """
         static_vars_float = ["old_loss", "old_kinetic", "kinetic_energy", "total_energy", "momenta", \
@@ -713,7 +713,7 @@ class model:
         zero_assigner_dict = {}
         assigner_dict = {}
         for i in range(number_replicated_graphs):
-            with tf.variable_scope("var_replica" + str(i + 1), reuse=True):
+            with tf.variable_scope("var_walker" + str(i + 1), reuse=True):
                 with tf.variable_scope("accumulate", reuse=True):
                     for key in static_vars_float:
                         static_var =  tf.get_variable(key, dtype=dds_basetype)
@@ -746,7 +746,7 @@ class model:
                 inside a numpy array and returned (adhering to FLAGS.every_nth)
         :param return_averages: if set to true, accumulated average values will be
                 returned as numpy array
-        :return: either thrice None or lists (per replica) of pandas dataframes
+        :return: either thrice None or lists (per walker) of pandas dataframes
                 depending on whether either parameter has evaluated to True
         """
         placeholder_nodes = [self.nn[walker_index].get_dict_of_nodes(
@@ -819,7 +819,7 @@ class model:
 
         # check that sampler's parameters are actually used
         for walker_index in range(self.FLAGS.number_walkers):
-            logging.info("Parallel replica #"+str(walker_index))
+            logging.info("Dependent walker #"+str(walker_index))
             if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics",
                                       "GeometricLangevinAlgorithm_1stOrder",
                                       "GeometricLangevinAlgorithm_2ndOrder",
@@ -827,12 +827,12 @@ class model:
                                       "CovarianceControlledAdaptiveLangevinThermostat"]:
                 gamma, beta, deltat = self.sess.run(self.nn[walker_index].get_list_of_nodes(
                     ["friction_constant", "inverse_temperature", "step_width"]), feed_dict=feed_dict)
-                logging.info("LD Sampler parameters, replica #%d: gamma = %lg, beta = %lg, delta t = %lg" %
+                logging.info("LD Sampler parameters, walker #%d: gamma = %lg, beta = %lg, delta t = %lg" %
                       (walker_index, gamma, beta, deltat))
             elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
                 current_step, num_mc_steps, deltat = self.sess.run(self.nn[walker_index].get_list_of_nodes(
                     ["current_step", "next_eval_step", "step_width"]), feed_dict=feed_dict)
-                logging.info("MC Sampler parameters, replica #%d: current_step = %lg, num_mc_steps = %lg, delta t = %lg" %
+                logging.info("MC Sampler parameters, walker #%d: current_step = %lg, num_mc_steps = %lg, delta t = %lg" %
                       (walker_index, current_step, num_mc_steps, deltat))
 
         # create extra nodes for HMC
@@ -889,7 +889,7 @@ class model:
             if self.FLAGS.sampler == "HamiltonianMonteCarlo":
                 loss_eval, kin_eval, total_eval = self.sess.run(HMC_eval_nodes, feed_dict=feed_dict)
                 for walker_index in range(self.FLAGS.number_walkers):
-                    logging.debug("replica #%d, #%d: loss is %lg, total is %lg, kinetic is %lg" \
+                    logging.debug("walker #%d, #%d: loss is %lg, total is %lg, kinetic is %lg" \
                                   % (walker_index, current_step, loss_eval[walker_index], total_eval[walker_index], kin_eval[walker_index]))
                 HMC_current_set_nodes[:] = HMC_set_nodes
                 for walker_index in range(self.FLAGS.number_walkers):
@@ -898,7 +898,7 @@ class model:
                 self.sess.run(HMC_current_set_nodes, feed_dict=feed_dict)
                 loss_eval, kin_eval, total_eval = self.sess.run(HMC_eval_nodes, feed_dict=feed_dict)
                 for walker_index in range(self.FLAGS.number_walkers):
-                    logging.debug("replica #%d, #%d: loss is %lg, total is %lg, kinetic is %lg" \
+                    logging.debug("walker #%d, #%d: loss is %lg, total is %lg, kinetic is %lg" \
                                   % (walker_index, current_step, loss_eval[walker_index], total_eval[walker_index], kin_eval[walker_index]))
 
             # zero kinetic energy
@@ -1104,7 +1104,7 @@ class model:
                 assigns = []
                 for walker_index in range(1,self.FLAGS.number_walkers):
                     # directly connecting the flat parameters tensor with the respective
-                    # other replica's parameters' placeholder does not seem to work, i.e.
+                    # other walker's parameters' placeholder does not seem to work, i.e.
                     # replacing weights_eval -> self.weights[0].parameters
                     assert( len(self.weights[0].parameters) == len(self.weights[walker_index].placeholders))
                     for weight, weight_placeholder in zip(weights_eval,
@@ -1388,7 +1388,7 @@ class model:
     def _find_all_in_collections(_collection, _name):
         """ Helper function to return all indices of variables in a collection
          that match with the given `_name`. Note that this removes possible
-         replica name scopes.
+         walker name scopes.
 
         :param _collection: collection to search through
         :param _name: tensor/variable name to look for
@@ -1397,9 +1397,9 @@ class model:
         variable_indices = []
         for i in range(len(_collection)):
             target_name = _collection[i].name
-            replica_target_name = target_name[target_name.find("/")+1:]
-            logging.debug("Comparing to %s and %s" % (target_name, replica_target_name))
-            if target_name == _name or replica_target_name == _name:
+            walker_target_name = target_name[target_name.find("/")+1:]
+            logging.debug("Comparing to %s and %s" % (target_name, walker_target_name))
+            if target_name == _name or walker_target_name == _name:
                 variable_indices.append(i)
         return variable_indices
 
@@ -1545,7 +1545,7 @@ class model:
         if do_check:
             weights_eval = self.weights[walker_index].evaluate(self.sess)
             biases_eval = self.biases[walker_index].evaluate(self.sess)
-            logging.info("Evaluating replica #"+str(walker_index) \
+            logging.info("Evaluating walker #"+str(walker_index) \
                          +" at weights " + str(weights_eval[0:10]) \
                          + ", biases " + str(biases_eval[0:10]))
             return weights_eval, biases_eval
