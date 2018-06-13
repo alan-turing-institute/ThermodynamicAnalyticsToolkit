@@ -124,7 +124,7 @@ def main(_):
 
     FLAGS.batch_size=1
     FLAGS.max_steps=input_total_vals
-    FLAGS.parallel_replica=1
+    FLAGS.number_walkers=1
     network_model = model(FLAGS)
     network_model.init_input_pipeline()
     network_model.init_network(FLAGS.restore_model, setup=None)

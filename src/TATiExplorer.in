@@ -79,7 +79,7 @@ def main(_):
     rt = runtime(FLAGS)
     time_zero = time.process_time()
 
-    if FLAGS.parallel_replica != 1:
+    if FLAGS.number_walkers != 1:
         print("At the moment the exploration code is not adapted to multiple dependent walkers.")
         sys.exit(255)
 

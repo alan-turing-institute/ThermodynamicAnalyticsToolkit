@@ -30,10 +30,10 @@ class MockFlags:
                  loss="mean_squared",
                  max_steps=1000,
                  number_of_eigenvalues=4,
+                 number_walkers=1,
                  optimizer="GradientDescent",
                  output_activation="tanh",
                  output_dimension=1,
-                 parallel_replica=1,
                  parse_parameters_file=None,
                  parse_steps=[],
                  prior_factor=1.,
@@ -81,10 +81,10 @@ class MockFlags:
         :param loss: Set the loss to be measured during sampling, e.g. mean_squared, log_loss, ...
         :param max_steps: Number of steps to run sampleer.
         :param number_of_eigenvalues:
+        :param number_walkers: number of dependent walkers to activate ensemble preconditioning
         :param optimizer: Choose the optimizer to use for sampling: GradientDescent
         :param output_activation: Activation function to use for output layer: tanh, relu, linear
         :param output_dimension: number of output nodes/number of classes
-        :param parallel_replica: number of parallel replica to activate ensemble preconditioning
         :param parse_parameters_file: parse neural network parameters from this file on network creation
         :param parse_steps: indicates the row (in column "step") of the parse_parameters_file to use
         :param prior_factor: factor for scaling prior force
@@ -117,6 +117,7 @@ class MockFlags:
         self.every_nth = every_nth
         self.fix_parameters = fix_parameters
         self.friction_constant = friction_constant
+        self.hamiltonian_dynamics_time = hamiltonian_dynamics_time
         self.hidden_activation = hidden_activation
         self.hidden_dimension = hidden_dimension
         self.in_memory_pipeline = in_memory_pipeline
@@ -128,11 +129,10 @@ class MockFlags:
         self.loss = loss
         self.max_steps = max_steps
         self.number_of_eigenvalues = number_of_eigenvalues
-        self.hamiltonian_dynamics_time = hamiltonian_dynamics_time
+        self.number_walkers = number_walkers
         self.optimizer = optimizer
         self.output_activation = output_activation
         self.output_dimension = output_dimension
-        self.parallel_replica = parallel_replica
         self.parse_parameters_file = parse_parameters_file
         self.parse_steps = parse_steps
         self.prior_factor = prior_factor

@@ -205,8 +205,8 @@ def add_common_options_to_parser(parser):
              'because of parallelism.')
     parser.add_argument('--intra_ops_threads', type=int, default=None,
         help='Sets the number of threads to use within an op, i.e. Eigen threads for linear algebra routines.')
-    parser.add_argument('--parallel_replica', type=int, default=1,
-        help='Number of parallel replica samplers to run. This will activate ensemble preconditioning if larger tha 1.')
+    parser.add_argument('--number_walkers', type=int, default=1,
+        help='Number of dependent walkers to run. This will activate ensemble preconditioning if larger than 1.')
     parser.add_argument('--restore_model', type=str, default=None,
         help='Restore model (weights and biases) from a file.')
     parser.add_argument('--run_file', type=str, default=None,
@@ -290,8 +290,8 @@ def react_to_common_options(FLAGS, unparsed):
     """
     react_generally_to_options(FLAGS, unparsed)
 
-    if FLAGS.parallel_replica < 1:
-        logging.error("The number of parallel replica needs to be positive.")
+    if FLAGS.number_walkers < 1:
+        logging.error("The number of walkers needs to be positive.")
         sys.exit(255)
 
 

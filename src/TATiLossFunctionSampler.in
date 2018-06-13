@@ -85,7 +85,7 @@ def getNumberFromParameter(key, name):
     return int(name[start:])
 
 def main(_):
-    FLAGS.parallel_replica = 1
+    FLAGS.number_walkers = 1
 
     network_model = model(FLAGS)
     network_model.init_network(FLAGS.restore_model, setup=None)

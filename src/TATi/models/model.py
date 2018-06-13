@@ -200,7 +200,7 @@ class model:
         static_vars_float = ["old_loss", "old_kinetic", "kinetic_energy", "total_energy", "momenta", \
                              "gradients", "virials", "noise"]
         static_vars_int64 = ["accepted", "rejected"]
-        for i in range(self.FLAGS.parallel_replica):
+        for i in range(self.FLAGS.number_walkers):
             with tf.variable_scope("var_replica"+str(i+1), reuse=self.resources_created):
                 with tf.variable_scope("accumulate", reuse=self.resources_created):
                     for key in static_vars_float:
@@ -264,10 +264,10 @@ class model:
             loss="mean_squared",
             max_steps=1000,
             number_of_eigenvalues=4,
+            number_walkers=1,
             optimizer="GradientDescent",
             output_activation="tanh",
             output_dimension=1,
-            parallel_replica=1,
             parse_parameters_file=None,
             parse_steps=[],
             prior_factor=1.,
@@ -298,6 +298,7 @@ class model:
                 every_nth=every_nth,
                 fix_parameters=fix_parameters,
                 friction_constant=friction_constant,
+                hamiltonian_dynamics_time=hamiltonian_dynamics_time,
                 hidden_activation=hidden_activation,
                 hidden_dimension=hidden_dimension,
                 in_memory_pipeline=in_memory_pipeline,
@@ -309,11 +310,10 @@ class model:
                 loss=loss,
                 max_steps=max_steps,
                 number_of_eigenvalues=number_of_eigenvalues,
-                hamiltonian_dynamics_time=hamiltonian_dynamics_time,
+                number_walkers=number_walkers,
                 optimizer=optimizer,
                 output_activation=output_activation,
                 output_dimension=output_dimension,
-                parallel_replica=parallel_replica,
                 parse_parameters_file=parse_parameters_file,
                 parse_steps=parse_steps,
                 prior_factor=prior_factor,
@@ -385,7 +385,7 @@ class model:
                 if self.FLAGS.do_hessians:
                     self.hessians = []
             self.true_labels = NeuralNetwork.add_true_labels(self.output_dimension)
-            for i in range(self.FLAGS.parallel_replica):
+            for i in range(self.FLAGS.number_walkers):
                 with tf.name_scope('replica'+str(i+1)):
                     self.trainables.append('trainables_replica'+str(i+1))
                     self.nn.append(NeuralNetwork())
@@ -443,20 +443,20 @@ class model:
                         self.hessians.append(tf.reshape(tf.concat(hessians, axis=0), [total_dofs, total_dofs]))
         else:
             self.loss = []
-            for i in range(self.FLAGS.parallel_replica):
+            for i in range(self.FLAGS.number_walkers):
                 self.loss.append(self.nn[i].get_list_of_nodes(["loss"])[0])
 
-        # create global variable to hold kinetic energy
+        # create global variables, one for every walker in its replicated graph
         self.create_resource_variables()
         self.static_vars, self.zero_assigner, self.assigner = \
-            self._create_static_variable_dict(self.FLAGS.parallel_replica)
+            self._create_static_variable_dict(self.FLAGS.number_walkers)
 
         if self.FLAGS.fix_parameters is not None:
             names, values = self.split_parameters_as_names_values(self.FLAGS.fix_parameters)
             fixed_variables = self.fix_parameters(names)
             logging.info("Excluded the following degrees of freedom: "+str(fixed_variables))
             # exclude fixed degrees also from trainables_per_replica sets
-            for i in range(self.FLAGS.parallel_replica):
+            for i in range(self.FLAGS.number_walkers):
                 trainables = tf.get_collection_ref(self.trainables[i])
                 for var in fixed_variables:
                     removed_vars = model._fix_parameter_in_collection(trainables, var)
@@ -469,9 +469,9 @@ class model:
 
         # set number of degrees of freedom
         split_weights = self._split_collection_per_replica(
-            tf.get_collection_ref(tf.GraphKeys.WEIGHTS), self.FLAGS.parallel_replica)
+            tf.get_collection_ref(tf.GraphKeys.WEIGHTS), self.FLAGS.number_walkers)
         split_biases = self._split_collection_per_replica(
-            tf.get_collection_ref(tf.GraphKeys.BIASES), self.FLAGS.parallel_replica)
+            tf.get_collection_ref(tf.GraphKeys.BIASES), self.FLAGS.number_walkers)
         self.number_of_parameters = \
             neuralnet_parameters.get_total_dof_from_list(split_weights[0]) \
             + neuralnet_parameters.get_total_dof_from_list(split_biases[0])
@@ -493,13 +493,13 @@ class model:
 
         # setup training/sampling
         if setup == "train":
-            for i in range(self.FLAGS.parallel_replica):
+            for i in range(self.FLAGS.number_walkers):
                 with tf.variable_scope("var_replica" + str(i + 1)):
                 #with tf.name_scope('gradients_replica'+str(i+1)):
                     self.nn[i].add_train_method(self.loss[i], optimizer_method=self.FLAGS.optimizer, prior=prior)
         elif setup == "sample":
             sampler = []
-            for i in range(self.FLAGS.parallel_replica):
+            for i in range(self.FLAGS.number_walkers):
                 if self.FLAGS.seed is not None:
                     replica_seed = self.FLAGS.seed + i
                 else:
@@ -510,14 +510,14 @@ class model:
                                                            covariance_blending=self.FLAGS.covariance_blending))
             # create gradients
             grads_and_vars = []
-            for i in range(self.FLAGS.parallel_replica):
+            for i in range(self.FLAGS.number_walkers):
                 with tf.name_scope('gradients_replica'+str(i+1)):
                     trainables = tf.get_collection_ref(self.trainables[i])
                     grads_and_vars.append(sampler[i].compute_and_check_gradients(self.loss[i],
                                                                                  var_list=trainables))
 
             # combine gradients
-            #for i in range(self.FLAGS.parallel_replica):
+            #for i in range(self.FLAGS.number_walkers):
             #    print("Replica "+str(i))
             #    var_list = [v for g, v in grads_and_vars[i] if g is not None]
             #    grad_list = [g for g, v in grads_and_vars[i] if g is not None]
@@ -525,7 +525,7 @@ class model:
             #         print(var_list[j])
 
             # add position update nodes
-            for i in range(self.FLAGS.parallel_replica):
+            for i in range(self.FLAGS.number_walkers):
                 with tf.variable_scope("var_replica" + str(i + 1)):
                     global_step = self.nn[i]._prepare_global_step()
                     train_step = sampler[i].apply_gradients(grads_and_vars, i, global_step=global_step,
@@ -537,12 +537,12 @@ class model:
         if setup == "train" or setup == "sample":
             if self.step_placeholder is None:
                 self.step_placeholder = []
-                for i in range(self.FLAGS.parallel_replica):
+                for i in range(self.FLAGS.number_walkers):
                     with tf.name_scope("replica"+str(i+1)):
                         self.step_placeholder.append(tf.placeholder(shape=(), dtype=tf.int32))
             if self.global_step_assign_t is None:
                 self.global_step_assign_t = []
-                for i in range(self.FLAGS.parallel_replica):
+                for i in range(self.FLAGS.number_walkers):
                     with tf.name_scope("replica"+str(i+1)):
                         self.global_step_assign_t.append(tf.assign(self.nn[i].summary_nodes['global_step'], self.step_placeholder[i]))
             else:
@@ -565,13 +565,13 @@ class model:
                     inter_op_parallelism_threads=self.FLAGS.inter_ops_threads))
 
         if len(self.weights) == 0:
-            assert( len(split_weights) == self.FLAGS.parallel_replica )
-            for i in range(self.FLAGS.parallel_replica):
+            assert( len(split_weights) == self.FLAGS.number_walkers )
+            for i in range(self.FLAGS.number_walkers):
                 self.weights.append(neuralnet_parameters(split_weights[i]))
                 assert( self.weights[i].get_total_dof() == self.get_total_weight_dof() )
         if len(self.biases) == 0:
-            assert( len(split_biases) == self.FLAGS.parallel_replica )
-            for i in range(self.FLAGS.parallel_replica):
+            assert( len(split_biases) == self.FLAGS.number_walkers )
+            for i in range(self.FLAGS.number_walkers):
                 self.biases.append(neuralnet_parameters(split_biases[i]))
             assert (self.biases[i].get_total_dof() == self.get_total_bias_dof())
 
@@ -613,9 +613,9 @@ class model:
         if self.FLAGS.parse_parameters_file is not None \
                 and (self.FLAGS.parse_steps is not None and (len(self.FLAGS.parse_steps) > 0)):
             step=self.FLAGS.parse_steps[0]
-            for i in range(self.FLAGS.parallel_replica):
+            for i in range(self.FLAGS.number_walkers):
                 self.assign_weights_and_biases_from_file(self.FLAGS.parse_parameters_file, step,
-                                                         replica_index=i, do_check=True)
+                                                         walker_index=i, do_check=True)
 
         header = None
         logging.info("Setting up output files for "+str(setup))
@@ -695,14 +695,14 @@ class model:
         else:
             _dict[_key] = [_item]
 
-    def _create_static_variable_dict(self, parallel_replica):
+    def _create_static_variable_dict(self, number_replicated_graphs):
         """ Instantiate all sampler's resource variables. Also create
         assign zero nodes.
 
         This returns a dictionary with lists as values where the lists contain
         the created variable for each replica.
 
-        :param parallel_replica: number of parallel replica to instantiate for
+        :param number_replicated_graphs: number of replicated graphs to instantiate for
         :return: dict with static_var lists (one per replica), equivalent dict
                 for zero assigners, dict with assigners (required for HMC)
         """
@@ -712,7 +712,7 @@ class model:
         static_var_dict = {}
         zero_assigner_dict = {}
         assigner_dict = {}
-        for i in range(parallel_replica):
+        for i in range(number_replicated_graphs):
             with tf.variable_scope("var_replica" + str(i + 1), reuse=True):
                 with tf.variable_scope("accumulate", reuse=True):
                     for key in static_vars_float:
@@ -749,31 +749,31 @@ class model:
         :return: either thrice None or lists (per replica) of pandas dataframes
                 depending on whether either parameter has evaluated to True
         """
-        placeholder_nodes = [self.nn[replica_index].get_dict_of_nodes(
+        placeholder_nodes = [self.nn[walker_index].get_dict_of_nodes(
             ["current_step", "next_eval_step"])
-            for replica_index in range(self.FLAGS.parallel_replica)]
+            for walker_index in range(self.FLAGS.number_walkers)]
 
         list_of_nodes = ["sample_step", "accuracy", "global_step", "loss"]
-        test_nodes = [[self.summary]*self.FLAGS.parallel_replica]
+        test_nodes = [[self.summary]*self.FLAGS.number_walkers]
         for item in list_of_nodes:
-            test_nodes.append([self.nn[replica_index].get(item) \
-                               for replica_index in range(self.FLAGS.parallel_replica)])
+            test_nodes.append([self.nn[walker_index].get(item) \
+                               for walker_index in range(self.FLAGS.number_walkers)])
 
         all_weights = []
         all_biases = []
-        for replica_index in range(self.FLAGS.parallel_replica):
-            all_weights.append(self.weights[replica_index].parameters)
-            all_biases.append(self.biases[replica_index].parameters)
+        for walker_index in range(self.FLAGS.number_walkers):
+            all_weights.append(self.weights[walker_index].parameters)
+            all_biases.append(self.biases[walker_index].parameters)
 
         output_width = 8
         output_precision = 8
 
         written_row = 0
 
-        accumulated_kinetic_energy = [0.]*self.FLAGS.parallel_replica
-        accumulated_loss_nominator = [0.]*self.FLAGS.parallel_replica
-        accumulated_loss_denominator = [0.]*self.FLAGS.parallel_replica
-        accumulated_virials = [0.]*self.FLAGS.parallel_replica
+        accumulated_kinetic_energy = [0.]*self.FLAGS.number_walkers
+        accumulated_loss_nominator = [0.]*self.FLAGS.number_walkers
+        accumulated_loss_denominator = [0.]*self.FLAGS.number_walkers
+        accumulated_virials = [0.]*self.FLAGS.number_walkers
 
         averages = None
         if return_averages:
@@ -781,7 +781,7 @@ class model:
             steps = (self.FLAGS.max_steps % self.FLAGS.every_nth) + 1
             header = self.get_averages_header(setup="sample")
             no_params = len(header)
-            for replica_index in range(self.FLAGS.parallel_replica):
+            for walker_index in range(self.FLAGS.number_walkers):
                 averages.append(pd.DataFrame(
                     np.zeros((steps, no_params)),
                     columns=header))
@@ -792,7 +792,7 @@ class model:
             steps = (self.FLAGS.max_steps % self.FLAGS.every_nth) + 1
             header = self.get_sample_header()
             no_params = len(header)
-            for replica_index in range(self.FLAGS.parallel_replica):
+            for walker_index in range(self.FLAGS.number_walkers):
                 run_info.append(pd.DataFrame(
                     np.zeros((steps, no_params)),
                     columns=header))
@@ -805,7 +805,7 @@ class model:
                 self.weights[0].get_total_dof(),
                 self.biases[0].get_total_dof())
             no_params = len(header)
-            for replica_index in range(self.FLAGS.parallel_replica):
+            for walker_index in range(self.FLAGS.number_walkers):
                 trajectory.append(pd.DataFrame(
                     np.zeros((steps, no_params)),
                     columns=header))
@@ -814,30 +814,30 @@ class model:
         # which the employed sampler actually requires) because of the evaluated
         # summary! All of the placeholder nodes are also summary nodes.
         feed_dict = {}
-        for replica_index in range(self.FLAGS.parallel_replica):
-            feed_dict.update(self._create_default_feed_dict_with_constants(replica_index))
+        for walker_index in range(self.FLAGS.number_walkers):
+            feed_dict.update(self._create_default_feed_dict_with_constants(walker_index))
 
         # check that sampler's parameters are actually used
-        for replica_index in range(self.FLAGS.parallel_replica):
-            logging.info("Parallel replica #"+str(replica_index))
+        for walker_index in range(self.FLAGS.number_walkers):
+            logging.info("Parallel replica #"+str(walker_index))
             if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics",
                                       "GeometricLangevinAlgorithm_1stOrder",
                                       "GeometricLangevinAlgorithm_2ndOrder",
                                       "BAOAB",
                                       "CovarianceControlledAdaptiveLangevinThermostat"]:
-                gamma, beta, deltat = self.sess.run(self.nn[replica_index].get_list_of_nodes(
+                gamma, beta, deltat = self.sess.run(self.nn[walker_index].get_list_of_nodes(
                     ["friction_constant", "inverse_temperature", "step_width"]), feed_dict=feed_dict)
                 logging.info("LD Sampler parameters, replica #%d: gamma = %lg, beta = %lg, delta t = %lg" %
-                      (replica_index, gamma, beta, deltat))
+                      (walker_index, gamma, beta, deltat))
             elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
-                current_step, num_mc_steps, deltat = self.sess.run(self.nn[replica_index].get_list_of_nodes(
+                current_step, num_mc_steps, deltat = self.sess.run(self.nn[walker_index].get_list_of_nodes(
                     ["current_step", "next_eval_step", "step_width"]), feed_dict=feed_dict)
                 logging.info("MC Sampler parameters, replica #%d: current_step = %lg, num_mc_steps = %lg, delta t = %lg" %
-                      (replica_index, current_step, num_mc_steps, deltat))
+                      (walker_index, current_step, num_mc_steps, deltat))
 
         # create extra nodes for HMC
         if self.FLAGS.sampler == "HamiltonianMonteCarlo":
-            HMC_eval_nodes = [[self.nn[i].get("loss") for i in range(self.FLAGS.parallel_replica)]] \
+            HMC_eval_nodes = [[self.nn[i].get("loss") for i in range(self.FLAGS.number_walkers)]] \
                             +[self.static_vars[key] for key in ["old_kinetic", "total_energy"]]
 
             HMC_set_nodes = []
@@ -849,14 +849,14 @@ class model:
             # zero rejection rate before sampling start
             check_accepted, check_rejected = self.sess.run([
                 self.zero_assigner["accepted"], self.zero_assigner["rejected"]])
-            for replica_index in range(self.FLAGS.parallel_replica):
-                assert(check_accepted[replica_index] == 0)
-                assert(check_rejected[replica_index] == 0)
+            for walker_index in range(self.FLAGS.number_walkers):
+                assert(check_accepted[walker_index] == 0)
+                assert(check_rejected[walker_index] == 0)
 
         logging.info("Starting to sample")
         logging.info_intervals = max(1, int(self.FLAGS.max_steps / 100))
         last_time = time.process_time()
-        HMC_steps = [0]*self.FLAGS.parallel_replica
+        HMC_steps = [0]*self.FLAGS.number_walkers
         HMC_current_set_nodes = []
         for current_step in range(self.FLAGS.max_steps):
             # get next batch of data
@@ -871,35 +871,35 @@ class model:
 
             # set HMC specific nodes in feed_dict
             if self.FLAGS.sampler == "HamiltonianMonteCarlo":
-                for replica_index in range(self.FLAGS.parallel_replica):
+                for walker_index in range(self.FLAGS.number_walkers):
                     # pick next evaluation step with a little random variation
-                    if current_step > HMC_steps[replica_index]:
-                        HMC_steps[replica_index] += max(1,
+                    if current_step > HMC_steps[walker_index]:
+                        HMC_steps[walker_index] += max(1,
                                          round((0.9 + np.random.uniform(low=0., high=0.2)) \
                                                * self.FLAGS.hamiltonian_dynamics_time / self.FLAGS.step_width))
                         logging.debug("Next evaluation of HMC criterion at step " + str(HMC_steps))
                         feed_dict.update({
-                            placeholder_nodes[replica_index]["next_eval_step"]: HMC_steps[replica_index]
+                            placeholder_nodes[walker_index]["next_eval_step"]: HMC_steps[walker_index]
                         })
                     feed_dict.update({
-                        placeholder_nodes[replica_index]["current_step"]: current_step
+                        placeholder_nodes[walker_index]["current_step"]: current_step
                     })
 
             # set global variable used in HMC sampler for criterion to initial loss
             if self.FLAGS.sampler == "HamiltonianMonteCarlo":
                 loss_eval, kin_eval, total_eval = self.sess.run(HMC_eval_nodes, feed_dict=feed_dict)
-                for replica_index in range(self.FLAGS.parallel_replica):
+                for walker_index in range(self.FLAGS.number_walkers):
                     logging.debug("replica #%d, #%d: loss is %lg, total is %lg, kinetic is %lg" \
-                                  % (replica_index, current_step, loss_eval[replica_index], total_eval[replica_index], kin_eval[replica_index]))
+                                  % (walker_index, current_step, loss_eval[walker_index], total_eval[walker_index], kin_eval[walker_index]))
                 HMC_current_set_nodes[:] = HMC_set_nodes
-                for replica_index in range(self.FLAGS.parallel_replica):
-                    if abs(total_eval[replica_index]) < 1e-10:
-                        HMC_current_set_nodes.extend([self.assigner["total_energy"][replica_index]])
+                for walker_index in range(self.FLAGS.number_walkers):
+                    if abs(total_eval[walker_index]) < 1e-10:
+                        HMC_current_set_nodes.extend([self.assigner["total_energy"][walker_index]])
                 self.sess.run(HMC_current_set_nodes, feed_dict=feed_dict)
                 loss_eval, kin_eval, total_eval = self.sess.run(HMC_eval_nodes, feed_dict=feed_dict)
-                for replica_index in range(self.FLAGS.parallel_replica):
+                for walker_index in range(self.FLAGS.number_walkers):
                     logging.debug("replica #%d, #%d: loss is %lg, total is %lg, kinetic is %lg" \
-                                  % (replica_index, current_step, loss_eval[replica_index], total_eval[replica_index], kin_eval[replica_index]))
+                                  % (walker_index, current_step, loss_eval[walker_index], total_eval[walker_index], kin_eval[walker_index]))
 
             # zero kinetic energy
             if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics",
@@ -915,12 +915,12 @@ class model:
                         self.zero_assigner["gradients"],
                         self.zero_assigner["virials"],
                         self.zero_assigner["noise"]])
-                for replica_index in range(self.FLAGS.parallel_replica):
-                    assert (abs(check_kinetic[replica_index]) < 1e-10)
-                    assert (abs(check_momenta[replica_index]) < 1e-10)
-                    assert (abs(check_gradients[replica_index]) < 1e-10)
-                    assert (abs(check_virials[replica_index]) < 1e-10)
-                    assert (abs(check_noise[replica_index]) < 1e-10)
+                for walker_index in range(self.FLAGS.number_walkers):
+                    assert (abs(check_kinetic[walker_index]) < 1e-10)
+                    assert (abs(check_momenta[walker_index]) < 1e-10)
+                    assert (abs(check_gradients[walker_index]) < 1e-10)
+                    assert (abs(check_virials[walker_index]) < 1e-10)
+                    assert (abs(check_noise[walker_index]) < 1e-10)
 
             # get the weights and biases as otherwise the loss won't match
             # tf first computes loss, then gradient, then performs variable update
@@ -971,13 +971,13 @@ class model:
                             self.static_vars["virials"],
                             self.static_vars["noise"]])
 
-            for replica_index in range(self.FLAGS.parallel_replica):
+            for walker_index in range(self.FLAGS.number_walkers):
                 if current_step >= self.FLAGS.burn_in_steps:
-                    accumulated_loss_nominator[replica_index] += loss_eval[replica_index] * exp(- self.FLAGS.inverse_temperature * loss_eval[replica_index])
-                    accumulated_loss_denominator[replica_index] += exp(- self.FLAGS.inverse_temperature * loss_eval[replica_index])
+                    accumulated_loss_nominator[walker_index] += loss_eval[walker_index] * exp(- self.FLAGS.inverse_temperature * loss_eval[walker_index])
+                    accumulated_loss_denominator[walker_index] += exp(- self.FLAGS.inverse_temperature * loss_eval[walker_index])
                     if self.FLAGS.sampler != "StochasticGradientLangevinDynamics":
-                        accumulated_kinetic_energy[replica_index] += kinetic_energy[replica_index]
-                    accumulated_virials[replica_index] += virials[replica_index]
+                        accumulated_kinetic_energy[walker_index] += kinetic_energy[walker_index]
+                    accumulated_virials[walker_index] += virials[walker_index]
 
             if current_step % self.FLAGS.every_nth == 0:
                 current_time = time.process_time()
@@ -989,39 +989,39 @@ class model:
                     accepted_eval, rejected_eval = self.sess.run([
                         self.static_vars["accepted"], self.static_vars["rejected"]])
 
-                for replica_index in range(self.FLAGS.parallel_replica):
+                for walker_index in range(self.FLAGS.number_walkers):
                     if self.config_map["do_write_trajectory_file"] or return_trajectories:
-                        trajectory_line = [replica_index, global_step[replica_index]] \
-                                          + ['{:{width}.{precision}e}'.format(loss_eval[replica_index], width=output_width,
+                        trajectory_line = [walker_index, global_step[walker_index]] \
+                                          + ['{:{width}.{precision}e}'.format(loss_eval[walker_index], width=output_width,
                                                                               precision=output_precision)]
-                        if len(weights_eval[replica_index]) > 0:
-                            flat_array = neuralnet_parameters.flatten_list_of_arrays(weights_eval[replica_index])
+                        if len(weights_eval[walker_index]) > 0:
+                            flat_array = neuralnet_parameters.flatten_list_of_arrays(weights_eval[walker_index])
                             trajectory_line += ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision) \
                                                 for item in flat_array[:]]
-                        if len(biases_eval[replica_index]) > 0:
-                            flat_array = neuralnet_parameters.flatten_list_of_arrays(biases_eval[replica_index])
+                        if len(biases_eval[walker_index]) > 0:
+                            flat_array = neuralnet_parameters.flatten_list_of_arrays(biases_eval[walker_index])
                             trajectory_line += ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision) \
                                                 for item in flat_array[:]]
 
                         if self.config_map["do_write_trajectory_file"]:
                             self.trajectory_writer.writerow(trajectory_line)
                         if return_trajectories:
-                            trajectory[replica_index].loc[written_row] = trajectory_line
+                            trajectory[walker_index].loc[written_row] = trajectory_line
 
                     if self.config_map["do_write_averages_file"] or return_averages:
-                        if accumulated_loss_denominator[replica_index] > 0:
-                            average_loss = accumulated_loss_nominator[replica_index]/accumulated_loss_denominator[replica_index]
+                        if accumulated_loss_denominator[walker_index] > 0:
+                            average_loss = accumulated_loss_nominator[walker_index]/accumulated_loss_denominator[walker_index]
                         else:
                             average_loss = 0.
                         if current_step >= self.FLAGS.burn_in_steps:
                             divisor = float(current_step + 1. - self.FLAGS.burn_in_steps)
-                            average_kinetic_energy = accumulated_kinetic_energy[replica_index] / divisor
-                            average_virials = abs(0.5 * accumulated_virials[replica_index]) / divisor
+                            average_kinetic_energy = accumulated_kinetic_energy[walker_index] / divisor
+                            average_virials = abs(0.5 * accumulated_virials[walker_index]) / divisor
                         else:
                             average_kinetic_energy = 0.
                             average_virials = 0.
-                        averages_line = [replica_index, global_step[replica_index], current_step] \
-                                        + ['{:{width}.{precision}e}'.format(loss_eval[replica_index], width=output_width,
+                        averages_line = [walker_index, global_step[walker_index], current_step] \
+                                        + ['{:{width}.{precision}e}'.format(loss_eval[walker_index], width=output_width,
                                                                             precision=output_precision)] \
                                         + ['{:{width}.{precision}e}'.format(average_loss, width=output_width,
                                                                             precision=output_precision)]
@@ -1036,7 +1036,7 @@ class model:
                         if self.config_map["do_write_averages_file"]:
                             self.averages_writer.writerow(averages_line)
                         if return_averages:
-                            averages[replica_index].loc[written_row] = averages_line
+                            averages[walker_index].loc[written_row] = averages_line
 
                     if self.config_map["do_write_run_file"] or return_run_info:
                         run_line  = []
@@ -1046,44 +1046,44 @@ class model:
                                                   "HamiltonianMonteCarlo",
                                                   "BAOAB",
                                                   "CovarianceControlledAdaptiveLangevinThermostat"]:
-                            run_line = [replica_index, global_step[replica_index], current_step] \
-                                       + ['{:1.3f}'.format(acc[replica_index])] \
-                                       + ['{:{width}.{precision}e}'.format(loss_eval[replica_index], width=output_width,
+                            run_line = [walker_index, global_step[walker_index], current_step] \
+                                       + ['{:1.3f}'.format(acc[walker_index])] \
+                                       + ['{:{width}.{precision}e}'.format(loss_eval[walker_index], width=output_width,
                                                                            precision=output_precision)] \
                                        + ['{:{width}.{precision}e}'.format(time_elapsed_per_nth_step, width=output_width,
                                                                            precision=output_precision)]
                             if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
                                 run_line += ['{:{width}.{precision}e}'.format(x, width=output_width,
                                                                               precision=output_precision)
-                                             for x in [sqrt(gradients[replica_index]), abs(0.5*virials[replica_index]), sqrt(noise[replica_index])]]
+                                             for x in [sqrt(gradients[walker_index]), abs(0.5*virials[walker_index]), sqrt(noise[walker_index])]]
                             elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
-                                if (rejected_eval[replica_index]+accepted_eval[replica_index]) > 0:
-                                    rejection_rate = rejected_eval[replica_index]/(rejected_eval[replica_index]+accepted_eval[replica_index])
+                                if (rejected_eval[walker_index]+accepted_eval[walker_index]) > 0:
+                                    rejection_rate = rejected_eval[walker_index]/(rejected_eval[walker_index]+accepted_eval[walker_index])
                                 else:
                                     rejection_rate = 0
-                                run_line += ['{:{width}.{precision}e}'.format(loss_eval[replica_index] + kinetic_energy[replica_index],
+                                run_line += ['{:{width}.{precision}e}'.format(loss_eval[walker_index] + kinetic_energy[walker_index],
                                                                               width=output_width,
                                                                               precision=output_precision)]\
-                                           + ['{:{width}.{precision}e}'.format(old_total_energy[replica_index],
+                                           + ['{:{width}.{precision}e}'.format(old_total_energy[walker_index],
                                                                                width=output_width,
                                                                                precision=output_precision)]\
                                            + ['{:{width}.{precision}e}'.format(x, width=output_width,
                                                                                precision=output_precision)
-                                              for x in [kinetic_energy[replica_index], sqrt(momenta[replica_index]), sqrt(gradients[replica_index]), abs(0.5*virials[replica_index])]]\
+                                              for x in [kinetic_energy[walker_index], sqrt(momenta[walker_index]), sqrt(gradients[walker_index]), abs(0.5*virials[walker_index])]]\
                                            + ['{:{width}.{precision}e}'.format(rejection_rate, width=output_width,
                                                                                precision=output_precision)]
                             else:
-                                run_line += ['{:{width}.{precision}e}'.format(loss_eval[replica_index] + kinetic_energy[replica_index],
+                                run_line += ['{:{width}.{precision}e}'.format(loss_eval[walker_index] + kinetic_energy[walker_index],
                                                                               width=output_width,
                                                                               precision=output_precision)]\
                                            + ['{:{width}.{precision}e}'.format(x, width=output_width,
                                                                                precision=output_precision)
-                                              for x in [kinetic_energy[replica_index], sqrt(momenta[replica_index]), sqrt(gradients[replica_index]), abs(0.5*virials[replica_index]), sqrt(noise[replica_index])]]
+                                              for x in [kinetic_energy[walker_index], sqrt(momenta[walker_index]), sqrt(gradients[walker_index]), abs(0.5*virials[walker_index]), sqrt(noise[walker_index])]]
 
                         if self.config_map["do_write_run_file"]:
                             self.run_writer.writerow(run_line)
                         if return_run_info:
-                            run_info[replica_index].loc[written_row] = run_line
+                            run_info[walker_index].loc[written_row] = run_line
 
             if current_step % self.FLAGS.every_nth == 0:
                 written_row+=1
@@ -1092,7 +1092,7 @@ class model:
                 #logging.debug('Accuracy at step %s (%s): %s' % (i, global_step, acc))
                 #logging.debug('Loss at step %s: %s' % (i, loss_eval))
 
-            if (self.FLAGS.parallel_replica > 1) and (self.FLAGS.collapse_after_steps != 0) and \
+            if (self.FLAGS.number_walkers > 1) and (self.FLAGS.collapse_after_steps != 0) and \
                     (current_step % self.FLAGS.collapse_after_steps == 0):
                 # get walker 0's position
                 weights_eval, biases_eval = self.sess.run([
@@ -1102,20 +1102,20 @@ class model:
                 # assign all in a single session run to allow parallelization
                 collapse_feed_dict = {}
                 assigns = []
-                for replica_index in range(1,self.FLAGS.parallel_replica):
+                for walker_index in range(1,self.FLAGS.number_walkers):
                     # directly connecting the flat parameters tensor with the respective
                     # other replica's parameters' placeholder does not seem to work, i.e.
                     # replacing weights_eval -> self.weights[0].parameters
-                    assert( len(self.weights[0].parameters) == len(self.weights[replica_index].placeholders))
+                    assert( len(self.weights[0].parameters) == len(self.weights[walker_index].placeholders))
                     for weight, weight_placeholder in zip(weights_eval,
-                                                          self.weights[replica_index].placeholders):
+                                                          self.weights[walker_index].placeholders):
                         collapse_feed_dict[weight_placeholder] = weight
-                    assert( len(self.biases[0].parameters) == len(self.biases[replica_index].placeholders))
+                    assert( len(self.biases[0].parameters) == len(self.biases[walker_index].placeholders))
                     for bias, bias_placeholder in zip(biases_eval,
-                                                      self.biases[replica_index].placeholders):
+                                                      self.biases[walker_index].placeholders):
                         collapse_feed_dict[bias_placeholder] = bias
-                    assigns.append(self.weights[replica_index].assign_all_t)
-                    assigns.append(self.biases[replica_index].assign_all_t)
+                    assigns.append(self.weights[walker_index].assign_all_t)
+                    assigns.append(self.biases[walker_index].assign_all_t)
                 # evaluate and assign all at once
                 self.sess.run(assigns, feed_dict=collapse_feed_dict)
 
@@ -1123,7 +1123,7 @@ class model:
 
         return run_info, trajectory, averages
 
-    def _create_default_feed_dict_with_constants(self, replica_index=0):
+    def _create_default_feed_dict_with_constants(self, walker_index=0):
         """ Construct an initial feed dict from all constant parameters
         such as step width, ...
 
@@ -1135,7 +1135,7 @@ class model:
         from cmd-line or created through `setup_parameters()` with the slew of
         placeholders in tensorflow's neural network.
 
-        :param replica_index: index of walker whose placeholders to feed
+        :param walker_index: index of walker whose placeholders to feed
         :return: feed_dict with constant parameters
         """
 
@@ -1159,14 +1159,14 @@ class model:
         # for each parameter check for placeholder and add to dict on its presence
         default_feed_dict = {}
         for key in param_dict.keys():
-            if key in self.nn[replica_index].placeholder_nodes.keys():
+            if key in self.nn[walker_index].placeholder_nodes.keys():
                 default_feed_dict.update({
-                    self.nn[replica_index].placeholder_nodes[key]: param_dict[key]})
+                    self.nn[walker_index].placeholder_nodes[key]: param_dict[key]})
 
         return default_feed_dict
 
 
-    def train(self, replica_index=0, return_run_info = False, return_trajectories = False, return_averages=False):
+    def train(self, walker_index=0, return_run_info = False, return_trajectories = False, return_averages=False):
         """ Performs the actual training of the neural network `nn` given a dataset `ds` and a
         Session `session`.
 
@@ -1179,10 +1179,10 @@ class model:
         :return: either twice None or a pandas dataframe depending on whether either
                 parameter has evaluated to True
         """
-        assert( replica_index < self.FLAGS.parallel_replica)
+        assert( walker_index < self.FLAGS.number_walkers)
 
-        placeholder_nodes = self.nn[replica_index].get_dict_of_nodes(["learning_rate", "y_"])
-        test_nodes = [self.summary]+self.nn[replica_index].get_list_of_nodes(
+        placeholder_nodes = self.nn[walker_index].get_dict_of_nodes(["learning_rate", "y_"])
+        test_nodes = [self.summary]+self.nn[walker_index].get_list_of_nodes(
             ["train_step", "accuracy", "global_step", "loss", "y_", "y"]) \
                      +[self.static_vars["gradients"]]
 
@@ -1222,7 +1222,7 @@ class model:
                 np.zeros((steps, no_params)),
                 columns=header)
 
-        default_feed_dict = self._create_default_feed_dict_with_constants(replica_index)
+        default_feed_dict = self._create_default_feed_dict_with_constants(walker_index)
 
         logging.info("Starting to train")
         last_time = time.process_time()
@@ -1241,8 +1241,8 @@ class model:
             #logging.debug("batch is x: "+str(features[:])+", y: "+str(labels[:]))
 
             # zero accumulated gradient
-            check_gradients, check_virials = self.sess.run([self.zero_assigner["gradients"][replica_index],
-                                                            self.zero_assigner["virials"][replica_index]])
+            check_gradients, check_virials = self.sess.run([self.zero_assigner["gradients"][walker_index],
+                                                            self.zero_assigner["virials"][walker_index]])
             assert (abs(check_gradients) < 1e-10)
             assert (abs(check_virials) < 1e-10)
 
@@ -1251,14 +1251,14 @@ class model:
             # hence, after the sample step, we would have updated variables but old loss
             if current_step % self.FLAGS.every_nth == 0:
                 if self.config_map["do_write_trajectory_file"] or return_trajectories:
-                    weights_eval = self.weights[replica_index].evaluate(self.sess)
-                    biases_eval = self.biases[replica_index].evaluate(self.sess)
+                    weights_eval = self.weights[walker_index].evaluate(self.sess)
+                    biases_eval = self.biases[walker_index].evaluate(self.sess)
 
             summary, _, acc, global_step, loss_eval, y_true_eval, y_eval, scaled_grad = \
                 self.sess.run(test_nodes, feed_dict=feed_dict)
 
-            gradients, virials = self.sess.run([self.static_vars["gradients"][replica_index],
-                                                self.static_vars["virials"][replica_index]])
+            gradients, virials = self.sess.run([self.static_vars["gradients"][walker_index],
+                                                self.static_vars["virials"][walker_index]])
             if current_step >= self.FLAGS.burn_in_steps:
                 accumulated_virials += virials
 
@@ -1321,9 +1321,9 @@ class model:
 
         return run_info, trajectory, averages
 
-    def compute_optimal_stepwidth(self, replica_index=0):
-        assert( replica_index < self.FLAGS.parallel_replica )
-        placeholder_nodes = self.nn[replica_index].get_dict_of_nodes(["learning_rate", "y_"])
+    def compute_optimal_stepwidth(self, walker_index=0):
+        assert( walker_index < self.FLAGS.number_walkers )
+        placeholder_nodes = self.nn[walker_index].get_dict_of_nodes(["learning_rate", "y_"])
 
         # get first batch of data
         self.reset_dataset()
@@ -1338,7 +1338,7 @@ class model:
         if self.FLAGS.dropout is not None:
             feed_dict.update({placeholder_nodes["keep_prob"] : self.FLAGS.dropout})
 
-        hessian_eval = self.sess.run(self.hessians[replica_index], feed_dict=feed_dict)
+        hessian_eval = self.sess.run(self.hessians[walker_index], feed_dict=feed_dict)
         lambdas, _ = sps.linalg.eigs(hessian_eval, k=1)
         optimal_step_width = 2/sqrt(lambdas[0])
         logging.info("Optimal step width would be "+str(optimal_step_width))
@@ -1509,55 +1509,55 @@ class model:
                 retlist.append(name)
         return retlist
 
-    def assign_current_step(self, step, replica_index=0):
-        assert( replica_index < self.FLAGS.parallel_replica )
+    def assign_current_step(self, step, walker_index=0):
+        assert( walker_index < self.FLAGS.number_walkers )
         # set step
-        if ('global_step' in self.nn[replica_index].summary_nodes.keys()):
-            sample_step_placeholder = self.step_placeholder[replica_index]
+        if ('global_step' in self.nn[walker_index].summary_nodes.keys()):
+            sample_step_placeholder = self.step_placeholder[walker_index]
             feed_dict = {sample_step_placeholder: step}
-            set_step = self.sess.run(self.global_step_assign_t[replica_index], feed_dict=feed_dict)
+            set_step = self.sess.run(self.global_step_assign_t[walker_index], feed_dict=feed_dict)
             assert (set_step == step)
 
-    def assign_neural_network_parameters(self, parameters, replica_index=0):
+    def assign_neural_network_parameters(self, parameters, walker_index=0):
         """ Assigns the parameters of the neural network from
         the given array.
 
         :param parameters: list of values, one for each weight and bias
-        :param replica_index: index of the replicated network (in the graph)
+        :param walker_index: index of the replicated network (in the graph)
         """
-        weights_dof = self.weights[replica_index].get_total_dof()
-        self.weights[replica_index].assign(self.sess, parameters[0:weights_dof])
-        self.biases[replica_index].assign(self.sess, parameters[weights_dof:])
+        weights_dof = self.weights[walker_index].get_total_dof()
+        self.weights[walker_index].assign(self.sess, parameters[0:weights_dof])
+        self.biases[walker_index].assign(self.sess, parameters[weights_dof:])
 
-    def assign_weights_and_biases(self, weights_vals, biases_vals, replica_index=0, do_check=False):
+    def assign_weights_and_biases(self, weights_vals, biases_vals, walker_index=0, do_check=False):
         """ Assigns weights and biases of a neural network.
 
         :param weights_vals: flat weights parameters
         :param biases_vals: flat bias parameters
-        :param replica_index: index of the replicated network (in the graph)
+        :param walker_index: index of the replicated network (in the graph)
         :param do_check: whether to check set values (and print) or not
         :return evaluated weights and bias on do_check or None otherwise
         """
-        self.weights[replica_index].assign(self.sess, weights_vals)
-        self.biases[replica_index].assign(self.sess, biases_vals)
+        self.weights[walker_index].assign(self.sess, weights_vals)
+        self.biases[walker_index].assign(self.sess, biases_vals)
 
         # get the input and biases to check against what we set
         if do_check:
-            weights_eval = self.weights[replica_index].evaluate(self.sess)
-            biases_eval = self.biases[replica_index].evaluate(self.sess)
-            logging.info("Evaluating replica #"+str(replica_index) \
+            weights_eval = self.weights[walker_index].evaluate(self.sess)
+            biases_eval = self.biases[walker_index].evaluate(self.sess)
+            logging.info("Evaluating replica #"+str(walker_index) \
                          +" at weights " + str(weights_eval[0:10]) \
                          + ", biases " + str(biases_eval[0:10]))
             return weights_eval, biases_eval
         return None
 
-    def assign_weights_and_biases_from_dataframe(self, df_parameters, rownr, replica_index=0, do_check=False):
+    def assign_weights_and_biases_from_dataframe(self, df_parameters, rownr, walker_index=0, do_check=False):
         """ Parse weight and bias values from a dataframe given a specific step
         to set the neural network's parameters.
 
         :param df_parameters: pandas dataframe
         :param rownr: rownr to set
-        :param replica_index: index of the replicated network (in the graph)
+        :param walker_index: index of the replicated network (in the graph)
         :param do_check: whether to evaluate (and print) set parameters
         :return evaluated weights and bias on do_check or None otherwise
         """
@@ -1580,19 +1580,19 @@ class model:
         logging.debug("Read row " + str(rownr) + ":" + str(parameters))
 
         # create internal array to store parameters
-        weights_vals = self.weights[replica_index].create_flat_vector()
-        biases_vals = self.biases[replica_index].create_flat_vector()
+        weights_vals = self.weights[walker_index].create_flat_vector()
+        biases_vals = self.biases[walker_index].create_flat_vector()
         weights_vals[:weights_vals.size] = [parameters[key] for key in sorted(parameters.keys()) if "w" in key]
         biases_vals[:biases_vals.size] = [parameters[key] for key in sorted(parameters.keys()) if "b" in key]
-        return self.assign_weights_and_biases(weights_vals, biases_vals, replica_index, do_check)
+        return self.assign_weights_and_biases(weights_vals, biases_vals, walker_index, do_check)
 
-    def assign_weights_and_biases_from_file(self, filename, step, replica_index=0, do_check=False):
+    def assign_weights_and_biases_from_file(self, filename, step, walker_index=0, do_check=False):
         """ Parse weight and bias values from a CSV file given a specific step
         to set the neural network's parameters.
 
         :param filename: filename to parse
         :param step: step to set (i.e. value in "step" column designates row)
-        :param replica_index: index of the replicated network (in the graph)
+        :param walker_index: index of the replicated network (in the graph)
         :param do_check: whether to evaluate (and print) set parameters
         :return evaluated weights and bias on do_check or None otherwise
         """
@@ -1600,11 +1600,11 @@ class model:
         df_parameters = pd.read_csv(filename, sep=',', header=0)
         if step in df_parameters.loc[:, ['step']].values:
             rownr = np.where(df_parameters.loc[:, ['step']].values == step)[0]
-            self.assign_current_step(step, replica_index=replica_index)
+            self.assign_current_step(step, walker_index=walker_index)
             return self.assign_weights_and_biases_from_dataframe(
                 df_parameters=df_parameters,
                 rownr=rownr,
-                replica_index=replica_index,
+                walker_index=walker_index,
                 do_check=do_check
             )
         else:

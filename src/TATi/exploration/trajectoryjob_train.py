@@ -31,7 +31,7 @@ class TrajectoryJob_train(TrajectoryJob_sample):
         self.job_type = "train"
 
     def _store_last_step_of_trajectory(self, _data, averages, run_info, trajectory):
-        for replica_index in range(self.network_model.FLAGS.parallel_replica):
+        for walker_index in range(self.network_model.FLAGS.number_walkers):
             step = [int(np.asarray(run_info.loc[:, 'step'])[-1])]
             loss = [float(np.asarray(run_info.loc[:, 'loss'])[-1])]
             gradient = [float(np.asarray(run_info.loc[:, 'scaled_gradient'])[-1])]
@@ -89,23 +89,23 @@ class TrajectoryJob_train(TrajectoryJob_sample):
             features, labels = self.network_model.input_pipeline.next_batch(self.network_model.sess)
 
             # TODO: make this into a single session run call (i.e. over all replica at once)
-            for replica_index in range(self.network_model.FLAGS.parallel_replica):
+            for walker_index in range(self.network_model.FLAGS.number_walkers):
                 feed_dict = {
                     self.network_model.xinput: features,
-                    self.network_model.nn[replica_index].placeholder_nodes["y_"]: labels,
+                    self.network_model.nn[walker_index].placeholder_nodes["y_"]: labels,
                 }
                 if self.network_model.FLAGS.dropout is not None:
                     feed_dict.update({
-                        self.network_model.nn[replica_index].placeholder_nodes["keep_prob"]: self.FLAGS.dropout})
+                        self.network_model.nn[walker_index].placeholder_nodes["keep_prob"]: self.FLAGS.dropout})
 
                 #self.network_model.reset_dataset()
                 # gradient_eval = self.network_model.sess.run(
-                #     self.network_model.gradients[replica_index],
+                #     self.network_model.gradients[walker_index],
                 #     feed_dict=feed_dict)
                 # print(gradient_eval)
 
                 hessian_eval = self.network_model.sess.run(
-                    self.network_model.hessians[replica_index],
+                    self.network_model.hessians[walker_index],
                     feed_dict=feed_dict)
                 #print(hessian_eval)
                 _data.hessian_eigenvalues.append(np.linalg.eigvals(hessian_eval))
