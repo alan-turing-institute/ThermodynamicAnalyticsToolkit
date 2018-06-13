@@ -1,4 +1,4 @@
-SUBDIRS=src tests doc
+SUBDIRS=src doc
 
 AUTOMAKE_OPTIONS = subdir-objects
 
