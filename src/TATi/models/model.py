@@ -4,7 +4,12 @@ import logging
 from math import sqrt, exp
 import numpy as np
 import pandas as pd
+
+# scipy does not automatically import submodules
+from scipy import sparse
+from scipy.sparse import linalg
 import scipy.sparse as sps
+
 import tensorflow as tf
 import time
 
