@@ -89,7 +89,7 @@ class TrajectoryJob_extract_minimium_candidates(TrajectoryJob):
                               + " as candidate from last region")
 
             if len(_data.minimum_candidates) > self.MINIMUM_EXTRACT_CANDIDATES:
-                print("Picked "+str(len(_data.minimum_candidates))+" at threshold "+str(tolerance))
+                logging.info("Picked "+str(len(_data.minimum_candidates))+" at threshold "+str(tolerance))
                 break
 
         logging.info("Found minima candidates: "+str(_data.minimum_candidates))

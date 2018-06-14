@@ -127,8 +127,7 @@ class Explorer(object):
         else:
             assert (False)
 
-        logging.debug('idx_corner ')
-        logging.debug(idx_corner)
+        logging.debug('idx_corner '+str(idx_corner))
         # iteration to find the other cornerstones
         for k in np.arange(1, number_corner_points):
             # update minimum distance to existing cornerstones

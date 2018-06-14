@@ -33,9 +33,10 @@ repository directly.
 
 Furthermore, for installation from a cloned git repository or a pure source
 tarball, the following non-standard packages are required for creating the
-userguide:
+userguide and running all tests:
 
  * xsltproc, fop, docbook-xsl
+ * gawk, sqlite3
 
 After installation (configure, make, make install) there is a userguide 
 "thermodynamicanalyticstoolkit.pdf" for full reference to end users. 

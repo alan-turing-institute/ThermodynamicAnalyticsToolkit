@@ -54,14 +54,14 @@ class DatasetPipeline(InputPipeline):
                                                               num_pixels=input_dimension,
                                                               num_classes=output_dimension))
         else:
-            logging.info("Unknown filetype")
+            logging.critical("Unknown filetype")
             sys.exit(255)
         if shuffle:
             self.dataset = self.dataset.shuffle(seed=seed)
         self.dataset = self.dataset.batch(batch_size)
         self.dataset = self.dataset.repeat(ceil(max_steps*batch_size/dimension))
-        logging.info(self.dataset.output_shapes)
-        logging.info(self.dataset.output_types)
+        #logging.info(self.dataset.output_shapes)
+        #logging.info(self.dataset.output_types)
 
         self.iterator = self.dataset.make_initializable_iterator()
         self.batch_next = self.iterator.get_next()
@@ -91,7 +91,7 @@ class DatasetPipeline(InputPipeline):
                 try:
                     batch_data = session.run(self.batch_next)
                 except tf.errors.OutOfRangeError:
-                    logging.info('Dataset is too small for one batch!')
+                    logging.critical('Dataset is too small for one batch!')
                     sys.exit(255)
         return batch_data[0], batch_data[1]
 

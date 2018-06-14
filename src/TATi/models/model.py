@@ -170,7 +170,7 @@ class model:
         :param shuffle: whether to shuffle dataset or not
         """
         if FLAGS.in_memory_pipeline and (FLAGS.batch_data_file_type == "csv"):
-            logging.info("Using in-memory pipeline")
+            logging.debug("Using in-memory pipeline")
             # at the moment we can only parse a single file
             assert( len(FLAGS.batch_data_files) == 1 )
             csv_dataset = pd.read_csv(FLAGS.batch_data_files[0], sep=',', header=0)
@@ -180,11 +180,18 @@ class model:
                                                    max_steps=FLAGS.max_steps,
                                                    shuffle=shuffle, seed=FLAGS.seed)
         else:
-            logging.info("Using tf.Dataset pipeline")
+            logging.debug("Using tf.Dataset pipeline")
             self.input_pipeline = DatasetPipeline(filenames=FLAGS.batch_data_files, filetype=FLAGS.batch_data_file_type,
                                                   batch_size=FLAGS.batch_size, dimension=FLAGS.dimension, max_steps=FLAGS.max_steps,
                                                   input_dimension=self.input_dimension, output_dimension=self.output_dimension,
                                                   shuffle=shuffle, seed=FLAGS.seed)
+
+    def get_parameters(self):
+        """ Getter for the internal set oF FLAGS controlling training and sampling.
+
+        :return: FLAGS parameter set
+        """
+        return self.FLAGS
 
     def reset_parameters(self, FLAGS):
         """ Use to pass a different set of FLAGS controlling training or sampling.
@@ -618,7 +625,6 @@ class model:
                                                          walker_index=i, do_check=True)
 
         header = None
-        logging.info("Setting up output files for "+str(setup))
         if setup == "sample":
             header = self.get_sample_header()
         elif setup == "train":
@@ -1380,7 +1386,7 @@ class model:
         try:
             if self.FLAGS.save_model is not None:
                 save_path = self.save_model(self.FLAGS.save_model.replace('.meta', ''))
-                logging.info("Model saved in file: %s" % save_path)
+                logging.debug("Model saved in file: %s" % save_path)
         except AttributeError:
             pass
 
@@ -1577,7 +1583,8 @@ class model:
             else:
                 if ("weight" in keyname) or ("bias" in keyname):
                     parameters[keyname] = df_parameters.loc[rownr, [keyname]].values[0]
-        logging.debug("Read row " + str(rownr) + ":" + str(parameters))
+        logging.debug("Read row "+str(rownr)+":"+str([parameters[key] for key in ["weight0", "weight1", "weight2"] if key in parameters.keys()]) \
+                      +"..."+str([parameters[key] for key in ["bias0", "bias1", "bias2"] if key in parameters.keys()]))
 
         # create internal array to store parameters
         weights_vals = self.weights[walker_index].create_flat_vector()

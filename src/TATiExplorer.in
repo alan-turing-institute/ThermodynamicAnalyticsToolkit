@@ -15,7 +15,7 @@ from TATi.common import add_common_options_to_parser, add_data_options_to_parser
         add_model_options_to_parser, add_prior_options_to_parser, add_sampler_options_to_parser, \
         get_filename_from_fullpath, get_trajectory_header,\
         react_to_common_options, react_to_sampler_options, \
-        setup_csv_file
+        setup_csv_file, str2bool
 from TATi.exploration.explorer import Explorer
 from TATi.exploration.trajectorydatacontainer import TrajectoryDataContainer
 from TATi.exploration.trajectoryjobid import TrajectoryJobId
@@ -69,7 +69,7 @@ def parse_parameters():
         help='Number of pruning stages through metropolis criterion after end of trajectory')
     parser.add_argument('--optimizer', type=str, default="GradientDescent",
         help='Choose the optimizer to use for sampling: GradientDescent')
-    parser.add_argument('--use_reweighting', type=bool, default=False,
+    parser.add_argument('--use_reweighting', type=str2bool, default=False,
         help='Use reweighting of the kernel matrix of diffusion maps by the target distribution.')
 
     return parser.parse_known_args()
@@ -119,19 +119,22 @@ def main(_):
         used_ids = manager.list()
     explorer.add_used_data_ids_list(used_ids)
 
+    # launch worker processes initially
+    if FLAGS.number_processes > 0:
+        explorer.queue.start_processes(network_model, FLAGS)
+
     print("Creating starting trajectory.")
     # a. add three legs to queue
     explorer.spawn_starting_trajectory(network_model, FLAGS.number_of_parallel_trajectories)
-
-    # b. continue until queue has run dry
-    explorer.run_all_jobs(network_model, FLAGS)
 
     print("Starting multiple explorations from starting trajectory.")
     # 2. with the initial trajectory done and analyzed,
     #    find maximally separate points and sample from these
     cornerpoints = []
-    exploration_step = 1
+    exploration_step = 0
     while exploration_step < FLAGS.max_exploration_steps:
+        explorer.run_all_jobs(network_model, FLAGS)
+
         # a. combine all trajectories
         steps, parameters, losses = explorer.combine_sampled_trajectories()
 
@@ -141,12 +144,13 @@ def main(_):
         # d. spawn new trajectories from these points
         cornerpoints.append( explorer.spawn_corner_trajectories(steps, parameters, losses, idx_corner, network_model) )
 
-        # d. run all trajectories till terminated
-        explorer.run_all_jobs(network_model, FLAGS)
-
         exploration_step += 1
 
     rt.set_train_network_time(time.process_time() - rt.time_init_network)
+
+    # stop worker processes finally
+    if FLAGS.number_processes > 0:
+        explorer.queue.stop_processes()
 
     # 3. write final set of values
     data_container = explorer.queue.get_data_container()
@@ -205,7 +209,7 @@ def main(_):
 
     # write minima to file
     if FLAGS.minima_file is not None:
-        header = trajectory_header
+        header = trajectory_header[:]
         header.insert(header.index("loss")+1, "gradient")
         if FLAGS.do_hessians:
             insert_index = header.index("gradient")+1
@@ -232,7 +236,7 @@ def main(_):
 
     # write corner points to file
     if FLAGS.cornerpoints_file is not None:
-        header = trajectory_header
+        header = trajectory_header[:]
         cornerpoints_writer, cornerpoints_file = setup_csv_file(
             FLAGS.cornerpoints_file, header)
         for id in range(len(cornerpoints)):
