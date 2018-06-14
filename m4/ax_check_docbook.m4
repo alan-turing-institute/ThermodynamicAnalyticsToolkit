@@ -1,8 +1,11 @@
+
 AC_DEFUN(AX_CHECK_DOCBOOK, [
 # It's just rude to go over the net to build
+AC_ARG_WITH(docbookxsl,[  --with-docbook_xsl=PFX   Prefix where docbook.xsl is installed (optional)],
+            docbook_xsl_prefix="$withval", docbook_xsl_prefix="")
 XSLTPROC_FLAGS=--nonet
 DOCBOOK_ROOT=
-        for i in /usr/share/xml/docbook/stylesheet/docbook-xsl-ns /usr/share/sgml/docbook/stylesheet/xsl/nwalsh /usr/share/sgml/docbook/xsl-stylesheets/;
+        for i in "$docbook_xsl_prefix" /usr/share/xml/docbook/stylesheet/docbook-xsl-ns /usr/share/sgml/docbook/stylesheet/xsl/nwalsh /usr/share/sgml/docbook/xsl-stylesheets/;
         do
                 if test -d "$i"; then
                         DOCBOOK_ROOT=$i
