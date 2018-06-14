@@ -36,3 +36,6 @@ $(srcdir)/version.py: $(srcdir)/.git-version
 	echo "   return \"$(PACKAGE_VERSION)\"" >>$@
 	echo "def get_build_hash():" >>$@
 	echo "   return \""`cat $(srcdir)/.git-version`"\"" >>$@
+
+$(srcdir)/__init__.py: $(srcdir)/.git-version
+	echo "__version__ = \"$(PACKAGE_VERSION)\"" >$@

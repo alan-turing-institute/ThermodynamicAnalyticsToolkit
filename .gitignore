@@ -4,7 +4,7 @@ version.py
 doc/userguide/version.txt
 doc/.git-version
 src/TATi/exploration/get_executables.py
-
+src/TATi/__init__.py
 
 # python and pycharm stuff
 __pycache__
