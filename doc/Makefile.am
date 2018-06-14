@@ -23,6 +23,20 @@ PYTHON_EXAMPLES = \
 	$(srcdir)/userguide/python/eval_loss_gradient.py \
 	$(srcdir)/userguide/python/explore.py \
 	$(srcdir)/userguide/python/fix_parameter.py \
+	$(srcdir)/userguide/python/general_nn/change_dataset_array.py \
+	$(srcdir)/userguide/python/general_nn/change_dataset_csv.py \
+	$(srcdir)/userguide/python/general_nn/evaluate_loss.py \
+	$(srcdir)/userguide/python/general_nn/evaluate_prediction.py \
+	$(srcdir)/userguide/python/general_nn/evaluate_accuracy.py \
+	$(srcdir)/userguide/python/general_nn/evaluate_gradients.py \
+	$(srcdir)/userguide/python/general_nn/evaluate_hessians.py \
+	$(srcdir)/userguide/python/general_nn/requesting_parameters.py \
+	$(srcdir)/userguide/python/general_nn/reset_dataset.py \
+	$(srcdir)/userguide/python/general_nn/reset_dataset_auto.py \
+	$(srcdir)/userguide/python/general_nn/setting_parameters.py \
+	$(srcdir)/userguide/python/general_nn/setting_up_network.py \
+	$(srcdir)/userguide/python/general_nn/supply_dataset_array.py \
+	$(srcdir)/userguide/python/general_nn/supply_dataset_csv.py \
 	$(srcdir)/userguide/python/optimize.py \
 	$(srcdir)/userguide/python/optimize_sample.py \
 	$(srcdir)/userguide/python/plot_optimize.py \
@@ -36,6 +50,7 @@ PYTHON_EXAMPLES = \
 
 XSLTPROC=xsltproc
 XSLTPROC_FLAGS=@XSLTPROC_FLAGS@ \
+	--stringparam section.autolabel 1 \
 	--stringparam paper.type A4 \
 	--stringparam glossentry.show.acronym 1 \
 	--stringparam glossary.auto.link 1 \
