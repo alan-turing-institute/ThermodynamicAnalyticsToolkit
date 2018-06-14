@@ -1,0 +1,45 @@
+#
+#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    Copyright (C) 2018 The University of Edinburgh
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### all tests  on the tensorflow module
+
+AT_INIT([Tensorflow tests])
+#AT_TESTED(gawk)
+
+# Use colored output with new-enough Autotest.
+m4_ifdef([AT_COLOR_TESTS], [AT_COLOR_TESTS])
+
+# tests on reproducibility flaws
+m4_include(Reproducibility/testsuite-reproducibility.at)
+
+# tests on flaws were variables aren't actually variables anymore
+m4_include(NonVariables/testsuite-nonvariables.at)
+
+# various small test scripts
+m4_include(testsuite-cholesky.at)
+m4_include(testsuite-get_momenta_slots.at)
+m4_include(testsuite-multiple_models.at)
+m4_include(testsuite-read_MNIST.at)
+m4_include(testsuite-stack_means_cov.at)
+m4_include(testsuite-test_assign.at)
+m4_include(testsuite-test_covariance.at)
+m4_include(testsuite-test_covariance_tf.at)
+m4_include(testsuite-test_matrix_vector.at)
+m4_include(testsuite-test_stack.at)
+m4_include(testsuite-tf_cond.at)
+m4_include(testsuite-tf_size.at)
+m4_include(testsuite-train_MNIST_pipeline_in_graph.at)

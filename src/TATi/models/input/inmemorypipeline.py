@@ -32,7 +32,7 @@ class InMemoryPipeline(DatasetPipeline):
         self.dataset = tf.data.Dataset.from_tensor_slices((self.features_placeholder, self.labels_placeholder))
 
         if shuffle:
-            self.dataset = self.dataset.shuffle(seed=seed)
+            self.dataset = self.dataset.shuffle(buffer_size=self.features.shape[0],seed=seed)
         self.dataset = self.dataset.batch(batch_size)
         self.dataset = self.dataset.repeat(ceil(max_steps*batch_size/dimension))
         logging.info(self.dataset.output_shapes)

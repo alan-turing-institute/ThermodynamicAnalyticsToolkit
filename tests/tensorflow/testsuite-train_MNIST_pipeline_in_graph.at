@@ -1,0 +1,33 @@
+#
+#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    Copyright (C) 2018 The University of Edinburgh
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### test on train_MNIST_pipeline_in_graph
+
+AT_SETUP([Tensorflow - train MNIST with input pipeline in graph])
+AT_KEYWORDS([tensorflow train_MNIST_pipeline_in_graph])
+
+AT_CHECK([../../run \
+	${abs_top_srcdir}/tests/tensorflow/pre/train_MNIST_pipeline_in_graph.py \
+	--batch_data_files 	${abs_top_srcdir}/tests/tensorflow/pre/dataset-mnist.tfrecords \
+    --hidden_dimension 10 \
+    --loss "softmax_cross_entropy" \
+    --output_file output.csv \
+    --seed 426
+], 0, [stdout], [stderr])
+
+AT_CLEANUP
+

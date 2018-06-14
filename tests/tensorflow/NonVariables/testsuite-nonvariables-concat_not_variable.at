@@ -1,0 +1,45 @@
+#
+#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    Copyright (C) 2017 The University of Edinburgh
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### test on tensorflow's concat op (on tf.Variable) not yielding something variable
+
+# PROBLEM:
+# It would be very convenient to rearrange the variables of the neural
+# network. Variables are weights and biases and are each contained in
+# different matrices, one per layer. If one could arrange all of them into
+# a single vector/matrix, this would allow for easy evaluation and
+# setting from a set of given values.
+#
+# Note that tensorflow does offer to store the model to file which includes
+# all variables values as well. But the format is quite involved and does
+# not all to easily extract the values themselves.
+#
+# One approach would be to use tf.concat and tf.stack to rearrange the
+# variables. However, then the "variable" character is lost, i.e. they can
+# no longer be set. This cases the error of "Tensor has now assign()".
+# see: https://stackoverflow.com/questions/47699569/tf-assign-on-tf-concat-tensor-drops-variable-character-of-tensors
+
+AT_SETUP([Tensorflaw - concat drops variable character])
+AT_KEYWORDS([tensorflaw concat variable])
+AT_XFAIL_IF([/bin/true])
+
+AT_CHECK([../../run \
+	${abs_top_srcdir}/tests/tensorflow/NonVariables/pre/concat_not_variable.py
+], 0, [stdout], [stderr])
+
+AT_CLEANUP
+

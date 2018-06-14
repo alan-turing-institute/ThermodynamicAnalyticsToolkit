@@ -1,0 +1,43 @@
+#
+#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    Copyright (C) 2017 The University of Edinburgh
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### test on tensorflow's global seed not reproducing results on slightly changed network
+
+# PROBLEM:
+# Although tensorflow offers setting a "global" seed, where different seeds
+# for local operations are derived uniquely from this global seed. These local
+# seeds depend on the internal enumeration of the nodes.
+#
+# If the graph is changed, e.g. by adding additional nodes, then this
+# enumeration changes and therefore the random number seeds will change
+# as well.
+#
+# Therefore, we cannot simply use the global seed to enforce reproducible
+# runs for testing against stored output files. When the graph is changed,
+# then this output will change as well.
+
+
+AT_SETUP([Tensorflaw - global seed on changed network])
+AT_KEYWORDS([tensorflaw reproducibility set_seed])
+AT_XFAIL_IF([/bin/true])
+
+AT_CHECK([../../run \
+	${abs_top_srcdir}/tests/tensorflow/Reproducibility/pre/global_seed.py
+], 0, [stdout], [stderr])
+
+AT_CLEANUP
+

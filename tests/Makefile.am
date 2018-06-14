@@ -3,5 +3,6 @@ SUBDIRS =
 SUBDIRS += \
 	regression \
 	userguide \
-	integration
+	integration \
+	tensorflow
 

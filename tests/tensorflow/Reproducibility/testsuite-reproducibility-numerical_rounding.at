@@ -1,0 +1,39 @@
+#
+#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    Copyright (C) 2018 The University of Edinburgh
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### test on tensorflow's numerical rounding inaccuracies on summation
+
+# PROBLEM:
+# If numbers are summed, then the limited floating point precision has an
+# effect: The result may change on the order of summation. This is the
+# general numerical rounding issue with floating point numbers, i.e. numpy
+# has the same issue.
+#
+# We face this issue on summing up contributions to a global variable such
+# as the kinetic_energy. As weights and biases per layer are independent
+# of another, the order of summing their contribution is arbitrary.
+
+AT_SETUP([Tensorflaw - rounding error on summation])
+AT_KEYWORDS([tensorflaw reproducibility numerical rounding])
+AT_XFAIL_IF([/bin/true])
+
+AT_CHECK([../../run \
+	${abs_top_srcdir}/tests/tensorflow/Reproducibility/pre/numerical_rounding.py
+], 0, [stdout], [stderr])
+
+AT_CLEANUP
+
