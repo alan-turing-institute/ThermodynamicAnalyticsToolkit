@@ -30,7 +30,7 @@ nn = model(FLAGS)
 nn.provide_data(features, labels)
 # create the network
 nn.init_network(None, setup="sample")
-nn.input_pipeline.reset(nn.sess)
+nn.reset_dataset()
 # sample
 run_info, trajectory, _ = nn.sample(return_run_info=True, \
   return_trajectories=True)
