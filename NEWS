@@ -1,3 +1,23 @@
+v0.8
+====
+
+- introducing replicated neural networks to allow for multiple walkers that
+  proceed in parallel on individual trajectories with the ability to exchange
+  information, e.g. for Ensemble Quasi Newton method.
+- Updated package dependencies and funding notes in README.
+- Added python interface that allows to use neural network as a general
+  function depending parameters and with a gradient.
+- FIX: TATiExplorer could still experience dead-locks.
+- Docbook now also supports non-standard fop and xsltproc installation paths.
+- FIX: scipy.sparse's linalg module was not loaded correctly for certain scipy
+  versions.
+- added Covariance Controlled Adaptive Langevin (CCAdL) as sampler, untested.
+- added option burnin to drop initial set of steps from accumulated averages
+- added option progress to display a progress bar with time estimate
+- added option summaries_path to write summaries for TensorBoard on demand
+- FIX: accuracy was not calculated correctly for multi class classification.
+- added testsuite section on tensorflow (non-)capabilities.
+
 v0.7
 ====
 - renamed from DataDrivenSampler (DDS) to Thermodynamic Analytics Toolkit 

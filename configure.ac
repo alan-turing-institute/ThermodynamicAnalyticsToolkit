@@ -1,7 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT(ThermodynamicAnalyticsToolkit, 0.7, frederik.heber@gmail.com)
+AC_INIT(ThermodynamicAnalyticsToolkit, 0.8, frederik.heber@gmail.com)
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_SRCDIR([src/TATi/common.py])
 AC_CONFIG_MACRO_DIR([m4])
