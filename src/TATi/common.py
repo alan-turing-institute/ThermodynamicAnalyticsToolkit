@@ -447,7 +447,7 @@ def create_input_layer(input_dimension, input_list):
     # Input placeholders
     with tf.name_scope('input'):
         xinput = tf.placeholder(dds_basetype, [None, input_dimension], name='x-input')
-        logging.debug("xinput is "+str(xinput.get_shape()))
+        logging.info("xinput is "+str(xinput.get_shape()))
 
         # parse input columns
         picked_list = []

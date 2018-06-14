@@ -46,8 +46,9 @@ class model:
         except AttributeError:
             FLAGS.max_steps = 1
 
-        self.number_of_parameters = 0 # number of biases and weights
+        self.number_of_parameters = 0   # number of biases and weights
 
+        self.output_type = None
         if len(FLAGS.batch_data_files) > 0:
             self.input_dimension = self.FLAGS.input_dimension
             self.output_dimension = self.FLAGS.output_dimension
@@ -55,8 +56,13 @@ class model:
                 self.FLAGS.dimension = sum([file_length(filename)
                                             for filename in FLAGS.batch_data_files]) \
                                        - len(FLAGS.batch_data_files)
+                if self.output_dimension == 1:
+                    self.output_type = "binary_classification"  # labels in {-1,1}
+                else:
+                    self.output_type = "onehot_multi_classification"
             elif FLAGS.batch_data_file_type == "tfrecord":
                 self.FLAGS.dimension = self._get_dimension_from_tfrecord(FLAGS.batch_data_files)
+                self.output_type = "onehot_multi_classification"
             else:
                 logging.info("Unknown file type")
                 assert(0)
@@ -160,6 +166,10 @@ class model:
         logging.info("Using in-memory pipeline")
         self.input_dimension = len(features[0])
         self.output_dimension = len(labels[0])
+        if self.output_dimension == 1:
+            self.output_type = "binary_classification"  # labels in {-1,1}
+        else:
+            self.output_type = "onehot_multi_classification"
         assert( len(features) == len(labels) )
         self.FLAGS.dimension = len(features)
         self._check_valid_batch_size()
@@ -420,6 +430,10 @@ class model:
                         output_activation=activations[self.FLAGS.output_activation],
                         loss_name=self.FLAGS.loss
                     ))
+                    self.nn[-1].summary_nodes["accuracy"] = NeuralNetwork.add_accuracy_summary(
+                        self.nn[-1].placeholder_nodes["y"],
+                        self.nn[-1].placeholder_nodes["y_"],
+                        self.output_type)
 
                     if self.FLAGS.do_hessians or add_vectorized_gradients:
                         # create node for gradient and hessian computation only if specifically
