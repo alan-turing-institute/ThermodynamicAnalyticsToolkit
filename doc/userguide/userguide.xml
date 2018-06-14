@@ -1764,6 +1764,7 @@ sys.path.insert(1,"&lt;path_to_TATi&gt;/lib/python3.5/site-packages/")</programl
   </section>
   <section xml:id="reference.miscellaneous">
     <title xml:id="reference.miscellaneous.title">Miscellaneous</title>
+
     <section xml:id="reference.miscellaneous.parameter_freeze">
       <title>Freezing parameters</title>
       <para>Sometimes it might be desirable to freeze parameters during
@@ -1780,7 +1781,19 @@ sys.path.insert(1,"&lt;path_to_TATi&gt;/lib/python3.5/site-packages/")</programl
       <note>Single values cannot be frozen but only entire weight matrices or 
       bias vectors per layer at the moment.</note>
     </section>
-    <para>still empty</para>
+
+    <section xml:id="reference.miscellaneous.progress_bar">
+      <title>Displaying a progress bar</title>
+      <para>For longer simulation runs it is desirable to obtain an estimate
+      after a few steps of the time required for the entire run.</para>
+      <para>This is possible using the <command>progress</command>
+      option. Specified to 1 or True it will produce a progress bar showing
+      the total number of steps, the iterations per second, the elapsed
+      time since start and the estimated time till finish.</para>
+      <note>On the debug <command>verbosity> level per output step also
+      an estimate of the remaining run time is given.</command></note>
+    </section>
+
   </section>
 </chapter>
 

@@ -83,7 +83,7 @@ AT_CLEANUP
 
 AT_SETUP([Analyser - Diffusion map, method pydiffmap])
 AT_KEYWORDS([tatianalyser diffusion_map pydiffmap])
-AT_SKIP_IF([! ../../../check_pydiffmap])
+AT_SKIP_IF([! ../../../check_package pydiffmap])
 
 # analyse a trajectory that was created by:
 # (Two clusters dataset with two inputs nodes, single output, linear activation)

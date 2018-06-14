@@ -40,6 +40,7 @@ class MockFlags:
                  prior_lower_boundary=None,
                  prior_power=1.,
                  prior_upper_boundary=None,
+                 progress=False,
                  restore_model=None,
                  run_file=None,
                  sampler="GeometricLangevinAlgorithm_1stOrder",
@@ -91,6 +92,7 @@ class MockFlags:
         :param prior_lower_boundary: lower boundary for wall-repelling prior force
         :param prior_power: power of distance used in calculating force
         :param prior_upper_boundary: upper boundary for wall-repelling prior force
+        :param progress: activate progress bar to show remaining time
         :param restore_model: Restore model (weights and biases) from a file.
         :param run_file: CSV run file name to runtime information such as output accuracy and loss values.
         :param sampler: Choose the sampler to use for sampling: GeometricLangevinAlgorithm_1stOrder, GeometricLangevinAlgorithm_2ndOrder, StochasticGradientLangevinDynamics
@@ -139,6 +141,7 @@ class MockFlags:
         self.prior_lower_boundary = prior_lower_boundary
         self.prior_power = prior_power
         self.prior_upper_boundary = prior_upper_boundary
+        self.progress = progress
         self.restore_model = restore_model
         self.run_file = run_file
         self.sampler = sampler

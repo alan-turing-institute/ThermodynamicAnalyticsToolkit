@@ -204,6 +204,8 @@ def add_common_options_to_parser(parser):
         help='Sets the number of threads to use within an op, i.e. Eigen threads for linear algebra routines.')
     parser.add_argument('--number_walkers', type=int, default=1,
         help='Number of dependent walkers to run. This will activate ensemble preconditioning if larger than 1.')
+    parser.add_argument('--progress', type=str2bool, default=False,
+        help='Display progress bar with estimate of remaining time.')
     parser.add_argument('--restore_model', type=str, default=None,
         help='Restore model (weights and biases) from a file.')
     parser.add_argument('--run_file', type=str, default=None,

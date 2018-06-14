@@ -13,6 +13,15 @@ import scipy.sparse as sps
 import tensorflow as tf
 import time
 
+try:
+    from tqdm import tqdm # allows progress bar
+    tqdm_present = True
+    # workaround: otherwise we get deadlock on exceptions,
+    # see https://github.com/tqdm/tqdm/issues/469
+    tqdm.monitor_interval = 0
+except ImportError:
+    tqdm_present = False
+
 from tensorflow.python.ops import variables
 
 from TATi.common import create_input_layer, file_length, get_list_from_string, \
@@ -296,6 +305,7 @@ class model:
             prior_lower_boundary=None,
             prior_power=1.,
             prior_upper_boundary=None,
+            progress=False,
             restore_model=None,
             run_file=None,
             sampler="GeometricLangevinAlgorithm_1stOrder",
@@ -342,6 +352,7 @@ class model:
                 prior_lower_boundary=prior_lower_boundary,
                 prior_power=prior_power,
                 prior_upper_boundary=prior_upper_boundary,
+                progress=progress,
                 restore_model=restore_model,
                 run_file=run_file,
                 sampler=sampler,
@@ -881,9 +892,14 @@ class model:
         logging.info("Starting to sample")
         logging.info_intervals = max(1, int(self.FLAGS.max_steps / 100))
         last_time = time.process_time()
+        elapsed_time = 0.
         HMC_steps = [0]*self.FLAGS.number_walkers
         HMC_current_set_nodes = []
-        for current_step in range(self.FLAGS.max_steps):
+        if tqdm_present and self.FLAGS.progress:
+            step_range = tqdm(range(self.FLAGS.max_steps))
+        else:
+            step_range = range(self.FLAGS.max_steps)
+        for current_step in step_range:
             # get next batch of data
             features, labels = self.input_pipeline.next_batch(self.sess)
             # logging.debug("batch is x: "+str(features[:])+", y: "+str(labels[:]))
@@ -1007,9 +1023,15 @@ class model:
             if current_step % self.FLAGS.every_nth == 0:
                 current_time = time.process_time()
                 time_elapsed_per_nth_step = current_time - last_time
+                elapsed_time += time_elapsed_per_nth_step
+                if current_step != 0:
+                    estimated_time_left = self.FLAGS.max_steps*elapsed_time/current_step
+                else:
+                    estimated_time_left = 0.
+                logging.debug("Output at step #" + str(current_step) \
+                              + ", est. remaining time is " + str(estimated_time_left)+" seconds.")
                 last_time = current_time
-                logging.debug("Output step  # " \
-                              + str(current_step) + ", time elapsed till last is " + str(time_elapsed_per_nth_step))
+
                 if self.FLAGS.sampler == "HamiltonianMonteCarlo":
                     accepted_eval, rejected_eval = self.sess.run([
                         self.static_vars["accepted"], self.static_vars["rejected"]])
@@ -1251,7 +1273,12 @@ class model:
 
         logging.info("Starting to train")
         last_time = time.process_time()
-        for current_step in range(self.FLAGS.max_steps):
+        elapsed_time = 0
+        if tqdm_present and self.FLAGS.progress:
+            step_range = tqdm(range(self.FLAGS.max_steps))
+        else:
+            step_range = range(self.FLAGS.max_steps)
+        for current_step in step_range:
             logging.debug("Current step is " + str(current_step))
 
             # get next batch of data
@@ -1290,8 +1317,14 @@ class model:
             if current_step % self.FLAGS.every_nth == 0:
                 current_time = time.process_time()
                 time_elapsed_per_nth_step = current_time - last_time
+                elapsed_time += time_elapsed_per_nth_step
+                if current_step != 0:
+                    estimated_time_left = self.FLAGS.max_steps*elapsed_time/current_step
+                else:
+                    estimated_time_left = 0.
+                logging.debug("Output at step #" + str(current_step) \
+                              + ", est. remaining time is " + str(estimated_time_left)+" seconds.")
                 last_time = current_time
-                logging.debug("Output at step #" + str(current_step) + ", time elapsed till last is " + str(time_elapsed_per_nth_step))
 
                 run_line = [0, global_step, current_step] + ['{:1.3f}'.format(acc)] \
                            + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,

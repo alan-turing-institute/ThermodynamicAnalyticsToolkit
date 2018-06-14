@@ -43,3 +43,9 @@ After installation (configure, make, make install) there is a userguide
 Alternatively, this userguide is always contained in the release tarballs.
 Note that there is also a documentation aimed at programmers based on doxygen
 (make doc).
+
+Finally, there are some optional packages:
+
+ * pydiffmap: allows diffusion map analysis through pydiffmap package
+ * tqdm: allows displaying progress bar during training and sampling
+

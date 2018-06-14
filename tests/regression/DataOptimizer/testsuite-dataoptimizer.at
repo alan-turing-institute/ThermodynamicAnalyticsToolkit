@@ -33,6 +33,7 @@ m4_include([DataOptimizer/Reproducibility/testsuite-dataoptimizer-reproducibilit
 m4_include([DataOptimizer/Options/testsuite-dataoptimizer-options-batch_size.at])
 m4_include([DataOptimizer/Options/testsuite-dataoptimizer-options-do_hessians.at])
 m4_include([DataOptimizer/Options/testsuite-dataoptimizer-options-every_nth.at])
+m4_include([DataOptimizer/Options/testsuite-dataoptimizer-options-progress.at])
 m4_include([DataOptimizer/Options/testsuite-dataoptimizer-options-sql_db.at])
 m4_include([DataOptimizer/Options/testsuite-dataoptimizer-options-step_width.at])
 

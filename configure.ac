@@ -47,7 +47,7 @@ AC_CONFIG_FILES(
 	tests/userguide/atlocal
 	tests/userguide/Makefile)
 AC_CONFIG_TESTDIR([tests/userguide])
-AC_CONFIG_FILES([tests/check_pydiffmap], [chmod +x tests/check_pydiffmap])
+AC_CONFIG_FILES([tests/check_package], [chmod +x tests/check_package])
 AC_CONFIG_FILES([tests/TATiDatasetParser], [chmod +x tests/TATiDatasetParser])
 AC_CONFIG_FILES([tests/TATiDatasetWriter], [chmod +x tests/TATiDatasetWriter])
 AC_CONFIG_FILES([tests/TATiSampler], [chmod +x tests/TATiSampler])

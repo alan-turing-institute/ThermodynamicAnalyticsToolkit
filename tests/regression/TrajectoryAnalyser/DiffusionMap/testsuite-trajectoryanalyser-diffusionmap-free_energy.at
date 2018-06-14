@@ -79,7 +79,7 @@ AT_CLEANUP
 
 AT_SETUP([Analyser - Free energy, method pydiffmap])
 AT_KEYWORDS([tatianalyser free_energy pydiffmap])
-AT_SKIP_IF([! ../../../check_pydiffmap])
+AT_SKIP_IF([! ../../../check_package pydiffmap])
 
 # analyse a trajectory that was created by:
 # (Two clusters dataset with two inputs nodes, single output, linear activation)
@@ -110,7 +110,7 @@ AT_CLEANUP
 
 AT_SETUP([Analyser - Free energy using histograms])
 AT_KEYWORDS([tatianalyser free_energy histograms])
-AT_SKIP_IF([! ../../../check_pydiffmap])
+AT_SKIP_IF([! ../../../check_package pydiffmap])
 
 # analyse a trajectory that was created by:
 # (Two clusters dataset with two inputs nodes, single output, linear activation)

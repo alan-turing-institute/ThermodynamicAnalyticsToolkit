@@ -26,6 +26,7 @@ TESTSCRIPTS += \
 	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-every_nth-misspelled.at \
 	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-friction_constant.at \
 	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-inverse_temperature.at \
+	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-progress.at \
 	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-sql_db.at \
 	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-step_width.at \
 	$(srcdir)/DataDrivenSampler/Pipelines/testsuite-datadrivensampler-pipelines.at \
@@ -64,6 +65,7 @@ TESTSCRIPTS += \
 	$(srcdir)/DataOptimizer/Options/testsuite-dataoptimizer-options-batch_size.at \
 	$(srcdir)/DataOptimizer/Options/testsuite-dataoptimizer-options-do_hessians.at \
 	$(srcdir)/DataOptimizer/Options/testsuite-dataoptimizer-options-every_nth.at \
+	$(srcdir)/DataOptimizer/Options/testsuite-dataoptimizer-options-progress.at \
 	$(srcdir)/DataOptimizer/Options/testsuite-dataoptimizer-options-sql_db.at \
 	$(srcdir)/DataOptimizer/Options/testsuite-dataoptimizer-options-step_width.at \
 	$(srcdir)/DataOptimizer/Prior/testsuite-dataoptimizer-prior.at \

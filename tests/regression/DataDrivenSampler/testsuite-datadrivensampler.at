@@ -45,6 +45,7 @@ m4_include([DataDrivenSampler/Options/testsuite-datadrivensampler-options-every_
 m4_include([DataDrivenSampler/Options/testsuite-datadrivensampler-options-every_nth-misspelled.at])
 m4_include([DataDrivenSampler/Options/testsuite-datadrivensampler-options-friction_constant.at])
 m4_include([DataDrivenSampler/Options/testsuite-datadrivensampler-options-inverse_temperature.at])
+m4_include([DataDrivenSampler/Options/testsuite-datadrivensampler-options-progress.at])
 m4_include([DataDrivenSampler/Options/testsuite-datadrivensampler-options-sql_db.at])
 m4_include([DataDrivenSampler/Options/testsuite-datadrivensampler-options-step_width.at])
 

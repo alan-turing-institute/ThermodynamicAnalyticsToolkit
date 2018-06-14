@@ -3,9 +3,13 @@
 import sys
 sys.path.insert(1, '@pythondir@')
 
+if len(sys.argv) < 2:
+    sys.stderr.write("Usage: "+sys.argv[0]+ "<python package name>")
+    sys.exit(127)
+
 returncode=0
 try:
-    import pydiffmap
+    __import__(sys.argv[1])
 except ImportError:
     returncode=255
 
