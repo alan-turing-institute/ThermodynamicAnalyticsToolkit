@@ -49,6 +49,7 @@ class MockFlags:
                  sigma=1.,
                  sigmaA=1.,
                  step_width=0.03,
+                 summaries_path=None,
                  trajectory_file=None,
                  use_reweighting=False,
                  verbose=0
@@ -101,6 +102,7 @@ class MockFlags:
         :param sigma: Scale of noise injected to momentum per step for CCaDL.
         :param sigmaA: Scale of noise in convex combination for CCaDL.
         :param step_width: step width \Delta t to use, e.g. 0.01
+        :param summaries_path: path to write summaries (for TensorBoard) to
         :param trajectory_file: CSV file name to output trajectories of sampling, i.e. weights and evaluated loss function.
         :param use_reweighting:
         :param verbose: how much (debugging) information to print
@@ -150,6 +152,7 @@ class MockFlags:
         self.sigma = sigma
         self.sigmaA = sigmaA
         self.step_width = step_width
+        self.summaries_path = summaries_path
         self.trajectory_file = trajectory_file
         self.use_reweighting = use_reweighting
         self.verbose = verbose

@@ -182,6 +182,8 @@ def add_model_options_to_parser(parser):
         help='Step(s) to parse from parse_parameters_file assuming multiple are present')
     parser.add_argument('--seed', type=int, default=None,
         help='Seed to use for random number generators.')
+    parser.add_argument('--summaries_path', type=str, default=None,
+        help='path to write TensorBoard summaries to')
 
 
 def add_common_options_to_parser(parser):

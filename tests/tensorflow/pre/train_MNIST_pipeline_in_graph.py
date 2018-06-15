@@ -76,7 +76,7 @@ with tf.variable_scope('var_walker1'):
 		virials_t = tf.get_variable("virials", dtype=dds_basetype)
 		zero_virials = virials_t.assign(0.)
 
-train_nodes = nn.nn[0].get_list_of_nodes(["merged", "train_step", "accuracy", "global_step","loss"])
+train_nodes = nn.nn[0].get_list_of_nodes(["train_step", "accuracy", "global_step","loss"])
 
 with open(params.output_file, "w") as of:
 	of.write("step,loss,accuracy,gradients\n")
@@ -100,7 +100,7 @@ with open(params.output_file, "w") as of:
 		check_gradients, check_virials = nn.sess.run([zero_gradients, zero_virials])
 		assert (abs(check_gradients) < 1e-10)
 		assert (abs(check_virials) < 1e-10)
-		summary, _, acc, global_step, loss_eval = \
+		_, acc, global_step, loss_eval = \
 			nn.sess.run(train_nodes, feed_dict=feed_dict)
 
 		# evaluate loss and gradients accurately

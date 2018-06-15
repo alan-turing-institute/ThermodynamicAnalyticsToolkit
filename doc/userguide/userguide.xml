@@ -1794,6 +1794,26 @@ sys.path.insert(1,"&lt;path_to_TATi&gt;/lib/python3.5/site-packages/")</programl
       an estimate of the remaining run time is given.</command></note>
     </section>
 
+    <section xml:id="reference.miscellaneous.summaries">
+      <title>Tensorflow summaries</title>
+      <para>Tensorflow delivers a powerful instrument for inspecting the inner
+      workings of its computational graph: TensorBoard.</para>
+      <para>This tool allows also to inspect values such as the activation
+      histogram, the loss and accuracy and many other parameters and
+      values internal to TATi.</para>
+      <para>Supplying a path "/foo/bar" present in the file system using the 
+      <command>summaries_path</command> variable, summaries are
+      automatically written to the path and can be inspected with the following
+      call to tensorboard.</para>
+      <programlisting>tensorboard --logdir /foo/bar</programlisting>
+      <para>The tensorboard essentially comprises a webserver for rendering
+      the nodes of the graph and figures of the inspected values inside a 
+      webpage. On execution it provides a URL that needs to be entered in any
+      webbrowser to access the webpage.</para>
+      <note>The accumulation and writing of the summaries has quite an impact
+      on TATi's overall performance and is therefore swicthed off by default.</note>
+    </section>
+
   </section>
 </chapter>
 

@@ -29,6 +29,7 @@ TESTSCRIPTS += \
 	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-progress.at \
 	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-sql_db.at \
 	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-step_width.at \
+	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-summaries_path.at \
 	$(srcdir)/DataDrivenSampler/Pipelines/testsuite-datadrivensampler-pipelines.at \
 	$(srcdir)/DataDrivenSampler/Prior/testsuite-datadrivensampler-prior.at \
 	$(srcdir)/DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-lower_boundary.at \
@@ -68,6 +69,7 @@ TESTSCRIPTS += \
 	$(srcdir)/DataOptimizer/Options/testsuite-dataoptimizer-options-progress.at \
 	$(srcdir)/DataOptimizer/Options/testsuite-dataoptimizer-options-sql_db.at \
 	$(srcdir)/DataOptimizer/Options/testsuite-dataoptimizer-options-step_width.at \
+	$(srcdir)/DataOptimizer/Options/testsuite-dataoptimizer-options-summaries_path.at \
 	$(srcdir)/DataOptimizer/Prior/testsuite-dataoptimizer-prior.at \
 	$(srcdir)/DataOptimizer/Prior/testsuite-dataoptimizer-prior-lower_upper_boundary.at \
 	$(srcdir)/DataOptimizer/Prior/testsuite-dataoptimizer-prior-tethering.at \

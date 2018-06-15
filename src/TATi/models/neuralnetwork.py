@@ -148,9 +148,6 @@ class NeuralNetwork(object):
         self.add_losses(y, labels)
         loss = self.set_loss_function(loss_name)
 
-        merged = tf.summary.merge_all()  # Merge all the summaries
-        self.summary_nodes['merged'] = merged
-
         return loss
 
     @staticmethod

@@ -48,6 +48,7 @@ m4_include([DataDrivenSampler/Options/testsuite-datadrivensampler-options-invers
 m4_include([DataDrivenSampler/Options/testsuite-datadrivensampler-options-progress.at])
 m4_include([DataDrivenSampler/Options/testsuite-datadrivensampler-options-sql_db.at])
 m4_include([DataDrivenSampler/Options/testsuite-datadrivensampler-options-step_width.at])
+m4_include([DataDrivenSampler/Options/testsuite-datadrivensampler-options-summaries_path.at])
 
 # tests on saving and restoring
 m4_include([DataDrivenSampler/SavingRestoring/testsuite-datadrivensampler-saving_restoring.at])

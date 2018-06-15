@@ -314,6 +314,7 @@ class model:
             sigma=1.,
             sigmaA=1.,
             step_width=0.03,
+            summaries_path=None,
             trajectory_file=None,
             use_reweighting=False,
             verbose=0):
@@ -361,6 +362,7 @@ class model:
                 sigma=sigma,
                 sigmaA=sigmaA,
                 step_width=step_width,
+                summaries_path=summaries_path,
                 trajectory_file=trajectory_file,
                 use_reweighting=use_reweighting,
                 verbose=verbose)
@@ -790,7 +792,10 @@ class model:
             for walker_index in range(self.FLAGS.number_walkers)]
 
         list_of_nodes = ["sample_step", "accuracy", "global_step", "loss"]
-        test_nodes = [[self.summary]*self.FLAGS.number_walkers]
+        if self.FLAGS.summaries_path is not None:
+            test_nodes = [self.summary]*self.FLAGS.number_walkers
+        else:
+            test_nodes = []
         for item in list_of_nodes:
             test_nodes.append([self.nn[walker_index].get(item) \
                                for walker_index in range(self.FLAGS.number_walkers)])
@@ -889,6 +894,10 @@ class model:
                 assert(check_accepted[walker_index] == 0)
                 assert(check_rejected[walker_index] == 0)
 
+        # prepare summaries for TensorBoard
+        if self.FLAGS.summaries_path is not None:
+            summary_writer = tf.summary.FileWriter(self.FLAGS.summaries_path, self.sess.graph)
+
         logging.info("Starting to sample")
         logging.info_intervals = max(1, int(self.FLAGS.max_steps / 100))
         last_time = time.process_time()
@@ -980,8 +989,12 @@ class model:
             # or
             #   tf.run([loss_eval, train_step], ...)
             # is not important. Only a subsequent, distinct tf.run() call would produce a different loss_eval.
-            summary, _, acc, global_step, loss_eval = \
-                self.sess.run(test_nodes, feed_dict=feed_dict)
+            if self.FLAGS.summaries_path is not None:
+                summary, _, acc, global_step, loss_eval = \
+                    self.sess.run(test_nodes, feed_dict=feed_dict)
+            else:
+                _, acc, global_step, loss_eval = \
+                    self.sess.run(test_nodes, feed_dict=feed_dict)
 
             if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics",
                                       "GeometricLangevinAlgorithm_1stOrder",
@@ -1011,6 +1024,12 @@ class model:
                             self.static_vars["gradients"],
                             self.static_vars["virials"],
                             self.static_vars["noise"]])
+
+            if self.FLAGS.summaries_path is not None:
+                run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+                run_metadata = tf.RunMetadata()
+                summary_writer.add_run_metadata(run_metadata, 'step%d' % current_step)
+                summary_writer.add_summary(summary, current_step)
 
             for walker_index in range(self.FLAGS.number_walkers):
                 if current_step >= self.FLAGS.burn_in_steps:
@@ -1168,6 +1187,10 @@ class model:
 
         logging.info("SAMPLED.")
 
+        # close summaries file
+        if self.FLAGS.summaries_path is not None:
+            summary_writer.close()
+
         return run_info, trajectory, averages
 
     def _create_default_feed_dict_with_constants(self, walker_index=0):
@@ -1229,9 +1252,13 @@ class model:
         assert( walker_index < self.FLAGS.number_walkers)
 
         placeholder_nodes = self.nn[walker_index].get_dict_of_nodes(["learning_rate", "y_"])
-        test_nodes = [self.summary]+self.nn[walker_index].get_list_of_nodes(
+        if self.FLAGS.summaries_path is not None:
+            test_nodes = [self.summary]
+        else:
+            test_nodes = []
+        test_nodes.extend(self.nn[walker_index].get_list_of_nodes(
             ["train_step", "accuracy", "global_step", "loss", "y_", "y"]) \
-                     +[self.static_vars["gradients"]]
+                     +[self.static_vars["gradients"]])
 
         output_width = 8
         output_precision = 8
@@ -1269,7 +1296,12 @@ class model:
                 np.zeros((steps, no_params)),
                 columns=header)
 
+
         default_feed_dict = self._create_default_feed_dict_with_constants(walker_index)
+
+        # prepare summaries for TensorBoard
+        if self.FLAGS.summaries_path is not None:
+            summary_writer = tf.summary.FileWriter(self.FLAGS.summaries_path, self.sess.graph)
 
         logging.info("Starting to train")
         last_time = time.process_time()
@@ -1306,13 +1338,23 @@ class model:
                     weights_eval = self.weights[walker_index].evaluate(self.sess)
                     biases_eval = self.biases[walker_index].evaluate(self.sess)
 
-            summary, _, acc, global_step, loss_eval, y_true_eval, y_eval, scaled_grad = \
-                self.sess.run(test_nodes, feed_dict=feed_dict)
+            if self.FLAGS.summaries_path is not None:
+                summary, _, acc, global_step, loss_eval, y_true_eval, y_eval, scaled_grad = \
+                    self.sess.run(test_nodes, feed_dict=feed_dict)
+            else:
+                _, acc, global_step, loss_eval, y_true_eval, y_eval, scaled_grad = \
+                    self.sess.run(test_nodes, feed_dict=feed_dict)
 
             gradients, virials = self.sess.run([self.static_vars["gradients"][walker_index],
                                                 self.static_vars["virials"][walker_index]])
             if current_step >= self.FLAGS.burn_in_steps:
                 accumulated_virials += virials
+
+            if self.FLAGS.summaries_path is not None:
+                run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+                run_metadata = tf.RunMetadata()
+                summary_writer.add_run_metadata(run_metadata, 'step%d' % current_step)
+                summary_writer.add_summary(summary, current_step)
 
             if current_step % self.FLAGS.every_nth == 0:
                 current_time = time.process_time()
@@ -1376,6 +1418,10 @@ class model:
             #logging.debug('y_ at step %s: %s' % (i, str(y_true_eval[0:9].transpose())))
             #logging.debug('y at step %s: %s' % (i, str(y_eval[0:9].transpose())))
         logging.info("TRAINED down to loss %s and accuracy %s." % (loss_eval, acc))
+
+        # close summaries file
+        if self.FLAGS.summaries_path is not None:
+            summary_writer.close()
 
         return run_info, trajectory, averages
 
