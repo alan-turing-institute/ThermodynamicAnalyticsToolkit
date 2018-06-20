@@ -193,13 +193,28 @@ class model:
         :param FLAGS: parameters
         :param shuffle: whether to shuffle dataset or not
         """
-        if FLAGS.in_memory_pipeline and (FLAGS.batch_data_file_type == "csv"):
+        if FLAGS.in_memory_pipeline:
             logging.debug("Using in-memory pipeline")
             # at the moment we can only parse a single file
             assert( len(FLAGS.batch_data_files) == 1 )
-            csv_dataset = pd.read_csv(FLAGS.batch_data_files[0], sep=',', header=0)
-            xs = np.asarray(csv_dataset.iloc[:, 0:self.input_dimension])
-            ys = np.asarray(csv_dataset.iloc[:, self.input_dimension:self.input_dimension+self.output_dimension])
+            if FLAGS.batch_data_file_type == "csv":
+                csv_dataset = pd.read_csv(FLAGS.batch_data_files[0], sep=',', header=0)
+                xs = np.asarray(csv_dataset.iloc[:, 0:FLAGS.input_dimension])
+                ys = np.asarray(csv_dataset.iloc[:, FLAGS.input_dimension:FLAGS.input_dimension + FLAGS.output_dimension])
+            elif FLAGS.batch_data_file_type == "tfrecord":
+                # create a session, parse the tfrecords with batch_size equal to dimension
+                input_pipeline = DatasetPipeline(
+                    filenames=FLAGS.batch_data_files, filetype=FLAGS.batch_data_file_type,
+                    batch_size=FLAGS.dimension, dimension=FLAGS.dimension, max_steps=1,
+                    input_dimension=FLAGS.input_dimension, output_dimension=FLAGS.output_dimension,
+                    shuffle=shuffle, seed=FLAGS.seed)
+                with tf.Session() as session:
+                    session.run(input_pipeline.iterator.initializer)
+                    xs, ys = input_pipeline.next_batch(session)
+            else:
+                logging.error("File type %s is not supported for in-memory pipeline" % FLAGS.batch_data_file_type)
+                assert (False)  #
+
             self.input_pipeline = InMemoryPipeline(dataset=[xs,ys], batch_size=FLAGS.batch_size,
                                                    max_steps=FLAGS.max_steps,
                                                    shuffle=shuffle, seed=FLAGS.seed)
