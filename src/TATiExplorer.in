@@ -181,10 +181,9 @@ def main(_):
                 run_lines_per_leg = data_object.run_lines
                 for leg_nr in range(len(run_lines_per_leg)):
                     run_lines = run_lines_per_leg[leg_nr]
+                    run_lines.iloc[:,0] = current_id
                     for row in range(len(run_lines.index)):
-                        run_line = run_lines.iloc[row,:]
-                        run_line[0] = current_id
-                        run_writer.writerow(run_line)
+                        run_writer.writerow(run_lines.iloc[row,:])
         run_file.close()
 
     trajectory_header = get_trajectory_header(
@@ -201,10 +200,9 @@ def main(_):
                 trajectory_lines_per_leg = data_object.trajectory_lines
                 for leg_nr in range(len(trajectory_lines_per_leg)):
                     trajectory_lines = trajectory_lines_per_leg[leg_nr]
+                    trajectory_lines.iloc[:,0] = current_id
                     for row in range(len(trajectory_lines.index)):
-                        trajectory_line = trajectory_lines.iloc[row,:]
-                        trajectory_line[0] = current_id
-                        trajectory_writer.writerow(trajectory_line)
+                        trajectory_writer.writerow(trajectory_lines.iloc[row,:])
         trajectory_file.close()
 
     # write minima to file
