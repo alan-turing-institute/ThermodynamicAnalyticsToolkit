@@ -1,0 +1,21 @@
+#!/usr/bin/env @PYTHON@
+
+import sys
+sys.path.insert(1, '@pythondir@')
+
+if len(sys.argv) < 3:
+    sys.stderr.write("Usage: "+sys.argv[0]+ "<python package name> <package version>\n")
+    sys.exit(127)
+
+package_version=None
+returncode=0
+try:
+    package_version = __import__(sys.argv[1]).__version__
+except ImportError:
+    returncode=255
+
+if package_version != sys.argv[2]:
+    returncode=255
+
+if __name__ == '__main__':
+    sys.exit(returncode)
