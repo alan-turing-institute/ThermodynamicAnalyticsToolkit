@@ -21,7 +21,7 @@ AT_SETUP([Samplers - GLA 1st])
 AT_KEYWORDS([samplers tatisampler gla1st])
 
 # dataset prepared as follows:
-# TATiDatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+# TATiDatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_files dataset-twoclusters.csv
 
 # run 1
 AT_CHECK([../../../TATiSampler \

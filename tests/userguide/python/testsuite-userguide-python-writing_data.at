@@ -23,7 +23,7 @@ AT_KEYWORDS([example python writing_data])
 # the comparison file was crated by running:
 # (Two clusters dataset with two inputs nodes, single output, linear activation)
 # TATiDatasetWriter \
-# --train_data_file dataset-twoclusters.csv \
+# --train_data_files dataset-twoclusters.csv \
 # --data_type 2 \
 # --dimension 100 \
 # --noise 0.1 \

@@ -27,7 +27,7 @@ AT_CHECK([../../../TATiDatasetWriter \
 	--noise 0.1 \
 	--seed 426 \
 	--train_test_ratio 0 \
-	--test_data_file testset-base.csv
+	--test_data_files testset-base.csv
 ], 0, [stdout], [stderr])
 
 # run 2: same seed
@@ -37,7 +37,7 @@ AT_CHECK([../../../TATiDatasetWriter \
 	--noise 0.1 \
 	--seed 426 \
 	--train_test_ratio 0 \
-	--test_data_file testset-sameseed.csv
+	--test_data_files testset-sameseed.csv
 ], 0, [stdout], [stderr])
 
 
@@ -48,7 +48,7 @@ AT_CHECK([../../../TATiDatasetWriter \
 	--noise 0.1 \
 	--seed 427 \
 	--train_test_ratio 0 \
-	--test_data_file testset-otherseed.csv
+	--test_data_files testset-otherseed.csv
 ], 0, [stdout], [stderr])
 
 # now compare all

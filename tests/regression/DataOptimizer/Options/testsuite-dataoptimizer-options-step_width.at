@@ -21,7 +21,7 @@ AT_SETUP([Optimizer Options - step width])
 AT_KEYWORDS([tatioptimizer step_width])
 
 # dataset prepared as follows:
-# TATiDatasetWriter --data_type 2 --dimension 10 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+# TATiDatasetWriter --data_type 2 --dimension 10 --seed 426 --noise 0. --train_test_ratio 0 --test_data_files dataset-twoclusters.csv
 
 # run 1
 AT_CHECK([../../../TATiOptimizer \
