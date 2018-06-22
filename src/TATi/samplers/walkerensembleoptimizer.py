@@ -1,11 +1,17 @@
 from tensorflow.python.ops import math_ops
 from tensorflow.python.eager import context
+from tensorflow.python.ops import resource_variable_ops
 from tensorflow.python.ops import state_ops
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import variables
 from tensorflow.python.training.optimizer import Optimizer, _DenseResourceVariableProcessor, \
     _OptimizableVariable, _StreamingModelPortProcessor, _get_variable_for
 import tensorflow as tf
+
+from distutils.version import LooseVersion
+
+if LooseVersion(tf.__version__) >= LooseVersion("1.7.0"):
+    from tensorflow.python.training.optimizer import _TensorProcessor
 
 import collections
 
@@ -24,27 +30,47 @@ class RefVariableWalkerEnsembleProcessor(_OptimizableVariable):
     def __init__(self, v):
         self._v = v
 
+    def __str__(self):
+        return "<_RefVariableProcessor(%s)>" % self._v
+
     def target(self):
         return self._v._ref()  # pylint: disable=protected-access
 
     def update_op(self, optimizer, grads_and_vars):
-        update_op = optimizer._apply_dense(grads_and_vars, self._v)  # pylint: disable=protected-access
-        if self._v.constraint is not None:
-            with ops.control_dependencies([update_op]):
-                return self._v.assign(self._v.constraint(self._v))
+        if not isinstance(grads_and_vars, ops.IndexedSlices):
+            update_op = optimizer._apply_dense(grads_and_vars, self._v)  # pylint: disable=protected-access
+            if self._v.constraint is not None:
+                with ops.control_dependencies([update_op]):
+                    return self._v.assign(self._v.constraint(self._v))
+            else:
+                return update_op
         else:
-            return update_op
+            if self._v.constraint is not None:
+                raise RuntimeError(
+                    "Cannot use a constraint function on a sparse variable.")
+            # pylint: disable=protected-access
+            return optimizer._apply_sparse_duplicate_indices(grads_and_vars, self._v)
 
 def _get_processor(v):
     """The processor of v."""
-    if context.in_eager_mode():
-        return _DenseResourceVariableProcessor(v)
+    if LooseVersion(tf.__version__) >= LooseVersion("1.7.0"):
+        if context.executing_eagerly():
+            if isinstance(v, ops.Tensor):
+                return _TensorProcessor(v)
+            else:
+                return _DenseResourceVariableProcessor(v)
+    else:
+        if context.in_eager_mode():
+            return _DenseResourceVariableProcessor(v)
     if v.op.type == "VarHandleOp":
         return _DenseResourceVariableProcessor(v)
     if isinstance(v, variables.Variable):
         return RefVariableWalkerEnsembleProcessor(v)
     if v.op.type == "SubmodelPort":
         return _StreamingModelPortProcessor(v)
+    if LooseVersion(tf.__version__) >= LooseVersion("1.7.0"):
+        if isinstance(v, ops.Tensor):
+            return _TensorProcessor(v)
     raise NotImplementedError("Trying to optimize unsupported type ", v)
 
 class WalkerEnsembleOptimizer(Optimizer):
@@ -131,8 +157,12 @@ class WalkerEnsembleOptimizer(Optimizer):
                                              ([str(v) for _, _, v in converted_grads_and_vars],))
 
         # create slots for each variable
-        with ops.control_dependencies(None):
-            self._create_slots([_get_variable_for(v) for v in var_list])
+        if LooseVersion(tf.__version__) >= LooseVersion("1.7.0"):
+            with ops.init_scope():
+                self._create_slots([_get_variable_for(v) for v in var_list])
+        else:
+            with ops.control_dependencies(None):
+                self._create_slots([_get_variable_for(v) for v in var_list])
 
         # create the (position) update operations
         update_ops = []
@@ -142,7 +172,12 @@ class WalkerEnsembleOptimizer(Optimizer):
             for grad, var, processor in converted_grads_and_vars:
                 if grad is None:
                     continue
-                scope_name = var.op.name if context.in_graph_mode() else ""
+                # We colocate all ops created in _apply_dense or _apply_sparse
+                # on the same device as the variable.
+                if LooseVersion(tf.__version__) >= LooseVersion("1.7.0"):
+                    scope_name = "" if context.executing_eagerly() else var.op.name
+                else:
+                    scope_name = var.op.name if context.in_graph_mode() else ""
                 with ops.name_scope("update_" + scope_name), ops.colocate_with(var):
                     update_ops.append(processor.update_op(self, walkers_grads_and_vars))
 
@@ -152,12 +187,29 @@ class WalkerEnsembleOptimizer(Optimizer):
             else:
                 with ops.control_dependencies([self._finish(update_ops, "update")]):
                     with ops.colocate_with(global_step):
-                        apply_updates = state_ops.assign_add(global_step, 1, name=name).op
+                        if isinstance(global_step, resource_variable_ops.ResourceVariable):
+                            # TODO(apassos): the implicit read in assign_add is slow; consider
+                            # making it less so.
+                            apply_updates = resource_variable_ops.assign_add_variable_op(
+                                global_step.handle,
+                                ops.convert_to_tensor(1, dtype=global_step.dtype),
+                                name=name)
+                        else:
+                            apply_updates = state_ops.assign_add(global_step, 1, name=name)
 
             # put into collection and return
-            train_op = ops.get_collection_ref(ops.GraphKeys.TRAIN_OP)
-            if apply_updates not in train_op:
-                train_op.append(apply_updates)
+            if LooseVersion(tf.__version__) >= LooseVersion("1.7.0") and \
+                    not context.executing_eagerly():
+                if isinstance(apply_updates, ops.Tensor):
+                    apply_updates = apply_updates.op
+            else:
+                apply_updates = apply_updates.op
+
+            if LooseVersion(tf.__version__) < LooseVersion("1.7.0") or \
+                    not context.executing_eagerly():
+                train_op = ops.get_collection_ref(ops.GraphKeys.TRAIN_OP)
+                if apply_updates not in train_op:
+                    train_op.append(apply_updates)
 
             return apply_updates
 
