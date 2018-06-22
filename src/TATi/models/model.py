@@ -196,11 +196,15 @@ class model:
         if FLAGS.in_memory_pipeline:
             logging.debug("Using in-memory pipeline")
             # at the moment we can only parse a single file
-            assert( len(FLAGS.batch_data_files) == 1 )
             if FLAGS.batch_data_file_type == "csv":
-                csv_dataset = pd.read_csv(FLAGS.batch_data_files[0], sep=',', header=0)
-                xs = np.asarray(csv_dataset.iloc[:, 0:FLAGS.input_dimension])
-                ys = np.asarray(csv_dataset.iloc[:, FLAGS.input_dimension:FLAGS.input_dimension + FLAGS.output_dimension])
+                all_xs = [None]*len(FLAGS.batch_data_files)
+                all_ys = [None]*len(FLAGS.batch_data_files)
+                for index in range(len(FLAGS.batch_data_files)):
+                    csv_dataset = pd.read_csv(FLAGS.batch_data_files[index], sep=',', header=0)
+                    all_xs[index] = np.asarray(csv_dataset.iloc[:, 0:FLAGS.input_dimension])
+                    all_ys[index] = np.asarray(csv_dataset.iloc[:, FLAGS.input_dimension:FLAGS.input_dimension + FLAGS.output_dimension])
+                xs = np.concatenate(all_xs)
+                ys = np.concatenate(all_ys)
             elif FLAGS.batch_data_file_type == "tfrecord":
                 # create a session, parse the tfrecords with batch_size equal to dimension
                 input_pipeline = DatasetPipeline(
