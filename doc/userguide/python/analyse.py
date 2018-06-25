@@ -5,13 +5,7 @@ import matplotlib
 matplotlib.use("agg")
 import matplotlib.pyplot as plt
 
-from TATi.models.model import model
-
-FLAGS = model.setup_parameters(
-    trajectory_file="trajectory.csv"
-)
-
-df_trajectory = pd.read_csv(FLAGS.trajectory_file, sep=',', \
+df_trajectory = pd.read_csv("trajectory.csv", sep=',', \
     header=0)
 traj=np.asarray(df_trajectory)
 
