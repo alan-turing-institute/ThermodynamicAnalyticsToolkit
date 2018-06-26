@@ -41,18 +41,19 @@ class DatasetPipeline(InputPipeline):
                 lambda filename: (
                     tf.data.TextLineDataset(filename)
                         .skip(1)
-                        .filter(lambda line: tf.not_equal(tf.substr(line, 0, 1), '#'))
-                        .cache()))
+                        .filter(lambda line: tf.not_equal(tf.substr(line, 0, 1), '#'))))
             self.dataset = self.dataset.map(functools.partial(decode_csv_line, defaults=defaults,
                                                               input_dimension=input_dimension,
-                                                              output_dimension=output_dimension))
+                                                              output_dimension=output_dimension),
+                                            num_parallel_calls=5).cache()
         elif filetype == "tfrecord":
             self.dataset = self.dataset.flat_map(
                 lambda filename: (tf.data.TFRecordDataset(filename)))
             # TODO: this is very specific at the moment
             self.dataset = self.dataset.map(functools.partial(read_and_decode_image,
                                                               num_pixels=input_dimension,
-                                                              num_classes=output_dimension))
+                                                              num_classes=output_dimension),
+                                            num_parallel_calls=5).cache()
         else:
             logging.critical("Unknown filetype")
             sys.exit(255)
