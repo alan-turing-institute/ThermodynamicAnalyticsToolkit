@@ -195,29 +195,15 @@ class model:
         """
         if FLAGS.in_memory_pipeline:
             logging.debug("Using in-memory pipeline")
-            # at the moment we can only parse a single file
-            if FLAGS.batch_data_file_type == "csv":
-                all_xs = [None]*len(FLAGS.batch_data_files)
-                all_ys = [None]*len(FLAGS.batch_data_files)
-                for index in range(len(FLAGS.batch_data_files)):
-                    csv_dataset = pd.read_csv(FLAGS.batch_data_files[index], sep=',', header=0)
-                    all_xs[index] = np.asarray(csv_dataset.iloc[:, 0:FLAGS.input_dimension])
-                    all_ys[index] = np.asarray(csv_dataset.iloc[:, FLAGS.input_dimension:FLAGS.input_dimension + FLAGS.output_dimension])
-                xs = np.concatenate(all_xs)
-                ys = np.concatenate(all_ys)
-            elif FLAGS.batch_data_file_type == "tfrecord":
-                # create a session, parse the tfrecords with batch_size equal to dimension
-                input_pipeline = DatasetPipeline(
-                    filenames=FLAGS.batch_data_files, filetype=FLAGS.batch_data_file_type,
-                    batch_size=FLAGS.dimension, dimension=FLAGS.dimension, max_steps=1,
-                    input_dimension=FLAGS.input_dimension, output_dimension=FLAGS.output_dimension,
-                    shuffle=shuffle, seed=FLAGS.seed)
-                with tf.Session() as session:
-                    session.run(input_pipeline.iterator.initializer)
-                    xs, ys = input_pipeline.next_batch(session)
-            else:
-                logging.error("File type %s is not supported for in-memory pipeline" % FLAGS.batch_data_file_type)
-                assert (False)  #
+            # create a session, parse the tfrecords with batch_size equal to dimension
+            input_pipeline = DatasetPipeline(
+                filenames=FLAGS.batch_data_files, filetype=FLAGS.batch_data_file_type,
+                batch_size=FLAGS.dimension, dimension=FLAGS.dimension, max_steps=1,
+                input_dimension=FLAGS.input_dimension, output_dimension=FLAGS.output_dimension,
+                shuffle=shuffle, seed=FLAGS.seed)
+            with tf.Session() as session:
+                session.run(input_pipeline.iterator.initializer)
+                xs, ys = input_pipeline.next_batch(session)
 
             self.input_pipeline = InMemoryPipeline(dataset=[xs,ys], batch_size=FLAGS.batch_size,
                                                    max_steps=FLAGS.max_steps,
