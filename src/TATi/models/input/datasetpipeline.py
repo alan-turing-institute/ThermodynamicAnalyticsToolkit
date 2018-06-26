@@ -65,6 +65,7 @@ class DatasetPipeline(InputPipeline):
             self.dataset = self.dataset.shuffle(buffer_size=100*batch_size, seed=seed)
         self.dataset = self.dataset.batch(batch_size)
         self.dataset = self.dataset.repeat(ceil(max_steps*batch_size/dimension))
+        self.dataset = self.dataset.prefetch(100 * batch_size)
         #logging.info(self.dataset.output_shapes)
         #logging.info(self.dataset.output_types)
 
