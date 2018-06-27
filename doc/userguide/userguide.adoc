@@ -1,0 +1,2051 @@
+[[introduction]]
+Introduction
+------------
+
+[[introduction.needtoknow]]
+Before you start
+~~~~~~~~~~~~~~~~
+
+In the following we assume that you, the reader, has a general
+familiarity with neural networks. You should know what a classification
+problem is, what an associated dataset for (supervised) learning needs
+to contain. You should know about what weights and biases in a neural
+network are and what the loss function does. You should also have a
+trough idea of what optimization is and that gradients with respect to
+the chosen loss function can be obtained through so-called
+backpropagation.
+
+If you are _not_ familiar with the above terminology, then please first
+read link:#reference.concepts[section_title].
+
+[[introduction.whatis]]
+What is ThermodynamicAnalyticsToolkit?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Typically, optimzation in neural network training employs methods such
+as Gradient Descent, Stochastic Gradient Descent or derived methods
+using momentum such as ADAM and so on. The loss function itself may be
+convex, however, the loss manifold given a large dataset is not convex
+in general. Hence, these methods will only find local minima. Therefore,
+the eventual set of trained parameters of the neural network is not
+optimal. Nonetheless, Neural networks, given enough data and processing
+power, work marvelously and one may wonder why.
+
+The essential idea behind this program package is that we use sampling
+instead of optimization: we are not interested in the local minimum
+closest to some random initial configuration and be done. Instead we aim
+at finding all of the minima and all possible barriers in between by
+treating the loss function as a high-dimensional potential and the
+weights and biases of the neural network as one-dimensional particles in
+a stochastic differential equation, namely Langevin Dynamics.
+
+There is not need to panic: You do not need to know anything about these
+kinds of equations when using the program. However, rest assured that
+all statistical properties derived using trajectories obtained through
+these equations are meaningful.
+
+The hope is to elucidate the marvel behind the wondrous performance of
+neural networks, maybe to obtain even better parametrizations or obtain
+the same in cheaper ways, and also to gather means of optimizing the
+neural network's topology given a specific dataset to train.
+
+In essence, this program suite provides samplers using
+https://www.tensorflow.org/[TensorFlow] and analysis tools to extract
+specific statistical quantities from the computed particle trajectories.
+
+It can be used both as python module and as stand-alone command-line
+tools.
+
+[[introduction.installation]]
+Installation
+~~~~~~~~~~~~
+
+In the following we explain the installation procedure to get
+ThermodynamicAnalyticsToolkit up and running.
+
+[[introduction.installation.requirements]]
+Installation requirements
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This program suite is implemented using python3 and the development
+mainly focused on Linux (development machine uses Ubuntu 16.04). At the
+moment other operation systems are not supported but may still work.
+
+It has the following non-trivial dependencies:
+
+* TensorFlow: see below
++
+www.tensorflow.org
++
+, version 1.4 till currently 1.6 supported
+* Numpy: see
++
+www.numpy.org
+* Pandas: see
++
+pandas.pydata.org
+* sklearn: see
++
+scikit-learn.org
+
+Note that most of these packages can be easily installed using either
+the repository tool (using some linux derivate such as Ubuntu), e.g.
+
+....
+sudo apt install python3-numpy
+....
+
+or via
+
+pip3
+
+, i.e.
+
+....
+pip3 install numpy
+....
+
+Moreover, the following packages are not ultimately required but
+examples or tests may depend on them:
+
+* matplotlib: see
++
+matplotlib.org
+* sqlite3: see
++
+www.sqlite.org
+
+Finally, for the diffusion map analysis we recommend using the pydiffmap
+package, see github.com/DiffusionMapsAcademics/pyDiffMap.
+
+In our setting what typically worked best was to use anaconda in the
+following manner:
+
+....
+conda create -n tensorflow python=3.5 -y
+  conda install -n tensorflow -y \
+     tensorflow numpy scipy pandas scikit-learn
+        
+....
+
+In case your machine has GPU hardware for tensorflow, replace
+``tensorflow'' by ``tensorflow-gpu''.
+
+__________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
+*Note*
+
+Note that on systems with typical core i7 architecture recompiling
+tensorflow from source provided only very small runtime gains in our
+tests which in most cases do not support the extra effort. You may find
+it necessary for tackling really large networks and datasets and
+especially if you desire using Intel's MKL library for the CPU-based
+linear algebra computations.
+__________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
+
+Henceforth, we assume that there is a working tensorflow on your system,
+i.e. inside the python3 shell
+
+....
+import tensorflow as tf
+....
+
+does _not_ throw an error.
+
+Moreover,
+
+....
+a=tf.constant("Hello world")
+sess=tf.Session()
+sess.run(a)
+....
+
+should print ``Hello world'' or something similar.
+
+[[introduction.installation.procedure]]
+Installation procedure
+^^^^^^^^^^^^^^^^^^^^^^
+
+This package is distributed via autotools, "compiled" and installed via
+automake. If you are familiar with this set of tools, there should be no
+problem. If not, please refer to the text INSTALL file that is included
+in this distributable archive. The installation, very briefly, is
+accomplished like this:
+
+....
+./bootstrap.sh
+mkdir build64
+cd build64
+../configure --prefix="somepath" -C PYTHON="path to python3"
+make
+make install
+        
+....
+
+where the first step is only required if you have obtained the package
+through cloning the github repository. If you extracted it from a
+distributable tarball, then it is not necssary.
+
+Here, "compilation" is done in an extra folder ``build64'', i.e. it is
+an out-of-source build, that prevents cluttering of the source folder.
+Naturally, you may pick any name (and actually any location on your
+computer) as you see fit.
+
+More importantly, please replace ``somepath'' and ``path to python3'' by
+the desired installation path and the full path to the `python3`
+executable on your system.
+
+_________________________________________________________________________
+*Note*
+
+In case of having used
+
+anaconda
+
+for the installation of required packages, then you need to look in
+
+....
+$HOME/.conda/envs/tensorflow/bin/python3
+....
+
+for the respective command, where
+
+$HOME
+
+is your home folder. This assumes that your anaconda environment is
+named
+
+tensorflow
+
+as in the example installation steps above.
+_________________________________________________________________________
+
+_________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
+*Note*
+
+We recommend executing (after
+
+make install
+
+was run)
+
+....
+make check
+....
+
+additionally. This will execute every test on the extensive testsuite
+and report any errors. None should fail. If all fail, a possible cause
+might be a not working tensorflow installation. If some fail, please
+contact the author, see
+
+. As always with GNU make you may use
+
+make -j4 check
+
+to execute four processes in parallel performing the checks which should
+give a significant speed up. Replace "4" by the number of cores in your
+machine or any other number you find appropriate.
+_________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
+
+[[introduction.license]]
+License
+~~~~~~~
+
+As long as no other license statement is given,
+ThermodynamicAnalyticsToolkit is free for use under the GNU Public
+License (GPL) Version 3 (see www.gnu.de/documents/gpl-3.0.de.html).
+
+[[introduction.disclaimer]]
+Disclaimer
+~~~~~~~~~~
+
+We quote section 11 from the GPLv3 license:
+
+Because the program is licensed free of charge, there is not warranty
+for the program, to the extent permitted by applicable law. Except when
+otherwise stated in writing in the copyright holders and/or other
+parties provide the program "as is" without warranty of any kind, either
+expressed or implied. Including, but not limited to, the implied
+warranties of merchantability and fitness for a particular purpose. The
+entire risk as to the quality and performance of the program is with
+you. Should the program prove defective, you assume the cost of all
+necessary servicing, repair, or correction.
+
+[[introduction.feedback]]
+Feedback
+~~~~~~~~
+
+If you encounter any bugs, errors, or would like to submit feature
+request, please use the email address provided at the very beginning of
+this user guide. The author is especially thankful for any description
+of all related events prior to occurrence of the error and auxiliary
+files. Please mind sensible space restrictions of email attachments.
+
+Quickstart
+----------
+
+Sampling in neural networks
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Assume we are given a very simple data set as depicted in
+link:#quickstart.introduction.dataset[figure_title]. The goal is to
+classify all red and blue dots into two different classes. This problem
+is quite simple to solve: a line in the two-dimensional space can easily
+separate the two classes.
+
+A very simple neural network, a perceptron, is all we need: it uses two
+inputs nodes, namely each coordinate component, latexmath:[$x_{1}$] and
+latexmath:[$x_{2}$], and a single output node with an activation
+function latexmath:[$f$] whose sign gives the class the input item
+belongs to. The network is given in
+link:#quickstart.introduction.perceptron[figure_title].
+
+image:[Simple single-layer perceptron with weights and
+biases,scaledwidth=30.0%]
+
+In the following we want to use the mean square loss, i.e. the euclidian
+distance between the output from the network and the expected values per
+item, as the network's loss function. The loss depends implicitly on the
+dataset and explicitly on the weights and biases associated with the
+network. In our case, we have two weights for the two edges between
+input nodes, latexmath:[$w_{1}$] and latexmath:[$w_{2}$], and the output
+node and a single bias attached to the output node latexmath:[$b$].
+
+In sampling we look at a system of particles that have two internal
+properties: location and momentum. The location is simply their current
+value, that changes through its momentum over time. The momentum again
+changes because the particle is inside a potential that drives it
+towards the minimum. The system is described by a so-called Hamilton
+operator that gives rise to its same named dynamics. If noise is
+additionally taken into account, then we look at Langevin Dynamics.
+
+Returning to the neural networks, the role of the particles is taken by
+the degrees of freedom of the system: weights and biases. The loss
+function is called the _potential_ and it is accompanied by a _kinetic
+energy_ that is simply the sum of all squared momenta. Adding Momentum
+to Optimizers in neural networks is a concept known already and inspired
+by physics. The momentum helps in overcoming areas of the loss function
+where it is essentially flat.
+
+Sampling produces trajectories of particles moving along the manifold.
+Integrals along these trajectories, if they are long enough, are
+equivalent to integrating over the whole manifold, if the system is
+ergodic.
+
+By using sampling we mean to discover more of the loss manifold than
+just the closest local minimum. The wording seems to indicate that we
+would like to explore _all_ of the loss manifold. However, this is not
+the case as there are regions we are not interested in, namely those
+with large loss function values. In other words, we would like to sample
+in such a way as only to stay in regions of the loss manifold associated
+with small values. Generating trajectories by dynamics where the
+negative of the gradient acts as a driving force onto each particle
+automatically brings them into regions where the loss's value is small.
+This is the principle behind Gradient Descent. However, in general all
+possible minima locations will not form a connected region on the loss
+manifold. These minima regions may be separated by barriers which are
+needed to overcome. We distinguish two kinds,
+
+* entropic barriers,
+* enthalpic barriers.
+
+Both of which are conceptually very simple. The enthalpic barrier is
+simply a ridge that is very high where the particles need a large
+momentum to overcome it. Entropic barriers on the other hand are
+passages very small in volume that are simply very difficult to find. In
+order to overcome barriers of the first kind, higher temperatures
+suffice. For the second type of barrer, this is not so easy.
+Metaphorically speaking, we are looking for possibly very small door.
+
+This quick description of the problem of sampling in the context of
+neural networks in data science should have prepare you now for the
+following quickstart tutorial on how to actually use
+ThermodynamicAnalyticsToolkit to perform sampling.
+
+Let us have a closer look at a very simple loss landscape. In
+link:#quickstart.introduction.landscape.neuralnetwork[figure_title] we
+look at a very simple network of a single input node, with a single
+hidden layer containing just one node and a single output layer.
+Activation function is linear everywhere. We set the output node's and
+hidden node's bias to zero. The dataset contains two cluster of points,
+one (label -1) centered at -2, another (label +1) centered at 2 which we
+do not depict here. Any product of the two degrees of freedom of the
+network, namely its two weights, equal to unity will classify the data
+well.
+
+image:[Neural network with permutation symmetry to provoke multiple
+minima,scaledwidth=45.0%]
+
+In link:#quickstart.introduction.landscape.loss[figure_title] we then
+turn to the loss landscape depending on either weight. We see two minima
+basins both of hyperbole or "banane" shape. There is a clear (enthalpic)
+potential barrier in between. However, the minima basins themselves are
+to some part entropic barriers as they are elongated and flat.
+
+In the figure we also give a trajectory. Here, we have chosen such a
+(inverse) temperature value such that it is able to pass the potential
+barrier and reach the other minima basin.
+
+image:[Loss landscape with an example trajectory,scaledwidth=45.0%]
+
+This is the goal of exploration: To find all (local) minima to allow to
+pick the lowest, namely the global minimum.
+
+[[quickstart.python]]
+Using Python
+~~~~~~~~~~~~
+
+The package can be readily used inside any python3 shell or script.
+However, this interface rather lends itself to quick testing than
+rigorous experiments. You are still fine if you perform all your
+scientific experiments inside python scripts kept safely inside a code
+versioning system such as `git`.
+
+If you have installed the package in the folder "/foo", i.e. we have
+folders "TATi/models" with a file `model.py` residing in there, then you
+probably need to add it to the `PYTHONPATH` as follows
+
+....
+PYTHONPATH=/foo python3
+....
+
+In this shell, you may import the sampling part of the package as
+follows
+
+....
+from TATi.models.model import model
+....
+
+This will import the abstract `model` class from the file mentioned
+before. This class contains wrapper functions to setup the network with
+either training and sampling in a few keystrokes.
+
+In order to make you own python scripts executable and know about the
+correct (non-standard) path to ThermodynamicAnalyticsToolkit, place the
+following two lines at the veryg beginning of your script:
+
+....
+import sys
+sys.path.insert(1,"<path_to_TATi>/lib/python3.5/site-packages/")
+....
+
+where ``<path_to_TATi>'' needs to be replaced by your specific
+installation path.
+
+[[quickstart.python.simple_evaluation]]
+Evaluating loss and gradients
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+ThermodynamicAnalyticsToolkit can also be used as a simplified interface
+to access the loss and the gradients of the neural network. Then, it can
+be treated as a simple high-dimensional function (the loss), whose
+derivative (the gradients) is available as a numpy array. See the
+following example which sets up a simple fully-connected hidden network
+and evaluates loss and then loss and gradients combined.
+
+....
+....
+
+[[quickstart.python.writing_data]]
+Preparing a dataset
+^^^^^^^^^^^^^^^^^^^
+
+At the moment, datasets are parsed from Comma Separated Values (CSV)
+files. In order for the following examples on optimization and sampling
+to work, we need such a data file containing features and labels.
+
+One option is to use the TATiDatasetWriter, see
+link:#quickstart.cmdline.writing_dataset[section_title]. However, we can
+do the same using python as well.
+
+....
+....
+
+After importing some modules we first fix the numpy seed to 426 in order
+to get the same items reproducibly. Then, we first create 100 items
+using the hard-coded ClassificationDatasets class from the
+``TWOCLUSTERS'' dataset. We randomly perturb by a relative noise of 0.1.
+
+Afterwards, these items are simply written to file using the csv module.
+
+_____________________________________________________
+*Note*
+
+The file
+
+dataset-twoclusters.csv
+
+is used in the following examples, so keep it around.
+_____________________________________________________
+
+[[quickstart.python.optimizing]]
+Optimizing the network
+^^^^^^^^^^^^^^^^^^^^^^
+
+Let us first start with optimizing the network.
+
+....
+....
+
+As you see, all options are set in a struct called `FLAGS` that controls
+how the optimization is performed. There is a helper function in `model`
+called `setup_parameters` that creates the FLAGS for you with some
+default parameters.
+
+Let us quickly go through each of the parameters:
+
+* batch_size
++
+sets the subset size of the data set looked at per training step, if
+smaller than dimension, then we add stochasticity/noise to the training
+but for the advantage of smaller runtime.
+* max_steps
++
+gives the amount of training steps to be performed.
+* optimizer
++
+defines the method to use for training. Here, we use Gradient Descent
+(in case batch_size is smaller than dimension, then we actually have
+Stochastic Gradient Descent).
+* output_activation
++
+defines the activation function of all output nodes, here it is linear.
+Other choices are: tanh, relu, relu6.
+* seed
++
+sets the seed of the random number generator. We will still have full
+randomness but in a deterministic manner, i.e. calling the same
+procedure again will bring up the exactly same values.
+* step_width
++
+defines the scaling of the gradients in each training step, i.e. the
+learning rate. Values too large may miss the minimum, values too small
+need longer to reach it.
+
+For small networks the option ``do_hessians'' might be useful which will
+compute the hessian matrix at the end of the trajectory and use the
+largest eigenvalue to compute the optimal step width. This will add
+nodes to the underlying computational graph for computing the components
+of the hessian matrix.
+
+_________________________________________________________________________________________________________________________________________________________________________________________________
+*Note*
+
+The creation of the nodes (not speaking of their evaluation) is a O(N^2)
+process in the number of parameters of the network N. Hence, this should
+only be done for small networks and on purpose.
+_________________________________________________________________________________________________________________________________________________________________________________________________
+
+Moreover, we did not say anything about _sampler_ as this is covered in
+the next section.
+
+Afterwards, the network is initialized, then we call `train()` which
+performs the training and returns runtime info, trajectory, and averages
+as a pandas DataFrame.
+
+At the end of this section on training, let us have a quick glance at
+the decrease of the loss function over the steps by using `matplotlib`.
+
+....
+....
+
+The graph should look similar to the one obtained with pgfplots (see
+https://sourceforge.net/pgfplots in
+link:#quickstart.python.optimizing.plot[figure_title].
+
+image:[Plot of the loss history for the optimization
+run,scaledwidth=50.0%]
+
+Go and have a look at the other columns. Or try to visualize the change
+in the parameters (weights and biases) in the trajectories dataframe.
+
+[[quickstart.python.sampling]]
+Sampling the network
+^^^^^^^^^^^^^^^^^^^^
+
+After optimization we may continue sampling the network.
+
+....
+....
+
+Here, the _sampler_ setting takes the place of the `optimizer` before as
+it states which sampling scheme to use. At the moment the following are
+available: SGLD GeometricLangevinAlgorithm_1st,
+GeometricLangevinAlgorithm_2nd, BAOAB, and HamiltonianMonteCarlo. GLA
+2nd or BAOAB are currently recommended to use as they are second order
+schemes and provide higher accuracies and allow for larger step widths.
+
+Again, we produce three output arrays: run info, trajectory, and
+averages. Trajectories contains among others all parameter degrees of
+freedom for each step (or ``every_nth'' step). Run info contains loss,
+accuracy, norm of gradient, norm of noise and others. Finally, in
+averages we compute averages over the trajectory such as average
+(ensemble) loss, average kinetic energy, average virial. There it is
+advisable to skip some initial ateps (``burn_in_steps'') to allow for
+some burn in time, i.e. for kinetic energies to adjust from initially
+zero momenta. Some columns depend on whether the sampler provides the
+specific quantity, e.g. SGLD does not have momentum, hence there will be
+no average kinetic energy.
+
+[[quickstart.python.sampling.supply_dataset]]
+Provide your own dataset
+++++++++++++++++++++++++
+
+Using the Python API you can directly supply your own dataset, e.g. from
+a numpy array residing in memory. See the following example where we do
+not generate the data but parse them from a CSV file instead using the
+pandas module.
+
+....
+....
+
+The major difference is that `batch_data_files` is now empty and instead
+we call the function `provide_data` in order to provide an in-memory
+dataset. In this example, we have parsed the same file as the in the
+previous section into a numpy array using the pandas module. Natually,
+this is just one way of creating a suitable numpy array. Input and
+output dimensions are directly deduced from the the tuple sizes.
+
+Note that we have ignored the average output here, by default none of
+the three output pandas dataframes are accumulated.
+
+[[quickstart.python.sampling.priors]]
+Using a prior
++++++++++++++
+
+You may add a prior to the sampling. At the current state two kinds of
+priors as follows are available. In ``FLAGS'' `prior_upper_boundary` and
+`prior_lower_boundary` give the admitted interval per parameter. Within
+a relative distance of 0.01 (with respect to length of domain and only
+in that small region to the specified boundary) an additional force acts
+upon the particles to drive them back into the desired domain. Its
+magnitude increases with distance to the covered inside the boundary
+region. The distance is taken to the power of `prior_power`. The force
+is modified by `prior_factor`.
+
+If upper and lower boundary coincide, then we have the case of
+tethering, where all parameters are pulled inward to the same point.
+
+At the moment prioring just a subset of particles is not supported.
+
+_________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
+*Note*
+
+The prior force is acting directly on the variables. It does not modify
+momentum. Moeover, it is a force! In other words, it depends on step
+width. If the step width is too large and if the repelling force
+increases too steeply close to the walls with respect to the normal
+dynamics of the system, it may blow up.
+_________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
+
+[[quickstart.python.sampling.optimize_then_sample]]
+First optimize, then sample
++++++++++++++++++++++++++++
+
+We might also concatenate optimize and sample if, in between the two, we
+adjust FLAGS as follows:
+
+....
+....
+
+The only thing we change in FLAGS is the number of steps and adding the
+sampler. However, as the model simply stores a copy of the FLAGS, in
+order to update the FLAGS in the model class as well, we need to reset
+it. Afterwards, we again initialize the network which will add only the
+sampling nodes and prepare output files differently. We have skipped the
+following steps that are equivalent to
+link:#quickstart.python.sampling.example[example_title]. Again, at the
+very end we obtain pandas DataFrame containing runtime information,
+trajectory, and averages.
+
+______________________________________________________________________________________________________________________________________
+*Note*
+
+This is actually the
+
+recommended
+
+way of doing sampling: First make sure that the parameters start in a
+local minima and from there we explore the surrounding manifold.
+______________________________________________________________________________________________________________________________________
+
+[[quickstart.python.analysis]]
+Analysing trajectories
+^^^^^^^^^^^^^^^^^^^^^^
+
+Analysis is so for constrained to parsing in run and trajectory files
+that you would write through optimization and sampling runs.
+
+To this end, specify `FLAGS.run_file` and `FLAGS.trajectory_file` with
+some valid file names.
+
+Subsequently, these may be easily parsed as follows, see also
+"TATiAnalyser.in".
+
+....
+....
+
+This would give a plot of the running average for each parameter in the
+trajectory file. In a similar, the run file can be loaded and its
+average quantities such as loss or kinetic energy be analysed and
+plotted.
+
+[[quickstart.python.exploration]]
+Exploring the loss manifold
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Exploration of the loss manifold is a bit more involved using the python
+interface.
+
+In general, the procedure has the following stages:
+
+* We sample a start trajectory.
+* For the current set of trajectory points we perform a diffusion map
+analysis. Using the first eigenvector as the dominant diffusion mode, we
+pick the first corner points at its maximal component.
+* If more corner points are needed, then we look at the diffusion
+distance with respect to already picked corner points over all
+eigenvectors of the diffusion map and pick the next point always such
+that it maximizes the diffusion distance to the present ones.
+* Finally, we sample further trajectories, one starting at each of the
+picked corner points.
+* This is repeated (go to second step) for as many exploration steps as
+we want to do.
+
+Note that each single trajectory is sampled in a special way:
+
+* First, three legs of sampling are performed
+* Then, we analyse the resulting diffusion map.
+* If the eigenvalues have not yet converged with respect to some
+relative threshold, we continue for one more leg and analyse again after
+that
+* If they have converged, we stop.
+* Finally, we look at the norm of the gradients along the trajectory. If
+it is below a certain threshold, then within this section of the
+trajectory (with gradient norms beneath the threshold) we pick the
+smallest gradient value as the trajectory step being a possible minimum
+candidate.
+* For all minimum candidates (if any) we run additional optimization
+trajectories, e.g. using GradientDescent, to find a local minima.
+
+Have a look at the following example.
+
+....
+....
+
+This performs exactly the procedure described before using very, very
+short trajectories (`max_steps`), only a few legs (`max_legs`) and only
+a very limited number of exploration steps (`exploration_steps
+        `). This is simple for the purpose of illustration. Naturally,
+larger values for all these parameters are required in order to explore
+complex manifolds and eventually find the global minima.
+
+[[quickstart.cmdline]]
+Using command-line interface
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+All the tests use the command-line interface and for performing rigorous
+scientific experiments, we recommend using this interface as well. Here,
+it is to do parameter studies and have extensive runs using different
+seeds.
+
+[[quickstart.cmdline.writing_dataset]]
+Creating the dataset
+^^^^^^^^^^^^^^^^^^^^
+
+As data is read from file, this file needs to be created beforehand.
+
+For a certain set of simple classification problems, namely those that
+can be found in the tensorflow playground, we have added a
+``TATiDatasetWriter'' that spills out the dataset in CSV format.
+
+....
+....
+
+This will write 500 datums of the dataset type 2 ("two clusters") to a
+file ``testset-twoclusters.csv'' using all of the points as we have set
+the test/train ratio to 0. Note that we also perturb the points by 0.1
+relative noise.
+
+[[quickstart.cmdline.parsing_dataset]]
+Parsing the dataset
+^^^^^^^^^^^^^^^^^^^
+
+Similarly, for testing the dataset can be parsed using the same
+tensorflow machinery as is done for sampling and optimizing, using
+
+....
+....
+
+where the _seed_ is used for shuffling the dataset.
+
+[[quickstart.cmdline.optimizing]]
+Optimizing the network
+^^^^^^^^^^^^^^^^^^^^^^
+
+As weights (and biases) are usually uniformly random initialized and the
+potential may therefore start with large values, we first have to
+optimize the network, using (Stochastic) Gradient Descent (GD).
+
+....
+....
+
+This call will parse the dataset from the file
+"dataset-twoclusters.csv". It will then perform a (Stochastic) Gradient
+Descent optimization in batches of 50 (10% of the dataset) of the
+parameters of the network using a step width/learning rate of 0.01 and
+do this for 1000 steps after which it stops and writes the resulting
+neural network in a TensorFlow-specific format to a set of files, one of
+which is called `model.ckpt.meta` (and the other filenames are derived
+from this).
+
+We have also created a file `run.csv` which contains among others the
+loss at each (``every_nth'', respectively) step of the optimization run.
+Plotting the loss over the step column from the run file will result in
+a figure similar to in
+link:#quickstart.python.optimizing.plot[figure_title].
+
+_____________________________________________________________________________________________________________________________________________________
+*Note*
+
+Since Tensorflow 1.4 an absolute path is required for the storing the
+model. In the example we use the current directory returned by the unix
+command
+
+pwd
+
+.
+_____________________________________________________________________________________________________________________________________________________
+
+If you need to compute the optimal step width, which is possible for
+smaller networks from the largest eigenvalue of the hessian matrix, then
+use the option ``do_hessians 1'' to activate it.
+
+____________________________________________________________________________________________________________________________________________________________________________
+*Note*
+
+The creation of the nodes is costly, O(N^2) in the number of parameters
+of the network N. Hence, may not work for anything but small networks
+and should be done on purpose.
+____________________________________________________________________________________________________________________________________________________________________________
+
+In case you have read the quickstart tutorial on the Python interface
+before, then the names of the command-line option will probably remind
+you of the variables in the FLAGS structure.
+
+[[quickstart.cmdline.sampling]]
+Sampling trajectories on the loss manifold
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+We continue from this optimized or equilibrated state with sampling. It
+is called equilibrated as the network's parameter should now be close to
+a (local) minimum of the potential function and hence in equilibrium.
+This means that small changes to the parameters will result in gradients
+that force it back into the minimum.
+
+Let us call the sampler.
+
+....
+....
+
+This will cause the sampler to parse the same dataset as before.
+Moreover, the sampler will load the neural network from the model, i.e.
+using the optimized parameters right from the start. Afterwards it will
+use the GLA in 2nd order discetization using again step_width of 0.01
+and running for 1000 steps in total. The GLA is a descretized variant of
+Langevin Dynamics whose accuracy scales with the inverse square of the
+step_width (hence, 2nd order).
+
+The seed is needed as we sample using Langevin Dynamics where a noise
+term is present. The term basically ascertains a specific temperature
+which is proportional to the average momentum of each particle.
+
+After it has finished, it will create three files; a run file
+`run.csv`containing run time information such as the step, the
+potential, kinetic and total energy at each step, a trajectory file
+`trajectory.csv`with each parameter of the neural network at each step,
+and an averages file `averages.csv` containing averages accumulated
+along the trajectory such as average kinetic energy, average virial (
+connected to the kinetic energy through the virial theorem, valid if a
+prior keeps parameters bound to finite values), and the average
+(ensemble) loss. Moreover, for the HMC sampler the average rejection
+rate is stored there. The first two files we need in the next stage.
+
+[[quickstart.cmdline.analysing]]
+Analysing trajectories
+^^^^^^^^^^^^^^^^^^^^^^
+
+Eventually, we now perform the diffusion map analysis on the obtained
+trajectories. The trajectory file written in the last step is simply a
+matrix of dimension (number of parameters) times (number of trajectory
+steps). The eigenvector to the largest (but one) eigenvalue will give
+the dominant direction in which the trajectory is moving.
+
+____________________________________________________________________________________________________________________________________________________________________________________________________________
+*Note*
+
+The largest eigenvalue is usually unity and its eigenvector is constant.
+Therefore, it is omitted. That's why indexing for the diffusion maps
+eigenvectors starts at 1 (omitted the constant eigenvector 0).
+____________________________________________________________________________________________________________________________________________________________________________________________________________
+
+The analysis can perform three different tasks:
+
+* Calculating averages.
+* Calculating the diffusion map's largest eigenvalues and eigenvectors.
+* Calculating landmarks and level sets to obtain an approximation to the
+free energy.
+
+[[quickstart.cmdline.analysing.averages]]
+Averages
+++++++++
+
+Averages are calculated by specifying two options as follows:
+
+....
+....
+
+This will load both the run file `run.csv` and the trajectory file
+`trajectory.csv`and average over them using only every 10th data point
+(_every_nth_) and also dropping the first steps below 100
+(_drop_burnin_). It will produce then ten averages (_steps_) for each of
+energies in the run file and each of the parameters in the trajectories
+file (along with the variance) from the first non-dropped step till one
+of the ten end steps. These end steps are obtained by equidistantly
+splitting up the whole step interval.
+
+Eventually, we have two output file. The averages over the run
+information such as total, kinetic, and potential energy in
+`average_run.csv`. Also, we have the averages over the degrees of
+freedom in `average_trajectories.csv`.
+
+__________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
+*Note*
+
+Averages depend crucially on the number of steps we average over. I.e.
+the more points we throw away, the less accurate it becomes. In other
+words, if large accuracy is required, the averages file (if it contains
+the value of interest) is a better place to look for.
+__________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
+
+[[quickstart.cmdline.analysing.diffusion_map]]
+Diffusion map
++++++++++++++
+
+The eigenvalues and eigenvectors can be written as well to two output
+files.
+
+....
+....
+
+The files ending in `..values.csv` contains the eigenvalues in two
+columns, the first is the eigenvalue index, the second is the
+eigenvalue.
+
+The other file ending in `..vectors.csv` is simply a matrix of the
+eigenvector components in one direction and the trajectory steps in the
+other. Additionally, it contains the parameters at the steps and also
+the loss and the kernel matrix entry.
+
+Note that again the all values up till step 100 are dropped and only
+every 10th trajectory point is considered afterwards.
+
+There are two methods available. Here, we have used the simpler (and
+less accurate) (plain old) vanilla method. The other is called TMDMap.
+
+If you have installed the _pydiffmap_ python package, this mal also be
+specified as diffusion map method. It has the benefit of an interal
+optimal parameter choice. Hence, it should behave more robustly than the
+other two methods. TMDMap is different only in reweighting tre samples
+according to the specific temperature.
+
+[[quickstart.cmdline.analysing.free_energy]]
+Free energy
++++++++++++
+
+Last but not least, the free energy is calculated.
+
+....
+....
+
+This will extract landmark points from the trajectory. Basically, the
+loss manifold is discretized using these landmarks where all
+configurations close to a landmark step are combined onto a so-called
+level-set, i.e. all these configurations have a similar loss function
+value. By knowing the number of configurations in each level set and
+knowing the level sets loss value, an approximation of the free energy
+is computed.
+
+This is computed for every step of the trajectory and it is insightful
+to look at the free energy over the course of the trajectory represented
+by the first eigenvalue. If in this graph clear minima with maxima in
+between can be seen, then there are enthalpic barriers between two local
+minima. If on the other hand there are flat areas, then we found
+entropic barriers.
+
+Both these types of barriers obstruct trajectories and keep the
+optimization trapped in so-called meta-stable states. Each type of
+barrier requires a different type of remedy to overcome.
+
+[[quickstart.cmdline.exploration]]
+Exploring the loss manifold
++++++++++++++++++++++++++++
+
+Eventually, we are not interested in obtaining trajectories on the loss
+manifold. Instead we would like to find the global minima. Or at least
+have a good idea about whether the minimas we have found so far are
+reasonable.
+
+To this end, a command-line tool called `TATiExplorer` is provided. The
+idea is to make use of the diffusion map with its diffusion distance to
+assess what part of the loss manifold has been explored already.
+Moreover, we use multiple trajectories that are spawned from a specific
+number of places that are maximally separate with respect to their
+diffusion distance. This will ensure that we cover the most ground
+possible.
+
+In the end, the eigenvectors obtained through a run using the
+`TATiExplorer` will return the dominant diffusion directions and
+therefore those pointing in the direction along the minima, i.e. where
+the sampling usually gets stuck and remains for a while, hence diffusion
+is slow.
+
+....
+....
+
+....
+          
+....
+
+In the example we call the explorer utility in much the same way as we
+have called the sampler. There are some additional options that give the
+number of eigenvalues to calculate and which diffusion map method to
+use. Note that `max_steps` now gives the number of steps of a single
+leg. Further down you find what a lag actually is.
+
+Furthermore, there are two options unique to the explorer. This is
+`max_legs` which gives the maximum number of legs to look at. Each leg
+goes over max_steps. After that a diffusion map analysis is performed
+that checks whether the eigenvalues have converged already. If yes, the
+trajectory is ended, if not we continue with a new leg (of max_steps
+steps). If no convergence should occur, max_legs gives the maximum
+number of legs after which the trajectory is terminated regardlessly.
+
+Finally, we run multiple trajectories in parallel from starting points
+that are maximally apart from each other in the sense of the diffusion
+distances. This is controlled by `number_of_parallel_trajectories`.
+
+[[quickstart.parallelization]]
+A note on parallelization
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Internally, Tensorflow uses a computational graph to represent all
+operations. Nodes in the graph represent computations and their results
+and edges represent dependencies between these values, i.e. some may act
+as input to operations resulting in certain output.
+
+Because of this internal representation Tensorflow has two kind of
+parallelisms:
+
+* inter ops
+* intra ops
+
+Each is connected to its its own thread pool. Both the command-line and
+the Python interface let you pick the number of threads per pool. If 0
+is stated (default), then the number of threads is picked automatically.
+
+In general, ``inter_ops_threads''refers to multiple cores performing
+matrix multiplication or reduction operations together.
+``intra_ops_threads'' seems to be connected to executing multiple nodes
+in parallel that are independent of each other but this is guessing at
+the moment.
+
+_________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
+*Warning*
+
+When setting ``inter_ops_threads'' _unequal_ to 1, then subsequent runs
+may produce different results, i.e. results are no longer strictly
+reproducible. According to Tensorflow this is because reduction
+operations such as `reduce_sum` run non-deterministically on multiple
+cores for sake of speed.
+_________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
+
+[[quickstart.conclusion]]
+Conclusion
+~~~~~~~~~~
+
+This has been the very quick introduction into samping done on neural
+network's loss function manifolds. You have to take it from here.
+
+[[reference]]
+The reference
+-------------
+
+[[reference.concepts]]
+General concepts
+~~~~~~~~~~~~~~~~
+
+Before we dive into the internals of this program suite, let us first
+introduce some general underlying concepts assuming that the reader is
+only roughly familiar with them. This is not meant as a replacement for
+the study of more in-depth material but should rather be seen as a
+reminder of the terms and notation that will appear later on.
+
+* Dataset
++
+The dataset contains a fixed number of datums of input tuples and output
+tuples. They are typically referred to as ``features'' and ``labels'' in
+the machine learning community. Basically, they are samples taken from
+the unknown function which we wish to approximate using the neural
+network. If the output tuples are binary in each component, the
+approximation problem is called a ``classification'' problem. Otherwise,
+it is a ``regression'' problem.
+* Neural network
++
+The neural network is a black-box representing a certain set of general
+functions that are efficient in solving classification problems (among
+others). They are parametrized explicitly using weights and biases and
+implicitly through the topoloy of the network (connections of nodes
+residing in layers) and the activation functions used. Moreover, the
+loss function determines the best set of parameters for a given task.
+* Loss
++
+The loss function determines for a given (labelled) dataset what set of
+neural network's parameters are best. Note that there are losses that do
+not require labels though. Different losses result in different set of
+parameters. It is a high-dimensional manifold that we want to learn and
+capture using the neural network. It implicitly depends on the given
+dataset and explicitly on the parameters of the neural network, namely
+weights and biases. Dual to the loss function is the network's output
+that explicitly depends on the dataset's current datum (fed into the
+network) and implicitly on the parameters.
++
+Most important to understand about the loss is that it is a _non-convex_
+function and therefore in general does not just have a single minimum.
+This makes the task of finding a good set of parameters that (globally)
+minimize the loss difficult as one would have to find each and every
+minima in this high-dimensional manifold and check whether it is
+actually the global one.
+* Momenta and kinetic energy
++
+Momenta is a concept taken over from physics where the parameters are
+considered as particles each in a one-dimensional space where the loss
+is a potential function whose ( negative) gradient acts as a force onto
+the particle driving them down-hill (towards the local minimum). This
+force is integrated in a classical Newton's mechanic style, i.e.
+Newton's equation of motion is discretized with small time steps
+(similar to the learning rate in Gradient Descent). This gives first
+rise to/velocity and second to momenta, i.e. second order ordinary
+differential equation (ODE) split up into a system of two
+one-dimensional ODEs. There are numerous stable time integrators, i.e.
+velocity Verlet/leapfrog, that are employed to propagate both particle
+position (i.e. the parameter value) and its momentum through time. Note
+that momentum and velocity are actually equivalent as usually the mass
+is set to unity.
+* Optimizers
++
+Optimizers are used to drive the parameters to the local minimum from a
+given (random) starting position. GradientDescent (GD) is best known,
+but there are more elaborate Optimizers that use the concept of momentum
+as well. This helps in overcoming flat parts of the manifold where the
+gradient is effectively zero but momentum still drives the particles
+towards the minimum.
+* Samplers
++
+The goal of samplers is different than the goal of optimizers. Samplers
+aim at discovering a great deal of the manifold, not constraint to the
+local minimum. Usually, they are started from the local minimum and
+drive the particles further and further out until new minima are found
+between which potential barriers had to be overcome.
+
+[[reference.neural_networks]]
+Neural Networks
+~~~~~~~~~~~~~~~
+
+A neural network (NN) is a tool used in the context of machine learning.
+Formally, it is a graph with nodes and edges, where nodes represent
+(simple) functions. The edges represent scalar values by which the
+output of one node is scaled as input to another node. The scalar value
+is called _weight_ and each node also has a constant value, the _bias_,
+that does not depend on the input of other nodes. Nodes are organised in
+layers and nodes are (mostly) only connected between adjacent layer.
+Special are the very first layer with input nodes that simply accept
+input from the user and the very last layer whose output is eventually
+all that matters.
+
+Typically, a NN might be used for the task of classification: Data is
+fed into the network's input layer and its output layer has nodes equal
+to the number of classes to be distinguished. This can for example be
+used for image classification.
+
+The essential task at hand is to determine a good set of parameters,
+i.e. values for the weights and biases, such that the task is performed
+best with respect to some measure.
+
+[[reference.python_general_nn_usage]]
+Using TATi as general interface
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When trying out new methods on sampling or training neural networks, one
+needs to play around with the network directly. This may require one or
+more of the following operations:
+
+* Setting up a specific network
+* Setting a specific set of parameters
+* Requesting the current set of parameters
+* Evaluating the loss and/or gradients
+* Evaluating the predicted labels for another dataset
+* Evaluating accuracy
+* Supplying a different dataset
+
+TATi's Python interface readily allows for these and has one beneficial
+feature: The network's topology is completely hidden with respect to the
+set of parameters. To elaborate on this: Tensorflow internally uses
+tensors to represent weights between layers. Therefore, its parameters
+are organized in tensors. This structure makes it quite difficult to set
+or retrieve all parameters at once as their structure depends on the
+chosen topology of the neural network. When using TATi then all you see
+is a single vector of values containing all weights and biases of the
+network. This makes it easy to manipulate or store them.
+
+___________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
+*Note*
+
+However, this ease of use comes at the price of possibly increased
+computational complexity as an extra array is needed for the values and
+they need to be translated to the internal topology of the network every
+time they are modified.
+___________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
+
+In other words, this interface is good for trying out a quick-and-dirty
+approach to implementing a new method or idea. However, it is not suited
+for production runs of training a network. In the latter case it is
+recommended to implement your method within Tensorflow.
+
+[[reference.python_general_nn_usage.tensorflow_internals]]
+Tensorflow internals
+^^^^^^^^^^^^^^^^^^^^
+
+Before we start, there are a few notes in how Tensorflow works
+internally that might be helpfup in understanding why things are done
+the way they are.
+
+Tensorflow internally represents all operations as nodes in a so-called
+computational graph. Edges between nodes tell tensorflow which
+operations' output is required as input to other operations, e.g. the
+ones requested to evaluate. For example, in order to evaluate the loss,
+it first needs to look at the dataset and also all weights and biases.
+Any variable is also represented as a node in the graph.
+
+All actual data is stored in a so-called "session" object. Evaluations
+of nodes in the computational graph are done by giving a list of nodes
+to the `run()` function of this session object. This function usually
+requires a so-called "feed dict", a dictionary containing any external
+values that are referenced through "placeholder" nodes. When evaluating
+nodes, only that part of the feed dict needs to be given that is
+required for the nodes' evaluation. E.g. when assigning values to
+parameters through an assign operation using placeholders, we do not
+need to specify the dataset
+
+This has been very brief and for a more in-depth view into the design of
+Tensorflow, we refer to their
+https://www.tensorflow.org/tutorial[tutorials].
+
+In the following sections we present pieces of Python code essential for
+each of the aforementioned operations. In contrast to the quickstart
+code these are no longer self-contained but build upon one another.
+However, there is some branching, too. Hence, you are challenged to put
+the pieces you need together. As principle guideline: follow the order
+as it is given here.
+
+[[reference.python_general_nn_usage.setup]]
+Setup
+^^^^^
+
+Let's first look at how to set up the neural network and supply it with
+a dataset.
+
+[[reference.python_general_nn_usage.setup.setting_up_network]]
+Setting up the network
+++++++++++++++++++++++
+
+Let's first create a neural network. At the moment of writing TATi is
+constrained to multi-layer perceptrons but this will soon be extened to
+convolutational and other networks.
+
+Multi-layer perceptrons are characterized by the number of layers, the
+number of nodes per layer and the output function used in each node.
+
+....
+....
+
+In the above example, we specify a neural network of two hidden layers,
+each having 8 nodes. We use the "rectified linear" activation function
+for these nodes. The output nodes are activated by a linear function.
+
+_____________________________________________________________________________________________________________________
+*Note*
+
+At the moment it is not possible to set different activation functions
+for individual nodes or between hidden layers.
+_____________________________________________________________________________________________________________________
+
+For a full (and up-to-date) list of all available activation functions,
+please look at TATi/models/model.py, `get_activations()`.
+
+_______________________________________________________________________________________________________
+*Note*
+
+Note that creating the
+
+tati_model
+
+instance "model" will always reset the computational graph of tensorflow
+in case you need to add nodes.
+_______________________________________________________________________________________________________
+
+[[reference.python_general_nn_usage.setup.supply_dataset]]
+Supply dataset as array
++++++++++++++++++++++++
+
+As a next step, we need to supply a dataset. This dataset will also
+necessitate a certain amount of input and output nodes.
+
+________________________________________________________
+*Note*
+
+At the moment only classification datasets can be setup.
+________________________________________________________
+
+There are basically two ways of supplying the dataset:
+
+* from a CSV file
+* from an internal (numpy) array
+
+We will give examples for both ways here.
+
+....
+....
+
+The ``batch_data_files'' always needs to be a list as multiple files may
+be given. ``batch_data_file_type'' gives the type of the files.
+Currently "csv" and "tfrecord" are supported choices.
+
+Note that you can combine the additional ``FLAGS'' given for specifying
+the data set files with the ones characterizing the neural network
+above. In that case you do not need to call `reset_parameters()`. For a
+full (and up-to-date list please refer to TATi/models/model.py, function
+`add_losses()`.
+
+We repeat the example given in
+link:#quickstart.python.sampling.supply_dataset[section_title].
+
+....
+....
+
+There, we read a dataset from a CSV file into a pandas dataframe which
+afterwards is converted to a numpy array and then handed over to the
+`provide_dataset()` function of the model interface. Naturally, if the
+dataset is present in memory, it can be given right away and we do not
+need to parse a CSV file.
+
+[[reference.python_general_nn_usage.setup.note_batching]]
+A note on batching
+++++++++++++++++++
+
+If you want to evaluate your dataset in batches, there are two notes to
+give:
+
+First, the parameter ``batch_size'' controls the size of the randomly
+chosen subset of the dataset on which the loss function is evaluated at
+the next call.
+
+Second, ``max_steps'' controls how many (internal) copies of the dataset
+are created. Once every batch of every copy has been delivered, the
+Dataset will signal this with an exceotions and stop. This can be
+overcome by either calling
+
+....
+....
+
+which will simply reset the iterator.
+
+Another approach is to tell the model right-away that we do not care
+when the dataset ends, i.e. to reset automatically.
+
+....
+....
+
+Now, what is this `input_pipeline.next_batch()` you might wonder. We'll
+come to this, when we finally evaluate the loss.
+
+[[reference.python_general_nn_usage.parameters]]
+Parameters
+^^^^^^^^^^
+
+Next, we look at how to inspect and modify the neural network's
+parameters.
+
+[[reference.python_general_nn_usage.parameters.requesting_parameters]]
+Requesting parameters
++++++++++++++++++++++
+
+Once the neural network is set up and the dataset is provided, we come
+closer to actually allowing to evaluate the network. But first, let us
+look at the initially random parameters.
+
+....
+....
+
+As you see in the example, there are two entities in model that contain
+representations to the weights and biases of the neural network. Calling
+`evaluate()` on these, for which the "session" object of tensorflow is
+required, which is also an entity in the model, will return arrays with
+their values.
+
+[[reference.python_general_nn_usage.parameters.setting_parameters]]
+Setting parameters
+++++++++++++++++++
+
+In the last section, we have already seen that there are `weights` and
+`biases` entities in the model that allow accessing their current value.
+They can also be used to set them. However, there is actually a
+convenience function in model that allows to set both at the same time
+from a single array (of the correct size).
+
+....
+....
+
+Here, we create the numpy array filled with zeros by requesting the
+total number of weight and bias degrees of freedom, i.e. the number of
+parameters of the network. Afterwards,
+`assign_neural_network_parameters()` is used to put these into the
+neural network.
+
+[[reference.python_general_nn_usage.evaluation]]
+Evaluation
+^^^^^^^^^^
+
+Now, we are in the position to evaluate our neural network.
+
+[[reference.python_general_nn_usage.evaluation.loss]]
+Evaluate loss
++++++++++++++
+
+Now, all is set to actually evaluate the loss function for the first
+time As a default the mean squared distance is chosen as the loss
+function. However, by setting the ``loss'' in the initial parameters
+(``FLAGS'') appropriately, all other loss functions that tensorflow
+offers are available, too.
+
+....
+....
+
+Here, we have to do two things: First, we set up a "feed_dict" then we
+call `run()` of the "session" object in order to evaluate the loss. Note
+that `run()` may be given a list of nodes and returns a list of
+evaluations, ready for unpacking.
+
+Note the two nodes that are turned from `next_batch()` from the input
+pipeline. These are nodes in the computational graph of tensorflow that
+trigger reading the CSV file or feeding parts of the internal array
+dataset into the graph. This "input_pipeline" controls the flow of the
+dataset into the neural network. In other words, `next_batch()` does not
+return the next batch but nodes on whose evaluation the next batch is
+obtained.
+
+[[reference.python_general_nn_usage.evaluation.gradients]]
+Evaluate gradients
+++++++++++++++++++
+
+Gradient information is similarly important as the loss function itself.
+
+....
+....
+
+Remember that all parameters are vectorized, hence, the
+``gradients_eval'' object returned is actually a numpy array containing
+per component the gradient with respect to the specific parameter.
+
+The procedure is very similar, the only diffence is that we evaluate
+another node. Keep in mind that `run()` may be given list of nodes, i.e.
+loss and gradients can be evaluated at the same time!
+
+[[reference.python_general_nn_usage.evaluation.hessians]]
+Evaluate Hessians
++++++++++++++++++
+
+Apart from gradient information hessians are also available. Note
+however that hessians are both very expensive to compute and to setup as
+many nodes needed to be added to the computational graph. Therefore, in
+the initial parameters (``FLAGS'') you need to explicitly state
+``do_hessians=True'' in order to activate their creation before
+`init_network()` is called!
+
+....
+....
+
+Remember that all parameters are vectorized, hence, the
+``gradients_eval'' object returned is actually a numpy array containing
+per component the gradient with respect to the specific parameter.
+
+The procedure is very similar, the only diffence is that we evaluate
+another node. Keep in mind that ``run()'' may be given list of nodes,
+i.e. loss and gradients can be evaluated at the same time!
+
+[[reference.python_general_nn_usage.evaluation.accuracy]]
+Evaluate accuracy
++++++++++++++++++
+
+Evaluating accuracy is as simple as evaluating the loss. It's just
+another node.
+
+....
+....
+
+[[reference.python_general_nn_usage.evaluation.predictions]]
+Evaluate predicted labels
++++++++++++++++++++++++++
+
+Naturally, obtaining the predictions is now just as simple.
+
+....
+....
+
+Note that omitted specifying ``labels'' in the ``feed_dict'' as they are
+not need for evaluating the predictions.
+
+[[reference.python_general_nn_usage.datasets]]
+Datasets
+^^^^^^^^
+
+Last but not least, how to change the dataset when it was already
+specified?
+
+[[reference.python_general_nn_usage.datasets.change]]
+Change the dataset
+++++++++++++++++++
+
+Note all evaluating takes place on the same dataset, once a network is
+trained, we might want to see its performance on a test or validation
+dataset or we might want to see its predictions on an altogether
+different dataset (which does not have any labels).
+
+There are again two different ways because of the two different modes of
+feeding the dataset: from file and from an array.
+
+....
+....
+
+In the first example, we simply exchange the dataset file(s) in the
+parameters structure and call ``create_input_pipeline'' which will reset
+the internal input pipeline on using the newly given files.
+
+....
+....
+
+When switching to (another) dataset from an internal numpy array, then
+we simply need to call ``provide_dataset()'' which will reset the
+internal input pipeline.
+
+______________________________________________________________________________________________________________________________________________________________________________
+*Note*
+
+Note that if you need this dataset only for predictions, then simply
+given a vector of zeros of the respective size as labels. They will not
+be evaluated for the predictions.
+______________________________________________________________________________________________________________________________________________________________________________
+
+_________________________________________________________________________________
+*Note*
+
+You must not change the input or output dimension as the network itself
+is fixed.
+_________________________________________________________________________________
+
+____________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
+*Note*
+
+Note that changing the dataset actually modifies some nodes in
+Tensorflow's computational graph. This principally makes things a bit
+slower as the session object has already been created. Simply keep this
+in mind if slowness is suddenly bothering. Otherwise you can ignore it.
+____________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
+
+This is all for the moment.
+
+[[reference.python_general_nn_usage.list_of_nodes]]
+
+As a last item we given a list of nodes that might be interesting. They
+can all be obtained through ``get_list_of_nodes'' where the argument is
+a list of nodes to return.
+
+* accuracy
++
+The accuracy of the prediction compared to the given labels. 1 is
+perfect, 0 is all wrong.
+* loss
++
+The loss function
+* y
++
+The neural network's output
+* y_
++
+The labels given in the dataset
+
+There are a few internal entities to `model` that represent nodes ready
+for evaluation as well.
+
+* model.gradients
++
+Vectorized gradients
+* model.hessians
++
+Vectorized Hessian matrix, requires ``do_hessians=True''
+* model.xinput
++
+Placeholder node for feeding input values into neural network
+* model.input_pipeline.next_batch()
++
+Returns a list of two nodes. The first gives the features from the
+current batch, the second gives the labels from the current batch.
+
+[[reference.loss]]
+The loss function
+~~~~~~~~~~~~~~~~~
+
+At the moment, there are two little utility programs that help in
+evaluating the loss function given a certain dataset, namely the
+``TATiLossFunctionSampler''. Let us give an example call right away.
+
+....
+....
+
+It takes as input the dataset file ``dataset-twoclusters.csv'' and
+either a parameter file ``trajectory.csv''. This will cause the program
+the re-evaluate the loss function at the trajectory points which should
+hopefully give the same values as already stored in the trajectory file
+itself.
+
+However, this may be used with a different dataset file, e.g. the
+testing or validation dataset, in order to evaluate the generalization
+error in terms of the overall accuracy or the loss at the points along
+the given trajectory.
+
+Interesting is also the second case, where instead of giving a
+parameters file, we sample the parameter space equidistantly as follows:
+
+....
+....
+
+Here, sample for each weight in the interval [-5,5] at 11 points (10 +
+endpoint), and similarly for the weights in the interval [-1,1] at 5
+points.
+
+__________________________________________________________________________________________________________________
+*Note*
+
+For anything but trivial networks the computational cost quickly becomes
+prohibitively large. However, you may use
+
+fix_parameter
+
+to lower the computational cost by choosing a certain subsets of weights
+and biases to sample.
+__________________________________________________________________________________________________________________
+
+....
+....
+
+Moreover, using ``exclude_parameters'' can be used to exclude parameters
+from the variation, i.e. this subset is kept at fixed values read from
+the file given by ``parse_parameters_file'' where the row designated by
+the value in ``parse_steps'' is taken.
+
+This can be used to assess the shape of the loss manifold around a found
+minimum.
+
+....
+....
+
+Here, we have excluded the second weight, named "w1", from the sampling.
+Note that all weight and all bias degrees of freedom are simply
+enumerated one after the other when going from the input layer till the
+output layer.
+
+Furthermore, we have specified a file containing center points for all
+excluded parameters. This file is of CSV style having a column "step" to
+identify which row is to be used and moreover a column for every
+(excluded) parameter that is fixed at a value unequal to 0. Note that
+the minima file written by `TATiExplorer` can be used as this centers
+file. Moreover, also the trajectory files have the same structure.
+
+[[reference.network]]
+The learned function
+~~~~~~~~~~~~~~~~~~~~
+
+The second little utility programs does not evaluate the loss function
+itself but the unknown function learned by the neural network depending
+on the loss function, called the ``TATiInputSpaceSampler''. In other
+words, it gives the classification result for data point sampled from an
+equidistant grid. Let us give an example call right away.
+
+....
+....
+
+Here, ``batch_data_files'' is an input file but it does not need to be
+present. (Sorry about that abuse of the parameter as usually
+``batch_data_files'' is read-only. Here, it is overwritten!). Namely, it
+is generated by the utility in that it equidistantly samples the input
+space, using the interval [-4,4] for each input dimension and 10+1
+samples (points on -4 and 4 included). The parameters file
+``trajectory.csv'' now contains the values of the parameters (weights
+and biases) to use on which the learned function depends or by, in other
+words, by which it is parametrized. As the trajectory contains a whole
+flock of these, the ``parse_steps'' parameter tells it which steps to
+use for evaluating each point on the equidistant input space grid,
+simply referring to rows in said file.
+
+__________________________________________________________________________________________________________________________________________________________________
+*Note*
+
+For anything but trivial input spaces the computational cost quickly
+becomes prohibitively large. But again
+
+fix_parameters
+
+is heeded and can be used to fix certain parameters. This is even
+necessary if parsing a trajectory that was created using some parameters
+fixed as they then will
+
+not
+
+appear in the set of parameters written to file. This will raise an
+error as the file will contain too few values.
+__________________________________________________________________________________________________________________________________________________________________
+
+[[reference.samplers]]
+Samplers
+~~~~~~~~
+
+Samplers are at the core of all exploration. In this section we will
+give a few words on advice on the various samplers implemented in this
+package.
+
+Naturally, not all of them are equivalent. Some are more robust with
+respect to the choice of the step sizes than others. In general, we
+recommend BAOAB at the moment as it is the most accurate with second
+order convergence for average values over the step width size and even
+fourth order in the high-friction limit.
+
+[[reference.samplers.sgld]]
+Stochastic Gradient Langevin Dynamics
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The Stochastic Gradient Langevin Dynamics (SGLD) was proposed by
+Welling2011 based on the Stochastic Gradient Descent (SGD), which is a
+variant of the Gradient Descent (GD) using only a subset of the dataset
+for computing gradients. The central idea behind SGLD was to add an
+additional noise term whose magnitude then controls the noise induced by
+the approximate gradients.
+
+____________________________________________________________________________
+*Note*
+
+SGLD
+
+is very much like
+
+SGD
+
+and
+
+GD
+
+in terms that the
+
+step_width
+
+needs to be small enough with respect to the gradient sizes of your
+problem.
+____________________________________________________________________________
+
+[[reference.samplers.ccadl]]
+Covariance Controlled Adaptive Langevin
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This is an extension of Stochastic Gradient Descent proposed by
+Shang2015. The key idea is to dissipate the extra heat caused by the
+approximate gradients through a suitable thermostat. However, the
+discretisation used here is not based on the (first-order)
+Euler-Maruyama as SGLD but on GLA 2nd order.
+
+________________________________________________________________________________________________________________________
+*Note*
+
+sigma
+
+and
+
+sigmaA
+
+are two additional parameters that control the action of the thermostat.
+Moreover, we require the same parameters as for
+
+GLA
+
+2nd order.
+________________________________________________________________________________________________________________________
+
+[[reference.samplers.gla]]
+Geometric Langevin Algorithms
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+GLA results from a first-order splitting between the Hamiltonian and the
+Ornstein-Uhlenbeck parts, see section 2.2.3 of Leimkuhler2015 and also
+Leimkuhler2012. It provides second order accuracy at basically no extra
+cost.
+
+___________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
+*Note*
+
+All GLA samplers have two more parameters: `inverse_temperature` (also
+known as beta) and `friction_constant` (also known as gamma). Inverse
+temperature controls the average momentum of each parameter while the
+friction constant decides over how much of the momentum is replaced by
+random noise, i.e. the random walker character of the trajectory.
+
+Good values for beta depend on the loss manifold and its barriers and
+need to be find by try&error and the moment.
+___________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
+
+[[reference.samplers.baoab]]
+BAOAB
+^^^^^
+
+BAOAB derives from the basic building blocks A (position update), B
+(momentum update), and O (noise update) into which the Langevin system
+is split up. Each step is solved in a separate step. Hence, we perform a
+B step, then an A step, ... and so on. This scheme has second-order
+accuracy and superb overall accuracy with respect to positions. See
+Leimkuhler2012 for more details.
+
+____________________________________________________________
+*Note*
+
+BAOAB has the same two additional parameters as given in the
+
+GLAs
+____________________________________________________________
+
+[[reference.samplers.hmc]]
+Hamiltonian Monte Carlo
+^^^^^^^^^^^^^^^^^^^^^^^
+
+HMC is based on Hamiltonian dynamics instead of Langevin Dynamics. Noise
+only enters when, after the evaluation of an acceptance criterion, the
+momenta are redrawn randomly. It has first been proposed by Duane1987.
+
+[[reference.samplers.walkerensemble]]
+Ensemble of Walkers
+^^^^^^^^^^^^^^^^^^^
+
+Ensemble of Walkers uses a collection of walkers that exchange gradient
+and parameter information in each step in order to calculate a
+preconditioning matrix. This preconditioning allows to explore elongated
+minimum basins faster than independent walkers would do alone, see
+Matthews2018.
+
+This is activated by setting the `number_walkers` to a value larger than
+1. Note that `covariance_blending` controls the magnitude of the
+covariance matrix approximation and `collapse_after_steps` controls
+after how many steps the walkers are restarted at the parameter
+configuration of the first walker to ensure that the harmonic
+approximation still holds.
+
+This works for all of the aforementioned samplers as simply the gradient
+of each walker is rescaled.
+
+[[reference.exploring]]
+Exploring the manifold
+~~~~~~~~~~~~~~~~~~~~~~
+
+still empty
+
+[[reference.miscellaneous]]
+Miscellaneous
+~~~~~~~~~~~~~
+
+[[reference.miscellaneous.parameter_freeze]]
+Freezing parameters
+^^^^^^^^^^^^^^^^^^^
+
+Sometimes it might be desirable to freeze parameters during training or
+sampling. This can be done as follows:
+
+....
+....
+
+Note that you need to initialize the network without adding training or
+sampling methods, i.e. ``setup'' is None. Then, we fix the parameter
+where we give its name in full tensorflow parlance. Afterwards, we may
+add sample or training nodes and start training/sampling.
+
+_______________________________________________________________________________________________________
+*Note*
+
+Single values cannot be frozen but only entire weight matrices or bias
+vectors per layer at the moment.
+_______________________________________________________________________________________________________
+
+[[reference.miscellaneous.progress_bar]]
+Displaying a progress bar
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For longer simulation runs it is desirable to obtain an estimate after a
+few steps of the time required for the entire run.
+
+This is possible using the `progress` option. Specified to 1 or True it
+will produce a progress bar showing the total number of steps, the
+iterations per second, the elapsed time since start and the estimated
+time till finish.
+
+_____________________________________________________________________________________
+*Note*
+
+On the debug
+
+verbosity> level per output step also an estimate of the remaining run
+time is given.
+_____________________________________________________________________________________
+
+[[reference.miscellaneous.summaries]]
+Tensorflow summaries
+^^^^^^^^^^^^^^^^^^^^
+
+Tensorflow delivers a powerful instrument for inspecting the inner
+workings of its computational graph: TensorBoard.
+
+This tool allows also to inspect values such as the activation
+histogram, the loss and accuracy and many other parameters and values
+internal to TATi.
+
+Supplying a path "/foo/bar" present in the file system using the
+`summaries_path` variable, summaries are automatically written to the
+path and can be inspected with the following call to tensorboard.
+
+....
+tensorboard --logdir /foo/bar
+....
+
+The tensorboard essentially comprises a webserver for rendering the
+nodes of the graph and figures of the inspected values inside a webpage.
+On execution it provides a URL that needs to be entered in any
+webbrowser to access the webpage.
+
+_________________________________________________________________________________________________________________________________________
+*Note*
+
+The accumulation and writing of the summaries has quite an impact on
+TATi's overall performance and is therefore swicthed off by default.
+_________________________________________________________________________________________________________________________________________
+
+Tensorflow Flaws
+----------------
+
+It may be thought a little too much to dedicate a whole chapter to the
+potential flaws in a framework that forms the basis of this software.
+However, this particular framework has given me so much hardship and
+failed in such unexpected ways that I have to make a list.
+
+Note that this list is up-to-date with respect to the tests employed in
+the code and is currently focused at tensorflow version 1.4
+
+Most of issues simply made it hard to have reproducible runs which made
+it diffult to maintain my testsuite. Moreover, most of them are made on
+purpose for the sake of speed over deterministic behavior. This makes me
+in turn really wonder whether the tensorflow guys actually have a
+testsuite (or whether it justs consists of unit tests).
+
+* Non-deterministic `reduce_sum`
++
+See the https://github.com/tensorflow/tensorflow/issues/3103[issue] at
+Github. Non-deterministic is obviously faster than deterministic, so
+that's what they are going for. Sadly, no determinstic alternative for
+calculating norms of 1-dimensional tensors or scalar products is
+offered. This is very hurtful for reproducibility. The current
+workaround is to set `inter_op_thread` to one, eliminating any use of
+multiple cores.
+* `tf.set_global_seed` not useful
++
+This is working as intended: it sets the global seed in such a way that
+all operations requiring randomness derive their seed in a deterministic
+fashion from it. And this is valid as long as it is _exactly_ the same
+graph. If just a single node is added that does not even need to be
+relevant for the operation, all seeds will change because the derivation
+of seeds probably depends on some random order of nodes and not on the
+name of the node or any other unique property.
+* `tf.float64` is flawed
++
+I encountered issues with precision when ascertaining theoretical
+properties of the samplers. One remedy I though might solve the issue
+was to switch from tf.float32 to tf.float64, i.e. from 1e-8 to 1e-18
+internal floating point precision.
++
+What I found was that suddenly I could not recover the theoretical
+properties any more. Even simple sampling (i.e. central limit theorem
+and expected convergence rates of (1/sqrt(n)) would not bring up slopes
+of -0.5 as expected in log-log plots but also -0.4.
++
+I went to great length to check that all values are tf.float64. If I had
+forgotten one, either the internal type checker would admonish it, or
+the precision should just be the one I had with tf.float32. However, the
+quality of the values had changed. My only guess is that there must be
+some weird bug hidden deep in the C parts of the tensorflow code.
+* Parsing from CSV file despite caching tenfold slower
++
+With tensorflow 1.4 the Dataset module arrived (no longer being
+"contrib") and I happily switched to this as means of constructing my
+input pipeline. So far, I had just been looking at small test datasets
+which fit in memory without issues. As the datasets were so small, I did
+not expect any much slowing down of my code switching to parsing CSV
+files and feeding them.
++
+However, both the old "queues" input pipeline and the new "Dataset"
+pipeline (the latter even with caches) experienced a tenfold decrease of
+runtime with respect to in/memory.
++
+I must admit though that the Dataset module at least made it possible to
+let the user decide between in-memory storing and file parsing.
+* `tf.if` conditional working in funny way
++
+For the Hamiltonian Monte Carlo sampler and "if" block is required
+inside the gradient evaluation that decides on whether the current short
+trajectory run using Hamiltonian Dynamics is accepted or rejected. When
+I tried make this work, I failed utterly, until I hit this
+https://stackoverflow.com/a/37064128[answer] on stackoverflow. In a
+comment even one from the tensorflow team admits that he finds this
+behavior confusing.
+* Shuffling (in queues) shuffles over all repeated datasets causing
+duplicate items.
++
+I gues this is for speed reasons as well but it is really a pain in the
+arse. I guess the reason is a reshuffled dataset in every epoch, hence
+the reshuffle over all repeated sets instead of reshuffling at the start
+of the epoch. Probably is simpler to implement with really large
+datasets in multiple files.
++
+However, for small datasets suddenly your gradients change (not using
+mini-batches) because on element is missing as another is in the set
+twice. Again, bad for reproducibility.
+* `tf.concat` dropping variable character
++
+This is more of a nuisance. However, you cannot simply concatenate four
+variable tensors and then set them all using a single placeholder of the
+right dimension as the "variable" character is lost in the
+concatenation. It can only be read.
+
+Acknowledgements
+----------------
+
+Thanks to all users of the code!

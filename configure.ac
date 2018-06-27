@@ -16,8 +16,15 @@ DX_PS_FEATURE(OFF)
 DX_PDF_FEATURE(OFF)
 DX_INIT_DOXYGEN(ThermodynamicAnalyticsToolkit, Doxyfile, ${docdir})
 
-# use docbook
-AX_CHECK_DOCBOOK
+# asciidoc and dblatex
+AC_CHECK_PROGS([ASCIIDOC], [asciidoc])
+if test -z $ASCIIDOC; then
+	AC_MSG_WARN([asciidoc not found, cannot build from asciidoc sources])
+fi
+AC_CHECK_PROGS([DBLATEX], [dblatex])
+	if test -z $DBLATEX; then
+	   AC_MSG_WARN([dblatex not found, cannot render PDF])
+fi
 
 AC_CONFIG_FILES(
 	Makefile
@@ -63,8 +70,5 @@ AC_CONFIG_FILES([
         doc/Makefile
         doc/userguide/Makefile
 ])
-AC_CONFIG_FILES([
-        doc/userguide/catalog.xml:doc/userguide/catalog.xml.in])
-
 AC_OUTPUT
 

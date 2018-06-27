@@ -1,0 +1,19 @@
+[[_bibliography]]
+
+Leimkuhler2012 B.Leimkuhler C.Matthews 34-56 10.1093/amrx/abs010 2013
+
+Shang2015 X.Shang Z.Zhu B.Leimkuhler A. J,Storkey 37-45
+10.1515/jip-2012-0071 2015 C. Cortes and N. D. Lawrence and D. D. Lee
+and M. Sugiyama and R. Garnett
+
+Leimkuhler2015 B.Leimkuhler C.Matthews G.Stoltz 1-55
+http://dx.doi.org/10.1093/imanum/dru056 2015
+
+Duane1987 S.Duane A.D.Kennedy B.J.Pendleton D.Roweth 195 216-222
+http://dx.doi.org/10.1016/0370-2693(87)91197-X 1987
+
+Welling2011 M.Welling Y.-W.Teh 681-688
+http://doi.acm.org/10.1515/jip-2012-0071 2011
+
+Matthews2018 C.Matthews J.Weare B.Leimkuhler 277-290
+http://doi.acm.org/10.1007/s11222-017-9730-1 2018

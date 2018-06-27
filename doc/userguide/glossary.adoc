@@ -1,0 +1,69 @@
+Covariance Controlled Adaptive Langevin (
+
+CCAdL
+
+)
+
+This is an extension of SGD that uses a thermostat to dissipate the
+extra noise through approximate gradients from the system.
+
+Gradient Descent (
+
+GD
+
+)
+
+An iterative, first-order optimization that use the negative gradient
+times a step width to converge towards the minimum.
+
+Geometric Langevin Algorithm (
+
+GLA
+
+)
+
+This family of samplers results from a first-order splitting between the
+Hamiltonian and the Ornstein-Uhlenbeck parts. It provides up to
+second-order accuracy. In the package we have implemented both the 1st
+and 2nd order variant. GLA2nd is among the most accurate samplers,
+especially when it comes to accuracy of momenta. It is surpassed by
+BAOAB, particularly for positions.
+
+Hamiltonian Monte Carlo (
+
+HMC
+
+)
+
+Instead of Langevin Dynamics this sampler relies on Hamiltonian
+Dynamics. After a specific number of trajectory steps an acceptance
+criterion is evaluated. Afterwards momenta are drawn randomly. Hence,
+here noise comes into play at distinct intervals while for the other
+samplers noise enters gradually in every step.
+
+Stochastic Gradient Descent (
+
+SGD
+
+)
+
+A variant of GD where not the whole dataset is used for the gradient
+computation but only a smaller part. This lightens the computational
+complexity and adds some noise to the iteration as gradients are only
+approximate. However, given redundancy in the dataset this noise is
+often welcome and helps in overcoming barriers in the non-convex
+minimization problem.
+
+See also Gradient Descent.
+
+Stochastic Gradient Langevin Dynamics (
+
+SGLD
+
+)
+
+A variant of SGD where the approximate gradients are not only source of
+noise but an additional noise term is added whose magnitude controls the
+noise from the gradients.
+
+See also Stochastic Gradient Descent.
