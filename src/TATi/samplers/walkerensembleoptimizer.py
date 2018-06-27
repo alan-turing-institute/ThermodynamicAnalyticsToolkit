@@ -5,13 +5,16 @@ from tensorflow.python.ops import state_ops
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import variables
 from tensorflow.python.training.optimizer import Optimizer, _DenseResourceVariableProcessor, \
-    _OptimizableVariable, _StreamingModelPortProcessor, _get_variable_for
+    _OptimizableVariable, _StreamingModelPortProcessor
 import tensorflow as tf
 
 from distutils.version import LooseVersion
 
 if LooseVersion(tf.__version__) >= LooseVersion("1.7.0"):
     from tensorflow.python.training.optimizer import _TensorProcessor
+
+if LooseVersion(tf.__version__) < LooseVersion("1.8.0"):
+    from tensorflow.python.training.optimizer import _get_variable_for
 
 import collections
 
@@ -157,7 +160,10 @@ class WalkerEnsembleOptimizer(Optimizer):
                                              ([str(v) for _, _, v in converted_grads_and_vars],))
 
         # create slots for each variable
-        if LooseVersion(tf.__version__) >= LooseVersion("1.7.0"):
+        if LooseVersion(tf.__version__) >= LooseVersion("1.8.0"):
+            with ops.init_scope():
+                self._create_slots(var_list)
+        elif LooseVersion(tf.__version__) >= LooseVersion("1.7.0"):
             with ops.init_scope():
                 self._create_slots([_get_variable_for(v) for v in var_list])
         else:
