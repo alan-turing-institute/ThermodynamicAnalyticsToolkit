@@ -23,7 +23,11 @@ if test -z $ASCIIDOC; then
 fi
 AC_CHECK_PROGS([DBLATEX], [dblatex])
 	if test -z $DBLATEX; then
-	   AC_MSG_WARN([dblatex not found, cannot render PDF])
+	   AC_MSG_WARN([dblatex not found, cannot render userguide PDF])
+fi
+AC_CHECK_PROGS([HIGHLIGHT], [source-highlight])
+	if test -z $HIGHLIGHT; then
+	   AC_MSG_WARN([GNU's source-highlight not found, cannot syntex-highlight code blocks in userguide])
 fi
 
 AC_CONFIG_FILES(

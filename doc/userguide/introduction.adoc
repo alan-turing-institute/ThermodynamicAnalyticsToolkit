@@ -1,0 +1,335 @@
+[[introduction]]
+Introduction
+------------
+
+As an image says more than a thousand words, here is a mindmap showing all of
+TATi's main features.
+
+.Mindmap of all TATi features
+image::pictures/tati-mindmap.png[scaledwidth=60%]
+
+If you know what all of this means, you might probably be interested. If not,
+then read on to the next section.
+
+[[introduction.needtoknow]]
+Before you start
+~~~~~~~~~~~~~~~~
+
+In the following we assume that you, the reader, has a general
+familiarity with neural networks. You should know what a classification
+problem is, what an associated dataset for (supervised) learning needs
+to contain. You should know about what weights and biases in a neural
+network are and what the loss function does. You should also have a
+rough idea of what optimization is and that gradients with respect to
+the chosen loss function can be obtained through so-called
+backpropagation.
+
+If you are _not_ familiar with the above terminology, then please first
+read the section on link:#reference.concepts[Concepts.]
+
+[[introduction.whatis]]
+What is ThermodynamicAnalyticsToolkit?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Typically, optimzation in neural network training employs methods such
+as Gradient Descent, Stochastic Gradient Descent or derived methods
+using momentum such as ADAM and so on. The loss function itself may be
+convex, however, the loss manifold given a large dataset is not convex
+in general. Hence, these methods will only find local minima. Therefore,
+the eventually trained set of parameters of the neural network is not
+optimal. Naturally, this ignores question about the generalization error.
+Nonetheless, neural networks, given enough data and processing
+power, work marvelously and one may wonder why.
+
+The essential idea behind this program package is that we use sampling
+instead of optimization: we are not interested in the local minimum
+closest to some random initial configuration and be done. Instead we aim
+at finding all of the minima and all possible barriers in between by
+treating the loss function as a high-dimensional potential and the
+weights and biases of the neural network as one-dimensional particles in
+a stochastic differential equation, namely Langevin Dynamics.
+
+There is not need to panic: You do not need to know anything about these
+kinds of equations when using the program. However, rest assured that
+all statistical properties derived using trajectories obtained through
+these equations are meaningful.
+
+The hope is to elucidate the marvel behind the wondrous performance of
+neural networks, maybe to obtain even better parametrizations or obtain
+the same in cheaper ways, and also to gather means of optimizing the
+neural network's topology given a specific dataset to train.
+
+In essence, this program suite provides samplers using
+https://www.tensorflow.org/[TensorFlow] and analysis tools to extract
+specific statistical quantities from the computed particle trajectories.
+
+.Architecture of TATi's tools
+image::pictures/tati_tools-architecture.png[Depiction of thearchitecture of the toolkit]
+
+Moreover, it can also be used as a stand-alone Python module that allows
+to easily make use of present sampling Python code within the context of
+neural networks.
+
+.Architecture of the *simulation* module
+image::pictures/tati_simulations-architecture.png[Depiction of thearchitecture for the *simulations* module of TATi]
+
+It can be used both as python module and as stand-alone command-line
+tools.
+
+[[introduction.installation]]
+Installation
+~~~~~~~~~~~~
+
+In the following we explain the installation procedure to get
+ThermodynamicAnalyticsToolkit up and running.
+
+[[introduction.installation.requirements]]
+Installation requirements
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This program suite is implemented using python3 and the development
+mainly focused on Linux (development machine used Ubuntu 14.04 up to 18.04). At
+the moment other operation systems are not supported but may still work.
+
+It has the following non-trivial dependencies:
+
+* link:https://www.tensorflow.org/[TensorFlow]: version 1.4.1 till currently 1.6 supported
+* link:https://www.numpy.org/[Numpy]:
+* link:https://pandas.pydata.org/[Pandas]
+* link:https://scikit-learn.org/[sklearn]
+
+Note that most of these packages can be easily installed using either
+the repository tool (using some linux derivate such as Ubuntu), e.g.
+
+---------------
+sudo apt install python3-numpy
+---------------
+
+or via *pip3*, i.e.
+
+---------------
+pip3 install numpy
+---------------
+
+Moreover, the following packages are not ultimately required but
+examples or tests may depend on them:
+
+* link:http://matplotlib.org/[matplotlib]
+* link:https://www.sqlite.org[sqlite3]
+* gawk
+
+The documentation is written in link:https://asciidoc.org/[AsciiDoc] and
+requires a suitable package to compile to HTML or create a PDF, e.g., using
+dblatex
+
+* asciidoc
+* dblatex
+
+Finally, for the diffusion map analysis we recommend using the pydiffmap
+package, see https://github.com/DiffusionMapsAcademics/pyDiffMap.
+
+In our setting what typically worked best was to use link:https://anaconda.org/[anaconda]
+in the following manner:
+
+---------------
+conda create -n tensorflow python=3.5 -y
+  conda install -n tensorflow -y \
+     tensorflow numpy scipy pandas scikit-learn matplotlib
+---------------
+
+In case your machine has GPU hardware for tensorflow, replace
+``tensorflow'' by ``tensorflow-gpu''.
+
+[NOTE]
+Note that on systems with typical core i7 architecture recompiling
+tensorflow from source provided only very small runtime gains in our
+tests which in most cases do not support the extra effort. You may find
+it necessary for tackling really large networks and datasets and
+especially if you desire using Intel's MKL library for the CPU-based
+linear algebra computations.
+
+Henceforth, we assume that there is a working tensorflow on your system,
+i.e. inside the python3 shell
+
+---------------
+import tensorflow as tf
+---------------
+
+does _not_ throw an error.
+
+Moreover,
+
+---------------
+a=tf.constant("Hello world")
+sess=tf.Session()
+sess.run(a)
+---------------
+
+should print ``Hello world'' or something similar.
+
+[TIP]
+=========================
+You can check the version of your *tensorflow* installation at any time
+by inspecting `print(tf.__version__)`.
+
+Similarly, TATi's version can be obtained through
+---------------
+import tati
+
+print(tati.__version__)
+---------------
+=========================
+
+
+[[introduction.installation.procedure]]
+Installation procedure
+^^^^^^^^^^^^^^^^^^^^^^
+
+Installation comes in two flavours: Either a tarball or a cloned repository.
+
+The tarball releases are recommended if you only plan to use TATi and do not
+intend modifying its code. If, however, you need to use a development branch,
+then you have to clone from the repository.
+
+In general, this package is distributed via autotools, "compiled" and installed via
+automake. If you are familiar with this set of tools, there should be no
+problem. If not, please refer to the text `INSTALL` file that is included
+in the tarball.
+
+[NOTE]
+Only the tarball contains a precompiled PDF. The cloned repository
+contains only the HTML pages.
+
+[[introduction.installation.procedure.tarball]]
+==== From Tarball
+
+Unpack the archive, assuming its suffix is `.bz2`.
+
+---------------
+tar -jxvf thermodynamicanalyticstoolkit-${revnumber}.tar.bz2
+---------------
+
+If the ending is `.gz`, you need to unpack by
+
+---------------
+tar -zxvf thermodynamicanalyticstoolkit-${revnumber}.tar.gz
+---------------
+
+Enter the directory
+
+---------------
+cd thermodynamicanalyticstoolkit
+---------------
+
+Continue then in section link:#configure_make_install[].
+
+[[introduction.installation.repository]]
+==== From cloned repository
+
+While the tarball does not require any autotools packages installed on your
+system, the cloned repository does. You need the following packages:
+
+* autotools
+* automake
+
+To prepare code in the working directory, enter
+---------------
+./bootstrap.sh
+---------------
+
+[[introduction.installation.configure_make_install]]
+==== Configure, make, make install
+
+Next, we recommend to build the toolkit not in the source folder but in an
+extra folder, e.g., ``build64''. In the autotools lingo this is called an
+_out-of-source_ build. It prevents cluttering of the source folder.
+Naturally, you may pick any name (and actually any location on your
+computer) as you see fit.
+
+---------------
+mkdir build64
+cd build64
+../configure --prefix="somepath" -C PYTHON="path to python3"
+make
+make install
+---------------
+
+More importantly, please replace ``somepath'' and ``path to python3'' by
+the desired installation path and the full path to the `python3`
+executable on your system.
+
+[NOTE]
+=========================
+In case of having used _anaconda_ for the installation of required packages,
+then you need to look in
+
+---------------
+$HOME/.conda/envs/tensorflow/bin/python3
+---------------
+
+for the respective command, where `$HOME` is your home folder. This assumes
+that your anaconda environment is named *tensorflow* as in the example
+installation steps above.
+=========================
+
+[NOTE]
+=========================
+We recommend executing (after `make install` was run)
+
+---------------
+make check
+---------------
+
+additionally. This will execute every test on the extensive testsuite
+and report any errors. None should fail. If all fail, a possible cause
+might be a not working tensorflow installation. If some fail, please
+contact the author.
+=========================
+
+
+[TIP]
+=========================
+As always with GNU make you may use
+---------------
+make -j4 check
+---------------
+to execute four processes in parallel performing the checks which should
+give a significant speed up. Replace "4" by the number of cores in your
+machine or any other number you find appropriate.
+=========================
+
+[[introduction.license]]
+License
+~~~~~~~
+
+As long as no other license statement is given,
+ThermodynamicAnalyticsToolkit is free for use under the GNU Public
+License (GPL) Version 3 (see www.gnu.de/documents/gpl-3.0.de.html).
+
+[[introduction.disclaimer]]
+Disclaimer
+~~~~~~~~~~
+
+[quote, section 11 of the GPLv3 license, https://www.gnu.org/licenses/gpl-3.0.en.html]
+____
+Because the program is licensed free of charge, there is not warranty
+for the program, to the extent permitted by applicable law. Except when
+otherwise stated in writing in the copyright holders and/or other
+parties provide the program "as is" without warranty of any kind, either
+expressed or implied. Including, but not limited to, the implied
+warranties of merchantability and fitness for a particular purpose. The
+entire risk as to the quality and performance of the program is with
+you. Should the program prove defective, you assume the cost of all
+necessary servicing, repair, or correction.
+____
+
+
+[[introduction.feedback]]
+Feedback
+~~~~~~~~
+
+If you encounter any bugs, errors, or would like to submit feature
+request, please use the email address provided at the very beginning of
+this user guide. The author is especially thankful for any description
+of all related events prior to occurrence of the error and auxiliary
+files. Please mind sensible space restrictions of email attachments.
