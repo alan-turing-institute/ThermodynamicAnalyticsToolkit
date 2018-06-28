@@ -193,6 +193,8 @@ do the same using python as well.
 include::python/writing_data.py[]
 ---------------
 
+WARNING:The labels need to be integer values. Importing will fail if they are not.
+
 After importing some modules we first fix the numpy seed to 426 in order
 to get the same items reproducibly. Then, we first create 100 items
 using the hard-coded ClassificationDatasets class from the

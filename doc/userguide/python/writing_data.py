@@ -29,6 +29,6 @@ with open("dataset-twoclusters.csv", 'w', newline='') as data_file:
             ['{:{width}.{precision}e}'.format(val, width=8,
                                               precision=8)
              for val in list(x)] \
-            + ['{:{width}.{precision}e}'.format(y[0], width=8,
+            + ['{}'.format(y[0], width=8,
                                                 precision=8)])
     data_file.close()
