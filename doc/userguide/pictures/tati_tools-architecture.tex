@@ -1,0 +1,54 @@
+\usetikzlibrary{positioning}\tikzset{%
+ % >={Latex[width=2mm,length=2mm]},
+  % Specifications for style of nodes:
+            base/.style = {rectangle, rounded corners, draw=black,
+                           minimum width=2.5cm, minimum height=1cm,
+                           text centered, font=\sffamily},
+  tensorflow/.style = {base, fill=blue!30},
+       tati/.style = {base, fill=red!30},
+       tati_highlevel/.style = {base, fill=green!60},
+     pydiffmap/.style = {base, fill=blue!60},
+%          process/.style = {base, minimum width=2.5cm, fill=orange!15,
+%                            font=\ttfamily},
+}
+
+\begin{tikzpicture}[node distance=2cm,
+    every node/.style={fill=white, font=\sffamily}, align=center]
+
+% base
+\node (tf_data_Dataset)	[tensorflow]	{TF Dataset};
+\node (tf_optimizer)			[tensorflow, right of=tf_data_Dataset, xshift=2cm]		{TF Optimizer};
+\node (pydiffmap)				[pydiffmap, right of=tf_optimizer, xshift=2.5cm]	{pydiffmap Diffusion Maps};
+
+% tati
+\node (tati_inputpipeline)			[tati, above of=tf_data_Dataset, xshift=-.5cm]	{TATi Input Pipeline};
+\node (tf_sampler)			[tati, above of=tf_optimizer]	{TF Sampler};
+\node (tati_analysis)			[tati, above of=pydiffmap, text width=3.4cm, xshift=0.65cm]	{TrajectoryAnalyser};
+
+% tools
+\node (tati_optimizer)		[tati_highlevel, above of=tati_inputpipeline, minimum width=1.5cm, xshift=-.5cm,yshift=.5cm]	{TATi \\ Optimizer};
+\node (tati_sampler)		[tati_highlevel, right of=tati_optimizer, minimum width=1.5cm]	{TATi \\ Sampler};
+\node (tati_explorer)		[tati_highlevel, right of=tati_sampler, minimum width=1.5cm]	{TATi \\ Explorer};
+
+\node (tati_inputspacesampler)		[tati_highlevel, right of=tati_explorer, minimum width=1.5cm, xshift=1cm]	{TATi \\ InputSpace \\ Sampler};
+\node (tati_lossfunctionsampler)		[tati_highlevel, right of=tati_inputspacesampler, minimum width=1.5cm, xshift=.2cm]	{TATi \\ LossFunction \\ Sampler};
+
+\node (tati_analyser)		[tati_highlevel, right of=tati_lossfunctionsampler, minimum width=1.5cm, minimum height=1.4cm]	{TATi \\ Analyser};
+
+%% connections
+\draw[] (tf_data_Dataset) -- (tf_data_Dataset.north|-tati_inputpipeline.south);
+\draw[] (tf_optimizer) -- (tf_optimizer.north|-tf_sampler.south);
+\draw[] (pydiffmap) -- (pydiffmap.north|-tati_analysis.south);
+
+%% grouping boxes
+\begin{scope}[on background layer]
+	\node [fit=(tf_optimizer) (tf_data_Dataset),inner sep=4mm,fill=blue!20] (tensorflow){\vspace{3em}Tensorflow};
+	\node [fit=(tf_sampler) (tati_inputpipeline) (tati_analysis) ,inner sep=4mm,fill=red!20] (tati_module){\vspace{3.5em}Thermodynamic Analytics Toolkit};
+	\node [fit=(tati_optimizer) (tati_sampler) (tati_explorer) ,inner sep=6mm,fill=green!30] (generation){\vspace{3.5em}Generate Trajectories};
+	\node [fit=(tati_inputspacesampler) (tati_lossfunctionsampler) (tati_analyser) ,inner sep=4mm,fill=green!30] (analysis){\vspace{4.5em}Analyse and Visualize};
+
+	\draw[] (generation) -- (generation.south|-tati_module.north);
+	\draw[] (analysis) -- (analysis.south|-tati_module.north);
+\end{scope}
+
+\end{tikzpicture}

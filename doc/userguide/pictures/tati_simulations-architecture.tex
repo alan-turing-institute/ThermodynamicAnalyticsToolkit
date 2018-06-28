@@ -1,0 +1,52 @@
+\tikzset{%
+ % >={Latex[width=2mm,length=2mm]},
+  % Specifications for style of nodes:
+            base/.style = {rectangle, rounded corners, draw=black,
+                           minimum width=2.5cm, minimum height=1cm,
+                           text centered, font=\sffamily},
+  tensorflow/.style = {base, fill=blue!30},
+       tati/.style = {base, fill=red!30},
+       tati_highlevel/.style = {base, fill=red!50},
+     pydiffmap/.style = {base, fill=blue!60},
+     user/.style = {base, fill=green!60},
+%          process/.style = {base, minimum width=2.5cm, fill=orange!15,
+%                            font=\ttfamily},
+}
+
+\begin{tikzpicture}[node distance=2cm,
+    every node/.style={fill=white, font=\sffamily}, align=center]
+
+% base
+\node (tf_data_Dataset)	[tensorflow, text width=2.88cm]	{TF Dataset};
+\node (tf_optimizer)			[tensorflow,  right of=tf_data_Dataset, xshift=1.5cm, text width=2.5cm]		{TF Optimizer};
+\node (pydiffmap)				[pydiffmap, right of=tf_optimizer, xshift=1.9cm]	{pydiffmap Diffusion Maps};
+
+% tati
+\node (tati_inputpipeline)			[tati, above of=tf_data_Dataset]	{TATi Input Pipeline};
+\node (tf_sampler)			[tati, above of=tf_optimizer]	{TF Samplers};
+\node (tati_analysis)			[tati, above of=pydiffmap, text width=3.4cm, xshift=0.2cm]	{TrajectoryAnalyser};
+
+% simulations
+\node (tati_simulations)			[tati_highlevel, above of=tf_sampler, text width=10.77cm,xshift=0.43cm]	{TATi Simulations};
+
+% user
+\node (user)			[user, above of=tati_simulations, text width=10.77cm]	{User sampling codes};
+
+%% connections
+\draw[] (tf_optimizer) -- (tf_sampler);
+\draw[] (tf_data_Dataset) -- (tati_inputpipeline);
+\draw[] (pydiffmap) -- (pydiffmap.north|-tati_analysis.south);
+
+\draw[] (tf_sampler) -- (tf_sampler.north|-tati_simulations.south);
+\draw[] (tati_inputpipeline) -- (tati_inputpipeline.north|-tati_simulations.south);
+\draw[] (tati_analysis) -- (tati_analysis.north|-tati_simulations.south);
+
+\draw[] (tati_simulations) -- (user);
+
+%% grouping boxes
+\begin{scope}[on background layer]
+ \node[fit=(tf_optimizer) (tf_data_Dataset),inner sep=3mm,fill=blue!20] (tensorflow){\vspace{3em}Tensorflow};
+ \node[fit=(tf_sampler) (tati_inputpipeline) (tati_analysis) (tati_simulations),inner sep=3mm,fill=red!20] (tati){\vspace{9em}Thermodynamic Analytics Toolkit};
+\end{scope}
+
+\end{tikzpicture}
