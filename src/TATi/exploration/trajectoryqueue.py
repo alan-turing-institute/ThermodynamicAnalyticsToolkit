@@ -18,6 +18,7 @@ class TrajectoryQueue(object):
         self.data_container = None
         self.current_job_id = None
         self.queue = None
+        self.do_check_minima = False
         self.used_data_ids = [] # make a simple list as default
 
     def get_data_container(self):
@@ -92,6 +93,12 @@ class TrajectoryQueue(object):
         :param network_model: model of neural network with Session for sample and optimize jobs
         :param parameters: parameter struct for analysis jobs
         """
+        # set whether to add train jobs or not
+        try:
+            self.do_check_minima = parameters.minima_file is not None
+        except AttributeError:
+            self.do_check_minima = False
+        # run queue till empty
         while not self.is_empty():
             self.run_next_job(network_model, parameters)
 

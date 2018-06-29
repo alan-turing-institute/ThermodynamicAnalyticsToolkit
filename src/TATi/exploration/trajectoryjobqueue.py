@@ -62,6 +62,8 @@ class TrajectoryJobQueue(TrajectoryQueue):
         :param network_model: neural network object for running the graph
         :param continue_flag: flag whether job should spawn more jobs or not
         """
+        if not self.do_check_minima:
+            return
         assert( data_object is not None )
         # set parameters to ones from old leg (if exists)
         if len(data_object.minimum_candidates) > self.MAX_MINIMA_CANDIDATES:
@@ -106,6 +108,8 @@ class TrajectoryJobQueue(TrajectoryQueue):
         :param parameters: parameters for analysis
         :param continue_flag: flag whether job should spawn more jobs or not
         """
+        if not self.do_check_minima:
+            return
         extract_job = TrajectoryJob_extract_minimium_candidates(
             data_id=data_object.get_id(),
             parameters=parameters,
