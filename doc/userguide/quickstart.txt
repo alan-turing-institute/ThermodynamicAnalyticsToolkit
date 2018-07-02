@@ -273,7 +273,7 @@ the next section.
 
 Afterwards, the network is initialized, then we call `train()` which
 performs the training and returns runtime info, trajectory, and averages
-as a pandas DataFrame.
+as a pandas `DataFrame`.
 
 At the end of this section on training, let us have a quick glance at
 the decrease of the loss function over the steps by using `matplotlib`.
@@ -283,7 +283,7 @@ the decrease of the loss function over the steps by using `matplotlib`.
 include::python/plot_optimize.py[]
 ---------------
 
-The graph should look similar to the one obtained with pgfplots (see
+The graph should look similar to the one obtained with `pgfplots` (see
 https://sourceforge.net/pgfplots in
 link:#quickstart.python.optimizing.plot[figure_title].
 
@@ -592,10 +592,10 @@ include::cmdline/sample.sh[]
 This will cause the sampler to parse the same dataset as before.
 Moreover, the sampler will load the neural network from the model, i.e.
 using the optimized parameters right from the start. Afterwards it will
-use the GLA in 2nd order discetization using again step_width of 0.01
+use the GLA in 2nd order discetization using again 'step_width' of 0.01
 and running for 1000 steps in total. The GLA is a descretized variant of
 Langevin Dynamics whose accuracy scales with the inverse square of the
-step_width (hence, 2nd order).
+'step_width' (hence, 2nd order).
 
 The seed is needed as we sample using Langevin Dynamics where a noise
 term is present. The term basically ascertains a specific temperature

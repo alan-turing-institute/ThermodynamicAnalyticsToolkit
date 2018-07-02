@@ -15,25 +15,25 @@ reminder of the terms and notation that will appear later on.
 - Dataset
 +
 The dataset contains a fixed number of datums of input tuples and output
-tuples. They are typically referred to as ``features'' and ``labels'' in
+tuples. They are typically referred to as _features_ and _labels_ in
 the machine learning community. Basically, they are samples taken from
 the unknown function which we wish to approximate using the neural
 network. If the output tuples are binary in each component, the
-approximation problem is called a ``classification'' problem. Otherwise,
-it is a ``regression'' problem.
+approximation problem is called a _classification_ problem. Otherwise,
+it is a _regression_ problem.
 
 - Neural network
 +
 The neural network is a black-box representing a certain set of general
 functions that are efficient in solving classification problems (among
 others). They are parametrized explicitly using weights and biases and
-implicitly through the topoloy of the network (connections of nodes
+implicitly through the topology of the network (connections of nodes
 residing in layers) and the activation functions used. Moreover, the
 loss function determines the best set of parameters for a given task.
 
 - Loss
 +
-The loss function determines for a given (labelled) dataset what set of
+The loss function determines for a given (labeled) dataset what set of
 neural network's parameters are best. Note that there are losses that do
 not require labels though. Different losses result in different set of
 parameters. It is a high-dimensional manifold that we want to learn and
@@ -70,7 +70,7 @@ is set to unity.
 - Optimizers
 +
 Optimizers are used to drive the parameters to the local minimum from a
-given (random) starting position. GradientDescent (GD) is best known,
+given (random) starting position. <<GD>> is best known,
 but there are more elaborate Optimizers that use the concept of momentum
 as well. This helps in overcoming flat parts of the manifold where the
 gradient is effectively zero but momentum still drives the particles
@@ -79,8 +79,8 @@ towards the minimum.
 - Samplers
 +
 The goal of samplers is different than the goal of optimizers. Samplers
-aim at discovering a great deal of the manifold, not constraint to the
-local minimum. Usually, they are started from the local minimum and
+such as <<GLA>> aim at discovering a great deal of the manifold, not constraint
+to the local minimum. Usually, they are started from the local minimum and
 drive the particles further and further out until new minima are found
 between which potential barriers had to be overcome.
 
@@ -93,7 +93,7 @@ Formally, it is a graph with nodes and edges, where nodes represent
 (simple) functions. The edges represent scalar values by which the
 output of one node is scaled as input to another node. The scalar value
 is called _weight_ and each node also has a constant value, the _bias_,
-that does not depend on the input of other nodes. Nodes are organised in
+that does not depend on the input of other nodes. Nodes are organized in
 layers and nodes are (mostly) only connected between adjacent layer.
 Special are the very first layer with input nodes that simply accept
 input from the user and the very last layer whose output is eventually
@@ -162,11 +162,11 @@ ones requested to evaluate. For example, in order to evaluate the loss,
 it first needs to look at the dataset and also all weights and biases.
 Any variable is also represented as a node in the graph.
 
-All actual data is stored in a so-called "session" object. Evaluations
+All actual data is stored in a so-called _session_ object. Evaluations
 of nodes in the computational graph are done by giving a list of nodes
 to the `run()` function of this session object. This function usually
-requires a so-called "feed dict", a dictionary containing any external
-values that are referenced through "placeholder" nodes. When evaluating
+requires a so-called _feed dict_, a dictionary containing any external
+values that are referenced through _placeholder_ nodes. When evaluating
 nodes, only that part of the feed dict needs to be given that is
 required for the nodes' evaluation. E.g. when assigning values to
 parameters through an assign operation using placeholders, we do not
@@ -221,7 +221,7 @@ please look at TATi/models/model.py, `get_activations()`.
 
 [NOTE]
 ====
-Note that creating the `tati_model` instance "model" will always reset the
+Note that (re-)creating the `tati_model` instance model will always reset the
 computational graph of tensorflow in case you need to add nodes.
 ====
 
@@ -249,18 +249,16 @@ We will give examples for both ways here.
 include::python/general_nn/supply_dataset_array.py[]
 ---------------
 
-The ``batch_data_files'' always needs to be a list as multiple files may
-be given. ``batch_data_file_type'' gives the type of the files.
-Currently "csv" and "tfrecord" are supported choices.
+The `batch_data_files` always needs to be a list as multiple files may
+be given. `batch_data_file_type` gives the type of the files.
+Currently *csv* and *tfrecord* are supported choices.
 
-Note that you can combine the additional ``FLAGS'' given for specifying
+Note that you can combine the additional `FLAGS` given for specifying
 the data set files with the ones characterizing the neural network
-above. In that case you do not need to call `reset_parameters()`. For a
-full (and up-to-date list please refer to TATi/models/model.py, function
-`add_losses()`.
+above. In that case you do not need to call `reset_parameters()`.
 
 We repeat the example given in
-link:#quickstart.python.sampling.supply_dataset[section_title].
+link:#quickstart.python.sampling.supply_dataset[Supplying Dataset].
 
 [source,python]
 ---------------
@@ -280,13 +278,13 @@ A note on batching
 If you want to evaluate your dataset in batches, there are two notes to
 give:
 
-First, the parameter ``batch_size'' controls the size of the randomly
+First, the parameter `batch_size` controls the size of the randomly
 chosen subset of the dataset on which the loss function is evaluated at
 the next call.
 
-Second, ``max_steps'' controls how many (internal) copies of the dataset
+Second, `max_steps` controls how many (internal) copies of the dataset
 are created. Once every batch of every copy has been delivered, the
-Dataset will signal this with an exceotions and stop. This can be
+Dataset will signal this with an exceptions and stop. This can be
 overcome by either calling
 
 [source,python]
@@ -329,7 +327,7 @@ include::python/general_nn/requesting_parameters.py[]
 
 As you see in the example, there are two entities in model that contain
 representations to the weights and biases of the neural network. Calling
-`evaluate()` on these, for which the "session" object of tensorflow is
+`evaluate()` on these, for which the _session_ object of tensorflow is
 required, which is also an entity in the model, will return arrays with
 their values.
 
@@ -366,24 +364,25 @@ Evaluate loss
 
 Now, all is set to actually evaluate the loss function for the first
 time As a default the mean squared distance is chosen as the loss
-function. However, by setting the ``loss'' in the initial parameters
-(``FLAGS'') appropriately, all other loss functions that tensorflow
-offers are available, too.
+function. However, by setting the `loss` in the initial parameters
+(`FLAGS`) appropriately, all other loss functions that tensorflow
+offers are available, too. For a full (and up-to-date) list please refer
+to TATi/models/model.py, function `add_losses()`.
 
 [source,python]
 ---------------
 include::python/general_nn/evaluate_loss.py[]
 ---------------
 
-Here, we have to do two things: First, we set up a "feed_dict" then we
-call `run()` of the "session" object in order to evaluate the loss. Note
+Here, we have to do two things: First, we set up a `feed_dict` then we
+call `run()` of the _session_ object in order to evaluate the loss. Note
 that `run()` may be given a list of nodes and returns a list of
 evaluations, ready for unpacking.
 
 Note the two nodes that are turned from `next_batch()` from the input
 pipeline. These are nodes in the computational graph of tensorflow that
 trigger reading the CSV file or feeding parts of the internal array
-dataset into the graph. This "input_pipeline" controls the flow of the
+dataset into the graph. This input pipeline controls the flow of the
 dataset into the neural network. In other words, `next_batch()` does not
 return the next batch but nodes on whose evaluation the next batch is
 obtained.
@@ -400,7 +399,7 @@ include::python/general_nn/evaluate_gradients.py[]
 ---------------
 
 Remember that all parameters are vectorized, hence, the
-``gradients_eval'' object returned is actually a numpy array containing
+`gradients_eval` object returned is actually a numpy array containing
 per component the gradient with respect to the specific parameter.
 
 The procedure is very similar, the only diffence is that we evaluate
@@ -414,8 +413,8 @@ Evaluate Hessians
 Apart from gradient information hessians are also available. Note
 however that hessians are both very expensive to compute and to setup as
 many nodes needed to be added to the computational graph. Therefore, in
-the initial parameters (``FLAGS'') you need to explicitly state
-``do_hessians=True'' in order to activate their creation before
+the initial parameters (`FLAGS`) you need to explicitly state
+`do_hessians=True` in order to activate their creation before
 `init_network()` is called!
 
 [source,python]
@@ -424,11 +423,11 @@ include::python/general_nn/evaluate_hessians.py[]
 ---------------
 
 Remember that all parameters are vectorized, hence, the
-``gradients_eval'' object returned is actually a numpy array containing
+`gradients_eval` object returned is actually a numpy array containing
 per component the gradient with respect to the specific parameter.
 
 The procedure is very similar, the only diffence is that we evaluate
-another node. Keep in mind that ``run()'' may be given list of nodes,
+another node. Keep in mind that `run()` may be given list of nodes,
 i.e. loss and gradients can be evaluated at the same time!
 
 [[reference.python_general_nn_usage.evaluation.accuracy]]
@@ -454,7 +453,7 @@ Naturally, obtaining the predictions is now just as simple.
 include::python/general_nn/evaluate_prediction.py[]
 ---------------
 
-Note that omitted specifying ``labels'' in the ``feed_dict'' as they are
+Note that omitted specifying _labels_ in the `feed_dict` as they are
 not need for evaluating the predictions.
 
 [[reference.python_general_nn_usage.datasets]]
@@ -482,7 +481,7 @@ include::python/general_nn/change_dataset_csv.py[]
 ---------------
 
 In the first example, we simply exchange the dataset file(s) in the
-parameters structure and call ``create_input_pipeline'' which will reset
+parameters structure and call `create_input_pipeline()` which will reset
 the internal input pipeline on using the newly given files.
 
 [source,python]
@@ -491,7 +490,7 @@ include::python/general_nn/change_dataset_array.py[]
 ---------------
 
 When switching to (another) dataset from an internal numpy array, then
-we simply need to call ``provide_dataset()'' which will reset the
+we simply need to call `provide_dataset()` which will reset the
 internal input pipeline.
 
 [NOTE]
@@ -527,12 +526,15 @@ a list of nodes to return.
 +
 The accuracy of the prediction compared to the given labels. 1 is
 perfect, 0 is all wrong.
+
 * loss
 +
 The loss function
+
 * y
 +
 The neural network's output
+
 * y_
 +
 The labels given in the dataset
@@ -540,16 +542,19 @@ The labels given in the dataset
 There are a few internal entities to `model` that represent nodes ready
 for evaluation as well.
 
-* model.gradients
+* `model.gradients`
 +
 Vectorized gradients
-* model.hessians
+
+* `model.hessians`
 +
-Vectorized Hessian matrix, requires ``do_hessians=True''
-* model.xinput
+Vectorized Hessian matrix, requires `do_hessians=True`
+
+* `model.xinput`
 +
 Placeholder node for feeding input values into neural network
-* model.input_pipeline.next_batch()
+
+* `model.input_pipeline.next_batch()`
 +
 Returns a list of two nodes. The first gives the features from the
 current batch, the second gives the labels from the current batch.
@@ -560,15 +565,15 @@ The loss function
 
 At the moment, there are two little utility programs that help in
 evaluating the loss function given a certain dataset, namely the
-``TATiLossFunctionSampler''. Let us give an example call right away.
+`TATiLossFunctionSampler`. Let us give an example call right away.
 
 [source,bash]
 ---------------
 include::cmdline/lossfunctionsampler-trajectory.sh[]
 ---------------
 
-It takes as input the dataset file ``dataset-twoclusters.csv'' and
-either a parameter file ``trajectory.csv''. This will cause the program
+It takes as input the dataset file `dataset-twoclusters.csv` and
+either a parameter file +trajectory.csv+. This will cause the program
 the re-evaluate the loss function at the trajectory points which should
 hopefully give the same values as already stored in the trajectory file
 itself.
@@ -603,10 +608,10 @@ sample.
 include::cmdline/lossfunctionsampler-fix_parameter.sh[]
 ---------------
 
-Moreover, using ``exclude_parameters'' can be used to exclude parameters
+Moreover, using `exclude_parameters` can be used to exclude parameters
 from the variation, i.e. this subset is kept at fixed values read from
-the file given by ``parse_parameters_file'' where the row designated by
-the value in ``parse_steps'' is taken.
+the file given by `parse_parameters_file` where the row designated by
+the value in `parse_steps` is taken.
 
 This can be used to assess the shape of the loss manifold around a found
 minimum.
@@ -616,13 +621,13 @@ minimum.
 include::cmdline/lossfunctionsampler-exclude_parameters.sh[]
 ---------------
 
-Here, we have excluded the second weight, named "w1", from the sampling.
+Here, we have excluded the second weight, named *w1*, from the sampling.
 Note that all weight and all bias degrees of freedom are simply
 enumerated one after the other when going from the input layer till the
 output layer.
 
 Furthermore, we have specified a file containing center points for all
-excluded parameters. This file is of CSV style having a column "step" to
+excluded parameters. This file is of CSV style having a column *step* to
 identify which row is to be used and moreover a column for every
 (excluded) parameter that is fixed at a value unequal to 0. Note that
 the minima file written by `TATiExplorer` can be used as this centers
@@ -634,7 +639,7 @@ The learned function
 
 The second little utility programs does not evaluate the loss function
 itself but the unknown function learned by the neural network depending
-on the loss function, called the ``TATiInputSpaceSampler''. In other
+on the loss function, called the +TATiInputSpaceSampler+. In other
 words, it gives the classification result for data point sampled from an
 equidistant grid. Let us give an example call right away.
 
@@ -643,16 +648,16 @@ equidistant grid. Let us give an example call right away.
 include::cmdline/inputspacesampler.sh[]
 ---------------
 
-Here, ``batch_data_files'' is an input file but it does not need to be
+Here, `batch_data_files` is an input file but it does not need to be
 present. (Sorry about that abuse of the parameter as usually
-``batch_data_files'' is read-only. Here, it is overwritten!). Namely, it
+`batch_data_files` is read-only. Here, it is overwritten!). Namely, it
 is generated by the utility in that it equidistantly samples the input
 space, using the interval [-4,4] for each input dimension and 10+1
 samples (points on -4 and 4 included). The parameters file
-``trajectory.csv'' now contains the values of the parameters (weights
++trajectory.csv+ now contains the values of the parameters (weights
 and biases) to use on which the learned function depends or by, in other
 words, by which it is parametrized. As the trajectory contains a whole
-flock of these, the ``parse_steps'' parameter tells it which steps to
+flock of these, the `parse_steps` parameter tells it which steps to
 use for evaluating each point on the equidistant input space grid,
 simply referring to rows in said file.
 
@@ -676,17 +681,21 @@ package.
 
 Naturally, not all of them are equivalent. Some are more robust with
 respect to the choice of the step sizes than others. In general, we
-recommend BAOAB at the moment as it is the most accurate with second
+recommend <<BAOAB>> at the moment as it is the most accurate with second
 order convergence for average values over the step width size and even
 fourth order in the high-friction limit.
+
+NOTE: At the beginning of each the following subsections we give the name of the respective sampler in order to activate it using the `sampler` keyword, see <<quickstart.python.sampling>> and <<quickstart.cmdline.sampling>>.
 
 [[reference.samplers.sgld]]
 Stochastic Gradient Langevin Dynamics
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+`sampler`: +StochasticGradientLangevinDynamics+
+
 The Stochastic Gradient Langevin Dynamics (SGLD) was proposed by
-Welling2011 based on the Stochastic Gradient Descent (SGD), which is a
-variant of the Gradient Descent (GD) using only a subset of the dataset
+Welling2011 based on the <<SGD>>[Stochastic Gradient Descent], which is a
+variant of the <<GD>>[Gradient Descent] using only a subset of the dataset
 for computing gradients. The central idea behind SGLD was to add an
 additional noise term whose magnitude then controls the noise induced by
 the approximate gradients.
@@ -701,16 +710,18 @@ to be small enough with respect to the gradient sizes of your problem.
 Covariance Controlled Adaptive Langevin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+`sampler`: +CovarianceControlledAdaptiveLangevin+
+
 This is an extension of Stochastic Gradient Descent proposed by
-Shang2015. The key idea is to dissipate the extra heat caused by the
+<<Shang2015>>. The key idea is to dissipate the extra heat caused by the
 approximate gradients through a suitable thermostat. However, the
 discretisation used here is not based on the (first-order)
-Euler-Maruyama as SGLD but on GLA 2nd order.
+Euler-Maruyama as <<SGLD>> but on <<GLA>> 2nd order.
 
 [NOTE]
 ====
 `sigma` and `sigmaA` are two additional parameters that control the action
-of the thermostat. Moreover, we require the same parameters as for *GLA* 2nd
+of the thermostat. Moreover, we require the same parameters as for <<GLA>> 2nd
 order.
 ====
 
@@ -718,9 +729,11 @@ order.
 Geometric Langevin Algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+`sampler`: +Geometric Langevin Algorithms_1stOrder+, +Geometric Langevin Algorithms_2ndOrder+
+
 GLA results from a first-order splitting between the Hamiltonian and the
-Ornstein-Uhlenbeck parts, see section 2.2.3 of Leimkuhler2015 and also
-Leimkuhler2012. It provides second order accuracy at basically no extra
+Ornstein-Uhlenbeck parts, see <<Leimkuhler2015>>[section 2.2.3, Leimkuhler 2015] and also
+<<Leimkuhler2012>>. It provides second order accuracy at basically no extra
 cost.
 
 [NOTE]
@@ -739,6 +752,8 @@ need to be find by try&error and the moment.
 BAOAB
 ^^^^^
 
+`sampler`: +BAOAB+
+
 BAOAB derives from the basic building blocks A (position update), B
 (momentum update), and O (noise update) into which the Langevin system
 is split up. Each step is solved in a separate step. Hence, we perform a
@@ -748,12 +763,14 @@ Leimkuhler2012 for more details.
 
 [NOTE]
 ====
-BAOAB has the same two additional parameters as given in the *GLA*s.
+BAOAB has the same two additional parameters as given in the <<GLA>>s.
 ====
 
 [[reference.samplers.hmc]]
 Hamiltonian Monte Carlo
 ^^^^^^^^^^^^^^^^^^^^^^^
+
+`sampler`: +HamiltonianMonteCarlo+
 
 HMC is based on Hamiltonian dynamics instead of Langevin Dynamics. Noise
 only enters when, after the evaluation of an acceptance criterion, the
@@ -802,7 +819,7 @@ include::python/fix_parameter.py[]
 ---------------
 
 Note that you need to initialize the network without adding training or
-sampling methods, i.e. ``setup'' is None. Then, we fix the parameter
+sampling methods, i.e. `setup` is None. Then, we fix the parameter
 where we give its name in full tensorflow parlance. Afterwards, we may
 add sample or training nodes and start training/sampling.
 
@@ -844,7 +861,7 @@ This tool allows also to inspect values such as the activation
 histogram, the loss and accuracy and many other parameters and values
 internal to TATi.
 
-Supplying a path "/foo/bar" present in the file system using the
+Supplying a path +/foo/bar+ present in the file system using the
 `summaries_path` variable, summaries are automatically written to the
 path and can be inspected with the following call to tensorboard.
 
@@ -853,14 +870,14 @@ path and can be inspected with the following call to tensorboard.
 tensorboard --logdir /foo/bar
 ---------------
 
-The tensorboard essentially comprises a webserver for rendering the
-nodes of the graph and figures of the inspected values inside a webpage.
+The tensorboard essentially comprises a web server for rendering the
+nodes of the graph and figures of the inspected values inside a web page.
 On execution it provides a URL that needs to be entered in any
-webbrowser to access the webpage.
+web browser to access the web page.
 
 
 [NOTE]
 ====
 The accumulation and writing of the summaries has quite an impact on
-TATi's overall performance and is therefore swicthed off by default.
+TATi's overall performance and is therefore switched off by default.
 ====
