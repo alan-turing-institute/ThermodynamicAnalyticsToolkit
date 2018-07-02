@@ -779,6 +779,96 @@ approximation still holds.
 This works for all of the aforementioned samplers as simply the gradient
 of each walker is rescaled.
 
+[[reference.performance]]
+A Note on Performance
+~~~~~~~~~~~~~~~~~~~~~
+
+Performance is everything in the world of neural network training. Codes and
+machines are measured by how fast they perform in images/second when training
+AlexNet or other networks on the ImageNet dataset, see link:https://www.tensorflow.org/performance/benchmarks[Tensorflow Benchmarks].
+
+We worked hard to ensure that whatever Tensorflow offers in performance is also
+seen when using TATi. In order to guide the user in what to expect and what to
+do when these expectations are not met, we invite to go through this section.
+
+In general, performance hinges *critically* on the input pipeline. In other
+words, it depends very much on how fast a specific machine setup can feed the
+dataset into the input layer of the neural network.
+
+Typically, these datasets are stored as a set of files residing on disk. Note
+that reading from disk is very slow compared to reading from memory. Hence, the
+first step is to read the dataset from disk and this will completely dominate
+the computational load at the beginning.
+
+If the dataset is small enough to completely fit in memory, TATi will uses
+Tensorflow's _caching_ to speed up the operations. This will become noticeable
+after the first epoch, i.e. when all batches of the dataset have been processed
+exactly once. Caching delivers at least a tenfold increase in learning speed,
+depending on your hard drive setup.
+
+[NOTE]
+.In memory pipeline
+======
+If your dataset fits in memory, it is advised to use the `InMemoryPipeline`
+by either setting the appropriate parameters in the *FLAGS* parameter
+structure, see <<quickstart.python>>.
+
+[source, python]
+----------------
+FLAGS.in_memory_pipeline = True
+----------------
+
+When using the command-line interface, add the respective option, see <<quickstart.cmdline>>.
+
+[source, bash]
+----------------
+...
+  --in_memory_pipeline 1 \
+...
+----------------
+
+======
+
+Furthermore, TATi uses Tensorflow's prefetching to interleave feeding and
+training operations. This will take effect roughly after the second epoch.
+Prefetching will show an increase by another factor of 2.
+
+A typical runtime profile is given in Figure <<references.performance.runtime_comparison_cpu>>
+where we show the time spent for every 10 steps over the whole history. This is
+done by simply plotting the 'time_per_nth_step' column from the run file against
+the 'step' column.
+There, we have used the <<BAOAB>> sampler. Initially, there is a large peak
+caused by the necessary parsing of the dataset from disk. This is followed by a
+period where the caching is effective and runtime per nth step has dropped
+dramatically. From this time on, Tensorflow will be able to make use of parallel
+threads for training. Then, we see another drop when prefetching kicks in.
+
+[[references.performance.runtime_comparison_cpu]]
+.Runtime comparison, CPU: Core i7, network with a single hidden layer and various numbers of nodes on a random MNIST dataset
+image::pictures/time_per_nth_step_hidden_dimension-dimension_16000-batch_size_1000-2018-06-28.png[alt="runtime comparison",{basebackend@docbook:scaledwidth="60%":width=600}]
+
+Note that Tensorflow has been designed to use GPGPU cards such as offered by
+NVIDIA (and also Google's own domain-specific chip called Tensor Proccessing
+Unit). If such a GPGPU card is employed, the actual linear algebra operations
+necessary for the gradient calculation and weight and bias updates during
+training will become negligible except for very large networks (1e6 dof and
+beyond).
+
+In <<references.performance.runtime_comparison_gpu>> we give the same runtime
+profile as before. In contrast to before, the simulation is now done on a
+system with 2 NVIDIA V100 cards. Comparing this to figure <<references.performance.runtime_comparison_cpu>>
+we notice that now all curves associated to different number of nodes in the
+hidden layer (*hidden_dimension*) basically lie on top of each other. In the
+runtime profile on CPUs alone there is a clear trend for networks with more
+degrees of freedom to significantly require more time per training step. We
+conclude that with these networks (784 input nodes, 10 output nodes,
+*hidden_dimension* hidden nodes, i.e. ~1e6 dof) the V100s do not see full load,
+yet.
+
+[[references.performance.runtime_comparison_gpu]]
+.Runtime comparison, GPU: 2x V100 cards, network with a single hidden layer and various numbers of nodes on a random MNIST dataset
+image::pictures/time_per_nth_step_hidden_dimension-hash_912b074-dimension_5000-batch_size_100-semilogy-2018-06-27.png[alt="runtime comparison",{basebackend@docbook:scaledwidth="60%":width=600}]
+
 [[reference.exploring]]
 Exploring the manifold
 ~~~~~~~~~~~~~~~~~~~~~~
