@@ -8,7 +8,7 @@ Sampling in neural networks
 
 [[quickstart.dataset]]
 .Dataset: "Two Clusters" dataset consisting of two normally distributed point clouds in two dimensions
-image::pictures/dataset_two_clusters.png[scaledwidth=45.0%]
+image::pictures/dataset_two_clusters.png[scaledwidth=45%]
 
 Assume we are given a very simple data set as depicted in
 link:#quickstart.dataset[Dataset]. The goal is to
@@ -25,7 +25,7 @@ link:#quickstart.perceptron[Network].
 
 [[quickstart.perceptron]]
 .Network: Single-layer perceptron with weights and biases
-image::pictures/simple_single_layer_perceptron.png[scaledwidth=45.0%]
+image::pictures/simple_single_layer_perceptron.png[scaledwidth=45%]
 
 In the following we want to use the mean square loss, i.e. the euclidean
 distance between the output from the network and the expected values per
@@ -283,7 +283,7 @@ https://sourceforge.net/pgfplots in
 link:#quickstart.python.optimizing.plot[figure_title].
 
 .Plot of the loss history for the optimization run
-image::pictures/optimization-step_loss.png[scaledwidth=50.0%]
+image::pictures/optimization-step_loss.png[scaledwidth=50%]
 
 Go and have a look at the other columns. Or try to visualize the change
 in the parameters (weights and biases) in the trajectories dataframe.

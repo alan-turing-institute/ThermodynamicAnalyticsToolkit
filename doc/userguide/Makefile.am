@@ -54,10 +54,10 @@ version = $(shell cat $(versionfile))
 revdate = $(shell date +%Y-%m-%d)
 
 thermodynamicanalyticstoolkit.xml: $(srcdir)/userguide.adoc $(DEPENDENCIES) $(srcdir)/.git-version
-	$(ASCIIDOC) -b docbook -arevdate=$(revdate) -aversion-label=@PACKAGE@ -arevnumber=$(version) -o $@ $<
+	$(ASCIIDOC) -b docbook -aimagesdir=$(srcdir) -arevdate=$(revdate) -aversion-label=@PACKAGE@ -arevnumber=$(version) -o $@ $<
 
 thermodynamicanalyticstoolkit.html: $(srcdir)/userguide.adoc $(DEPENDENCIES) $(srcdir)/.git-version
-	$(ASCIIDOC) -b html5 -a toc2 -a numbered -arevdate=$(revdate) -aversion-label=@PACKAGE@ -arevnumber=$(version) -o $@ $<
+	$(ASCIIDOC) -b html5 -a toc2 -a numbered -aimagesdir=$(srcdir) -arevdate=$(revdate) -aversion-label=@PACKAGE@ -arevnumber=$(version) -o $@ $<
 	
 thermodynamicanalyticstoolkit.pdf: thermodynamicanalyticstoolkit.xml
 	$(DBLATEX) $< $@

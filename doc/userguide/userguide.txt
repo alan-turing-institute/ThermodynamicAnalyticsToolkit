@@ -11,9 +11,9 @@ Thermodynamic Analytics Toolkit (TATi)
 :toc:
 //:toc-placement: preamble
 :doctype:     book
-:imagesdir:   /home/heber/workspace_Python/ThermodynamicAnalyticsToolkit_asciidoc/doc/userguide
+:imagesdir:   {imagesdir}
 
-image::./pictures/tati_logo.png[]
+image::./pictures/tati_logo.png[scaledwidth=60%]
 
 .{revdate} {version-label}: {revnumber}
 ***************************************

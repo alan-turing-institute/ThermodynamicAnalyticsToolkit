@@ -64,14 +64,14 @@ https://www.tensorflow.org/[TensorFlow] and analysis tools to extract
 specific statistical quantities from the computed particle trajectories.
 
 .Architecture of TATi's tools
-image::pictures/tati_tools-architecture.png[Depiction of thearchitecture of the toolkit]
+image::pictures/tati_tools-architecture.png[scaledwidth=60%]
 
 Moreover, it can also be used as a stand-alone Python module that allows
 to easily make use of present sampling Python code within the context of
 neural networks.
 
 .Architecture of the *simulation* module
-image::pictures/tati_simulations-architecture.png[Depiction of thearchitecture for the *simulations* module of TATi]
+image::pictures/tati_simulations-architecture.png[scaledwidth=60%]
 
 It can be used both as python module and as stand-alone command-line
 tools.
