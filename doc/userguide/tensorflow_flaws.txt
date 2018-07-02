@@ -11,9 +11,8 @@ the code and is currently focused at tensorflow version 1.4
 
 Most of issues simply made it hard to have reproducible runs which made
 it diffult to maintain my testsuite. Moreover, most of them are made on
-purpose for the sake of speed over deterministic behavior. This makes me
-in turn really wonder whether the tensorflow guys actually have a
-testsuite (or whether it justs consists of unit tests).
+purpose for the sake of speed over deterministic behavior.
+// This makes me in turn really wonder whether the tensorflow guys actually have a testsuite (or whether it justs consists of unit tests).
 
 * Non-deterministic `reduce_sum`
 +
@@ -98,5 +97,5 @@ This is more of a nuisance but a painful one that has quite strong effects on
 the efficiency of the *simulations* interface part: You cannot simply
 concatenate four variable tensors and then set them all using a single
 placeholder of the right dimension as the "variable" character is lost in
-the concatenation. It can only be read. I even filed a link:[ticket]. See also
-this related link:https://github.com/tensorflow/tensorflow/issues/1723[issue].
+the concatenation. It can only be read, see link:https://stackoverflow.com/questions/47699569[stackoverflow].
+See also this related link:https://github.com/tensorflow/tensorflow/issues/1723[issue].

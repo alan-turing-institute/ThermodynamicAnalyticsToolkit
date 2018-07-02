@@ -12,8 +12,9 @@ Thermodynamic Analytics Toolkit (TATi)
 //:toc-placement: preamble
 :doctype:     book
 :imagesdir:   {imagesdir}
+:Website:     https://github.com/alan-turing-institute/ThermodynamicAnalyticsToolkit
 
-image::./pictures/tati_logo.png[scaledwidth=60%]
+image::./pictures/tati_logo.png[alt="TATi logo",align="center",{basebackend@docbook:scaledwidth="80%":width=700}]
 
 .{revdate} {version-label}: {revnumber}
 ***************************************
@@ -21,7 +22,7 @@ TATi is a software suite written in Python based on link:https://www.tensorflow.
 Python API. It brings advanced sampling methods (GLA1 and GLA2, BAOAB, HMC) to
 _neural network training_. Its *tools* allow to assess the loss manifold's
 topology that depends on the employed neural network and the dataset. Moreover,
-its *simulations* module makes applying present sampling Python codes in the
+its *simulation* module makes applying present sampling Python codes in the
 context of neural networks easy and straight-forward. The goal of the software
 is to enable the user to analyze and adapt the network employed for a specific
 classification problem to best fit her or his needs.

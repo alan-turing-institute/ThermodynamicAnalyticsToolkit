@@ -6,7 +6,7 @@ As an image says more than a thousand words, here is a mindmap showing all of
 TATi's main features.
 
 .Mindmap of all TATi features
-image::pictures/tati-mindmap.png[scaledwidth=60%]
+image::pictures/tati-mindmap.png[align="right",alt="TATi mindmap",{basebackend@docbook:scaledwidth="60%":width=500}]
 
 If you know what all of this means, you might probably be interested. If not,
 then read on to the next section.
@@ -64,14 +64,14 @@ https://www.tensorflow.org/[TensorFlow] and analysis tools to extract
 specific statistical quantities from the computed particle trajectories.
 
 .Architecture of TATi's tools
-image::pictures/tati_tools-architecture.png[scaledwidth=60%]
+image::pictures/tati_tools-architecture.png[{basebackend@docbook:scaledwidth="60%":width=500}]
 
 Moreover, it can also be used as a stand-alone Python module that allows
 to easily make use of present sampling Python code within the context of
 neural networks.
 
 .Architecture of the *simulation* module
-image::pictures/tati_simulations-architecture.png[scaledwidth=60%]
+image::pictures/tati_simulations-architecture.png[{basebackend@docbook:scaledwidth="60%":width=500}]
 
 It can be used both as python module and as stand-alone command-line
 tools.
@@ -330,6 +330,14 @@ Feedback
 ~~~~~~~~
 
 If you encounter any bugs, errors, or would like to submit feature request,
-please write to mailto:{Email}. The author is especially thankful for any
-description of all related events prior to occurrence of the error and
-auxiliary files. Please mind sensible space restrictions of email attachments.
+please write to mailto:[{Email}] or open an issue at link:{Website}[GitHub].
+The author is especially thankful for any description of all related events
+prior to occurrence of the error and auxiliary files. More explicitly, the
+*following information is crucial* in enabling assistance:
+
+- *operating system* and version, e.g., Ubuntu 16.04
+- *Tensorflow version*, e.g., TF 1.6
+- *TATi version* (or respective branch on GitHub), e.g., TATi 0.8
+- steps that lead to the error, possibly with *sample Python code*
+
+Please mind sensible space restrictions of email attachments.

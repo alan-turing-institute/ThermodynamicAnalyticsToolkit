@@ -12,7 +12,7 @@ only roughly familiar with them. This is not meant as a replacement for
 the study of more in-depth material but should rather be seen as a
 reminder of the terms and notation that will appear later on.
 
-* Dataset
+- Dataset
 +
 The dataset contains a fixed number of datums of input tuples and output
 tuples. They are typically referred to as ``features'' and ``labels'' in
@@ -21,7 +21,8 @@ the unknown function which we wish to approximate using the neural
 network. If the output tuples are binary in each component, the
 approximation problem is called a ``classification'' problem. Otherwise,
 it is a ``regression'' problem.
-* Neural network
+
+- Neural network
 +
 The neural network is a black-box representing a certain set of general
 functions that are efficient in solving classification problems (among
@@ -29,7 +30,8 @@ others). They are parametrized explicitly using weights and biases and
 implicitly through the topoloy of the network (connections of nodes
 residing in layers) and the activation functions used. Moreover, the
 loss function determines the best set of parameters for a given task.
-* Loss
+
+- Loss
 +
 The loss function determines for a given (labelled) dataset what set of
 neural network's parameters are best. Note that there are losses that do
@@ -47,7 +49,8 @@ This makes the task of finding a good set of parameters that (globally)
 minimize the loss difficult as one would have to find each and every
 minima in this high-dimensional manifold and check whether it is
 actually the global one.
-* Momenta and kinetic energy
+
+- Momenta and kinetic energy
 +
 Momenta is a concept taken over from physics where the parameters are
 considered as particles each in a one-dimensional space where the loss
@@ -63,7 +66,8 @@ velocity Verlet/leapfrog, that are employed to propagate both particle
 position (i.e. the parameter value) and its momentum through time. Note
 that momentum and velocity are actually equivalent as usually the mass
 is set to unity.
-* Optimizers
+
+- Optimizers
 +
 Optimizers are used to drive the parameters to the local minimum from a
 given (random) starting position. GradientDescent (GD) is best known,
@@ -71,7 +75,8 @@ but there are more elaborate Optimizers that use the concept of momentum
 as well. This helps in overcoming flat parts of the manifold where the
 gradient is effectively zero but momentum still drives the particles
 towards the minimum.
-* Samplers
+
+- Samplers
 +
 The goal of samplers is different than the goal of optimizers. Samplers
 aim at discovering a great deal of the manifold, not constraint to the
