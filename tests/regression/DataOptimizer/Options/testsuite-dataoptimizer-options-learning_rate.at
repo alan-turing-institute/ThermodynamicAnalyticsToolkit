@@ -15,10 +15,10 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-### test on option step_width
+### test on option learning_rate
 
-AT_SETUP([Optimizer Options - step width])
-AT_KEYWORDS([tatioptimizer step_width])
+AT_SETUP([Optimizer Options - learning rate])
+AT_KEYWORDS([tatioptimizer learning_rate])
 
 # dataset prepared as follows:
 # TATiDatasetWriter --data_type 2 --dimension 10 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
@@ -28,11 +28,11 @@ AT_CHECK([../../../TATiOptimizer \
     --batch_data_files ${abs_top_srcdir}/tests/regression/DataOptimizer/Options/pre/dataset-twoclusters.csv \
     --batch_size 10 \
 	--every_nth 1 \
+	--learning_rate 1e-1 \
 	--max_steps 20 \
 	--optimizer GradientDescent \
 	--run_file run-step_width_1e-1.csv \
-	--seed 426 \
-	--step_width 1e-1
+	--seed 426
 ], 0, [stdout], [stderr])
 
 # run 2
@@ -40,11 +40,11 @@ AT_CHECK([../../../TATiOptimizer \
     --batch_data_files ${abs_top_srcdir}/tests/regression/DataOptimizer/Options/pre/dataset-twoclusters.csv \
     --batch_size 10 \
 	--every_nth 1 \
+	--learning_rate 1e-2 \
 	--max_steps 20 \
 	--optimizer GradientDescent\
 	--run_file run-step_width_1e-2.csv \
-	--seed 426 \
-	--step_width 1e-2
+	--seed 426
 ], 0, [stdout], [stderr])
 
 # check that both differ, i.e. step_width is used

@@ -27,11 +27,11 @@ AT_CHECK([../../../TATiOptimizer \
     --batch_data_files ${abs_top_srcdir}/tests/regression/DataOptimizer/Datasets/pre/dataset-twocircles.csv \
     --batch_size 10 \
 	--hidden_dimension 4 \
+	--learning_rate 0.03 \
 	--max_steps 100 \
 	--optimizer GradientDescent \
 	--run_file run-twocircles.csv \
-	--seed 426 \
-	--step_width 0.03
+	--seed 426
 ], 0, [stdout], [stderr])
 
 # and compare (exclude time_per_nth_step column)

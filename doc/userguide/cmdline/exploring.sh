@@ -4,6 +4,7 @@ TATiExplorer \
     --diffusion_map_method vanilla \
     --friction_constant 10 \
     --inverse_temperature 10 \
+	--learning_rate 3e-2 \
     --loss mean_squared \
     --max_exploration_steps 2 \
     --max_legs 10 \

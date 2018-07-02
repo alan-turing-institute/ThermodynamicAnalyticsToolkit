@@ -28,11 +28,11 @@ AT_CHECK([../../../TATiOptimizer \
     --batch_data_files ${abs_top_srcdir}/tests/regression/DataOptimizer/Options/pre/dataset-twoclusters.csv \
     --batch_size 10 \
 	--do_hessians 1 \
+	--learning_rate 1e-2 \
 	--max_steps 20 \
 	--optimizer GradientDescent \
 	--run_file run-do_hessians.csv \
 	--seed 426 \
-	--step_width 1e-2 \
 	--trajectory_file trajectory-do_hessians.csv
 ], 0, [stdout], [stderr])
 

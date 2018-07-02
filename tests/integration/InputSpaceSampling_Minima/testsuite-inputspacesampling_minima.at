@@ -37,6 +37,7 @@ AT_CHECK([../../../TATiExplorer \
 	--diffusion_map_method vanilla \
 	--friction_constant 1 \
 	--inverse_temperature 1 \
+	--learning_rate 3e-2 \
 	--max_exploration_steps 1 \
 	--max_legs 2 \
 	--max_steps 10 \

@@ -31,11 +31,11 @@ AT_CHECK([../../../TATiOptimizer \
 	--max_steps 1000 \
 	--in_memory_pipeline 0 \
 	--input_dimension 784 \
+	--learning_rate 0.1 \
 	--output_dimension 10 \
 	--optimizer GradientDescent \
 	--run_file run-mnist.csv \
-	--seed 426 \
-	--step_width 0.1
+	--seed 426
 ], 0, [stdout], [stderr])
 
 # and compare (exclude time_per_nth_step column)

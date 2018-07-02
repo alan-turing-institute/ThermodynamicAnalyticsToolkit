@@ -222,41 +222,46 @@ default parameters.
 
 Let us quickly go through each of the parameters:
 
-* batch_size
+* 'batch_size'
 +
 sets the subset size of the data set looked at per training step, if
 smaller than dimension, then we add stochasticity/noise to the training
 but for the advantage of smaller runtime.
-* max_steps
-+
-gives the amount of training steps to be performed.
-* optimizer
-+
-defines the method to use for training. Here, we use Gradient Descent
-(in case batch_size is smaller than dimension, then we actually have
-Stochastic Gradient Descent).
-* output_activation
-+
-defines the activation function of all output nodes, here it is linear.
-Other choices are: tanh, relu, relu6.
-* seed
-+
-sets the seed of the random number generator. We will still have full
-randomness but in a deterministic manner, i.e. calling the same
-procedure again will bring up the exactly same values.
-* step_width
+
+* 'learning_rate'
 +
 defines the scaling of the gradients in each training step, i.e. the
 learning rate. Values too large may miss the minimum, values too small
 need longer to reach it.
 
-For small networks the option ``do_hessians'' might be useful which will
+* 'max_steps''
++
+gives the amount of training steps to be performed.
+
+* optimizer
+
+defines the method to use for training. Here, we use Gradient Descent
+(in case batch_size is smaller than dimension, then we actually have
+Stochastic Gradient Descent).
+
+* 'output_activation'
++
+defines the activation function of all output nodes, here it is linear.
+Other choices are: tanh, relu, relu6.
+
+* 'seed'
++
+sets the seed of the random number generator. We will still have full
+randomness but in a deterministic manner, i.e. calling the same
+procedure again will bring up the exactly same values.
+
+For small networks the option `do_hessians` might be useful which will
 compute the hessian matrix at the end of the trajectory and use the
 largest eigenvalue to compute the optimal step width. This will add
 nodes to the underlying computational graph for computing the components
 of the hessian matrix.
 
-[NOTE]
+[CAUTION]
 ====
 The creation of the nodes (not speaking of their evaluation) is a O(N^2)
 process in the number of parameters of the network N. Hence, this should
@@ -299,12 +304,11 @@ After optimization we may continue sampling the network.
 include::python/sample.py[]
 ---------------
 
-Here, the _sampler_ setting takes the place of the `optimizer` before as
-it states which sampling scheme to use. At the moment the following are
-available: SGLD GeometricLangevinAlgorithm_1st,
-GeometricLangevinAlgorithm_2nd, BAOAB, and HamiltonianMonteCarlo. GLA
-2nd or BAOAB are currently recommended to use as they are second order
-schemes and provide higher accuracies and allow for larger step widths.
+Here, the 'sampler' setting takes the place of the 'optimizer' before as
+it states which sampling scheme to use. See <<reference.samplers>> for a
+complete list and their parameter names.
+
+NOTE: In the context of sampling we use 'step_width' in place of 'learning_rate'.
 
 Again, we produce three output arrays: run info, trajectory, and
 averages. Trajectories contains among others all parameter degrees of

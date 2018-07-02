@@ -7,6 +7,7 @@ FLAGS = model.setup_parameters(
     batch_data_files=["dataset-twoclusters.csv"],
     batch_size=500,
     diffusion_map_method="vanilla",
+    learning_rate=3e-2,
     max_steps=10,
     number_of_eigenvalues=1,
     optimizer="GradientDescent",

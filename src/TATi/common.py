@@ -223,6 +223,15 @@ def add_common_options_to_parser(parser):
     parser.add_argument('--version', '-V', action="store_true",
         help='Gives version information')
 
+def add_train_options_to_parser(parser):
+    """ Adding options common to train to argparse.
+
+    :param parser: argparse's parser object
+    """
+    # please adhere to alphabetical ordering
+    parser.add_argument('--learning_rate', type=float, default=0.03,
+        help='step width \Delta t to use during training/optimizing, e.g. 0.01')
+
 
 def add_sampler_options_to_parser(parser):
     """ Adding options common to sampler to argparse.
@@ -255,7 +264,7 @@ def add_sampler_options_to_parser(parser):
     parser.add_argument('--sigmaA', type=float, default=1.,
         help='Scale of noise in convex combination for CCaDL.')
     parser.add_argument('--step_width', type=float, default=0.03,
-        help='step width \Delta t to use, e.g. 0.01')
+        help='step width \Delta t to use during sampling, e.g. 0.01')
 
 
 def react_generally_to_options(FLAGS, unparsed):
