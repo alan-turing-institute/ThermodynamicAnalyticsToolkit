@@ -38,9 +38,13 @@ PYTHON_EXAMPLES = \
 	$(srcdir)/python/writing_data.py
 
 DEPENDENCIES = \
-	bibliography.adoc \
-	glossary.adoc \
-	userguide.adoc \
+	bibliography.txt \
+	glossary.txt \
+	introduction.txt \
+	quickstart.txt \
+	reference.txt \
+	tensorflow_flaws.txt \
+	userguide.txt \
 	$(PYTHON_EXAMPLES)
 
 EXTRA_DIST = \
@@ -53,14 +57,14 @@ versionfile = $(srcdir)/.git-version
 version = $(shell cat $(versionfile))
 revdate = $(shell date +%Y-%m-%d)
 
-thermodynamicanalyticstoolkit.xml: $(srcdir)/userguide.adoc $(DEPENDENCIES) $(srcdir)/.git-version
+thermodynamicanalyticstoolkit.xml: $(srcdir)/userguide.txt $(DEPENDENCIES) $(srcdir)/.git-version
 	$(ASCIIDOC) -b docbook -aimagesdir=$(srcdir) -arevdate=$(revdate) -aversion-label=@PACKAGE@ -arevnumber=$(version) -o $@ $<
 
-thermodynamicanalyticstoolkit.html: $(srcdir)/userguide.adoc $(DEPENDENCIES) $(srcdir)/.git-version
+thermodynamicanalyticstoolkit.html: $(srcdir)/userguide.txt $(DEPENDENCIES) $(srcdir)/.git-version
 	$(ASCIIDOC) -b html5 -a toc2 -a numbered -aimagesdir=$(srcdir) -arevdate=$(revdate) -aversion-label=@PACKAGE@ -arevnumber=$(version) -o $@ $<
 	
 thermodynamicanalyticstoolkit.pdf: thermodynamicanalyticstoolkit.xml
-	$(DBLATEX) $< $@
+	$(DBLATEX) --param=doc.lot.show=figure,table $< $@
 
 all: thermodynamicanalyticstoolkit.pdf thermodynamicanalyticstoolkit.html
 

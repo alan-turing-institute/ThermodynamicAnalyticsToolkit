@@ -304,7 +304,8 @@ License
 
 As long as no other license statement is given,
 ThermodynamicAnalyticsToolkit is free for use under the GNU Public
-License (GPL) Version 3 (see www.gnu.de/documents/gpl-3.0.de.html).
+License (GPL) Version 3 (see https://www.gnu.org/licenses/gpl-3.0.en.html for
+full text).
 
 [[introduction.disclaimer]]
 Disclaimer
@@ -328,8 +329,7 @@ ____
 Feedback
 ~~~~~~~~
 
-If you encounter any bugs, errors, or would like to submit feature
-request, please use the email address provided at the very beginning of
-this user guide. The author is especially thankful for any description
-of all related events prior to occurrence of the error and auxiliary
-files. Please mind sensible space restrictions of email attachments.
+If you encounter any bugs, errors, or would like to submit feature request,
+please write to mailto:{Email}. The author is especially thankful for any
+description of all related events prior to occurrence of the error and
+auxiliary files. Please mind sensible space restrictions of email attachments.

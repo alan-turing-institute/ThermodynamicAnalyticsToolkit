@@ -1,19 +1,15 @@
-[[_bibliography]]
+[[bibliography]]
+Bibliography
+------------
 
-Leimkuhler2012 B.Leimkuhler C.Matthews 34-56 10.1093/amrx/abs010 2013
+- [[Leimkuhler2012]] Leimkuhler, B., & Matthews, C. (2012). Rational Construction of Stochastic Numerical Methods for Molecular Sampling. Applied Mathematics Research EXpress, 2013(1), 34–56. http://doi.org/10.1093/amrx/abs010
 
-Shang2015 X.Shang Z.Zhu B.Leimkuhler A. J,Storkey 37-45
-10.1515/jip-2012-0071 2015 C. Cortes and N. D. Lawrence and D. D. Lee
-and M. Sugiyama and R. Garnett
+- [[Shang2015]] Shang, X., Zhu, Z., Leimkuhler, B., & Storkey, A. J. (2015). Covariance-Controlled Adaptive Langevin Thermostat for Large-Scale Bayesian Sampling. In C. Cortes and N. D. Lawrence and D. D. Lee and M. Sugiyama and R. Garnett (Ed.), Advances in Neural Information Processing Systems 28 (pp. 37–45). Curran Associates, Inc. http://doi.org/10.1515/jip-2012-0071
 
-Leimkuhler2015 B.Leimkuhler C.Matthews G.Stoltz 1-55
-http://dx.doi.org/10.1093/imanum/dru056 2015
+- [[Leimkuhler2015]] Leimkuhler, B., Matthews, C., & Stoltz, G. (2015). The computation of averages from equilibrium and nonequilibrium Langevin molecular dynamics. IMA Journal of Numerical Analysis, 1–55. http://doi.org/10.1093/imanum/dru056
 
-Duane1987 S.Duane A.D.Kennedy B.J.Pendleton D.Roweth 195 216-222
-http://dx.doi.org/10.1016/0370-2693(87)91197-X 1987
+- [[Duane1987]] Duane, S., Kennedy, A. D., Pendleton, B. J., & Roweth, D. (1987). Hybrid Monte Carlo. Physics Letters B, 195(2), 216–222. http://doi.org/10.1016/0370-2693(87)91197-X
 
-Welling2011 M.Welling Y.-W.Teh 681-688
-http://doi.acm.org/10.1515/jip-2012-0071 2011
+- [[Welling2011]] Welling, M., & Teh, Y.-W. (2011). Bayesian Learning via Stochastic Gradient Langevin Dynamics. Proceedings of the 28th International Conference on Machine Learning, 681–688. http://doi.org/10.1515/jip-2012-0071
 
-Matthews2018 C.Matthews J.Weare B.Leimkuhler 277-290
-http://doi.acm.org/10.1007/s11222-017-9730-1 2018
+- [[Matthews2018]] Matthews, C., Weare, J., & Leimkuhler, B. (2018). Ensemble preconditioning for Markov chain Monte Carlo simulation. Statistics and Computing, 28(2), 277–290. http://doi.org/10.1007/s11222-017-9730-1

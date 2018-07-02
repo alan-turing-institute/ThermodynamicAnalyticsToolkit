@@ -22,7 +22,9 @@ Python API. It brings advanced sampling methods (GLA1 and GLA2, BAOAB, HMC) to
 _neural network training_. Its *tools* allow to assess the loss manifold's
 topology that depends on the employed neural network and the dataset. Moreover,
 its *simulations* module makes applying present sampling Python codes in the
-context of neural networks easy and straight-forward.
+context of neural networks easy and straight-forward. The goal of the software
+is to enable the user to analyze and adapt the network employed for a specific
+classification problem to best fit her or his needs.
 
 TATi has received financial support from a seed funding grant and through a
 Rutherford fellowship from the Alan Turing Institute in London (R-SIS-003,
@@ -32,15 +34,21 @@ Space-Time Diffusion Maps, B. Leimkuhler PI).
 'Frederik Heber'
 ***************************************
 
-include::introduction.adoc[]
+include::introduction.txt[]
 
-include::quickstart.adoc[]
+include::quickstart.txt[]
 
-include::reference.adoc[]
+include::reference.txt[]
 
-include::tensorflow_flaws.adoc[]
+include::tensorflow_flaws.txt[]
+
+:numbered!:
 
 Acknowledgements
 ----------------
 
 Thanks to all users of the code!
+
+include::bibliography.txt[]
+
+include::glossary.txt[]
