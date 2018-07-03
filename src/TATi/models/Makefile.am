@@ -1,6 +1,5 @@
 TATI_models_PYTHON = \
     basetype.py \
-	mock_flags.py \
     model.py \
 	neuralnet_parameters.py \
 	neuralnetwork.py \

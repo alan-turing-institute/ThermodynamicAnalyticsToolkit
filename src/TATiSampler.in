@@ -9,43 +9,38 @@ import time
 import numpy as np
 import tensorflow as tf
 
-from TATi.common import add_common_options_to_parser, add_data_options_to_parser, \
-        add_model_options_to_parser, add_prior_options_to_parser, add_sampler_options_to_parser, \
-        get_filename_from_fullpath, \
-        react_to_common_options, react_to_sampler_options
 from TATi.models.model import model
+from TATi.options.commandlineoptions import CommandlineOptions
 from TATi.runtime.runtime import runtime
 
-FLAGS = None
-
+options = CommandlineOptions()
 
 def parse_parameters():
     """ Sets up the argument parser for parsing command line parameters into dictionary
 
     :return: dictionary with parameter names as keys, unrecognized parameters
     """
-    parser = argparse.ArgumentParser()
 
-    add_common_options_to_parser(parser)
-    add_data_options_to_parser(parser)
-    add_model_options_to_parser(parser)
-    add_prior_options_to_parser(parser)
-    add_sampler_options_to_parser(parser)
+    options.add_common_options_to_parser()
+    options.add_data_options_to_parser()
+    options.add_model_options_to_parser()
+    options.add_prior_options_to_parser()
+    options.add_sampler_options_to_parser()
 
-    return parser.parse_known_args()
+    return options.parse()
 
 
 def main(_):
-    rt = runtime(FLAGS)
+    rt = runtime(options)
 
     time_zero = time.process_time()
 
-    network_model = model(FLAGS)
+    network_model = model(options)
 
     time_init_network_zero = time.process_time()
 
     network_model.init_input_pipeline()
-    network_model.init_network(FLAGS.restore_model, setup="sample")
+    network_model.init_network(options.restore_model, setup="sample")
     network_model.reset_dataset()
 
     rt.set_init_network_time(time.process_time() - time_init_network_zero)
@@ -62,9 +57,9 @@ if __name__ == '__main__':
     # setup logging
     logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
 
-    FLAGS, unparsed = parse_parameters()
+    unparsed = parse_parameters()
 
-    react_to_common_options(FLAGS, unparsed)
-    react_to_sampler_options(FLAGS, unparsed)
+    options.react_to_common_options()
+    options.react_to_sampler_options()
 
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)

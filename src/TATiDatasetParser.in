@@ -19,7 +19,8 @@ import tensorflow as tf
 import collections
 
 from TATi.common import file_length, \
-    decode_csv_line, get_csv_defaults, react_generally_to_options
+    decode_csv_line, get_csv_defaults
+from TATi.options.commandlineoptions import react_generally_to_options
 
 def main(_):
 

@@ -78,6 +78,10 @@ class runtime(object):
                     dataset_dimension = self.FLAGS.dimension
                 except AttributeError:
                     dataset_dimension = self.FLAGS.batch_size
+                try:
+                    step_width = self.FLAGS.step_width
+                except AttributeError:
+                    step_width = self.FLAGS.learning_rate
                 add_values_command = add_values_format.format(
                     batch_size=self.FLAGS.batch_size,
                     dimension=dataset_dimension,
@@ -90,7 +94,7 @@ class runtime(object):
                     intra_ops_threads=intra_ops_threads,
                     output_dimension=self.FLAGS.output_dimension,
                     seed=self.FLAGS.seed,
-                    step_width=self.FLAGS.step_width,
+                    step_width=step_width,
                     init_time=self.time_init_network,
                     train_time=self.time_train_network,
                     overall_time=self.time_overall)

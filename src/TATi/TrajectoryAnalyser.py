@@ -10,7 +10,7 @@ import numpy as np
 import scipy.sparse as sps
 import sys
 
-from TATi.common import str2bool
+from TATi.options.commandlineoptions import str2bool
 import TATi.diffusion_maps.diffusionmap as dm
 
 try:

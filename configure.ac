@@ -39,6 +39,7 @@ AC_CONFIG_FILES(
 	src/TATi/exploration/Makefile
 	src/TATi/models/Makefile
 	src/TATi/models/input/Makefile
+	src/TATi/options/Makefile
 	src/TATi/runtime/Makefile
 	src/TATi/samplers/Makefile
 	tests/Makefile)

@@ -4,6 +4,7 @@ SUBDIRS = \
     exploration \
     models \
     models/input \
+    options \
     runtime \
     samplers
 

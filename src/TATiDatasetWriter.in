@@ -17,7 +17,7 @@ import logging
 import numpy as np
 
 from TATi.datasets.classificationdatasets import ClassificationDatasets as DatasetGenerator
-from TATi.common import react_generally_to_options
+from TATi.options.commandlineoptions import react_generally_to_options
 
 FLAGS = None
 

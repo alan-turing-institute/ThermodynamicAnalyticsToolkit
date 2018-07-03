@@ -13,14 +13,13 @@ import tensorflow as tf
 
 from TATi.datasets.classificationdatasets import ClassificationDatasets
 
-from TATi.common import add_common_options_to_parser, add_data_options_to_parser, \
-        add_model_options_to_parser, file_length, get_filename_from_fullpath, \
-        get_list_from_string, react_generally_to_options, setup_csv_file
+from TATi.common import file_length, \
+        get_list_from_string, setup_csv_file
 from TATi.models.model import model
 from TATi.models.neuralnet_parameters import neuralnet_parameters
-from TATi.version import get_package_version, get_build_hash
+from TATi.options.commandlineoptions import CommandlineOptions
 
-FLAGS = None
+options = CommandlineOptions()
 
 output_width=8
 output_precision=8
@@ -31,39 +30,37 @@ def parse_parameters():
 
     :return: dictionary with parameter names as keys, unrecognized parameters
     """
-    parser = argparse.ArgumentParser()
-    # please adhere to alphabetical ordering
+    options.add_data_options_to_parser()
+    options.add_model_options_to_parser()
 
-    add_data_options_to_parser(parser)
-    add_model_options_to_parser(parser)
-
-    parser.add_argument('--csv_file', type=str, default=None,
+    options._add_option('--csv_file', type=str, default=None,
         help='CSV file name to output sampled values to.')
-    parser.add_argument('--interval_biases', type=str, nargs='+', default=[],
+    options._add_option('--interval_biases', type=str, nargs='+', default=[],
         help='Min and max value for each bias.')
-    parser.add_argument('--interval_center_file', type=str, default=None,
+    options._add_option('--interval_center_file', type=str, default=None,
         help='CSV file with step column and one for each parameter, e.g. w4 and b3.')
-    parser.add_argument('--interval_center_step', type=int, default=None,
+    options._add_option('--interval_center_step', type=int, default=None,
         help='Giving the step to use of the interval_center_file, i.e. its row')
-    parser.add_argument('--exclude_parameters', type=str, nargs='+', default=[],
+    options._add_option('--exclude_parameters', type=str, nargs='+', default=[],
         help='List of biases, e.g. b0, and weights, e.g. w3, to exclude from sampling.')
-    parser.add_argument('--inter_ops_threads', type=int, default=1,
+    options._add_option('--inter_ops_threads', type=int, default=1,
         help='Sets the number of threads to split up ops in between. NOTE: This hurts reproducibility to some extent because of parallelism.')
-    parser.add_argument('--interval_weights', type=str, nargs='+', default=[],
+    options._add_option('--interval_weights', type=str, nargs='+', default=[],
         help='Min and max value for each weight.')
-    parser.add_argument('--intra_ops_threads', type=int, default=None,
+    options._add_option('--intra_ops_threads', type=int, default=None,
         help='Sets the number of threads to use within an op, i.e. Eigen threads for linear algebra routines.')
-    parser.add_argument('--restore_model', type=str, default=None,
+    options._add_option('--restore_model', type=str, default=None,
         help='Restore model (weights and biases) from a file.')
-    parser.add_argument('--samples_biases', type=int, default=None,
+    options._add_option('--samples_biases', type=int, default=None,
         help='Number of samples to take per bias interval')
-    parser.add_argument('--samples_weights', type=int, default=None,
+    options._add_option('--samples_weights', type=int, default=None,
         help='Number of samples to take per weight interval')
-    parser.add_argument('--verbose', '-v', action='count',
+    options._add_option('--verbose', '-v', action='count',
         help='Level of verbosity during compare')
-    parser.add_argument('--version', '-V', action="store_true",
+    options._add_option('--version', '-V', action="store_true",
         help='Gives version information')
-    return parser.parse_known_args()
+
+    return options.parse()
 
 
 def countStringInCollection(_string, _collection, _sess):
@@ -85,10 +82,14 @@ def getNumberFromParameter(key, name):
     return int(name[start:])
 
 def main(_):
-    FLAGS.number_walkers = 1
+    # add options which model requires
+    options.add("number_walkers")
+    options.number_walkers = 1
+    options.add("max_steps")
+    options.max_steps = 1
 
-    network_model = model(FLAGS)
-    network_model.init_network(FLAGS.restore_model, setup=None)
+    network_model = model(options)
+    network_model.init_network(options.restore_model, setup=None)
 
     nn_weights = network_model.weights[0]
     nn_biases = network_model.biases[0]
@@ -96,41 +97,41 @@ def main(_):
     weights_vals = nn_weights.create_flat_vector()
     biases_vals = nn_biases.create_flat_vector()
 
-    FLAGS.exclude_parameters = get_list_from_string(FLAGS.exclude_parameters)
+    options.exclude_parameters = get_list_from_string(options.exclude_parameters)
 
     # get parse_parameters_file length or number of sampled points
-    if FLAGS.parse_parameters_file is not None and \
-            ((FLAGS.parse_steps is None) or (len(FLAGS.parse_steps) == 0)):
-        FLAGS.max_steps = file_length(FLAGS.parse_parameters_file)-1
+    if options.parse_parameters_file is not None and \
+            ((options.parse_steps is None) or (len(options.parse_steps) == 0)):
+        options.max_steps = file_length(options.parse_parameters_file)-1
     else:
         weight_degrees = weights_vals.size
         bias_degrees = biases_vals.size
 
         excluded = 0
-        if (len(FLAGS.exclude_parameters) > 0):
+        if (len(options.exclude_parameters) > 0):
             # subtract every degree to exclude
-            for val in FLAGS.exclude_parameters:
+            for val in options.exclude_parameters:
                 if "b" in val and (getNumberFromParameter("b",val) < biases_vals.size):
                     weight_degrees -= 1
                     excluded += 1
-            for val in FLAGS.exclude_parameters:
+            for val in options.exclude_parameters:
                 if "w" in val and (getNumberFromParameter("w",val) < weights_vals.size):
                     bias_degrees -= 1
                     excluded += 1
 
         print("Excluded "+str(excluded)+" parameters from max_steps sampling calculation.")
 
-        FLAGS.max_steps = math.pow(FLAGS.samples_weights+1, weight_degrees)
-        FLAGS.max_steps *= math.pow(FLAGS.samples_biases+1, bias_degrees)
-        FLAGS.max_steps = math.ceil(FLAGS.max_steps)
+        options.max_steps = math.pow(options.samples_weights+1, weight_degrees)
+        options.max_steps *= math.pow(options.samples_biases+1, bias_degrees)
+        options.max_steps = math.ceil(options.max_steps)
 
 
-    print("There are "+str(FLAGS.max_steps)+" points to sample.")
-    network_model.reset_parameters(FLAGS)
+    print("There are "+str(options.max_steps)+" points to sample.")
+    network_model.reset_parameters(options)
 
     network_model.init_input_pipeline()
     network_model.reset_dataset()
-    print(FLAGS)
+    print(options)
 
     loss = network_model.nn[0].get_list_of_nodes(["loss"])
     acc = network_model.nn[0].get_list_of_nodes(["accuracy"])
@@ -143,8 +144,8 @@ def main(_):
     for i in range(biases_vals.size):
         header.append("b"+str(i))
 
-    if FLAGS.csv_file is not None:
-        csv_writer, csv_file = setup_csv_file(FLAGS.csv_file, header)
+    if options.csv_file is not None:
+        csv_writer, csv_file = setup_csv_file(options.csv_file, header)
 
     current_step = 0
 
@@ -165,7 +166,7 @@ def main(_):
         print("Loss and accuraccy at the given parameters w("+str(weights_eval)+" b("
               +str(biases_eval)+") is "+str(loss_eval[0])+" and "+str(acc_eval[0]))
 
-        if FLAGS.csv_file is not None:
+        if options.csv_file is not None:
             print_row = [current_step] \
                         + ['{:{width}.{precision}e}'.format(loss_eval[0], width=output_width,
                                                             precision=output_precision)] \
@@ -181,8 +182,8 @@ def main(_):
 
         return loss_eval[0]
 
-    if (FLAGS.parse_parameters_file is None) or \
-            FLAGS.parse_steps is not None and (len(FLAGS.parse_steps) == 1):
+    if (options.parse_parameters_file is None) or \
+            options.parse_steps is not None and (len(options.parse_steps) == 1):
 
         # evaluate weights and biases to obtain interval centers from parsed file
         weights_eval = nn_weights.evaluate(network_model.sess)
@@ -194,20 +195,20 @@ def main(_):
         weights_linspace = []
         weights_len_grid = []
         for i in range(weights_vals.size):
-            weights_interval_start = float(FLAGS.interval_weights[0])
-            weights_interval_end = float(FLAGS.interval_weights[1])
+            weights_interval_start = float(options.interval_weights[0])
+            weights_interval_end = float(options.interval_weights[1])
 
             keyname = "w"+str(i)
-            if keyname in FLAGS.exclude_parameters:
+            if keyname in options.exclude_parameters:
                 weights_interval_start = weights_eval[i]
                 weights_interval_end = weights_interval_start
 
             weights_interval_length = weights_interval_end - weights_interval_start
 
-            if (FLAGS.samples_weights > 0) and (weights_interval_length > 0.):
-                weights_linspace.append(np.arange(0,FLAGS.samples_weights+1)*weights_interval_length/float(
-                        FLAGS.samples_weights)+weights_interval_start)
-                weights_len_grid.append(FLAGS.samples_weights+1)
+            if (options.samples_weights > 0) and (weights_interval_length > 0.):
+                weights_linspace.append(np.arange(0,options.samples_weights+1)*weights_interval_length/float(
+                        options.samples_weights)+weights_interval_start)
+                weights_len_grid.append(options.samples_weights+1)
             else:
                 weights_linspace.append(np.arange(0,1)+(weights_interval_start+weights_interval_end)/2.)
                 weights_len_grid.append(1)
@@ -219,20 +220,20 @@ def main(_):
         biases_linspace = []
         biases_len_grid = []
         for i in range(biases_vals.size):
-            biases_interval_start = float(FLAGS.interval_biases[0])
-            biases_interval_end = float(FLAGS.interval_biases[1])
+            biases_interval_start = float(options.interval_biases[0])
+            biases_interval_end = float(options.interval_biases[1])
 
             keyname = "b"+str(i)
-            if keyname in FLAGS.exclude_parameters:
+            if keyname in options.exclude_parameters:
                 biases_interval_start = biases_eval[i]
                 biases_interval_end = biases_interval_start
 
             biases_interval_length = biases_interval_end - biases_interval_start
 
-            if (FLAGS.samples_biases > 0) and (biases_interval_length > 0.):
-                biases_linspace.append(np.arange(0,FLAGS.samples_biases+1)*biases_interval_length/float(
-                        FLAGS.samples_biases)+biases_interval_start)
-                biases_len_grid.append(FLAGS.samples_biases+1)
+            if (options.samples_biases > 0) and (biases_interval_length > 0.):
+                biases_linspace.append(np.arange(0,options.samples_biases+1)*biases_interval_length/float(
+                        options.samples_biases)+biases_interval_start)
+                biases_len_grid.append(options.samples_biases+1)
             else:
                 biases_linspace.append(np.arange(0,1)+(biases_interval_start+biases_interval_end)/2.)
                 biases_len_grid.append(1)
@@ -300,7 +301,7 @@ def main(_):
             next_index()
     else:
         # parse csv file
-        trajectories = pd.read_csv(FLAGS.parse_parameters_file, sep=',', header=0)
+        trajectories = pd.read_csv(options.parse_parameters_file, sep=',', header=0)
         for rownr in trajectories.index:
             weights_eval, biases_eval = network_model.assign_weights_and_biases_from_dataframe(
                 df_parameters=trajectories,
@@ -315,16 +316,14 @@ def main(_):
 
     network_model.finish()
 
-    if FLAGS.csv_file is not None:
+    if options.csv_file is not None:
         csv_file.close()
 
 if __name__ == '__main__':
     # setup logging
     logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
 
-    FLAGS, unparsed = parse_parameters()
-
-    react_generally_to_options(FLAGS, unparsed)
+    unparsed = parse_parameters()
 
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
 

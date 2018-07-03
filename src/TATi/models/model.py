@@ -1,17 +1,14 @@
-from builtins import staticmethod
-
 import logging
+import time
+from builtins import staticmethod
 from math import sqrt, exp
+
 import numpy as np
 import pandas as pd
-
-# scipy does not automatically import submodules
-from scipy import sparse
-from scipy.sparse import linalg
 import scipy.sparse as sps
-
 import tensorflow as tf
-import time
+# scipy does not automatically import submodules
+from scipy.sparse import linalg
 
 try:
     from tqdm import tqdm # allows progress bar
@@ -30,9 +27,9 @@ from TATi.common import create_input_layer, file_length, get_list_from_string, \
 from TATi.models.input.datasetpipeline import DatasetPipeline
 from TATi.models.input.inmemorypipeline import InMemoryPipeline
 from TATi.models.basetype import dds_basetype
-from TATi.models.mock_flags import MockFlags
 from TATi.models.neuralnet_parameters import neuralnet_parameters
 from TATi.models.neuralnetwork import NeuralNetwork
+from TATi.options.pythonoptions import PythonOptions
 
 
 class model:
@@ -52,7 +49,8 @@ class model:
 
         try:
             FLAGS.max_steps
-        except AttributeError:
+        except KeyError:
+            FLAGS.add("max_steps")
             FLAGS.max_steps = 1
 
         self.number_of_parameters = 0   # number of biases and weights
@@ -61,6 +59,7 @@ class model:
         if len(FLAGS.batch_data_files) > 0:
             self.input_dimension = self.FLAGS.input_dimension
             self.output_dimension = self.FLAGS.output_dimension
+            self.FLAGS.add("dimension")
             if FLAGS.batch_data_file_type == "csv":
                 self.FLAGS.dimension = sum([file_length(filename)
                                             for filename in FLAGS.batch_data_files]) \
@@ -180,6 +179,7 @@ class model:
         else:
             self.output_type = "onehot_multi_classification"
         assert( len(features) == len(labels) )
+        self.FLAGS.add("dimension")
         self.FLAGS.dimension = len(features)
         self._check_valid_batch_size()
         self.input_pipeline = InMemoryPipeline(dataset=[features, labels],
@@ -324,7 +324,7 @@ class model:
             trajectory_file=None,
             use_reweighting=False,
             verbose=0):
-            return MockFlags(
+            return PythonOptions(
                 averages_file=averages_file,
                 batch_data_files=batch_data_files,
                 batch_data_file_type=batch_data_file_type,
@@ -1218,25 +1218,22 @@ class model:
 
         # add sampler options only when they are present in parameter struct
         param_dict = {}
-        for key in ["covariance_blending", "friction_constant", "inverse_temperature", "sigma", "sigmaA"]:
-            if hasattr(self.FLAGS, key):
+        for key in ["covariance_blending", "friction_constant", "inverse_temperature",
+                    "learning_rate", "sigma", "sigmaA", "step_width"]:
+            try:
                 param_dict[key] = getattr(self.FLAGS, key)
+            except AttributeError:
+                pass
         # special case because key and attribute's name differ
-        if hasattr(self.FLAGS, "hamiltonian_dynamics_time"):
+        try:
             param_dict["next_eval_step"] = self.FLAGS.hamiltonian_dynamics_time
+        except AttributeError:
+            pass
 
         # add other options that are present in any case
         param_dict.update({
             "current_step": 0,
             "keep_probability": self.FLAGS.dropout if self.FLAGS.dropout is not None else 0.})
-        try:
-            param_dict.update({"learning_rate": self.FLAGS.learning_rate})
-        except AttributeError:
-            pass
-        try:
-            param_dict.update({"step_width": self.FLAGS.step_width})
-        except AttributeError:
-            pass
 
         # for each parameter check for placeholder and add to dict on its presence
         default_feed_dict = {}

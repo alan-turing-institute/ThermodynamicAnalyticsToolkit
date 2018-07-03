@@ -7,7 +7,7 @@ import argparse
 import logging
 import pandas as pd
 
-from TATi.common import react_generally_to_options
+from TATi.options.commandlineoptions import react_generally_to_options
 
 FLAGS = None
 

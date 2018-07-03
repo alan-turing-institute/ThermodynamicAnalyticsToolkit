@@ -12,16 +12,13 @@ import pandas as pd
 import tensorflow as tf
 
 
+from TATi.common import get_list_from_string, setup_csv_file
 from TATi.datasets.classificationdatasets import ClassificationDatasets
-
-from TATi.common import add_common_options_to_parser, add_data_options_to_parser, \
-        add_model_options_to_parser, get_filename_from_fullpath, get_list_from_string, \
-        react_generally_to_options, setup_csv_file
 from TATi.models.model import model
 from TATi.models.neuralnet_parameters import neuralnet_parameters
-from TATi.version import get_package_version, get_build_hash
+from TATi.options.commandlineoptions import CommandlineOptions
 
-FLAGS = None
+options = CommandlineOptions()
 
 output_width=8
 output_precision=8
@@ -32,48 +29,46 @@ def parse_parameters():
 
     :return: dictionary with parameter names as keys, unrecognized parameters
     """
-    parser = argparse.ArgumentParser()
-    # please adhere to alphabetical ordering
+    options.add_data_options_to_parser()
+    options.add_model_options_to_parser()
 
-    add_data_options_to_parser(parser)
-    add_model_options_to_parser(parser)
-
-    parser.add_argument('--csv_file', type=str, default=None,
+    options._add_option('--csv_file', type=str, default=None,
         help='CSV file name to output sampled values to.')
-    parser.add_argument('--inter_ops_threads', type=int, default=1,
+    options._add_option('--inter_ops_threads', type=int, default=1,
         help='Sets the number of threads to split up ops in between. NOTE: This hurts reproducibility to some extent because of parallelism.')
-    parser.add_argument('--interval_input', type=str, nargs='+', default=[],
+    options._add_option('--interval_input', type=str, nargs='+', default=[],
         help='Min and max value for each weight.')
-    parser.add_argument('--intra_ops_threads', type=int, default=None,
+    options._add_option('--intra_ops_threads', type=int, default=None,
         help='Sets the number of threads to use within an op, i.e. Eigen threads for linear algebra routines.')
-    parser.add_argument('--restore_model', type=str, default=None,
+    options._add_option('--restore_model', type=str, default=None,
         help='Restore model (input and biases) from a file.')
-    parser.add_argument('--samples_input', type=int, default=None,
+    options._add_option('--samples_input', type=int, default=None,
         help='Number of samples to take per weight interval')
-    parser.add_argument('--verbose', '-v', action='count',
+    options._add_option('--verbose', '-v', action='count',
         help='Level of verbosity during compare')
-    parser.add_argument('--version', '-V', action="store_true",
+    options._add_option('--version', '-V', action="store_true",
         help='Gives version information')
-    return parser.parse_known_args()
+
+    return options.parse()
 
 def main(_):
 
     # create the data set
-    input_dimension = FLAGS.input_dimension
+    input_dimension = options.input_dimension
 
     # sample space
-    input_interval_start = float(FLAGS.interval_input[0])
-    input_interval_end = float(FLAGS.interval_input[1])
+    input_interval_start = float(options.interval_input[0])
+    input_interval_end = float(options.interval_input[1])
     input_interval_length = input_interval_end - input_interval_start
 
-    input_linspace = np.arange(0,FLAGS.samples_input+1)*input_interval_length/float(
-            FLAGS.samples_input)+input_interval_start
+    input_linspace = np.arange(0,options.samples_input+1)*input_interval_length/float(
+            options.samples_input)+input_interval_start
     input_index_grid = np.zeros(input_dimension, dtype=int)
-    input_len_grid = FLAGS.samples_input+1
+    input_len_grid = options.samples_input+1
 
     input_vals = np.zeros(input_dimension, dtype=float)
 
-    input_total_vals = math.pow(FLAGS.samples_input+1, input_dimension)
+    input_total_vals = math.pow(options.samples_input+1, input_dimension)
 
 ### functions to iterate over input and biases
 
@@ -100,7 +95,7 @@ def main(_):
         header.append("x"+str(i+1))
     header.append("label")
 
-    csv_writer, csv_file = setup_csv_file(FLAGS.batch_data_files[0], header)
+    csv_writer, csv_file = setup_csv_file(options.batch_data_files[0], header)
     current_step = 0
     is_at_end = False
     while not is_at_end:
@@ -122,23 +117,25 @@ def main(_):
     csv_file.flush()
     csv_file.close()
 
-    FLAGS.batch_size=1
-    FLAGS.max_steps=input_total_vals
-    FLAGS.number_walkers=1
-    network_model = model(FLAGS)
+    options.batch_size=1
+    options.add("max_steps")
+    options.max_steps=input_total_vals
+    options.add("number_walkers")
+    options.number_walkers=1
+    network_model = model(options)
     network_model.init_input_pipeline()
-    network_model.init_network(FLAGS.restore_model, setup=None)
+    network_model.init_network(options.restore_model, setup=None)
     network_model.reset_dataset()
 
     y = network_model.nn[0].get_list_of_nodes(["y"])
     sess = network_model.sess
 
-    if FLAGS.csv_file is not None:
+    if options.csv_file is not None:
         header = ["i"]
         for i in range(input_dimension):
             header.append("x"+str(i+1))
         header.append("label")
-        csv_writer, csv_file = setup_csv_file(FLAGS.csv_file, header)
+        csv_writer, csv_file = setup_csv_file(options.csv_file, header)
 
     ## function to evaluate the loss
 
@@ -158,7 +155,7 @@ def main(_):
             network_model.nn[0].placeholder_nodes["y"],
             feed_dict=feed_dict)
 
-        if FLAGS.csv_file is not None:
+        if options.csv_file is not None:
             print_row = [current_step] \
                         + ['{:{width}.{precision}e}'.format(feature, width=output_width,
                                                             precision=output_precision)
@@ -168,12 +165,12 @@ def main(_):
                                                             for label in np.asarray(label[0])]
             csv_writer.writerow(print_row)
 
-    if FLAGS.parse_parameters_file is None:
+    if options.parse_parameters_file is None:
         print("Need parameters file that contains weights and biases per step.")
         sys.exit(255)
     else:
-        for step in FLAGS.parse_steps:
-            network_model.assign_weights_and_biases_from_file(FLAGS.parse_parameters_file, step, do_check=True)
+        for step in options.parse_steps:
+            network_model.assign_weights_and_biases_from_file(options.parse_parameters_file, step, do_check=True)
 
             current_step = 0
             while True:
@@ -186,16 +183,14 @@ def main(_):
 
     network_model.finish()
 
-    if FLAGS.csv_file is not None:
+    if options.csv_file is not None:
         csv_file.close()
 
 if __name__ == '__main__':
     # setup logging
     logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
 
-    FLAGS, unparsed = parse_parameters()
-
-    react_generally_to_options(FLAGS, unparsed)
+    unparsed = parse_parameters()
 
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
 
