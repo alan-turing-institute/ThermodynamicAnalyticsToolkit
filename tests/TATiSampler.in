@@ -4,7 +4,7 @@
 
 . ../../atlocal
 
-"${AUTOTEST_PATH}/TATiSampler" \
+"${AUTOTEST_PATH}/TATi/tools/TATiSampler" \
 ${1+"$@"}
 
 status=$?

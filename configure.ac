@@ -42,6 +42,7 @@ AC_CONFIG_FILES(
 	src/TATi/options/Makefile
 	src/TATi/runtime/Makefile
 	src/TATi/samplers/Makefile
+	src/TATi/tools/Makefile
 	tests/Makefile)
 AC_CONFIG_TESTDIR([tests/integration])
 AC_CONFIG_FILES(

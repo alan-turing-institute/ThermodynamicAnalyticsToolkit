@@ -6,7 +6,8 @@ SUBDIRS = \
     models/input \
     options \
     runtime \
-    samplers
+    samplers \
+    tools
 
 TATI_PYTHON = \
 	common.py \

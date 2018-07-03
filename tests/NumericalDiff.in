@@ -4,7 +4,7 @@
 
 . ../../atlocal
 
-"${AUTOTEST_PATH}/NumericalDiff" \
+"${AUTOTEST_PATH}/TATi/tools/NumericalDiff" \
 ${1+"$@"}
 
 status=$?
