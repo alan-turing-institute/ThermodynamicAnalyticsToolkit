@@ -63,7 +63,8 @@ m4_include([DataDrivenSampler/FixParameter/testsuite-datadrivensampler-fix_param
 m4_include([DataDrivenSampler/Prior/testsuite-datadrivensampler-prior.at])
 
 # tests on pipelines
-m4_include([DataDrivenSampler/Pipelines/testsuite-datadrivensampler-pipelines.at])
+m4_include([DataDrivenSampler/Pipelines/testsuite-datadrivensampler-pipelines-csv.at])
+m4_include([DataDrivenSampler/Pipelines/testsuite-datadrivensampler-pipelines-tfrecord.at])
 
 # tests on averages
 m4_include([DataDrivenSampler/Averages/testsuite-datadrivensampler-averages.at])

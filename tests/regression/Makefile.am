@@ -30,7 +30,8 @@ TESTSCRIPTS += \
 	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-sql_db.at \
 	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-step_width.at \
 	$(srcdir)/DataDrivenSampler/Options/testsuite-datadrivensampler-options-summaries_path.at \
-	$(srcdir)/DataDrivenSampler/Pipelines/testsuite-datadrivensampler-pipelines.at \
+	$(srcdir)/DataDrivenSampler/Pipelines/testsuite-datadrivensampler-pipelines-csv.at \
+	$(srcdir)/DataDrivenSampler/Pipelines/testsuite-datadrivensampler-pipelines-tfrecord.at \
 	$(srcdir)/DataDrivenSampler/Prior/testsuite-datadrivensampler-prior.at \
 	$(srcdir)/DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-lower_boundary.at \
 	$(srcdir)/DataDrivenSampler/Prior/testsuite-datadrivensampler-prior-lower_upper_boundary.at \

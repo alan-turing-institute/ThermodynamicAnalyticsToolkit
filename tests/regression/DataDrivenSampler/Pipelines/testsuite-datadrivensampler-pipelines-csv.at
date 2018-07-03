@@ -1,0 +1,108 @@
+#
+#    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
+#    Copyright (C) 2018 The University of Edinburgh
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### test on different input pipelines
+
+AT_SETUP([Sampler - CSV in-memory vs. file pipeline])
+AT_KEYWORDS([tatisampler csv file_pipeline inmemory_pipeline])
+
+# dataset prepared as follows:
+# TATiDatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_files dataset-twoclusters.csv
+
+AT_CHECK([../../../TATiSampler \
+    --batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Pipelines/pre/dataset-twoclusters.csv \
+	--batch_size 20 \
+	--friction_constant 1 \
+    --in_memory_pipeline 1 \
+	--inverse_temperature 1 \
+	--max_steps 10 \
+	--run_file run-inmemory.csv \
+	--sampler GeometricLangevinAlgorithm_1stOrder \
+	--seed 426 \
+	--step_width 1e-1 \
+	--trajectory_file trajectory-inmemory.csv
+], 0, [stdout], [stderr])
+
+
+AT_CHECK([../../../TATiSampler \
+    --batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Pipelines/pre/dataset-twoclusters.csv \
+	--batch_size 20 \
+	--friction_constant 1 \
+    --in_memory_pipeline 0 \
+	--inverse_temperature 1 \
+	--max_steps 10 \
+	--run_file run-file.csv \
+	--sampler GeometricLangevinAlgorithm_1stOrder \
+	--seed 426 \
+	--step_width 1e-1 \
+	--trajectory_file trajectory-file.csv
+], 0, [stdout], [stderr])
+
+AT_CHECK([../../../NumericalDiff \
+    --column_drop time_per_nth_step -- \
+    run-inmemory.csv run-file.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff \
+    trajectory-inmemory.csv trajectory-file.csv], 0, [ignore], [ignore])
+
+AT_CLEANUP
+
+AT_SETUP([Sampler - multiple CSV in-memory vs. file pipeline])
+AT_KEYWORDS([tatisampler csv file_pipeline inmemory_pipeline])
+
+# dataset prepared as follows:
+# TATiDatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_files dataset-twoclusters_1.csv
+# TATiDatasetWriter --data_type 2 --dimension 20 --seed 427 --noise 0. --train_test_ratio 0 --test_data_files dataset-twoclusters_2.csv
+
+AT_CHECK([../../../TATiSampler \
+    --batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Pipelines/pre/dataset-twoclusters_1.csv \
+        ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Pipelines/pre/dataset-twoclusters_2.csv \
+	--batch_size 20 \
+	--friction_constant 1 \
+    --in_memory_pipeline 1 \
+	--inverse_temperature 1 \
+	--max_steps 10 \
+	--run_file run-inmemory.csv \
+	--sampler GeometricLangevinAlgorithm_1stOrder \
+	--seed 426 \
+	--step_width 1e-1 \
+	--trajectory_file trajectory-inmemory.csv
+], 0, [stdout], [stderr])
+
+
+AT_CHECK([../../../TATiSampler \
+    --batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Pipelines/pre/dataset-twoclusters_1.csv \
+        ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Pipelines/pre/dataset-twoclusters_2.csv \
+	--batch_size 20 \
+	--friction_constant 1 \
+    --in_memory_pipeline 0 \
+	--inverse_temperature 1 \
+	--max_steps 10 \
+	--run_file run-file.csv \
+	--sampler GeometricLangevinAlgorithm_1stOrder \
+	--seed 426 \
+	--step_width 1e-1 \
+	--trajectory_file trajectory-file.csv
+], 0, [stdout], [stderr])
+
+AT_CHECK([../../../NumericalDiff \
+    --column_drop time_per_nth_step -- \
+    run-inmemory.csv run-file.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff \
+    trajectory-inmemory.csv trajectory-file.csv], 0, [ignore], [ignore])
+
+AT_CLEANUP
+

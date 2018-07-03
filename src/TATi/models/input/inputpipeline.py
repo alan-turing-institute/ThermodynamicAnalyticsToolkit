@@ -6,6 +6,8 @@ class InputPipeline(object):
 
     """
 
+    NUM_PARALLEL_CALLS = 10 # number of parallel threads for input pipeline parsing
+
     def __init__(self, filenames,
                  batch_size, dimension, max_steps,
                  input_dimension, output_dimension,

@@ -1,0 +1,67 @@
+#
+#    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
+#    Copyright (C) 2018 The University of Edinburgh
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### test on different input pipelines
+
+AT_SETUP([Sampler - TFRecord in-memory vs. file pipeline])
+AT_KEYWORDS([tatisampler tfrecord file_pipeline inmemory_pipeline])
+
+# dataset prepared is MNIST.
+
+AT_CHECK([../../../TATiSampler \
+    --batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Pipelines/pre/dataset-mnist.tfrecords \
+    --batch_data_file_type tfrecord \
+	--batch_size 20 \
+	--friction_constant 1 \
+    --in_memory_pipeline 1 \
+	--input_dimension 784 \
+	--inverse_temperature 1 \
+    --loss softmax_cross_entropy \
+	--max_steps 10 \
+	--output_activation linear \
+	--output_dimension 10 \
+	--run_file run-inmemory.csv \
+	--sampler GeometricLangevinAlgorithm_1stOrder \
+	--seed 426 \
+	--step_width 1e-1
+], 0, [stdout], [stderr])
+
+AT_CHECK([../../../TATiSampler \
+    --batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Pipelines/pre/dataset-mnist.tfrecords \
+    --batch_data_file_type tfrecord \
+	--batch_size 20 \
+	--friction_constant 1 \
+    --in_memory_pipeline 0 \
+	--input_dimension 784 \
+	--inverse_temperature 1 \
+    --loss softmax_cross_entropy \
+	--max_steps 10 \
+	--output_activation linear \
+	--output_dimension 10 \
+	--run_file run-file.csv \
+	--sampler GeometricLangevinAlgorithm_1stOrder \
+	--seed 426 \
+	--step_width 1e-1 \
+	--trajectory_file trajectory.csv
+], 0, [stdout], [stderr])
+
+AT_CHECK([../../../NumericalDiff \
+    --column_drop time_per_nth_step -- \
+    run-inmemory.csv run-file.csv], 0, [ignore], [ignore])
+
+AT_CLEANUP
+

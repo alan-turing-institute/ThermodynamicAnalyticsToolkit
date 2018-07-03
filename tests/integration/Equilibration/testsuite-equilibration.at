@@ -27,7 +27,7 @@ AT_CHECK([../../../TATiDatasetWriter \
 	--dimension 20 \
 	--seed 426 \
 	--train_test_ratio 0 \
-	--test_data_file dataset-twocluster.csv
+	--test_data_files dataset-twocluster.csv
 ], 0, [stdout], [stderr])
 
 # run 1: Optimize network

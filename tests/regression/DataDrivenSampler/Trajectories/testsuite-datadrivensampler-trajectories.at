@@ -21,7 +21,7 @@ AT_SETUP([Sampler Trajectories - Simple])
 AT_KEYWORDS([tatisampler trajectory])
 
 # dataset prepared as follows:
-# TATiDatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+# TATiDatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_files dataset-twoclusters.csv
 
 # run 1
 AT_CHECK([../../../TATiSampler \
@@ -45,7 +45,7 @@ AT_SETUP([Trajectories - Single hidden layer])
 AT_KEYWORDS([tatisampler trajectory hidden_dimension])
 
 # dataset prepared as follows:
-# TATiDatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+# TATiDatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_files dataset-twoclusters.csv
 
 # run 1
 AT_CHECK([../../../TATiSampler \
@@ -71,7 +71,7 @@ AT_SETUP([Trajectories - Few hidden layers])
 AT_KEYWORDS([tatisampler trajectory hidden_dimension])
 
 # dataset prepared as follows:
-# TATiDatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+# TATiDatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_files dataset-twoclusters.csv
 
 # run 1
 AT_CHECK([../../../TATiSampler \

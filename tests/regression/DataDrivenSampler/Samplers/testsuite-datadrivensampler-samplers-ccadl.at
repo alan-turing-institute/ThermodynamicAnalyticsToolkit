@@ -19,9 +19,10 @@
 
 AT_SETUP([Samplers - CCAdL])
 AT_KEYWORDS([samplers ddsampler ccadl])
+AT_SKIP_IF([/bin/true])
 
 # dataset prepared as follows:
-# TATiDatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_file dataset-twoclusters.csv
+# TATiDatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_files dataset-twoclusters.csv
 
 # run 1
 AT_CHECK([../../../TATiSampler \

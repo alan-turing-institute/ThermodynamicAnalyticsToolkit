@@ -37,29 +37,35 @@ class DatasetPipeline(InputPipeline):
                 input_dimension=input_dimension,
                 output_dimension=output_dimension)
             logging.debug(defaults)
-            self.dataset = self.dataset.flat_map(
+            self.dataset = self.dataset.interleave(
                 lambda filename: (
                     tf.data.TextLineDataset(filename)
                         .skip(1)
-                        .filter(lambda line: tf.not_equal(tf.substr(line, 0, 1), '#'))
-                        .cache()))
-            self.dataset = self.dataset.map(functools.partial(decode_csv_line, defaults=defaults,
-                                                              input_dimension=input_dimension,
-                                                              output_dimension=output_dimension))
+                        .filter(lambda line: tf.not_equal(tf.substr(line, 0, 1), '#'))),
+                cycle_length=self.NUM_PARALLEL_CALLS, block_length=16)
+            self.dataset = self.dataset.map(
+                functools.partial(decode_csv_line, defaults=defaults,
+                                  input_dimension=input_dimension,
+                                  output_dimension=output_dimension),
+                num_parallel_calls=self.NUM_PARALLEL_CALLS).cache()
         elif filetype == "tfrecord":
-            self.dataset = self.dataset.flat_map(
-                lambda filename: (tf.data.TFRecordDataset(filename)))
+            self.dataset = self.dataset.interleave(
+                lambda filename: (tf.data.TFRecordDataset(filename)),
+                cycle_length=self.NUM_PARALLEL_CALLS, block_length=16)
             # TODO: this is very specific at the moment
-            self.dataset = self.dataset.map(functools.partial(read_and_decode_image,
-                                                              num_pixels=input_dimension,
-                                                              num_classes=output_dimension))
+            self.dataset = self.dataset.map(
+                functools.partial(read_and_decode_image,
+                                  num_pixels=input_dimension,
+                                  num_classes=output_dimension),
+                num_parallel_calls=self.NUM_PARALLEL_CALLS).cache()
         else:
             logging.critical("Unknown filetype")
             sys.exit(255)
         if shuffle:
-            self.dataset = self.dataset.shuffle(buffer_size=10*batch_size, seed=seed)
+            self.dataset = self.dataset.shuffle(buffer_size=100*batch_size, seed=seed)
         self.dataset = self.dataset.batch(batch_size)
         self.dataset = self.dataset.repeat(ceil(max_steps*batch_size/dimension))
+        self.dataset = self.dataset.prefetch(100 * batch_size)
         #logging.info(self.dataset.output_shapes)
         #logging.info(self.dataset.output_types)
 
