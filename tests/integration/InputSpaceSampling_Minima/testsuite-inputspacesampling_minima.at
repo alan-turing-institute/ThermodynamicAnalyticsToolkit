@@ -62,8 +62,9 @@ AT_CHECK([../../../TATiInputSpaceSampler \
     --seed 426
 ], 0, [stdout], [stderr])
 
-# compare
+# compare using 5e-7 threshold
 AT_CHECK([../../../NumericalDiff \
+    --general_threshold 5e-7 relative \
     -- inputspace_step28.csv ${abs_top_srcdir}/tests/integration/InputSpaceSampling_Minima/post/inputspace_step28.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP

@@ -19,6 +19,8 @@
 
 AT_SETUP([Optimizer Datasets - two spirals])
 AT_KEYWORDS([twospirals tatioptimizer])
+# tf1.5 sees irregularities with this specific test and is therefore not recommended
+AT_SKIP_IF([../../../check_package_version tensorflow 1.5.0])
 
 # dataset prepared as follows:
 # TATiDatasetWriter --data_type 3 --dimension 10 --seed 426 --noise 0. --train_test_ratio 0 --test_data_files dataset-twoclusters.csv

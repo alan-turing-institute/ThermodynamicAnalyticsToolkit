@@ -23,6 +23,8 @@
 
 AT_SETUP([Optimizer Datasets - MNIST])
 AT_KEYWORDS([mnist tatioptimizer])
+# tf1.5 sees irregularities with this specific test and is therefore not recommended
+AT_SKIP_IF([../../../check_package_version tensorflow 1.5.0])
 
 AT_CHECK([../../../TATiOptimizer \
     --batch_data_files ${abs_top_srcdir}/tests/regression/DataOptimizer/Datasets/pre/dataset-mnist.tfrecords \
