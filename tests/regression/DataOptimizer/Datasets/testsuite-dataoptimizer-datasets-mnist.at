@@ -27,15 +27,17 @@ AT_KEYWORDS([mnist tatioptimizer])
 AT_CHECK([../../../TATiOptimizer \
     --batch_data_files ${abs_top_srcdir}/tests/regression/DataOptimizer/Datasets/pre/dataset-mnist.tfrecords \
     --batch_data_file_type tfrecord \
-    --batch_size 50 \
-	--max_steps 1000 \
+    --batch_size 100 \
+    --loss softmax_cross_entropy \
+	--max_steps 5000 \
 	--in_memory_pipeline 0 \
 	--input_dimension 784 \
+	--output_activation linear \
 	--output_dimension 10 \
 	--optimizer GradientDescent \
 	--run_file run-mnist.csv \
 	--seed 426 \
-	--step_width 0.1
+	--step_width 0.05
 ], 0, [stdout], [stderr])
 
 # and compare (exclude time_per_nth_step column)
