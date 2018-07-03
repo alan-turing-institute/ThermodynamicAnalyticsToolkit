@@ -29,24 +29,24 @@ DIR=`pwd`
 AT_CHECK([../../../TATiOptimizer \
     --batch_data_files ${abs_top_srcdir}/tests/regression/DataOptimizer/SavingRestoring/pre/dataset-twoclusters.csv \
     --batch_size 20 \
+	--learning_rate 1e-1 \
 	--max_steps 10 \
 	--optimizer GradientDescent \
 	--run_file run-save_model.csv \
 	--save_model ${DIR}/model.ckpt \
-	--seed 426 \
-	--step_width 1e-1
+	--seed 426
 ], 0, [stdout], [stderr])
 
 # run 2
 AT_CHECK([../../../TATiOptimizer \
     --batch_data_files ${abs_top_srcdir}/tests/regression/DataOptimizer/SavingRestoring/pre/dataset-twoclusters.csv \
     --batch_size 20 \
+	--learning_rate 1e-1 \
 	--max_steps 10 \
 	--optimizer GradientDescent\
 	--restore_model ${DIR}/model.ckpt \
 	--run_file run-restore_model.csv \
-	--seed 426 \
-	--step_width 1e-1
+	--seed 426
 ], 0, [stdout], [stderr])
 
 AT_CHECK([grep "11," run-restore_model.csv], 0, [ignore], [ignore])

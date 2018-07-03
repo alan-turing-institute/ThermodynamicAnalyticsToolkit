@@ -27,6 +27,7 @@ class MockFlags:
                  inter_ops_threads=1,
                  intra_ops_threads=None,
                  inverse_temperature=1.,
+                 learning_rate=0.03,
                  loss="mean_squared",
                  max_steps=1000,
                  number_of_eigenvalues=4,
@@ -80,6 +81,7 @@ class MockFlags:
         :param inter_ops_threads: size of thread pool used for independent ops
         :param intra_ops_threads: size of thread pool used for parallelizing an op
         :param inverse_temperature: Inverse temperature that scales the gradients
+        :param learning_rate: learning rate used during optimization, see also `step_width`
         :param loss: Set the loss to be measured during sampling, e.g. mean_squared, log_loss, ...
         :param max_steps: Number of steps to run sampleer.
         :param number_of_eigenvalues:
@@ -130,6 +132,7 @@ class MockFlags:
         self.inter_ops_threads = inter_ops_threads
         self.intra_ops_threads = intra_ops_threads
         self.inverse_temperature = inverse_temperature
+        self.learning_rate = learning_rate
         self.loss = loss
         self.max_steps = max_steps
         self.number_of_eigenvalues = number_of_eigenvalues

@@ -297,6 +297,7 @@ class model:
             inter_ops_threads=1,
             intra_ops_threads=None,
             inverse_temperature=1.,
+            learning_rate=0.03,
             loss="mean_squared",
             max_steps=1000,
             number_of_eigenvalues=4,
@@ -345,6 +346,7 @@ class model:
                 inter_ops_threads=inter_ops_threads,
                 intra_ops_threads=intra_ops_threads,
                 inverse_temperature=inverse_temperature,
+                learning_rate=learning_rate,
                 loss=loss,
                 max_steps=max_steps,
                 number_of_eigenvalues=number_of_eigenvalues,
@@ -1226,10 +1228,15 @@ class model:
         # add other options that are present in any case
         param_dict.update({
             "current_step": 0,
-            "keep_probability": self.FLAGS.dropout if self.FLAGS.dropout is not None else 0.,
-            "learning_rate": self.FLAGS.step_width,
-            "step_width": self.FLAGS.step_width,
-        })
+            "keep_probability": self.FLAGS.dropout if self.FLAGS.dropout is not None else 0.})
+        try:
+            param_dict.update({"learning_rate": self.FLAGS.learning_rate})
+        except AttributeError:
+            pass
+        try:
+            param_dict.update({"step_width": self.FLAGS.step_width})
+        except AttributeError:
+            pass
 
         # for each parameter check for placeholder and add to dict on its presence
         default_feed_dict = {}
@@ -1442,7 +1449,7 @@ class model:
         feed_dict = {
             self.xinput: features,
             placeholder_nodes["y_"]: labels,
-            placeholder_nodes["learning_rate"]: self.FLAGS.step_width
+            placeholder_nodes["learning_rate"]: self.FLAGS.learning_rate
         }
         if self.FLAGS.dropout is not None:
             feed_dict.update({placeholder_nodes["keep_prob"] : self.FLAGS.dropout})

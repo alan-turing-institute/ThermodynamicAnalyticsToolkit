@@ -5,6 +5,7 @@ import numpy as np
 FLAGS = model.setup_parameters(
     batch_data_files=["dataset-twoclusters.csv"],
     batch_size=500,
+    learning_rate=3e-2,
     max_steps=100,
     optimizer="GradientDescent",
     output_activation="linear",

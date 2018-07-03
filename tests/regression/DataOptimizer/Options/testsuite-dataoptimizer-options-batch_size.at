@@ -28,11 +28,11 @@ AT_CHECK([../../../TATiOptimizer \
     --batch_data_files ${abs_top_srcdir}/tests/regression/DataOptimizer/Options/pre/dataset-twoclusters.csv \
     --batch_size 10 \
 	--every_nth 1 \
+	--learning_rate 1e-2 \
 	--max_steps 20 \
 	--optimizer GradientDescent \
 	--run_file run-batch_size_10.csv \
-	--seed 426 \
-	--step_width 1e-2
+	--seed 426
 ], 0, [stdout], [stderr])
 
 # run 2: batch size of 5
@@ -40,11 +40,11 @@ AT_CHECK([../../../TATiOptimizer \
     --batch_data_files ${abs_top_srcdir}/tests/regression/DataOptimizer/Options/pre/dataset-twoclusters.csv \
     --batch_size 5 \
 	--every_nth 1 \
+	--learning_rate 1e-2 \
 	--max_steps 20 \
 	--optimizer GradientDescent \
 	--run_file run-batch_size_5.csv \
-	--seed 426 \
-	--step_width 1e-2
+	--seed 426
 ], 0, [stdout], [stderr])
 
 # check that we obtain different results

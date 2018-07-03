@@ -28,10 +28,10 @@ AT_CHECK([../../../TATiOptimizer \
 	--averages_file averages-twoclusters.csv \
     --batch_data_files ${abs_top_srcdir}/tests/regression/DataOptimizer/Averages/pre/dataset-twoclusters.csv \
 	--batch_size 20 \
+	--learning_rate 1e-1 \
 	--max_steps 10 \
 	--optimizer GradientDescent \
-	--seed 426 \
-	--step_width 1e-1
+	--seed 426
 ], 0, [stdout], [stderr])
 
 # and compare

@@ -28,11 +28,11 @@ AT_CHECK([../../../TATiOptimizer \
     --batch_data_files ${abs_top_srcdir}/tests/regression/DataOptimizer/Reproducibility/pre/dataset-twoclusters.csv \
     --batch_size 10 \
 	--hidden_dimension 2 \
+	--learning_rate 0.03 \
 	--max_steps 20 \
 	--optimizer GradientDescent \
 	--run_file run-base.csv \
-	--seed 426 \
-	--step_width 0.03
+	--seed 426
 ], 0, [stdout], [stderr])
 
 # run 2: same seed
@@ -40,11 +40,11 @@ AT_CHECK([../../../TATiOptimizer \
     --batch_data_files ${abs_top_srcdir}/tests/regression/DataOptimizer/Reproducibility/pre/dataset-twoclusters.csv \
     --batch_size 10 \
 	--hidden_dimension 2 \
+	--learning_rate 0.03 \
 	--max_steps 20 \
 	--optimizer GradientDescent \
 	--run_file run-sameseed.csv \
-	--seed 426 \
-	--step_width 0.03
+	--seed 426
 ], 0, [stdout], [stderr])
 
 
@@ -53,11 +53,11 @@ AT_CHECK([../../../TATiOptimizer \
     --batch_data_files ${abs_top_srcdir}/tests/regression/DataOptimizer/Reproducibility/pre/dataset-twoclusters.csv \
     --batch_size 10 \
 	--hidden_dimension 2 \
+	--learning_rate 0.03 \
 	--max_steps 20 \
 	--optimizer GradientDescent \
 	--run_file run-otherseed.csv \
-	--seed 427 \
-	--step_width 0.03
+	--seed 427
 ], 0, [stdout], [stderr])
 
 # now compare all (exclude time_per_nth_step column)

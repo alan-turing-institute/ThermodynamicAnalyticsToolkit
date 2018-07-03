@@ -26,13 +26,13 @@ AT_KEYWORDS([tatioptimizer prior tethering])
 AT_CHECK([../../../TATiOptimizer \
     --batch_data_files ${abs_top_srcdir}/tests/regression/DataOptimizer/Prior/pre/dataset-twoclusters.csv \
 	--batch_size 20 \
+	--learning_rate 1e-1 \
 	--max_steps 20 \
 	--prior_factor 10.0 \
 	--prior_lower_boundary 0. \
 	--prior_upper_boundary 0. \
 	--optimizer GradientDescent \
 	--seed 426 \
-	--step_width 1e-1 \
 	--trajectory_file trajectory.csv
 ], 0, [stdout], [stderr])
 

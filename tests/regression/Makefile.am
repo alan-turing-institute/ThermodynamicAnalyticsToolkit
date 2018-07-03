@@ -67,9 +67,9 @@ TESTSCRIPTS += \
 	$(srcdir)/DataOptimizer/Options/testsuite-dataoptimizer-options-batch_size.at \
 	$(srcdir)/DataOptimizer/Options/testsuite-dataoptimizer-options-do_hessians.at \
 	$(srcdir)/DataOptimizer/Options/testsuite-dataoptimizer-options-every_nth.at \
+	$(srcdir)/DataOptimizer/Options/testsuite-dataoptimizer-options-learning_rate.at \
 	$(srcdir)/DataOptimizer/Options/testsuite-dataoptimizer-options-progress.at \
 	$(srcdir)/DataOptimizer/Options/testsuite-dataoptimizer-options-sql_db.at \
-	$(srcdir)/DataOptimizer/Options/testsuite-dataoptimizer-options-step_width.at \
 	$(srcdir)/DataOptimizer/Options/testsuite-dataoptimizer-options-summaries_path.at \
 	$(srcdir)/DataOptimizer/Prior/testsuite-dataoptimizer-prior.at \
 	$(srcdir)/DataOptimizer/Prior/testsuite-dataoptimizer-prior-lower_upper_boundary.at \

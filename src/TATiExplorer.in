@@ -12,7 +12,8 @@ import time
 import scipy.spatial.distance as scidist
 
 from TATi.common import add_common_options_to_parser, add_data_options_to_parser, \
-        add_model_options_to_parser, add_prior_options_to_parser, add_sampler_options_to_parser, \
+        add_model_options_to_parser, add_prior_options_to_parser, \
+        add_sampler_options_to_parser, add_train_options_to_parser, \
         get_filename_from_fullpath, get_trajectory_header,\
         react_to_common_options, react_to_sampler_options, \
         setup_csv_file, str2bool
@@ -47,6 +48,7 @@ def parse_parameters():
     add_model_options_to_parser(parser)
     add_prior_options_to_parser(parser)
     add_sampler_options_to_parser(parser)
+    add_train_options_to_parser(parser)
 
     # please adhere to alphabetical ordering
     parser.add_argument('--cornerpoints_file', type=str, default=None,

@@ -224,41 +224,46 @@ default parameters.
 
 Let us quickly go through each of the parameters:
 
-* batch_size
+* 'batch_size'
 +
 sets the subset size of the data set looked at per training step, if
 smaller than dimension, then we add stochasticity/noise to the training
 but for the advantage of smaller runtime.
-* max_steps
-+
-gives the amount of training steps to be performed.
-* optimizer
-+
-defines the method to use for training. Here, we use Gradient Descent
-(in case batch_size is smaller than dimension, then we actually have
-Stochastic Gradient Descent).
-* output_activation
-+
-defines the activation function of all output nodes, here it is linear.
-Other choices are: tanh, relu, relu6.
-* seed
-+
-sets the seed of the random number generator. We will still have full
-randomness but in a deterministic manner, i.e. calling the same
-procedure again will bring up the exactly same values.
-* step_width
+
+* 'learning_rate'
 +
 defines the scaling of the gradients in each training step, i.e. the
 learning rate. Values too large may miss the minimum, values too small
 need longer to reach it.
 
-For small networks the option ``do_hessians'' might be useful which will
+* 'max_steps''
++
+gives the amount of training steps to be performed.
+
+* optimizer
+
+defines the method to use for training. Here, we use Gradient Descent
+(in case batch_size is smaller than dimension, then we actually have
+Stochastic Gradient Descent).
+
+* 'output_activation'
++
+defines the activation function of all output nodes, here it is linear.
+Other choices are: tanh, relu, relu6.
+
+* 'seed'
++
+sets the seed of the random number generator. We will still have full
+randomness but in a deterministic manner, i.e. calling the same
+procedure again will bring up the exactly same values.
+
+For small networks the option `do_hessians` might be useful which will
 compute the hessian matrix at the end of the trajectory and use the
 largest eigenvalue to compute the optimal step width. This will add
 nodes to the underlying computational graph for computing the components
 of the hessian matrix.
 
-[NOTE]
+[CAUTION]
 ====
 The creation of the nodes (not speaking of their evaluation) is a O(N^2)
 process in the number of parameters of the network N. Hence, this should
@@ -270,7 +275,7 @@ the next section.
 
 Afterwards, the network is initialized, then we call `train()` which
 performs the training and returns runtime info, trajectory, and averages
-as a pandas DataFrame.
+as a pandas `DataFrame`.
 
 At the end of this section on training, let us have a quick glance at
 the decrease of the loss function over the steps by using `matplotlib`.
@@ -280,7 +285,7 @@ the decrease of the loss function over the steps by using `matplotlib`.
 include::python/plot_optimize.py[]
 ---------------
 
-The graph should look similar to the one obtained with pgfplots (see
+The graph should look similar to the one obtained with `pgfplots` (see
 https://sourceforge.net/pgfplots in
 link:#quickstart.python.optimizing.plot[figure_title].
 
@@ -301,12 +306,11 @@ After optimization we may continue sampling the network.
 include::python/sample.py[]
 ---------------
 
-Here, the _sampler_ setting takes the place of the `optimizer` before as
-it states which sampling scheme to use. At the moment the following are
-available: SGLD GeometricLangevinAlgorithm_1st,
-GeometricLangevinAlgorithm_2nd, BAOAB, and HamiltonianMonteCarlo. GLA
-2nd or BAOAB are currently recommended to use as they are second order
-schemes and provide higher accuracies and allow for larger step widths.
+Here, the 'sampler' setting takes the place of the 'optimizer' before as
+it states which sampling scheme to use. See <<reference.samplers>> for a
+complete list and their parameter names.
+
+NOTE: In the context of sampling we use 'step_width' in place of 'learning_rate'.
 
 Again, we produce three output arrays: run info, trajectory, and
 averages. Trajectories contains among others all parameter degrees of
@@ -590,10 +594,10 @@ include::cmdline/sample.sh[]
 This will cause the sampler to parse the same dataset as before.
 Moreover, the sampler will load the neural network from the model, i.e.
 using the optimized parameters right from the start. Afterwards it will
-use the GLA in 2nd order discetization using again step_width of 0.01
+use the GLA in 2nd order discetization using again 'step_width' of 0.01
 and running for 1000 steps in total. The GLA is a descretized variant of
 Langevin Dynamics whose accuracy scales with the inverse square of the
-step_width (hence, 2nd order).
+'step_width' (hence, 2nd order).
 
 The seed is needed as we sample using Langevin Dynamics where a noise
 term is present. The term basically ascertains a specific temperature

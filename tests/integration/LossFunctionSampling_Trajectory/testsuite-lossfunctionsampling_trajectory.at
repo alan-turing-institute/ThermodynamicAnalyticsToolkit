@@ -34,11 +34,11 @@ AT_CHECK([../../../TATiDatasetWriter \
 AT_CHECK([../../../TATiOptimizer \
 	--batch_data_files dataset-twocluster.csv \
 	--batch_size 20 \
+	--learning_rate 1e-1 \
 	--max_steps 10 \
 	--optimizer GradientDescent \
 	--save_model ${DIR}/model.ckpt \
-	--seed 426 \
-	--step_width 1e-1
+	--seed 426
 ], 0, [stdout], [stderr])
 
 # run 2: sample network
