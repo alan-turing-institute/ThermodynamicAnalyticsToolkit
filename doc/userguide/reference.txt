@@ -183,6 +183,38 @@ However, there is some branching, too. Hence, you are challenged to put
 the pieces you need together. As principle guideline: follow the order
 as it is given here.
 
+[[reference.python_general_nn_usage.help_options]]
+Help on Options
+^^^^^^^^^^^^^^^
+TATi has quite a number of options that control its behavior with respect
+to sampling, optimizing and so on. You can request help to a specific option.
+Let us inspect the help for `batch_data_files`:
+
+[source,python]
+---------------
+>>> from TATi.options.pythonoptions import PythonOptions
+>>> PythonOptions.help("batch_data_files")
+Option name: batch_data_files
+Description: set of files to read input from
+Type       : <class 'list'>
+Default    : []
+---------------
+
+This will print a description, give the default value and expected type.
+
+Moreover, in case you have forgotten the name of one of the options.
+
+[source,python]
+---------------
+>>> from TATi.options.pythonoptions import PythonOptions
+>>> PythonOptions.help()
+averages_file:             CSV file name to write ensemble averages information such as average kinetic, potential, virial
+batch_data_file_type:      type of the files to read input from
+ <remainder omitted>
+---------------
+
+This will print a general help listing all available options.
+
 [[reference.python_general_nn_usage.setup]]
 Setup
 ^^^^^
