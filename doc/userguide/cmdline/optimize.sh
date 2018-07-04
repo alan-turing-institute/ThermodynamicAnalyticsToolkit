@@ -7,4 +7,5 @@ TATiOptimizer \
     --optimizer GradientDescent \
     --run_file run.csv \
     --save_model `pwd`/model.ckpt.meta \
-    --seed 426
+    --seed 426 \
+    -v
