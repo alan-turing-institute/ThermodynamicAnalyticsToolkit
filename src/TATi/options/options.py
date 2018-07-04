@@ -112,10 +112,31 @@ class Options(object):
         :param key: name of option
         :param value: value to set
         """
-        if str(key) in self._option_map.keys():
-            self._option_map[str(key)] = value
+        if key in self._option_map.keys():
+            if key in self._type_map.keys():
+                if (value is None) or isinstance(value, self._type_map[key]):
+                    self._option_map[key] = value
+                else:
+                    raise ValueError("Option %s needs to be of type %s"  \
+                                     % (key,str(self._type_map[key])))
+            elif key in self._list_type_map.keys():
+                if isinstance(value, list):
+                    for i in value:
+                        if not isinstance(i, self._list_type_map[key]):
+                            raise ValueError(("Value %s in option %s needs to be "+ \
+                                             "list of type %s") % (str(i), key, str(self._list_type_map[key])))
+                    if isinstance(self._option_map[key], list):
+                        self._option_map[key][:] = value
+                    else:
+                        self._option_map[key] = value
+                else:
+                    raise ValueError("Option %s needs to be list of type %s" \
+                                     %  (key, str(self._list_type_map[key])))
+            else:
+                # option has no designated type
+                self._option_map[key] = value
         else:
-            raise AttributeError("Option '"+str(key)+"' is unknown")
+            raise AttributeError("Option '"+key+"' is unknown")
 
     def __setattr__(self, key, value):
         """ Override `__setattr__` to mask access to options as if they were
