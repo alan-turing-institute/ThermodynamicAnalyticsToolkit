@@ -112,7 +112,7 @@ class PythonOptions(Options):
         "averages_file": None,
         "batch_data_files": [],
         "batch_data_file_type": "csv",
-        "batch_size": None,  # this does not help yet, python API does not check batch_size?
+        "batch_size": None,
         "burn_in_steps": 0,
         "collapse_after_steps": 100,
         "covariance_blending": 0.,
@@ -158,7 +158,59 @@ class PythonOptions(Options):
         "summaries_path": None,
         "trajectory_file": None,
         "use_reweighting": False,
-        "verbose": 0
+        "verbose": 0,
+    }
+    _type_map = {
+        "averages_file": str,
+        "batch_data_files": [str],
+        "batch_data_file_type": str,
+        "batch_size": int,
+        "burn_in_steps": int,
+        "collapse_after_steps": int,
+        "covariance_blending": float,
+        "diffusion_map_method": str,
+        "do_hessians": bool,
+        "dropout": float,
+        "every_nth": int,
+        "fix_parameters": str,
+        "friction_constant": float,
+        "hamiltonian_dynamics_time": float,
+        "hidden_activation": str,
+        "hidden_dimension": [int],
+        "in_memory_pipeline": bool,
+        "input_columns": str,
+        "input_dimension": int,
+        "inter_ops_threads": int,
+        "intra_ops_threads": int,
+        "inverse_temperature": float,
+        "learning_rate": float,
+        "loss": str,
+        "max_steps": int,
+        "number_of_eigenvalues": int,
+        "number_walkers": int,
+        "optimizer": str,
+        "output_activation": str,
+        "output_dimension": int,
+        "parse_parameters_file": str,
+        "parse_steps": [int],
+        "prior_factor": float,
+        "prior_lower_boundary": float,
+        "prior_power": float,
+        "prior_upper_boundary": float,
+        "progress": bool,
+        "restore_model": str,
+        "run_file": str,
+        "sampler": str,
+        "save_model": str,
+        "seed": int,
+        "sigma": float,
+        "sigmaA": float,
+        "sql_db": str,
+        "step_width": float,
+        "summaries_path": str,
+        "trajectory_file": str,
+        "use_reweighting": bool,
+        "verbose": int,
     }
 
     @staticmethod
@@ -177,12 +229,14 @@ class PythonOptions(Options):
         elif key in PythonOptions._description_map.keys():
             print("Option name: "+str(key))
             print("Description: "+PythonOptions._description_map[key])
-            print("Type       : "+str(type(PythonOptions._default_map[key])))
+            print("Type       : "+str(type(PythonOptions._type_map[key])))
             print("Default    : "+str(PythonOptions._default_map[key]))
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, add_keys = True, value_dict = {}):
         """ Init function to set various default values.
 
+        :param add_keys: controls whether all default values are added as options
+        :param value_dict: keyword arguments for setting parameters different to default
         """
         # make sure all keys are described
         super(PythonOptions, self).__init__()
@@ -194,10 +248,16 @@ class PythonOptions(Options):
         for key in self._description_map.keys():
             if key not in self._default_map.keys():
                 logging.error("Option " + str(key) + " missing in _default_map")
+        for key in self._type_map.keys():
+            if key not in self._default_map.keys():
+                logging.error("Option " + str(key) + " missing in _type_map")
         assert ( self._default_map.keys() == self._description_map.keys() )
-        for key in self._default_map.keys():
-            self.add(key)
-            if key in kwargs:
-                self.set(key, kwargs[key])
-            else:
-                self.set(key, self._default_map[key])
+        assert ( self._default_map.keys() == self._type_map.keys() )
+
+        if add_keys:
+            for key in self._default_map.keys():
+                self.add(key)
+                if key in value_dict.keys():
+                    self.set(key, value_dict[key])
+                else:
+                    self.set(key, self._default_map[key])
