@@ -24,6 +24,7 @@ class PythonOptions(Options):
         ... )
     """
 
+    ### gives a description for each option
     _description_map = {
         "averages_file": "CSV file name to write ensemble averages information "+ \
                          "such as average kinetic, potential, virial",
@@ -108,6 +109,8 @@ class PythonOptions(Options):
         "use_reweighting": "",
         "verbose": "how much (debugging) information to print",
     }
+
+    ## sets a default value for each option
     _default_map = {
         "averages_file": None,
         "batch_data_files": [],
@@ -160,9 +163,10 @@ class PythonOptions(Options):
         "use_reweighting": False,
         "verbose": 0,
     }
+
+    ## sets the type of each option
     _type_map = {
         "averages_file": str,
-        "batch_data_files": [str],
         "batch_data_file_type": str,
         "batch_size": int,
         "burn_in_steps": int,
@@ -176,9 +180,7 @@ class PythonOptions(Options):
         "friction_constant": float,
         "hamiltonian_dynamics_time": float,
         "hidden_activation": str,
-        "hidden_dimension": [int],
         "in_memory_pipeline": bool,
-        "input_columns": str,
         "input_dimension": int,
         "inter_ops_threads": int,
         "intra_ops_threads": int,
@@ -192,7 +194,6 @@ class PythonOptions(Options):
         "output_activation": str,
         "output_dimension": int,
         "parse_parameters_file": str,
-        "parse_steps": [int],
         "prior_factor": float,
         "prior_lower_boundary": float,
         "prior_power": float,
@@ -213,6 +214,14 @@ class PythonOptions(Options):
         "verbose": int,
     }
 
+    # this denotes the type as of specific type
+    _list_type_map = {
+        "batch_data_files": str,
+        "hidden_dimension": int,
+        "input_columns": str,
+        "parse_steps": int,
+    }
+
     @staticmethod
     def help(key=None):
         """ Prints help for each option or all option names if key is None
@@ -229,7 +238,12 @@ class PythonOptions(Options):
         elif key in PythonOptions._description_map.keys():
             print("Option name: "+str(key))
             print("Description: "+PythonOptions._description_map[key])
-            print("Type       : "+str(type(PythonOptions._type_map[key])))
+            if key in PythonOptions._type_map.keys():
+                print("Type       : "+str(PythonOptions._type_map[key]))
+            elif key in PythonOptions._list_type_map.keys():
+                print("Type       : list of " + str(PythonOptions._list_type_map[key]))
+            else:
+                assert(0)
             print("Default    : "+str(PythonOptions._default_map[key]))
 
     def __init__(self, add_keys = True, value_dict = {}):
@@ -242,17 +256,20 @@ class PythonOptions(Options):
         super(PythonOptions, self).__init__()
         self._excluded_keys.append("_description_map")
         self._excluded_keys.append("_default_map")
+        self._excluded_keys.append("_type_map")
+        self._excluded_keys.append("_list_type_map")
         for key in self._default_map.keys():
             if key not in  self._description_map.keys():
                 logging.error("Option "+str(key)+" missing in _description_map")
         for key in self._description_map.keys():
             if key not in self._default_map.keys():
                 logging.error("Option " + str(key) + " missing in _default_map")
-        for key in self._type_map.keys():
+        combined_type_keys = list(self._type_map.keys())+list(self._list_type_map.keys())
+        for key in combined_type_keys:
             if key not in self._default_map.keys():
                 logging.error("Option " + str(key) + " missing in _type_map")
-        assert ( self._default_map.keys() == self._description_map.keys() )
-        assert ( self._default_map.keys() == self._type_map.keys() )
+        assert ( sorted(self._default_map.keys()) == sorted(self._description_map.keys()) )
+        assert ( sorted(self._default_map.keys()) == sorted(combined_type_keys) )
 
         if add_keys:
             for key in self._default_map.keys():
