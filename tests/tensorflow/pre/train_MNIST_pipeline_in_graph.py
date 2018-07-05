@@ -5,10 +5,8 @@
 
 from TATi.models.model import model
 from TATi.models.basetype import dds_basetype
-from TATi.common import get_list_from_string
 
 import argparse
-import numpy as np
 import sys
 import tensorflow as tf
 

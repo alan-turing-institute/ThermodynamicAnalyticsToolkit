@@ -6,7 +6,7 @@ command-line.
 import argparse
 import logging
 import sys
-from TATi.common import get_filename_from_fullpath
+from TATi.common import get_filename_from_fullpath, get_list_from_string
 from TATi.options.pythonoptions import PythonOptions
 from TATi.version import get_package_version, get_build_hash
 
@@ -254,13 +254,25 @@ class CommandlineOptions(PythonOptions):
         if value is None:
             return value
         if type_name == str:
-            return str(value)
+            try:
+                return str(value)
+            except ValueError:
+                return [str(i) for i in get_list_from_string(value)]
         elif type_name == int:
-            return int(value)
+            try:
+                return int(value)
+            except ValueError:
+                return [int(i) for i in get_list_from_string(value)]
         elif type_name == float:
-            return float(value)
+            try:
+                return float(value)
+            except ValueError:
+                return [float(i) for i in get_list_from_string(value)]
         elif type_name == bool:
-            return bool(value)
+            try:
+                return bool(value)
+            except ValueError:
+                return [bool(i) for i in get_list_from_string(value)]
         else:
             assert (0)
 

@@ -1,8 +1,6 @@
 import logging
 import sqlite3
 
-from TATi.common import get_list_from_string
-
 class runtime(object):
     """ This class contains runtime information and capability
     to write these to an sqlite file.

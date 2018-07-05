@@ -12,7 +12,7 @@ import pandas as pd
 import tensorflow as tf
 
 
-from TATi.common import get_list_from_string, setup_csv_file
+from TATi.common import setup_csv_file
 from TATi.datasets.classificationdatasets import ClassificationDatasets
 from TATi.models.model import model
 from TATi.models.neuralnet_parameters import neuralnet_parameters
