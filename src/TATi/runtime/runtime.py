@@ -62,7 +62,7 @@ class runtime(object):
                     {in_memory_pipeline}, {input_dimension}, {inter_ops_threads}, {intra_ops_threads}, \
                     {output_dimension}, {seed}, {step_width}, {init_time}, {train_time}, {overall_time});
                 """
-                hidden_dimension = [int(i) for i in get_list_from_string(self.FLAGS.hidden_dimension)]
+                hidden_dimension = self.FLAGS.hidden_dimension
                 min_nodes = 0
                 max_nodes = 0
                 if len(hidden_dimension) != 0:

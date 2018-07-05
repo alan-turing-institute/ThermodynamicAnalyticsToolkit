@@ -46,25 +46,25 @@ def parse_parameters():
     options.add_train_options_to_parser()
 
     # please adhere to alphabetical ordering
-    options._add_option('--cornerpoints_file', type=str, default=None,
+    options._add_option_cmd('--cornerpoints_file', type=str, default=None,
         help='Filename to write found corner points to')
-    options._add_option('--diffusion_map_method', type=str, default='vanilla',
+    options._add_option_cmd('--diffusion_map_method', type=str, default='vanilla',
         help='Method to use for computing the diffusion map: pydiffmap, vanilla or TMDMap')
-    options._add_option('--max_exploration_steps', type=int, default=2,
+    options._add_option_cmd('--max_exploration_steps', type=int, default=2,
         help='Maximum number of exploration steps')
-    options._add_option('--max_legs', type=int, default=100,
+    options._add_option_cmd('--max_legs', type=int, default=100,
         help='Maximum number of legs per trajectory')
-    options._add_option('--minima_file', type=str, default=None,
+    options._add_option_cmd('--minima_file', type=str, default=None,
         help='Filename to write found minima to')
-    options._add_option('--number_of_eigenvalues', type=int, default=4,
+    options._add_option_cmd('--number_of_eigenvalues', type=int, default=4,
         help='How many largest eigenvalues to compute')
-    options._add_option('--number_processes', type=int, default=0,
+    options._add_option_cmd('--number_processes', type=int, default=0,
         help='Whether to activate parallel mode (unequal 0) and how many processes to use then')
-    options._add_option('--number_of_parallel_trajectories', type=int, default=5,
+    options._add_option_cmd('--number_of_parallel_trajectories', type=int, default=5,
         help='Number of trajectories to run in parallel, i.e. number of points maximally apart in diffusion distance')
-    options._add_option('--number_pruning', type=int, default=0,
+    options._add_option_cmd('--number_pruning', type=int, default=0,
         help='Number of pruning stages through metropolis criterion after end of trajectory')
-    options._add_option('--use_reweighting', type=str2bool, default=False,
+    options._add_option_cmd('--use_reweighting', type=str2bool, default=False,
         help='Use reweighting of the kernel matrix of diffusion maps by the target distribution.')
 
     return options.parse()

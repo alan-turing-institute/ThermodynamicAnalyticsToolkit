@@ -7,7 +7,7 @@ import argparse
 import logging
 import sys
 from TATi.common import get_filename_from_fullpath
-from TATi.options.options import Options
+from TATi.options.pythonoptions import PythonOptions
 from TATi.version import get_package_version, get_build_hash
 
 def str2bool(v):
@@ -47,7 +47,24 @@ def react_generally_to_options(FLAGS, unparsed):
         logging.error("There are unparsed parameters '" + str(unparsed) + "', have you misspelled some?")
         sys.exit(255)
 
-class CommandlineOptions(Options):
+
+def get_argparse_option_name(parser, *args, **kwargs):
+    """ This is taken from `argparse.add_argument()` to extract the option name.
+
+    :param parser: argparse instance
+    :param args: arguments to `argparse.ArgumentParser.add_argument()`
+    :param kwargs: keyword arguments to `argparse.ArgumentParser.add_argument()`
+    :return: string name of option
+    """
+    if not args or len(args) == 1 and args[0][0] not in parser.prefix_chars:
+        pos_args = parser._get_positional_kwargs(*args, **kwargs)
+    else:
+        pos_args = parser._get_optional_kwargs(*args, **kwargs)
+    # print(pos_args)
+    return pos_args['dest'].replace('--', '')
+
+
+class CommandlineOptions(PythonOptions):
     """ CommandLineOptions extends the Options class to parse command-line
     options into the internal map.
 
@@ -55,7 +72,7 @@ class CommandlineOptions(Options):
     def __init__(self):
         """ Creates the internal parser.
         """
-        super(CommandlineOptions, self).__init__()
+        super(CommandlineOptions, self).__init__(add_keys=False)
         self._excluded_keys.append("parser")
         self.parser = argparse.ArgumentParser()
 
@@ -63,27 +80,47 @@ class CommandlineOptions(Options):
         self._excluded_keys.append("_special_keys")
         self._special_keys = {}
 
-
-    def _add_option(self, *args, **kwargs):
-        """ Adds an option to the internal parser and the options map.
+    def _add_option_cmd(self, *args, **kwargs):
+        """ Adds a purely cmd-line option to the internal parser and the options map.
 
         :param args: arguments to `argparse.ArgumentParser.add_argument()`
         :param kwargs: keyword arguments to `argparse.ArgumentParser.add_argument()`
         """
-        if not args or len(args) == 1 and args[0][0] not in self.parser.prefix_chars:
-            pos_args = self.parser._get_positional_kwargs(*args, **kwargs)
-        else:
-            pos_args = self.parser._get_optional_kwargs(*args, **kwargs)
-        #print(pos_args)
-        self.add(pos_args['dest'].replace('--', ''))
+        option_name = get_argparse_option_name(self.parser, *args, **kwargs)
+        self.add(option_name)
         self.parser.add_argument(*args, **kwargs)
+
+    def _add_option(self, *args, **kwargs):
+        """ Adds an option to the internal parser and the options map.
+
+        Raises:
+            KeyError (when default on `PythonOptions` has not been given.
+
+        :param args: arguments to `argparse.ArgumentParser.add_argument()`
+        :param kwargs: keyword arguments to `argparse.ArgumentParser.add_argument()`
+        """
+        option_name = get_argparse_option_name(self.parser, *args, **kwargs)
+        self.add(option_name)
+        kwargs.update({ "default": self._default_map[option_name]})
+        if option_name in self._type_map.keys():
+            kwargs.update({ "type": self._type_map[option_name]})
+        elif option_name in self._list_type_map.keys():
+            kwargs.update({ "type": []})
+        else:
+            assert(0)
+        kwargs.update({ "help": self._description_map[option_name]})
+        try:
+            self.parser.add_argument(*args, **kwargs)
+        except TypeError:
+            del kwargs["type"]
+            self.parser.add_argument(*args, **kwargs)
 
     def add_data_options_to_parser(self):
         """ Adding options common to both sampler and optimizer to argparse
         object for specifying the data set.
         """
         # please adhere to alphabetical ordering
-        self._add_option('--batch_data_files', type=str, nargs='+', default=[],
+        self._add_option('--batch_data_files', type=str, nargs='+',
                           help='Names of files to parse input data from')
         self._add_option('--batch_data_file_type', type=str, default="csv",
                           help='Type of the input files: csv (default), tfrecord')
@@ -172,7 +209,7 @@ class CommandlineOptions(Options):
                           help='CSV file name to output trajectories of sampling, i.e. weights and evaluated loss function.')
         self._add_option('--verbose', '-v', action='count', default=1,
                           help='Level of verbosity during compare')
-        self._add_option('--version', '-V', action="store_true",
+        self._add_option_cmd('--version', '-V', action="store_true",
                           help='Gives version information')
 
     def add_train_options_to_parser(self):
@@ -212,6 +249,51 @@ class CommandlineOptions(Options):
                           help='Scale of noise in convex combination for CCaDL.')
         self._add_option('--step_width', type=float, default=0.03,
                           help='step width \Delta t to use during sampling, e.g. 0.01')
+
+    def _cast_to_type(self, value, type_name):
+        if value is None:
+            return value
+        if type_name == str:
+            return str(value)
+        elif type_name == int:
+            return int(value)
+        elif type_name == float:
+            return float(value)
+        elif type_name == bool:
+            return bool(value)
+        else:
+            assert (0)
+
+    def set(self, key, values):
+        """ Override `set()` to enforce expected type before.
+
+        :param key: option name
+        :param value: option value
+        :return:
+        """
+        if key in self._type_map.keys():
+            designated_type = self._type_map[key]
+            super(CommandlineOptions, self).set(
+                key,
+                self._cast_to_type(values, designated_type))
+        elif key in self._list_type_map.keys():
+            designated_type = self._list_type_map[key]
+            if isinstance(values, list):
+                set_list = []
+                for value in values:
+                    cast_value = self._cast_to_type(value, designated_type)
+                    if isinstance(cast_value, list):
+                        set_list.extend(cast_value)
+                    else:
+                        set_list.append(cast_value)
+                super(CommandlineOptions, self).set(key, set_list)
+            else:
+                super(CommandlineOptions, self).set(
+                    key,
+                    [self._cast_to_type(values, designated_type)])
+        else:
+            ## key added to command-line only
+            super(CommandlineOptions, self).set(key, values)
 
     def parse(self):
         """ Parses the command-line options for all known parameters.

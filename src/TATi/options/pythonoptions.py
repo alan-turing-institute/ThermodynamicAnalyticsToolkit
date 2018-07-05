@@ -127,7 +127,7 @@ class PythonOptions(Options):
         "friction_constant": 0.,
         "hamiltonian_dynamics_time": 1.,
         "hidden_activation": "relu",
-        "hidden_dimension": "",
+        "hidden_dimension": [],
         "in_memory_pipeline": True,
         "input_columns": [],
         "input_dimension": 2,

@@ -338,14 +338,13 @@ class model:
                     self.nn[-1].placeholder_nodes['y_'] = self.true_labels
                     keep_prob_node = self.nn[-1].add_keep_probability()
                     keep_prob = None if self.FLAGS.dropout is None else keep_prob_node
-                    hidden_dimension = [int(i) for i in get_list_from_string(self.FLAGS.hidden_dimension)]
                     activations = NeuralNetwork.get_activations()
                     if self.FLAGS.seed is not None:
                         walker_seed = self.FLAGS.seed+i
                     else:
                         walker_seed = self.FLAGS.seed
                     self.loss.append(self.nn[-1].create(
-                        self.x, hidden_dimension, self.output_dimension,
+                        self.x, self.FLAGS.hidden_dimension, self.output_dimension,
                         labels=self.true_labels,
                         trainables_collection=self.trainables[-1],
                         seed=walker_seed,

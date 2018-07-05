@@ -32,21 +32,21 @@ def parse_parameters():
     options.add_data_options_to_parser()
     options.add_model_options_to_parser()
 
-    options._add_option('--csv_file', type=str, default=None,
+    options._add_option_cmd('--csv_file', type=str, default=None,
         help='CSV file name to output sampled values to.')
-    options._add_option('--inter_ops_threads', type=int, default=1,
+    options._add_option_cmd('--inter_ops_threads', type=int, default=1,
         help='Sets the number of threads to split up ops in between. NOTE: This hurts reproducibility to some extent because of parallelism.')
-    options._add_option('--interval_input', type=str, nargs='+', default=[],
+    options._add_option_cmd('--interval_input', type=str, nargs='+', default=[],
         help='Min and max value for each weight.')
-    options._add_option('--intra_ops_threads', type=int, default=None,
+    options._add_option_cmd('--intra_ops_threads', type=int, default=None,
         help='Sets the number of threads to use within an op, i.e. Eigen threads for linear algebra routines.')
-    options._add_option('--restore_model', type=str, default=None,
+    options._add_option_cmd('--restore_model', type=str, default=None,
         help='Restore model (input and biases) from a file.')
-    options._add_option('--samples_input', type=int, default=None,
+    options._add_option_cmd('--samples_input', type=int, default=None,
         help='Number of samples to take per weight interval')
-    options._add_option('--verbose', '-v', action='count',
+    options._add_option_cmd('--verbose', '-v', action='count',
         help='Level of verbosity during compare')
-    options._add_option('--version', '-V', action="store_true",
+    options._add_option_cmd('--version', '-V', action="store_true",
         help='Gives version information')
 
     return options.parse()

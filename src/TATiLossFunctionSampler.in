@@ -33,31 +33,31 @@ def parse_parameters():
     options.add_data_options_to_parser()
     options.add_model_options_to_parser()
 
-    options._add_option('--csv_file', type=str, default=None,
+    options._add_option_cmd('--csv_file', type=str, default=None,
         help='CSV file name to output sampled values to.')
-    options._add_option('--interval_biases', type=str, nargs='+', default=[],
+    options._add_option_cmd('--interval_biases', type=str, nargs='+', default=[],
         help='Min and max value for each bias.')
-    options._add_option('--interval_center_file', type=str, default=None,
+    options._add_option_cmd('--interval_center_file', type=str, default=None,
         help='CSV file with step column and one for each parameter, e.g. w4 and b3.')
-    options._add_option('--interval_center_step', type=int, default=None,
+    options._add_option_cmd('--interval_center_step', type=int, default=None,
         help='Giving the step to use of the interval_center_file, i.e. its row')
-    options._add_option('--exclude_parameters', type=str, nargs='+', default=[],
+    options._add_option_cmd('--exclude_parameters', type=str, nargs='+', default=[],
         help='List of biases, e.g. b0, and weights, e.g. w3, to exclude from sampling.')
-    options._add_option('--inter_ops_threads', type=int, default=1,
+    options._add_option_cmd('--inter_ops_threads', type=int, default=1,
         help='Sets the number of threads to split up ops in between. NOTE: This hurts reproducibility to some extent because of parallelism.')
-    options._add_option('--interval_weights', type=str, nargs='+', default=[],
+    options._add_option_cmd('--interval_weights', type=str, nargs='+', default=[],
         help='Min and max value for each weight.')
-    options._add_option('--intra_ops_threads', type=int, default=None,
+    options._add_option_cmd('--intra_ops_threads', type=int, default=None,
         help='Sets the number of threads to use within an op, i.e. Eigen threads for linear algebra routines.')
-    options._add_option('--restore_model', type=str, default=None,
+    options._add_option_cmd('--restore_model', type=str, default=None,
         help='Restore model (weights and biases) from a file.')
-    options._add_option('--samples_biases', type=int, default=None,
+    options._add_option_cmd('--samples_biases', type=int, default=None,
         help='Number of samples to take per bias interval')
-    options._add_option('--samples_weights', type=int, default=None,
+    options._add_option_cmd('--samples_weights', type=int, default=None,
         help='Number of samples to take per weight interval')
-    options._add_option('--verbose', '-v', action='count',
+    options._add_option_cmd('--verbose', '-v', action='count',
         help='Level of verbosity during compare')
-    options._add_option('--version', '-V', action="store_true",
+    options._add_option_cmd('--version', '-V', action="store_true",
         help='Gives version information')
 
     return options.parse()
