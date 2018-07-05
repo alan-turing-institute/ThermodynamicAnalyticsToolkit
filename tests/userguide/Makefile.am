@@ -32,7 +32,23 @@ TESTSCRIPTS += \
 	$(srcdir)/python/testsuite-userguide-python-plot_optimize.at \
 	$(srcdir)/python/testsuite-userguide-python-sample.at \
 	$(srcdir)/python/testsuite-userguide-python-supply_dataset.at \
-	$(srcdir)/python/testsuite-userguide-python-writing_data.at
+	$(srcdir)/python/testsuite-userguide-python-writing_data.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-change_dataset_array.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-change_dataset_csv.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-evaluate_accuracy.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-evaluate_gradients.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-evaluate_hessians.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-evaluate_loss.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-evaluate_predict.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-fit.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-requesting_parameters.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-sample.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-setting_parameters.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-setting_up_network.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-supply_dataset_array.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-supply_dataset_csv.at
+
 
 EXTRA_DIST = \
 	testsuite.at \

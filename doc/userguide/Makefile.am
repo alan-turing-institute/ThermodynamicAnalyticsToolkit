@@ -16,26 +16,24 @@ PYTHON_EXAMPLES = \
 	$(srcdir)/python/eval_loss_gradient.py \
 	$(srcdir)/python/explore.py \
 	$(srcdir)/python/fix_parameter.py \
-	$(srcdir)/python/general_nn/change_dataset_array.py \
-	$(srcdir)/python/general_nn/change_dataset_csv.py \
-	$(srcdir)/python/general_nn/evaluate_loss.py \
-	$(srcdir)/python/general_nn/evaluate_prediction.py \
-	$(srcdir)/python/general_nn/evaluate_accuracy.py \
-	$(srcdir)/python/general_nn/evaluate_gradients.py \
-	$(srcdir)/python/general_nn/evaluate_hessians.py \
-	$(srcdir)/python/general_nn/requesting_parameters.py \
-	$(srcdir)/python/general_nn/reset_dataset.py \
-	$(srcdir)/python/general_nn/reset_dataset_auto.py \
-	$(srcdir)/python/general_nn/setting_parameters.py \
-	$(srcdir)/python/general_nn/setting_up_network.py \
-	$(srcdir)/python/general_nn/supply_dataset_array.py \
-	$(srcdir)/python/general_nn/supply_dataset_csv.py \
 	$(srcdir)/python/optimize.py \
 	$(srcdir)/python/optimize_sample.py \
 	$(srcdir)/python/plot_optimize.py \
 	$(srcdir)/python/sample.py \
 	$(srcdir)/python/supply_dataset.py \
-	$(srcdir)/python/writing_data.py
+	$(srcdir)/python/writing_data.py \
+	$(srcdir)/simulation/change_dataset_array.py \
+	$(srcdir)/simulation/change_dataset_csv.py \
+	$(srcdir)/simulation/evaluate_loss.py \
+	$(srcdir)/simulation/evaluate_predict.py \
+	$(srcdir)/simulation/evaluate_accuracy.py \
+	$(srcdir)/simulation/evaluate_gradients.py \
+	$(srcdir)/simulation/evaluate_hessians.py \
+	$(srcdir)/simulation/requesting_parameters.py \
+	$(srcdir)/simulation/setting_parameters.py \
+	$(srcdir)/simulation/setting_up_network.py \
+	$(srcdir)/simulation/supply_dataset_array.py \
+	$(srcdir)/simulation/supply_dataset_csv.py
 
 DEPENDENCIES = \
 	bibliography.txt \

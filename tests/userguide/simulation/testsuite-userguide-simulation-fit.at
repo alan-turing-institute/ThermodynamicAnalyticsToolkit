@@ -1,6 +1,6 @@
 #
 #    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
-#    Copyright (C) 2017 The University of Edinburgh
+#    Copyright (C) 2018 The University of Edinburgh
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -15,22 +15,21 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Process with autom4te to create an -*- Autotest -*- test suite.
-#
-# see regression/... subdirs wherein for each of the cases and each check (enumerated) is a pre and post dir. 
-# In pre initial files are placed, in post results can be found to be checked by diff in this testsuite.
+### test on simulation fit()
 
-AT_INIT([Userguide])
+AT_SETUP([Examples - simulation: fit])
+AT_KEYWORDS([example simulation fit])
 
-# Use colored output with new-enough Autotest.
-m4_ifdef([AT_COLOR_TESTS], [AT_COLOR_TESTS])
+# dataset prepared as follows:
+# TATiDatasetWriter --data_type 2 --dimension 500 --seed 426 --noise 0.1 --train_test_ratio 0 --test_data_files dataset-twoclusters.csv
 
-# tests for cmdline examples in userguide
-m4_include(cmdline/testsuite-userguide-cmdline.at)
+# run 1
+AT_CHECK([cp -f ${abs_top_srcdir}/tests/userguide/simulation/pre/dataset-twoclusters.csv .], 0, [ignore], [ignore])
+AT_CHECK([../../run \
+	${abs_top_srcdir}/doc/userguide/simulation/fit.py
+], 0, [stdout], [stderr])
+AT_CHECK([grep "Start: 0.5365.*" stdout], 0, [ignore], [ignore])
+AT_CHECK([grep "End  : 0.0046.*" stdout], 0, [ignore], [ignore])
 
-# tests for python examples in userguide
-m4_include(python/testsuite-userguide-python.at)
-
-# tests for simulation interface examples in userguide
-m4_include(simulation/testsuite-userguide-simulation.at)
+AT_CLEANUP
 

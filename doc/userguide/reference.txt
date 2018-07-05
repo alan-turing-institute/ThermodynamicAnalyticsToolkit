@@ -108,7 +108,7 @@ The essential task at hand is to determine a good set of parameters,
 i.e. values for the weights and biases, such that the task is performed
 best with respect to some measure.
 
-[[reference.python_general_nn_usage]]
+[[reference.simulation]]
 Using TATi as general interface
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -147,7 +147,7 @@ approach to implementing a new method or idea. However, it is not suited
 for production runs of training a network. In the latter case it is
 recommended to implement your method within Tensorflow.
 
-[[reference.python_general_nn_usage.tensorflow_internals]]
+[[reference.simulation.tensorflow_internals]]
 Tensorflow internals
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -183,7 +183,7 @@ However, there is some branching, too. Hence, you are challenged to put
 the pieces you need together. As principle guideline: follow the order
 as it is given here.
 
-[[reference.python_general_nn_usage.help_options]]
+[[reference.simulation.help_options]]
 Help on Options
 ^^^^^^^^^^^^^^^
 TATi has quite a number of options that control its behavior with respect
@@ -196,7 +196,7 @@ Let us inspect the help for `batch_data_files`:
 >>> PythonOptions.help("batch_data_files")
 Option name: batch_data_files
 Description: set of files to read input from
-Type       : <class 'list'>
+Type       : list of <class 'str'>
 Default    : []
 ---------------
 
@@ -215,14 +215,14 @@ batch_data_file_type:      type of the files to read input from
 
 This will print a general help listing all available options.
 
-[[reference.python_general_nn_usage.setup]]
+[[reference.simulation.setup]]
 Setup
 ^^^^^
 
 Let's first look at how to set up the neural network and supply it with
 a dataset.
 
-[[reference.python_general_nn_usage.setup.setting_up_network]]
+[[reference.simulation.setup.setting_up_network]]
 Setting up the network
 ++++++++++++++++++++++
 
@@ -235,7 +235,7 @@ number of nodes per layer and the output function used in each node.
 
 [source,python]
 ---------------
-include::python/general_nn/setting_up_network.py[]
+include::simulation/setting_up_network.py[]
 ---------------
 
 In the above example, we specify a neural network of two hidden layers,
@@ -257,7 +257,7 @@ Note that (re-)creating the `tati_model` instance model will always reset the
 computational graph of tensorflow in case you need to add nodes.
 ====
 
-[[reference.python_general_nn_usage.setup.supply_dataset]]
+[[reference.simulation.setup.supply_dataset]]
 Supply dataset as array
 +++++++++++++++++++++++
 
@@ -278,7 +278,7 @@ We will give examples for both ways here.
 
 [source,python]
 ---------------
-include::python/general_nn/supply_dataset_array.py[]
+include::simulation/supply_dataset_array.py[]
 ---------------
 
 The `batch_data_files` always needs to be a list as multiple files may
@@ -294,7 +294,7 @@ link:#quickstart.python.sampling.supply_dataset[Supplying Dataset].
 
 [source,python]
 ---------------
-include::python/general_nn/supply_dataset_csv.py[]
+include::simulation/supply_dataset_csv.py[]
 ---------------
 
 There, we read a dataset from a CSV file into a pandas dataframe which
@@ -303,48 +303,14 @@ afterwards is converted to a numpy array and then handed over to the
 dataset is present in memory, it can be given right away and we do not
 need to parse a CSV file.
 
-[[reference.python_general_nn_usage.setup.note_batching]]
-A note on batching
-++++++++++++++++++
-
-If you want to evaluate your dataset in batches, there are two notes to
-give:
-
-First, the parameter `batch_size` controls the size of the randomly
-chosen subset of the dataset on which the loss function is evaluated at
-the next call.
-
-Second, `max_steps` controls how many (internal) copies of the dataset
-are created. Once every batch of every copy has been delivered, the
-Dataset will signal this with an exceptions and stop. This can be
-overcome by either calling
-
-[source,python]
----------------
-include::python/general_nn/reset_dataset.py[]
----------------
-
-which will simply reset the iterator.
-
-Another approach is to tell the model right-away that we do not care
-when the dataset ends, i.e. to reset automatically.
-
-[source,python]
----------------
-include::python/general_nn/reset_dataset_auto.py[]
----------------
-
-Now, what is this `input_pipeline.next_batch()` you might wonder. We'll
-come to this, when we finally evaluate the loss.
-
-[[reference.python_general_nn_usage.parameters]]
+[[reference.simulation.parameters]]
 Parameters
 ^^^^^^^^^^
 
 Next, we look at how to inspect and modify the neural network's
 parameters.
 
-[[reference.python_general_nn_usage.parameters.requesting_parameters]]
+[[reference.simulation.parameters.requesting_parameters]]
 Requesting parameters
 +++++++++++++++++++++
 
@@ -354,7 +320,7 @@ look at the initially random parameters.
 
 [source,python]
 ---------------
-include::python/general_nn/requesting_parameters.py[]
+include::simulation/requesting_parameters.py[]
 ---------------
 
 As you see in the example, there are two entities in model that contain
@@ -363,7 +329,7 @@ representations to the weights and biases of the neural network. Calling
 required, which is also an entity in the model, will return arrays with
 their values.
 
-[[reference.python_general_nn_usage.parameters.setting_parameters]]
+[[reference.simulation.parameters.setting_parameters]]
 Setting parameters
 ++++++++++++++++++
 
@@ -375,7 +341,7 @@ from a single array (of the correct size).
 
 [source,python]
 ---------------
-include::python/general_nn/setting_parameters.py[]
+include::simulation/setting_parameters.py[]
 ---------------
 
 Here, we create the numpy array filled with zeros by requesting the
@@ -384,13 +350,13 @@ parameters of the network. Afterwards,
 `assign_neural_network_parameters()` is used to put these into the
 neural network.
 
-[[reference.python_general_nn_usage.evaluation]]
+[[reference.simulation.evaluation]]
 Evaluation
 ^^^^^^^^^^
 
 Now, we are in the position to evaluate our neural network.
 
-[[reference.python_general_nn_usage.evaluation.loss]]
+[[reference.simulation.evaluation.loss]]
 Evaluate loss
 +++++++++++++
 
@@ -403,7 +369,7 @@ to TATi/models/model.py, function `add_losses()`.
 
 [source,python]
 ---------------
-include::python/general_nn/evaluate_loss.py[]
+include::simulation/evaluate_loss.py[]
 ---------------
 
 Here, we have to do two things: First, we set up a `feed_dict` then we
@@ -419,7 +385,7 @@ dataset into the neural network. In other words, `next_batch()` does not
 return the next batch but nodes on whose evaluation the next batch is
 obtained.
 
-[[reference.python_general_nn_usage.evaluation.gradients]]
+[[reference.simulation.evaluation.gradients]]
 Evaluate gradients
 ++++++++++++++++++
 
@@ -427,7 +393,7 @@ Gradient information is similarly important as the loss function itself.
 
 [source,python]
 ---------------
-include::python/general_nn/evaluate_gradients.py[]
+include::simulation/evaluate_gradients.py[]
 ---------------
 
 Remember that all parameters are vectorized, hence, the
@@ -438,7 +404,7 @@ The procedure is very similar, the only diffence is that we evaluate
 another node. Keep in mind that `run()` may be given list of nodes, i.e.
 loss and gradients can be evaluated at the same time!
 
-[[reference.python_general_nn_usage.evaluation.hessians]]
+[[reference.simulation.evaluation.hessians]]
 Evaluate Hessians
 +++++++++++++++++
 
@@ -451,7 +417,7 @@ the initial parameters (`FLAGS`) you need to explicitly state
 
 [source,python]
 ---------------
-include::python/general_nn/evaluate_hessians.py[]
+include::simulation/evaluate_hessians.py[]
 ---------------
 
 Remember that all parameters are vectorized, hence, the
@@ -462,7 +428,7 @@ The procedure is very similar, the only diffence is that we evaluate
 another node. Keep in mind that `run()` may be given list of nodes,
 i.e. loss and gradients can be evaluated at the same time!
 
-[[reference.python_general_nn_usage.evaluation.accuracy]]
+[[reference.simulation.evaluation.accuracy]]
 Evaluate accuracy
 +++++++++++++++++
 
@@ -471,10 +437,10 @@ another node.
 
 [source,python]
 ---------------
-include::python/general_nn/evaluate_accuracy.py[]
+include::simulation/evaluate_accuracy.py[]
 ---------------
 
-[[reference.python_general_nn_usage.evaluation.predictions]]
+[[reference.simulation.evaluation.predict]]
 Evaluate predicted labels
 +++++++++++++++++++++++++
 
@@ -482,20 +448,20 @@ Naturally, obtaining the predictions is now just as simple.
 
 [source,python]
 ---------------
-include::python/general_nn/evaluate_prediction.py[]
+include::simulation/evaluate_predict.py[]
 ---------------
 
 Note that omitted specifying _labels_ in the `feed_dict` as they are
 not need for evaluating the predictions.
 
-[[reference.python_general_nn_usage.datasets]]
+[[reference.simulation.datasets]]
 Datasets
 ^^^^^^^^
 
 Last but not least, how to change the dataset when it was already
 specified?
 
-[[reference.python_general_nn_usage.datasets.change]]
+[[reference.simulation.datasets.change]]
 Change the dataset
 ++++++++++++++++++
 
@@ -509,7 +475,7 @@ feeding the dataset: from file and from an array.
 
 [source,python]
 ---------------
-include::python/general_nn/change_dataset_csv.py[]
+include::simulation/change_dataset_csv.py[]
 ---------------
 
 In the first example, we simply exchange the dataset file(s) in the
@@ -518,7 +484,7 @@ the internal input pipeline on using the newly given files.
 
 [source,python]
 ---------------
-include::python/general_nn/change_dataset_array.py[]
+include::simulation/change_dataset_array.py[]
 ---------------
 
 When switching to (another) dataset from an internal numpy array, then
@@ -548,7 +514,7 @@ in mind if slowness is suddenly bothering. Otherwise you can ignore it.
 
 This is all for the moment.
 
-[[reference.python_general_nn_usage.list_of_nodes]]
+[[reference.simulation.list_of_nodes]]
 
 As a last item we given a list of nodes that might be interesting. They
 can all be obtained through ``get_list_of_nodes'' where the argument is
