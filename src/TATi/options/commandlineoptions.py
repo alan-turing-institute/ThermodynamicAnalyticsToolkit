@@ -36,9 +36,6 @@ def react_generally_to_options(FLAGS, unparsed):
     # setup log level
     if FLAGS.verbose == None:
         FLAGS.verbose = 0
-    FLAGS.verbose = min(3, FLAGS.verbose)
-    verbosity = [logging.WARNING, logging.INFO, logging.DEBUG, logging.NOTSET]
-    logging.getLogger().setLevel(verbosity[FLAGS.verbose])
     # sys.stdout.write('Logging is at '+str(verbosity[arguments.verbose])+' level\n')
 
     logging.info("Using parameters: " + str(FLAGS))
