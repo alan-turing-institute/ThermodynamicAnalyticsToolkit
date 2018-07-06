@@ -465,7 +465,7 @@ class model:
                         trainables = tf.get_collection_ref(self.trainables[-1])
                         for tensor in trainables:
                             grad = tf.gradients(self.loss, tensor)
-                            print(grad)
+                            #print(grad)
                             vectorized_gradients.append(tf.reshape(grad, [-1]))
                         self.gradients.append(tf.reshape(tf.concat(vectorized_gradients, axis=0), [-1]))
 
