@@ -274,10 +274,16 @@ class PythonOptions(Options):
         if add_keys:
             for key in self._default_map.keys():
                 self.add(key)
-                if key in value_dict.keys():
-                    self.set(key, value_dict[key])
-                else:
-                    self.set(key, self._default_map[key])
+                self.set(key, self._default_map[key])
+            self.set_options(**value_dict)
+
+    def set_options(self, **kwargs):
+        """ Sets all options given by the keyword dictionary in `kwargs`.
+        
+        :param **kwargs: keyword dictonary
+        """
+        for key in kwargs.keys():
+            self.set(key, kwargs[key])
 
     def set(self, key, value):
         """ Override set to update verbosity.

@@ -179,7 +179,10 @@ class model:
         else:
             self.output_type = "onehot_multi_classification"
         assert( len(features) == len(labels) )
-        self.FLAGS.add("dimension")
+        try:
+            self.FLAGS.dimension
+        except AttributeError:
+            self.FLAGS.add("dimension")
         self.FLAGS.dimension = len(features)
         self._check_valid_batch_size()
         self.input_pipeline = InMemoryPipeline(dataset=[features, labels],
