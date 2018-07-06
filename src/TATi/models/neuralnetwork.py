@@ -144,7 +144,6 @@ class NeuralNetwork(object):
                                       seed=output_seed)
         self.placeholder_nodes["y"] = y
 
-        logging.debug ("Creating summaries")
         self.add_losses(y, labels)
         loss = self.set_loss_function(loss_name)
 
