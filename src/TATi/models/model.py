@@ -1049,9 +1049,9 @@ class model:
             if current_step % self.FLAGS.every_nth == 0:
                 current_time = time.process_time()
                 time_elapsed_per_nth_step = current_time - last_time
-                elapsed_time += time_elapsed_per_nth_step
-                if current_step != 0:
-                    estimated_time_left = self.FLAGS.max_steps*elapsed_time/current_step
+                if current_step > 1:
+                    elapsed_time += time_elapsed_per_nth_step
+                    estimated_time_left = (self.FLAGS.max_steps-current_step)*elapsed_time/(current_step-1)
                 else:
                     estimated_time_left = 0.
                 logging.debug("Output at step #" + str(current_step) \
@@ -1371,9 +1371,10 @@ class model:
             if current_step % self.FLAGS.every_nth == 0:
                 current_time = time.process_time()
                 time_elapsed_per_nth_step = current_time - last_time
-                elapsed_time += time_elapsed_per_nth_step
-                if current_step != 0:
-                    estimated_time_left = self.FLAGS.max_steps*elapsed_time/current_step
+                # neglect first step as initialization perturbs average
+                if current_step > 1:
+                    elapsed_time += time_elapsed_per_nth_step
+                    estimated_time_left = (self.FLAGS.max_steps-current_step)*elapsed_time/(current_step-1)
                 else:
                     estimated_time_left = 0.
                 logging.debug("Output at step #" + str(current_step) \
