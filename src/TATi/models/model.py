@@ -44,41 +44,12 @@ class model:
         # the neural network
         tf.reset_default_graph()
 
-        self.FLAGS = FLAGS
-        self.config_map = initialize_config_map()
-
-        try:
-            FLAGS.max_steps
-        except KeyError:
-            FLAGS.add("max_steps")
-            FLAGS.max_steps = 1
+        self.reset_parameters(FLAGS)
 
         self.number_of_parameters = 0   # number of biases and weights
 
         self.output_type = None
-        if len(FLAGS.batch_data_files) > 0:
-            self.input_dimension = self.FLAGS.input_dimension
-            self.output_dimension = self.FLAGS.output_dimension
-            self.FLAGS.add("dimension")
-            if FLAGS.batch_data_file_type == "csv":
-                self.FLAGS.dimension = sum([file_length(filename)
-                                            for filename in FLAGS.batch_data_files]) \
-                                       - len(FLAGS.batch_data_files)
-                if self.output_dimension == 1:
-                    self.output_type = "binary_classification"  # labels in {-1,1}
-                else:
-                    self.output_type = "onehot_multi_classification"
-            elif FLAGS.batch_data_file_type == "tfrecord":
-                self.FLAGS.dimension = self._get_dimension_from_tfrecord(FLAGS.batch_data_files)
-                self.output_type = "onehot_multi_classification"
-            else:
-                logging.info("Unknown file type")
-                assert(0)
-            self._check_valid_batch_size()
-
-            logging.info("Parsing "+str(FLAGS.batch_data_files))
-
-            self.number_of_parameters = 0 # number of biases and weights
+        self.scan_dataset_dimension()
 
         # mark input layer as to be created
         self.xinput = None
@@ -113,6 +84,35 @@ class model:
         self.averages_writer = None
         self.run_writer = None
         self.trajectory_writer = None
+
+    def scan_dataset_dimension(self):
+        if len(self.FLAGS.batch_data_files) > 0:
+            self.input_dimension = self.FLAGS.input_dimension
+            self.output_dimension = self.FLAGS.output_dimension
+            try:
+                self.FLAGS.add("dimension")
+            except AttributeError:
+                # add only on first call
+                pass
+            if self.FLAGS.batch_data_file_type == "csv":
+                self.FLAGS.dimension = sum([file_length(filename)
+                                            for filename in self.FLAGS.batch_data_files]) \
+                                       - len(self.FLAGS.batch_data_files)
+                if self.output_dimension == 1:
+                    self.output_type = "binary_classification"  # labels in {-1,1}
+                else:
+                    self.output_type = "onehot_multi_classification"
+            elif self.FLAGS.batch_data_file_type == "tfrecord":
+                self.FLAGS.dimension = self._get_dimension_from_tfrecord(self.FLAGS.batch_data_files)
+                self.output_type = "onehot_multi_classification"
+            else:
+                logging.info("Unknown file type")
+                assert(0)
+            self._check_valid_batch_size()
+
+            logging.info("Parsing "+str(self.FLAGS.batch_data_files))
+
+            self.number_of_parameters = 0 # number of biases and weights
 
     def init_input_pipeline(self):
         self.batch_next = self.create_input_pipeline(self.FLAGS)
@@ -228,6 +228,13 @@ class model:
         :param FLAGS: new set of parameters
         """
         self.FLAGS = FLAGS
+        self.config_map = initialize_config_map()
+
+        try:
+            self.FLAGS.max_steps
+        except KeyError:
+            self.FLAGS.add("max_steps")
+            self.FLAGS.max_steps = 1
 
     def create_resource_variables(self):
         """ Creates some global resource variables to hold statistical quantities
