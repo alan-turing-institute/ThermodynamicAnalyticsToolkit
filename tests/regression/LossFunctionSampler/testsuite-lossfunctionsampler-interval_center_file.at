@@ -40,6 +40,7 @@ AT_CHECK([../../../TATiLossFunctionSampler \
 # now compare
 AT_CHECK([../../../NumericalDiff \
     --column_drop step accuracy \
+    --general_threshold 3e-7 relative \
     -- TATiLossFunctionSampler-output.csv ${abs_top_srcdir}/tests/regression/LossFunctionSampler/post/trajectory-losses-center_file.csv], 0, [ignore], [ignore])
 
 
