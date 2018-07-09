@@ -24,6 +24,60 @@ class Simulation(object):
     neural network.
     """
 
+    ### gives which parts of the interal state are affected by each option
+    _affects_map = {
+        "averages_file": ["network"],
+        "batch_data_files": ["input", "network"],
+        "batch_data_file_type": ["input", "network"],
+        "batch_size": ["input"],
+        "burn_in_steps": [],
+        "collapse_after_steps": [],
+        "covariance_blending": [],
+        "diffusion_map_method": [],
+        "do_hessians": ["network"],
+        "dropout": ["network"],
+        "every_nth": [],
+        "fix_parameters": ["network"],
+        "friction_constant": [],
+        "hamiltonian_dynamics_time": [],
+        "hidden_activation": ["network"],
+        "hidden_dimension": ["network"],
+        "in_memory_pipeline": ["input"],
+        "input_columns": ["input"],
+        "input_dimension": ["input", "network"],
+        "inter_ops_threads": [],
+        "intra_ops_threads": [],
+        "inverse_temperature": [],
+        "learning_rate": [],
+        "loss": ["loss"],
+        "max_steps": ["input"],
+        "number_of_eigenvalues": [],
+        "number_walkers": ["network"],
+        "optimizer": [],
+        "output_activation": ["network"],
+        "output_dimension": ["input", "network"],
+        "parse_parameters_file": ["network"],
+        "parse_steps": ["network"],
+        "prior_factor": [],
+        "prior_lower_boundary": [],
+        "prior_power": [],
+        "prior_upper_boundary": [],
+        "progress": [],
+        "restore_model": ["network"],
+        "run_file": ["network"],
+        "sampler": [],
+        "save_model": ["network"],
+        "seed": ["network"],
+        "sigma": [],
+        "sigmaA": [],
+        "sql_db": [],
+        "step_width": [],
+        "summaries_path": ["network"],
+        "trajectory_file": ["network"],
+        "use_reweighting": [],
+        "verbose": [],
+    }
+
     def __init__(self, **kwargs):
         """ Initializes the internal neural network and everything.
 
@@ -44,6 +98,12 @@ class Simulation(object):
         logging.info(self._options)
         self._nn = model(self._options)
 
+        # if this assert triggers, then a new option has been added and its not
+        # yet been stated what parts of the internal state of simulation
+        # interface are affected, see `Simulation._affects_map`.
+        # Solution to fix: Add an entry to this map with a list of what's affected
+        assert( sorted(self._affects_map.keys()) == sorted(self._options._default_map.keys()) )
+
         if features is not None:
             self._nn.provide_data(features=features, labels=labels)
             self._lazy_nn_construction = False
@@ -57,7 +117,6 @@ class Simulation(object):
         # we need to evaluate loss, gradients, hessian, accuracy, ... on the 
         # same batch. Hence, we cache the results here for one-time gets
         self._cache = {}
-        # TODO: This still needs to be adapted for multiple walkers, i.e. made into lists
         self._node_keys = {}
 
         # construct nn if dataset has been provided
@@ -117,7 +176,25 @@ class Simulation(object):
         :param args: positional arguments
         :param **kwargs: keyword arguments
         """
+        # set the new option values
         self._options.set_options(**kwargs)
+
+        # scan arguments and set flags for parts required to reset
+        affected_parts = set()
+        for key in kwargs.keys():
+            for value in self._affects_map[key]:
+                affected_parts.add(value)
+        affected_parts = list(affected_parts)
+        logging.info("Parts affected by change of options are "+str(affected_parts)+".")
+        if "input" in affected_parts:
+            if self._options._option_map["in_memory_pipeline"]:
+                features = self._nn.input_pipeline.features
+                labels = self._nn.input_pipeline.labels
+                self._nn.provide_data(features, labels)
+            else:
+                self._nn.init_input_pipeline()
+            self._nn.reset_dataset()
+
 
     def _return_cache(self, key):
         """ This returns the cached element named `key` and resets the entry.
