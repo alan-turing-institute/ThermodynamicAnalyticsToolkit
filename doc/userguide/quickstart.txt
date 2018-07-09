@@ -101,7 +101,7 @@ well.
 .Permutation symmetry: Neural network with permutation symmetry to provoke multiple minima
 image:pictures/neuralnetwork_permutation_symmetry.png[scaledwidth=45.0%]
 
-In link:#quickstart.landscape.loss[Loss] we then
+In link:#quickstart.landscape.loss[Loss manifold] we then
 turn to the loss landscape depending on either weight. We see two minima
 basins both of hyperbole or "banane" shape. There is a clear (enthalpic)
 potential barrier in between. However, the minima basins themselves are
@@ -112,7 +112,7 @@ In the figure we also give a trajectory. Here, we have chosen such a
 barrier and reach the other minima basin.
 
 [[quickstart.landscape.loss]]
-.Loss landscape with an example trajectory
+.Loss manifold: Loss landscape with an example trajectory
 image:pictures/losslandscape_permutation_symmetry.png[scaledwidth=45.0%]
 
 This is the goal of exploration: To find all (local) minima to allow to
@@ -123,10 +123,12 @@ Using Python
 ~~~~~~~~~~~~
 
 The package can be readily used inside any python3 shell or script.
-However, this interface rather lends itself to quick testing than
-rigorous experiments. You are still fine if you perform all your
-scientific experiments inside python scripts kept safely inside a code
-versioning system such as `git`.
+
+[TIP]
+The Python interface lends itself well as a module inside larger programs
+or to quick testing rather than rigorous experiments. You are still fine if you
+perform all your scientific experiments inside python scripts kept safely
+inside a code versioning system such as `git`.
 
 If you have installed the package in the folder `/foo`, i.e. we have
 folders `TATi/models` with a file `model.py` residing in there, then you
@@ -156,9 +158,57 @@ import sys
 sys.path.insert(1,"<path_to_TATi>/lib/python3.5/site-packages/")
 ---------------
 
-where ``<path_to_TATi>'' needs to be replaced by your specific
-installation path and ``python3.5`` needs to be replaced if you are using a
+where +<path_to_TATi>+ needs to be replaced by your specific
+installation path and +python3.5+ needs to be replaced if you are using a
 different python version.
+
+In the following we will first be creating a dataset to work on. This example
+code will be the most extensive one. All following ones are rather short and
+straight-forward.
+
+[[quickstart.python.writing_data]]
+Preparing a dataset
+^^^^^^^^^^^^^^^^^^^
+
+Therefore, let us prepare the dataset, see <<quickstart.dataset>>, for our
+following experiments.
+
+At the moment, datasets are parsed from Comma Separated Values (CSV)
+or Tensorflow's own TFRecord files or can be provided in-memory from numpzy
+arrays. In order for the following examples on optimization and sampling to
+work, we need such a data file containing features and labels.
+
+TATi provides a few simple dataset generators contained in the class
+`ClassificationDatasets`.
+
+One option is to use the TATiDatasetWriter, see
+link:#quickstart.cmdline.writing_dataset[Writing a dataset]. However, we can
+do the same using python as well.
+
+[source,python]
+---------------
+include::python/writing_data.py[]
+---------------
+
+[WARNING]
+The labels need to be integer values. Importing will fail if they are not.
+
+After importing some modules we first fix the numpy seed to 426 in order
+to get the same items reproducibly. Then, we first create 100 items
+using the `ClassificationDatasets` class from the *TWOCLUSTERS* dataset. We
+randomly perturb by a relative noise of 0.1.
+
+[NOTE]
+The class `ClassificationDatasets` mimicks the dataset examples that can also
+be found on the link:https://playground.tensorflow.org/[Tensorflow playground].
+
+Afterwards, these items are simply written to file using the csv module.
+
+[CAUTION]
+The file `dataset-twoclusters.csv` is used in the following examples, so keep
+it around.
+
+This is the dataset we want to learn, sample from and exlore in the following.
 
 [[quickstart.python.simple_evaluation]]
 Evaluating loss and gradients
@@ -173,54 +223,35 @@ and evaluates loss and then loss and gradients combined.
 
 [source,python]
 ---------------
-include::python/eval_loss_gradient.py[]
+include::simulation/complex/eval_loss_gradient.py[]
 ---------------
 
-[[quickstart.python.writing_data]]
-Preparing a dataset
-^^^^^^^^^^^^^^^^^^^
+All we need to do is set some parameters -- here, 'batch_data_files' sets the
+dataset file to parse, batch size of 10 and we use a linear output activation
+function -- assign all network parameters to zero and then evaluate first the
+loss and then the gradients of the network.
 
-At the moment, datasets are parsed from Comma Separated Values (CSV)
-files. In order for the following examples on optimization and sampling
-to work, we need such a data file containing features and labels.
+As you see `tati` forms the general interface class that contains the network
+along with the dataset and everything.
 
-One option is to use the TATiDatasetWriter, see
-link:#quickstart.cmdline.writing_dataset[Writing a dataset]. However, we can
-do the same using python as well.
-
-[source,python]
----------------
-include::python/writing_data.py[]
----------------
-
-WARNING:The labels need to be integer values. Importing will fail if they are not.
-
-After importing some modules we first fix the numpy seed to 426 in order
-to get the same items reproducibly. Then, we first create 100 items
-using the hard-coded ClassificationDatasets class from the
-*TWOCLUSTERS* dataset. We randomly perturb by a relative noise of 0.1.
-
-Afterwards, these items are simply written to file using the csv module.
-
-[NOTE]
-The file `dataset-twoclusters.csv` is used in the following examples, so keep
-it around.
+This is basically all the access you need in order to use your own optimization,
+sampling, or exploration methods in the context of neural networks.
 
 [[quickstart.python.optimizing]]
 Optimizing the network
 ^^^^^^^^^^^^^^^^^^^^^^
 
-Let us first start with optimizing the network.
+Let us then start with optimizing the network, i.e. learning the data.
 
 [source,python]
 ---------------
-include::python/optimize.py[]
+include::simulation/complex/optimize.py[]
 ---------------
 
-As you see, all options are set in a struct called `FLAGS` that controls
-how the optimization is performed. There is a helper function in `model`
-called `setup_parameters` that creates the FLAGS for you with some
-default parameters.
+Again all options are set in the init call to the interface. These options
+control how the optimization is performed, what kind of network is created,
+how often values are stored. In other words everything. In case you need to
+change these options, use `reset_options()`.
 
 Let us quickly go through each of the parameters:
 
@@ -236,14 +267,14 @@ defines the scaling of the gradients in each training step, i.e. the
 learning rate. Values too large may miss the minimum, values too small
 need longer to reach it.
 
-* 'max_steps''
+* 'max_steps'
 +
 gives the amount of training steps to be performed.
 
 * optimizer
-
++
 defines the method to use for training. Here, we use Gradient Descent
-(in case batch_size is smaller than dimension, then we actually have
+(in case 'batch_size' is smaller than dimension, then we actually have
 Stochastic Gradient Descent).
 
 * 'output_activation'
@@ -257,28 +288,33 @@ sets the seed of the random number generator. We will still have full
 randomness but in a deterministic manner, i.e. calling the same
 procedure again will bring up the exactly same values.
 
-For small networks the option `do_hessians` might be useful which will
+In our case, the default option values are such that the network we use
+looks exactly as in <<quickstart.perceptron>>, namely a single-layer perceptron
+whose number of input and output nodes are completely fixed by the dataset.
+
+For these small networks the option 'do_hessians' might be useful which will
 compute the hessian matrix at the end of the trajectory and use the
 largest eigenvalue to compute the optimal step width. This will add
 nodes to the underlying computational graph for computing the components
-of the hessian matrix.
+of the hessian matrix. However, we will not do so here.
 
 [CAUTION]
 ====
-The creation of the nodes (not speaking of their evaluation) is a O(N^2)
-process in the number of parameters of the network N. Hence, this should
-only be done for small networks and on purpose.
+The creation of these hessian evaluation nodes (not speaking of their
+evaluation) is a latexmath:[O(N^2)] process in the number of parameters of the
+network N. Hence, this should only be done for small networks and on purpose.
 ====
 
-Moreover, we did not say anything about _sampler_ as this is covered in
+Moreover, we did not say anything about 'sampler' as this is covered in
 the next section.
 
-Afterwards, the network is initialized, then we call `train()` which
-performs the training and returns runtime info, trajectory, and averages
-as a pandas `DataFrame`.
+After the options have been provided, the network is initialized internally
+and automatically, we then call `fit()` which performs the training and returns
+runtime info, trajectory, and averages as a pandas `DataFrame`.
 
-At the end of this section on training, let us have a quick glance at
-the decrease of the loss function over the steps by using `matplotlib`.
+Let us have a quick glance at the decrease of the loss function over the steps
+by using `matplotlib`. In other words, let us look how effective the training
+has been.
 
 [source,python]
 ---------------
@@ -292,18 +328,67 @@ link:#quickstart.python.optimizing.plot[figure_title].
 .Plot of the loss history for the optimization run
 image::pictures/optimization-step_loss.png[{basebackend@docbook:scaledwidth="60%":width=500}]
 
-Go and have a look at the other columns. Or try to visualize the change
+As you see the loss has decreased quite quickly down to 1e-3. Go and have a
+look at the other columns such as accuracy. Or try to visualize the change
 in the parameters (weights and biases) in the trajectories dataframe.
+
+Naturally, we did not use a different dataset set for testing the effectiveness
+of the training which should commonly be done. This way we cannot check whether
+we have overfitted or not. However, our example is trivial by design.
+
+Nonetheless, we show how to supply a different dataset and evaluate loss and
+accuracy on it.
+
+[[quickstart.python.sampling.supply_dataset]]
+Provide your own dataset
+++++++++++++++++++++++++
+
+You can directly supply your own dataset, e.g. ,from a numpy array residing in
+memory. See the following example where we do not generate the data but parse
+them from a CSV file instead using the pandas module.
+
+[source,python]
+---------------
+include::simulation/complex/supply_dataset.py[]
+---------------
+
+The major difference is that `batch_data_files` is now empty and instead
+we simply assign `dataset` the in-memory dataset to use. Note that we could
+also have supplied it with the filename +dataset-twoclusters.csv+ directly. In
+this example, we have parsed the same file as the in the previous section into
+a numpy array using the pandas module. Natually, this is just one way of
+creating a suitable numpy array. Input and output dimensions are directly
+deduced from the the tuple sizes.
+
+Note that we have ignored the average output here, by default none of
+the three output pandas dataframes are accumulated.
+
+In the following link:#quickstart.python.sampling[section] we will explain
+what each of these three dataframes exactly contains.
 
 [[quickstart.python.sampling]]
 Sampling the network
 ^^^^^^^^^^^^^^^^^^^^
 
-After optimization we may continue sampling the network.
+Optimization only steps down to the nearest local minimum from some initial
+random starting position. Only through sampling do we actually uncover the shape
+of the loss manifold and thereby are able to deduce whethr our network is
+efficient at doing its job.
+
+Nonetheless, optimization is always the initial step to sampling, as we need
+our random starting configuration to touch base with the loss manifold. If we
+start at a hill, then the sampler will accumulate a lot of momentum when going
+downhill which will carry him on for a quite a while. In contrast, we want the
+sampler to move around by thermal noise. Therefore, we want to start at a point
+where gradients are small, best close to zero, and simply use random initial
+momenta.
+
+However, let us ignore this procedure for the moment and simply look at
+sampling from a random initial placeo n the loss manifold.
 
 [source,python]
 ---------------
-include::python/sample.py[]
+include::simulation/complex/sample.py[]
 ---------------
 
 Here, the 'sampler' setting takes the place of the 'optimizer' before as
@@ -314,53 +399,29 @@ NOTE: In the context of sampling we use 'step_width' in place of 'learning_rate'
 
 Again, we produce three output arrays: run info, trajectory, and
 averages. Trajectories contains among others all parameter degrees of
-freedom for each step (or ``every_nth'' step). Run info contains loss,
+freedom for each step (or 'every_nth' step). Run info contains loss,
 accuracy, norm of gradient, norm of noise and others. Finally, in
 averages we compute averages over the trajectory such as average
 (ensemble) loss, average kinetic energy, average virial. There it is
-advisable to skip some initial ateps (``burn_in_steps'') to allow for
+advisable to skip some initial ateps ('burn_in_steps') to allow for
 some burn in time, i.e. for kinetic energies to adjust from initially
 zero momenta. Some columns depend on whether the sampler provides the
 specific quantity, e.g. SGLD does not have momentum, hence there will be
 no average kinetic energy.
-
-[[quickstart.python.sampling.supply_dataset]]
-Provide your own dataset
-++++++++++++++++++++++++
-
-Using the Python API you can directly supply your own dataset, e.g. from
-a numpy array residing in memory. See the following example where we do
-not generate the data but parse them from a CSV file instead using the
-pandas module.
-
-[source,python]
----------------
-include::python/supply_dataset.py[]
----------------
-
-The major difference is that `batch_data_files` is now empty and instead
-we call the function `provide_data` in order to provide an in-memory
-dataset. In this example, we have parsed the same file as the in the
-previous section into a numpy array using the pandas module. Natually,
-this is just one way of creating a suitable numpy array. Input and
-output dimensions are directly deduced from the the tuple sizes.
-
-Note that we have ignored the average output here, by default none of
-the three output pandas dataframes are accumulated.
 
 [[quickstart.python.sampling.priors]]
 Using a prior
 +++++++++++++
 
 You may add a prior to the sampling. At the current state two kinds of
-priors as follows are available. In ``FLAGS'' `prior_upper_boundary` and
-`prior_lower_boundary` give the admitted interval per parameter. Within
+priors as follows are available: The options 'prior_upper_boundary' and
+'prior_lower_boundary' give the admitted interval per parameter. Within
 a relative distance of 0.01 (with respect to length of domain and only
 in that small region to the specified boundary) an additional force acts
 upon the particles to drive them back into the desired domain. Its
 magnitude increases with distance to the covered inside the boundary
-region. The distance is taken to the power of `prior_power`. The force
-is modified by `prior_factor`.
+region. The distance is taken to the power of 'prior_power'. The force
+is modified by 'prior_factor'.
 
 If upper and lower boundary coincide, then we have the case of
 tethering, where all parameters are pulled inward to the same point.
@@ -370,7 +431,7 @@ At the moment prioring just a subset of particles is not supported.
 [NOTE]
 ====
 The prior force is acting directly on the variables. It does not modify
-momentum. Moeover, it is a force! In other words, it depends on step
+momentum. Moreover, it is a force! In other words, it depends on step
 width. If the step width is too large and if the repelling force
 increases too steeply close to the walls with respect to the normal
 dynamics of the system, it may blow up.
@@ -381,42 +442,38 @@ First optimize, then sample
 +++++++++++++++++++++++++++
 
 We might also concatenate optimize and sample if, in between the two, we
-adjust FLAGS as follows:
+adjust the initial options provided to `tati` as follows:
 
 [source,python]
 ---------------
-include::python/optimize_sample.py[]
+include::simulation/complex/optimize_sample.py[]
 ---------------
 
-The only thing we change in FLAGS is the number of steps and adding the
-sampler. However, as the model simply stores a copy of the FLAGS, in
-order to update the FLAGS in the model class as well, we need to reset
-it. Afterwards, we again initialize the network which will add only the
-sampling nodes and prepare output files differently. We have skipped the
-following steps that are equivalent to
-link:#quickstart.python.sampling.example[example_title]. Again, at the
-very end we obtain pandas DataFrame containing runtime information,
+We needed to change the number of steps, set a sampling step width and add the
+sampler (which might depend on additional parameters, see <<reference.samplers>>
+).
+At the very end we obtain pandas DataFrame containing runtime information,
 trajectory, and averages.
 
 [NOTE]
 ====
 This is actually the _recommended_ way of doing sampling: First make sure that
-the parameters start in a local minima and from there we explore the surrounding
-manifold.
+the parameters start in a local minimum and from there we explore the
+surrounding manifold.
 ====
 
 [[quickstart.python.analysis]]
 Analysing trajectories
 ^^^^^^^^^^^^^^^^^^^^^^
 
-Analysis is so for constrained to parsing in run and trajectory files
+Analysis is so far constrained to parsing in run and trajectory files
 that you would write through optimization and sampling runs.
 
 To this end, specify `FLAGS.run_file` and `FLAGS.trajectory_file` with
 some valid file names.
 
 Subsequently, these may be easily parsed as follows, see also
-"TATiAnalyser.in".
++tools/TATiAnalyser.in+ in the repository.
 
 [source,python]
 ---------------
@@ -432,8 +489,10 @@ plotted.
 Exploring the loss manifold
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Exploration of the loss manifold is a bit more involved using the python
-interface.
+Exploration of the loss manifold is a bit more involved and hence uses a
+different part of the Python interface. We do not use the simulation interface
+anymore but the general Python interface as require more direct access to its
+internals.
 
 In general, the procedure has the following stages:
 
@@ -474,11 +533,11 @@ include::python/explore.py[]
 ---------------
 
 This performs exactly the procedure described before using very, very
-short trajectories (`max_steps`), only a few legs (`max_legs`) and only
-a very limited number of exploration steps (`exploration_steps
-        `). This is simple for the purpose of illustration. Naturally,
-larger values for all these parameters are required in order to explore
-complex manifolds and eventually find the global minima.
+short trajectories ('max_steps'), only a few legs ('max_legs') and only
+a very limited number of exploration steps ('exploration_steps'). This is
+simple for the purpose of illustration. Naturally, larger values for all these
+parameters are required in order to explore complex manifolds and eventually
+find the global minimum.
 
 [[quickstart.cmdline]]
 Using command-line interface

@@ -33,6 +33,13 @@ TESTSCRIPTS += \
 	$(srcdir)/python/testsuite-userguide-python-sample.at \
 	$(srcdir)/python/testsuite-userguide-python-supply_dataset.at \
 	$(srcdir)/python/testsuite-userguide-python-writing_data.at \
+	$(srcdir)/simulation/complex/testsuite-userguide-simulation-complex.at \
+	$(srcdir)/simulation/complex/testsuite-userguide-simulation-complex-eval_loss_gradient.at \
+	$(srcdir)/simulation/complex/testsuite-userguide-simulation-complex-fix_parameter.at \
+	$(srcdir)/simulation/complex/testsuite-userguide-simulation-complex-optimize.at \
+	$(srcdir)/simulation/complex/testsuite-userguide-simulation-complex-optimize_sample.at \
+	$(srcdir)/simulation/complex/testsuite-userguide-simulation-complex-sample.at \
+	$(srcdir)/simulation/complex/testsuite-userguide-simulation-complex-supply_dataset.at \
 	$(srcdir)/simulation/testsuite-userguide-simulation.at \
 	$(srcdir)/simulation/testsuite-userguide-simulation-change_dataset_array.at \
 	$(srcdir)/simulation/testsuite-userguide-simulation-change_dataset_csv.at \

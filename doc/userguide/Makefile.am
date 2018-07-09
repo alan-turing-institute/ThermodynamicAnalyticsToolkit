@@ -22,6 +22,12 @@ PYTHON_EXAMPLES = \
 	$(srcdir)/python/sample.py \
 	$(srcdir)/python/supply_dataset.py \
 	$(srcdir)/python/writing_data.py \
+	$(srcdir)/simulation/complex/eval_loss_gradient.py \
+	$(srcdir)/simulation/complex/fix_parameter.py \
+	$(srcdir)/simulation/complex/optimize.py \
+	$(srcdir)/simulation/complex/optimize_sample.py \
+	$(srcdir)/simulation/complex/sample.py \
+	$(srcdir)/simulation/complex/supply_dataset.py \
 	$(srcdir)/simulation/change_dataset_array.py \
 	$(srcdir)/simulation/change_dataset_csv.py \
 	$(srcdir)/simulation/evaluate_loss.py \
