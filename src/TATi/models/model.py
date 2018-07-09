@@ -451,45 +451,46 @@ class model:
             pass
 
         # setup training/sampling
-        if setup == "train":
-            for i in range(self.FLAGS.number_walkers):
-                with tf.variable_scope("var_walker" + str(i + 1)):
-                #with tf.name_scope('gradients_walker'+str(i+1)):
-                    self.nn[i].add_train_method(self.loss[i], optimizer_method=self.FLAGS.optimizer, prior=prior)
-        elif setup == "sample":
-            sampler = []
-            for i in range(self.FLAGS.number_walkers):
-                if self.FLAGS.seed is not None:
-                    walker_seed = self.FLAGS.seed + i
-                else:
-                    walker_seed = self.FLAGS.seed
-                sampler.append(self.nn[i]._prepare_sampler(self.loss[i], sampling_method=self.FLAGS.sampler,
-                                                           seed=walker_seed, prior=prior,
-                                                           sigma=self.FLAGS.sigma, sigmaA=self.FLAGS.sigmaA,
-                                                           covariance_blending=self.FLAGS.covariance_blending))
-            # create gradients
-            grads_and_vars = []
-            for i in range(self.FLAGS.number_walkers):
-                with tf.name_scope('gradients_walker'+str(i+1)):
-                    trainables = tf.get_collection_ref(self.trainables[i])
-                    grads_and_vars.append(sampler[i].compute_and_check_gradients(self.loss[i],
-                                                                                 var_list=trainables))
+        if setup is not None:
+            if "train" in setup:
+                for i in range(self.FLAGS.number_walkers):
+                    with tf.variable_scope("var_walker" + str(i + 1)):
+                    #with tf.name_scope('gradients_walker'+str(i+1)):
+                        self.nn[i].add_train_method(self.loss[i], optimizer_method=self.FLAGS.optimizer, prior=prior)
+            if "sample" in setup:
+                sampler = []
+                for i in range(self.FLAGS.number_walkers):
+                    if self.FLAGS.seed is not None:
+                        walker_seed = self.FLAGS.seed + i
+                    else:
+                        walker_seed = self.FLAGS.seed
+                    sampler.append(self.nn[i]._prepare_sampler(self.loss[i], sampling_method=self.FLAGS.sampler,
+                                                               seed=walker_seed, prior=prior,
+                                                               sigma=self.FLAGS.sigma, sigmaA=self.FLAGS.sigmaA,
+                                                               covariance_blending=self.FLAGS.covariance_blending))
+                # create gradients
+                grads_and_vars = []
+                for i in range(self.FLAGS.number_walkers):
+                    with tf.name_scope('gradients_walker'+str(i+1)):
+                        trainables = tf.get_collection_ref(self.trainables[i])
+                        grads_and_vars.append(sampler[i].compute_and_check_gradients(self.loss[i],
+                                                                                     var_list=trainables))
 
-            # combine gradients
-            #for i in range(self.FLAGS.number_walkers):
-            #    print("walker "+str(i))
-            #    var_list = [v for g, v in grads_and_vars[i] if g is not None]
-            #    grad_list = [g for g, v in grads_and_vars[i] if g is not None]
-            #    for j in range(len(grad_list)):
-            #         print(var_list[j])
+                # combine gradients
+                #for i in range(self.FLAGS.number_walkers):
+                #    print("walker "+str(i))
+                #    var_list = [v for g, v in grads_and_vars[i] if g is not None]
+                #    grad_list = [g for g, v in grads_and_vars[i] if g is not None]
+                #    for j in range(len(grad_list)):
+                #         print(var_list[j])
 
-            # add position update nodes
-            for i in range(self.FLAGS.number_walkers):
-                with tf.variable_scope("var_walker" + str(i + 1)):
-                    global_step = self.nn[i]._prepare_global_step()
-                    train_step = sampler[i].apply_gradients(grads_and_vars, i, global_step=global_step,
-                                                            name=sampler[i].get_name())
-                self.nn[i].summary_nodes['sample_step'] = train_step
+                # add position update nodes
+                for i in range(self.FLAGS.number_walkers):
+                    with tf.variable_scope("var_walker" + str(i + 1)):
+                        global_step = self.nn[i]._prepare_global_step()
+                        train_step = sampler[i].apply_gradients(grads_and_vars, i, global_step=global_step,
+                                                                name=sampler[i].get_name())
+                    self.nn[i].summary_nodes['sample_step'] = train_step
         else:
             logging.info("Not adding sample or train method.")
 

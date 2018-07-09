@@ -155,8 +155,7 @@ class Simulation(object):
         """ Constructs the neural network is dataset is present.
         """
         if not self._lazy_nn_construction:
-            self._nn.init_network(None, setup="train", add_vectorized_gradients=True)
-            self._nn.init_network(None, setup="sample")
+            self._nn.init_network(None, setup="trainsample", add_vectorized_gradients=True)
             self._nn.reset_dataset()
             self._init_node_keys()
             self._reset_cache()
