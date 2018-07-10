@@ -350,6 +350,28 @@ parameters of the network. Afterwards,
 `assign_neural_network_parameters()` is used to put these into the
 neural network.
 
+[[reference.simulation.parameters.setting_parameters_walkers]]
+Setting parameters of each walker
++++++++++++++++++++++++++++++++++
+
+Did you know that you can have multiple walkers that `fit()` or `sample()`. In
+other words, there can be replicated versions of the neural network. Each has 
+its own set of parameters and may move through the loss manifold individually.
+
+The key option to enable this is to set 'number_walkers' larger than *1*.
+
+This will automatically create copies of the network, each having a different
+random starting position. Let us take a look at the following example where
+we set the parameters of all and individual walkers.
+
+[source,python]
+---------------
+include::simulation/setting_parameters_walkers.py[]
+---------------
+
+As you see, accessing `parameters` will access all walkers at once. On the
+hand, accessing `parameters[i]` will access only the parameters of walker `i`.
+
 [[reference.simulation.evaluation]]
 Evaluation
 ^^^^^^^^^^

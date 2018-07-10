@@ -3,12 +3,11 @@ The simulation module contains the interface to generically access neural networ
 
 """
 
-import itertools
 import logging
-import tensorflow.python.framework
 
 from TATi.models.model import model
 from TATi.options.pythonoptions import PythonOptions
+from TATi.parameters.parameters import Parameters
 
 
 class Simulation(object):
@@ -121,6 +120,8 @@ class Simulation(object):
 
         # construct nn if dataset has been provided
         self._construct_nn()
+
+        self._parameters = Parameters(self._nn)
 
     def _init_node_keys(self):
         """ Initializes the set of cached variables with nodes from the tensorflow's
@@ -300,9 +301,7 @@ class Simulation(object):
         :return: parameters
         """
         self._check_nn()
-        weights_eval = self._nn.weights[0].evaluate(self._nn.sess)
-        biases_eval = self._nn.biases[0].evaluate(self._nn.sess)
-        return list(itertools.chain(weights_eval, biases_eval))
+        return self._parameters
 
     @parameters.setter
     def parameters(self, values):
@@ -313,10 +312,9 @@ class Simulation(object):
 
         :param values: new parameters to set
         """
-        print(values)
         self._check_nn()
-        assert(len(values) == self.num_parameters())
-        self._nn.assign_neural_network_parameters(values)
+        for i in range(self._parameters.num_walkers()):
+            self._parameters[i] = values
 
     @property
     def momenta(self):

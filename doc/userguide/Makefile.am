@@ -31,6 +31,7 @@ PYTHON_EXAMPLES = \
 	$(srcdir)/simulation/evaluate_hessians.py \
 	$(srcdir)/simulation/requesting_parameters.py \
 	$(srcdir)/simulation/setting_parameters.py \
+	$(srcdir)/simulation/setting_parameters_walkers.py \
 	$(srcdir)/simulation/setting_up_network.py \
 	$(srcdir)/simulation/supply_dataset_array.py \
 	$(srcdir)/simulation/supply_dataset_csv.py

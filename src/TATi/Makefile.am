@@ -5,6 +5,7 @@ SUBDIRS = \
     models \
     models/input \
     options \
+    parameters \
     runtime \
     samplers \
     tools

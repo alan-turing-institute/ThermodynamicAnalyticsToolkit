@@ -45,6 +45,7 @@ TESTSCRIPTS += \
 	$(srcdir)/simulation/testsuite-userguide-simulation-requesting_parameters.at \
 	$(srcdir)/simulation/testsuite-userguide-simulation-sample.at \
 	$(srcdir)/simulation/testsuite-userguide-simulation-setting_parameters.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-setting_parameters_walkers.at \
 	$(srcdir)/simulation/testsuite-userguide-simulation-setting_up_network.at \
 	$(srcdir)/simulation/testsuite-userguide-simulation-supply_dataset_array.at \
 	$(srcdir)/simulation/testsuite-userguide-simulation-supply_dataset_csv.at
