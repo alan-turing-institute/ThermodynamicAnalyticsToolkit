@@ -420,7 +420,10 @@ class model:
                 for var in fixed_variables:
                     removed_vars = model._fix_parameter_in_collection(trainables, var)
                     # make sure we remove one per walker
-                    assert( len(removed_vars) == 1 )
+                    if len(removed_vars) != 1:
+                        raise ValueError(
+                            "Cannot find "+var+" in walker "+str(i)+"." \
+                            " Have you checked the spelling, e.g., output/biases/Variable:0?")
                 logging.debug("Remaining trainable variables in walker "+str(i+1)
                              +": "+str(tf.get_collection_ref(self.trainables[i])))
 
@@ -1426,7 +1429,7 @@ class model:
         for i in range(len(_collection)):
             target_name = _collection[i].name
             walker_target_name = target_name[target_name.find("/")+1:]
-            logging.debug("Comparing to %s and %s" % (target_name, walker_target_name))
+            logging.debug("Comparing %s to %s and %s" % (_name, target_name, walker_target_name))
             if target_name == _name or walker_target_name == _name:
                 variable_indices.append(i)
         return variable_indices
