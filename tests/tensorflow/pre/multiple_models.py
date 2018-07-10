@@ -27,7 +27,6 @@ nn1.init_network(None, setup="sample")
 nn1.init_input_pipeline()
 run_info, trajectory, averages = nn1.sample(return_run_info=True, \
   return_trajectories=True, return_averages=True)
-nn1.finish()
 
 print("Sample results")
 print(np.asarray(run_info[0:10]))
@@ -41,6 +40,5 @@ nn2.init_network(None, setup="sample")
 nn2.init_input_pipeline()
 run_info, trajectory, averages = nn2.sample(return_run_info=True, \
   return_trajectories=True, return_averages=True)
-nn2.finish()
 
 

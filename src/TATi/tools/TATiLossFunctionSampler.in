@@ -314,8 +314,6 @@ def main(_):
 
             current_step += 1
 
-    network_model.finish()
-
     if options.csv_file is not None:
         csv_file.close()
 

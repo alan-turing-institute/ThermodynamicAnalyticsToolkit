@@ -54,7 +54,6 @@ while exploration_step < max_exploration_steps:
 
     exploration_step += 1
 
-nn.finish()
 
 run_info, trajectory = explorer.get_run_info_and_trajectory()
 

@@ -49,8 +49,6 @@ def main(_):
 
     rt.set_train_network_time(time.process_time() - rt.time_init_network)
 
-    network_model.finish()
-
     rt.set_overall_time(time.process_time() - time_zero)
 
 if __name__ == '__main__':

@@ -18,7 +18,6 @@ nn.init_network(None, setup="train")
 nn.reset_dataset()
 run_info, trajectory, averages = nn.train(return_run_info=True, \
   return_trajectories=True, return_averages=True)
-nn.finish()
 
 print("Train results")
 print(np.asarray(run_info[0:10]))

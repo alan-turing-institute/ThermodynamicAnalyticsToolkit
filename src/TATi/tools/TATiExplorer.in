@@ -243,8 +243,6 @@ def main(_):
                 cornerpoints_writer.writerow(cornerpoints_line)
         cornerpoints_file.close()
 
-    network_model.finish()
-
     rt.set_overall_time(time.process_time() - time_zero)
 
 if __name__ == '__main__':

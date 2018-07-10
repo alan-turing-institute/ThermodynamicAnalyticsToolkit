@@ -181,8 +181,6 @@ def main(_):
                     print("End of dataset.")
                     break
 
-    network_model.finish()
-
     if options.csv_file is not None:
         csv_file.close()
 

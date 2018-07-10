@@ -580,6 +580,9 @@ class model:
                 self.assign_weights_and_biases_from_file(self.FLAGS.parse_parameters_file, step,
                                                          walker_index=i, do_check=True)
 
+    def init_files(self, setup):
+        """ Initializes the output files.
+        """
         header = None
         if setup == "sample":
             header = self.get_sample_header()
@@ -591,8 +594,14 @@ class model:
                 if self.FLAGS.averages_file is not None:
                     self.config_map["do_write_averages_file"] = True
                     self.averages_writer, self.config_map["averages_file"] = setup_csv_file(self.FLAGS.averages_file, self.get_averages_header(setup))
+        except AttributeError:
+            pass
+        try:
             if self.run_writer is None:
                 self.run_writer = setup_run_file(self.FLAGS.run_file, header, self.config_map)
+        except AttributeError:
+            pass
+        try:
             if self.trajectory_writer is None:
                 self.trajectory_writer = setup_trajectory_file(self.FLAGS.trajectory_file,
                                                                self.weights[0].get_total_dof(),
@@ -711,6 +720,8 @@ class model:
         :return: either thrice None or lists (per walker) of pandas dataframes
                 depending on whether either parameter has evaluated to True
         """
+        self.init_files("sample")
+
         placeholder_nodes = [self.nn[walker_index].get_dict_of_nodes(
             ["current_step", "next_eval_step"])
             for walker_index in range(self.FLAGS.number_walkers)]
@@ -1115,6 +1126,8 @@ class model:
         if self.FLAGS.summaries_path is not None:
             summary_writer.close()
 
+        self.finish_files()
+
         return run_info, trajectory, averages
 
     def _create_default_feed_dict_with_constants(self, walker_index=0):
@@ -1175,6 +1188,8 @@ class model:
         :return: either twice None or a pandas dataframe depending on whether either
                 parameter has evaluated to True
         """
+        self.init_files("train")
+
         assert( walker_index < self.FLAGS.number_walkers)
 
         placeholder_nodes = self.nn[walker_index].get_dict_of_nodes(["learning_rate", "y_"])
@@ -1350,6 +1365,8 @@ class model:
         if self.FLAGS.summaries_path is not None:
             summary_writer.close()
 
+        self.finish_files()
+
         return run_info, trajectory, averages
 
     def compute_optimal_stepwidth(self, walker_index=0):
@@ -1403,7 +1420,7 @@ class model:
         """
         return self.saver.save(self.sess, filename)
 
-    def finish(self):
+    def finish_files(self):
         """ Closes all open files and saves the model if desired
         """
         self.close_files()

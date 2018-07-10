@@ -362,7 +362,6 @@ class Simulation(object):
                            return_run_info=True, \
                            return_trajectories=True,
                            return_averages=True)
-        self._nn.finish()
         return run_info, trajectory, averages
 
     def sample(self):
@@ -384,7 +383,6 @@ class Simulation(object):
             self._nn.sample(return_run_info=True, \
                             return_trajectories=True,
                             return_averages=True)
-        self._nn.finish()
         return run_info, trajectory, averages
 
     @property
