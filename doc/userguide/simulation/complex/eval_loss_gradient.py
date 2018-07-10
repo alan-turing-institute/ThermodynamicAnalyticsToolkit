@@ -15,8 +15,8 @@ nn.parameters = np.zeros([nn.num_parameters()])
 # simply evaluate loss
 print(nn.loss())
 
-# alternativly, evaluate loss and gradients. otherwise loss and 
-# gradient may not match due to different subset of dataset
-# (if batch_size != dimension)
+# also evaluate gradients (from same batch)
 print(nn.gradients())
+
+
 

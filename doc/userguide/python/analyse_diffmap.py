@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from TATi.TrajectoryAnalyser import compute_diffusion_maps
 
 # option values coming from the sampling
-inverse_temperature=1e4
+inverse_temperature=2e-1
 
 df_trajectory = pd.read_csv("trajectory.csv", sep=',',
     header=0)
@@ -29,6 +29,6 @@ vectors, values, q = compute_diffusion_maps(
     method="vanilla",
     use_reweighting=False)
 
-plt.scatter(vectors[:,0], vectors[:,1])
+plt.scatter(trajectory[:,0], trajectory[:,1], c=vectors[:,0])
 plt.savefig('eigenvectors.png', bbox_inches='tight')
-plt.show()
+#plt.show()

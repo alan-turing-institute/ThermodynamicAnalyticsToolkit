@@ -8,8 +8,8 @@ np.random.seed(426)
 
 dataset_generator = DatasetGenerator()
 xs, ys = dataset_generator.generate(
-    dimension=100,
-    noise=0.1,
+    dimension=500,
+    noise=0.01,
     data_type=dataset_generator.TWOCLUSTERS)
 
 # always shuffle data set is good practice

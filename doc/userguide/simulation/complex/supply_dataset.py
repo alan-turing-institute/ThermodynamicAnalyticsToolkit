@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 
 nn = tati(
-    batch_data_files=["dataset-twoclusters.csv"],
     output_activation="linear",
 )
 # e.g. parse dataset from CSV file into pandas frame

@@ -5,6 +5,8 @@ import numpy as np
 nn = tati(
     batch_data_files=["dataset-twoclusters.csv"],
     batch_size=500,
+    every_nth=100,
+    fix_parameters="layer1/biases/Variable:0=0.;output/biases/Variable:0=0.",
     hidden_dimension=[1],
     input_columns=["x1"],
     learning_rate=1e-2,
@@ -12,15 +14,20 @@ nn = tati(
     optimizer="GradientDescent",
     output_activation="linear",
     sampler = "BAOAB",
-    seed=426,
+    prior_factor=2.,
+    prior_lower_boundary=-2.,
+    prior_power=2.,
+    prior_upper_boundary=2.,
+    seed=428,
     step_width=1e-2,
+    trajectory_file="trajectory.csv",
 )
 opt_run_info, opt_trajectory, _ = nn.fit()
 
 nn.set_options(
     friction_constant = 10.,
-    inverse_temperature = 4.,
-    max_steps = 1000,
+    inverse_temperature = .2,
+    max_steps = 5000,
 )
 
 sample_run_info, sample_trajectory, _ = nn.sample()
