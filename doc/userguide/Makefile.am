@@ -12,7 +12,8 @@ PYTHON_EXAMPLES = \
 	$(srcdir)/cmdline/parse_dataset.sh \
 	$(srcdir)/cmdline/sample.sh \
 	$(srcdir)/cmdline/write_dataset.sh \
-	$(srcdir)/python/analyse.py \
+	$(srcdir)/python/analyse_averages.py \
+	$(srcdir)/python/analyse_diffmap.py \
 	$(srcdir)/python/eval_loss_gradient.py \
 	$(srcdir)/python/explore.py \
 	$(srcdir)/python/fix_parameter.py \

@@ -5,6 +5,8 @@ import numpy as np
 nn = tati(
     batch_data_files=["dataset-twoclusters.csv"],
     batch_size=500,
+    hidden_dimension=[1],
+    input_columns=["x1"],
     learning_rate=1e-2,
     max_steps=100,
     optimizer="GradientDescent",
@@ -17,7 +19,7 @@ opt_run_info, opt_trajectory, _ = nn.fit()
 
 nn.set_options(
     friction_constant = 10.,
-    inverse_temperature = .2,
+    inverse_temperature = 4.,
     max_steps = 1000,
 )
 

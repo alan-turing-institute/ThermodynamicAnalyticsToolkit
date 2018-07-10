@@ -8,7 +8,7 @@ Sampling in neural networks
 
 [[quickstart.dataset]]
 .Dataset: "Two Clusters" dataset consisting of two normally distributed point clouds in two dimensions
-image::pictures/dataset_two_clusters.png[{basebackend@docbook:scaledwidth="45%":width=400}]
+image::pictures/dataset_two_clusters.png[align="center",{basebackend@docbook:scaledwidth="45%":width=400}]
 
 Assume we are given a very simple data set as depicted in
 link:#quickstart.dataset[Dataset]. The goal is to
@@ -25,7 +25,10 @@ link:#quickstart.perceptron[Network].
 
 [[quickstart.perceptron]]
 .Network: Single-layer perceptron with weights and biases
-image::pictures/simple_single_layer_perceptron.png[{basebackend@docbook:scaledwidth="25%":width=200}]
+image::pictures/simple_single_layer_perceptron.png[align="center",{basebackend@docbook:scaledwidth="25%":width=200}]
+
+Traing a Neural Network
+^^^^^^^^^^^^^^^^^^^^^^^
 
 In the following we want to use the mean square loss, i.e. the euclidean
 distance between the output from the network and the expected values per
@@ -35,21 +38,33 @@ network. In our case, we have two weights for the two edges between
 input nodes, latexmath:[$w_{1}$] and latexmath:[$w_{2}$], and the output
 node and a single bias attached to the output node latexmath:[$b$].
 
-In sampling we look at a system of particles that have two internal
-properties: location and momentum. The location is simply their current
-value, that changes through its momentum over time. The momentum again
-changes because the particle is inside a potential that drives it
-towards the minimum. The system is described by a so-called Hamilton
-operator that gives rise to its same named dynamics. If noise is
-additionally taken into account, then we look at Langevin Dynamics.
+The general goal of training is to find the set of parameters that achieve the
+lowest loss. To this end, we use the gradient that is readily obtained from the
+neural netwotk through backpropagation of the analytically known derivatives of
+the activation functions. The parameters are modified using Gradient Descent
+until the gradient becomes zero (or we stop before that).
+
+What is Sampling?
+^^^^^^^^^^^^^^^^^
+
+Sampling typically has quite a different perspective: There, we look at a
+system of particles that have two internal properties: _location_ and
+_momentum_. The location is simply their current value, that changes through
+its momentum over time. The momentum again changes because the particle are
+affected by a potential. The system is described by a so-called
+Hamilton operator that gives rise to its same named dynamics. If noise is
+additionally taken into account, then instead we look at Langevin Dynamics.
+_Noise is essential_ here: It is connected to the concept of _temperature_ as
+the average squared momenta of each particle. High temperature therefore means
+large amounts of noise, while low temperature is associated with small amounts.
 
 Returning to the neural networks, the role of the particles is taken by
 the degrees of freedom of the system: weights and biases. The loss
 function is called the _potential_ and it is accompanied by a _kinetic
 energy_ that is simply the sum of all squared momenta. Adding Momentum
 to Optimizers in neural networks is a concept known already and inspired
-by physics. The momentum helps in overcoming areas of the loss function
-where it is essentially flat.
+by physics. There, it counteracts areas of the loss function where it is
+essentially flat and the gradient therefore close to zero.
 
 Sampling produces trajectories of particles moving along the manifold.
 Integrals along these trajectories, if they are long enough, are
@@ -79,12 +94,11 @@ momentum to overcome it. Entropic barriers on the other hand are
 passages very small in volume that are simply very difficult to find. In
 order to overcome barriers of the first kind, higher temperatures
 suffice. For the second type of barrer, this is not so easy.
-Metaphorically speaking, we are looking for possibly very small door.
+Metaphorically speaking, we are looking for a possibly very small door like
+Alice in Wonderland.
 
-This quick description of the problem of sampling in the context of
-neural networks in data science should have prepare you now for the
-following quickstart tutorial on how to actually use
-ThermodynamicAnalyticsToolkit to perform sampling.
+What Does the Landscape Look Like?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Let us have a closer look at a very simple loss landscape. In
 link:#quickstart.landscape.neuralnetwork[Permutation symmetry] we
@@ -99,24 +113,27 @@ well.
 
 [[quickstart.network]]
 .Permutation symmetry: Neural network with permutation symmetry to provoke multiple minima
-image:pictures/neuralnetwork_permutation_symmetry.png[scaledwidth=45.0%]
+image:pictures/neuralnetwork_permutation_symmetry.png[align="center",{basebackend@docbook:scaledwidth="50%":width=500}]
 
 In link:#quickstart.landscape.loss[Loss manifold] we then
 turn to the loss landscape depending on either weight. We see two minima
 basins both of hyperbole or "banane" shape. There is a clear (enthalpic)
-potential barrier in between. However, the minima basins themselves are
-to some part entropic barriers as they are elongated and flat.
+potential barrier in between.
 
 In the figure we also give a trajectory. Here, we have chosen such a
 (inverse) temperature value such that it is able to pass the potential
-barrier and reach the other minima basin.
+barrier and reach the other minima basin. As we have mentioned before, higher
+temperature helps to overcome enthalpic barriers.
 
 [[quickstart.landscape.loss]]
 .Loss manifold: Loss landscape with an example trajectory
 image:pictures/losslandscape_permutation_symmetry.png[scaledwidth=45.0%]
 
-This is the goal of exploration: To find all (local) minima to allow to
-pick the lowest, namely the global minimum.
+This quick description of the problem of sampling in the context of
+neural networks in data science should have acquainted you with some of the
+physical concepts underlying the idea of sampling. It hopefully has prepared
+you for the following quickstart tutorial on how to actually use
+ThermodynamicAnalyticsToolkit to perform sampling.
 
 [[quickstart.python]]
 Using Python
@@ -142,16 +159,18 @@ In this shell, you may import the sampling part of the package as
 follows
 
 ---------------
-from TATi.models.model import model
+import TATi.simulation as tati
 ---------------
 
-This will import the abstract `model` class from the file mentioned
-before. This class contains wrapper functions to setup the network with
-either training and sampling in a few keystrokes.
+This will import the `simulation` interface class from the file mentioned
+before. This class contains a set of convenience functions that hides all the
+complexity of setting up of input pipelines and networks. Accessing the loss
+function, gradients and alike or training and sampling can be done in just
+a few keystrokes.
 
 In order to make you own python scripts executable and know about the
-correct (non-standard) path to ThermodynamicAnalyticsToolkit, place the
-following two lines at the veryg beginning of your script:
+correct (possibly non-standard) path to ThermodynamicAnalyticsToolkit, place
+the following two lines at the veryg beginning of your script:
 
 ---------------
 import sys
@@ -170,20 +189,23 @@ straight-forward.
 Preparing a dataset
 ^^^^^^^^^^^^^^^^^^^
 
-Therefore, let us prepare the dataset, see <<quickstart.dataset>>, for our
-following experiments.
+Therefore, let us prepare the dataset, see the Figure link:#quickstart.dataset[Dataset],
+for our following experiments.
 
 At the moment, datasets are parsed from Comma Separated Values (CSV)
-or Tensorflow's own TFRecord files or can be provided in-memory from numpzy
+or Tensorflow's own TFRecord files or can be provided in-memory from numpy
 arrays. In order for the following examples on optimization and sampling to
 work, we need such a data file containing features and labels.
 
 TATi provides a few simple dataset generators contained in the class
 `ClassificationDatasets`.
 
-One option is to use the TATiDatasetWriter, see
-link:#quickstart.cmdline.writing_dataset[Writing a dataset]. However, we can
-do the same using python as well.
+One option therefore is to use the TATiDatasetWriter that provides access to
+`ClassificationDatasets`, see link:#quickstart.cmdline.writing_dataset[Writing a dataset].
+However, we can do the same using python as well. This should give you an idea
+that you are not constrained to the `simulation` part of the Python interface,
+see the reference on the general Python interface where we go through the
+same examples without importing `simulation`.
 
 [source,python]
 ---------------
@@ -195,20 +217,24 @@ The labels need to be integer values. Importing will fail if they are not.
 
 After importing some modules we first fix the numpy seed to 426 in order
 to get the same items reproducibly. Then, we first create 100 items
-using the `ClassificationDatasets` class from the *TWOCLUSTERS* dataset. We
-randomly perturb by a relative noise of 0.1.
+using the `ClassificationDatasets` class from the *TWOCLUSTERS* dataset with
+a random perturbation of relative 0.1 magnitude. We
+shuffle the dataset as the generators typically create first items of one
+label class and then items of the other label class.
 
 [NOTE]
 The class `ClassificationDatasets` mimicks the dataset examples that can also
 be found on the link:https://playground.tensorflow.org/[Tensorflow playground].
 
-Afterwards, these items are simply written to file using the csv module.
+Afterwards, we write the dataset to a simple CSV file with columns "x1", "x2",
+and "label".
 
 [CAUTION]
 The file `dataset-twoclusters.csv` is used in the following examples, so keep
 it around.
 
-This is the dataset we want to learn, sample from and exlore in the following.
+This is the very simple dataset we want to learn, sample from and exlore in the
+following.
 
 [[quickstart.python.simple_evaluation]]
 Evaluating loss and gradients
@@ -235,7 +261,8 @@ As you see `tati` forms the general interface class that contains the network
 along with the dataset and everything.
 
 This is basically all the access you need in order to use your own optimization,
-sampling, or exploration methods in the context of neural networks.
+sampling, or exploration methods in the context of neural networks in a
+high-level, abstract way.
 
 [[quickstart.python.optimizing]]
 Optimizing the network
@@ -250,8 +277,10 @@ include::simulation/complex/optimize.py[]
 
 Again all options are set in the init call to the interface. These options
 control how the optimization is performed, what kind of network is created,
-how often values are stored. In other words everything. In case you need to
-change these options, use `reset_options()`.
+how often values are stored. In other words everything.
+
+TIP: In case you need to change these options elsewhere in your python code,
+use `set_options()`.
 
 Let us quickly go through each of the parameters:
 
@@ -289,8 +318,9 @@ randomness but in a deterministic manner, i.e. calling the same
 procedure again will bring up the exactly same values.
 
 In our case, the default option values are such that the network we use
-looks exactly as in <<quickstart.perceptron>>, namely a single-layer perceptron
-whose number of input and output nodes are completely fixed by the dataset.
+looks exactly as in the Figure link:#quickstart.perceptron[Network], namely
+a single-layer perceptron whose number of input and output nodes are completely
+fixed by the dataset.
 
 For these small networks the option 'do_hessians' might be useful which will
 compute the hessian matrix at the end of the trajectory and use the
@@ -305,12 +335,12 @@ evaluation) is a latexmath:[O(N^2)] process in the number of parameters of the
 network N. Hence, this should only be done for small networks and on purpose.
 ====
 
-Moreover, we did not say anything about 'sampler' as this is covered in
-the next section.
-
 After the options have been provided, the network is initialized internally
 and automatically, we then call `fit()` which performs the training and returns
 runtime info, trajectory, and averages as a pandas `DataFrame`.
+
+TIP: You want more output of what is actually going on in each training step?
+Set `verbose=1` or even `verbose=2` in the `init()` of the interface.
 
 Let us have a quick glance at the decrease of the loss function over the steps
 by using `matplotlib`. In other words, let us look how effective the training
@@ -330,11 +360,14 @@ image::pictures/optimization-step_loss.png[{basebackend@docbook:scaledwidth="60%
 
 As you see the loss has decreased quite quickly down to 1e-3. Go and have a
 look at the other columns such as accuracy. Or try to visualize the change
-in the parameters (weights and biases) in the trajectories dataframe.
+in the parameters (weights and biases) in the trajectories dataframe. See
+link:https://pandas.org/dataframe[Dataframe help] if you are unfamiliar
+with the `pandas` module, yet.
 
-Naturally, we did not use a different dataset set for testing the effectiveness
+Obviously, we did not use a different dataset set for testing the effectiveness
 of the training which should commonly be done. This way we cannot check whether
-we have overfitted or not. However, our example is trivial by design.
+we have overfitted or not. However, our example is trivial by design and the
+network too small to be prone to overfitting this dataset.
 
 Nonetheless, we show how to supply a different dataset and evaluate loss and
 accuracy on it.
@@ -354,14 +387,12 @@ include::simulation/complex/supply_dataset.py[]
 
 The major difference is that `batch_data_files` is now empty and instead
 we simply assign `dataset` the in-memory dataset to use. Note that we could
-also have supplied it with the filename +dataset-twoclusters.csv+ directly. In
-this example, we have parsed the same file as the in the previous section into
+also have supplied it directly with the filename +dataset-twoclusters.csv+. In
+this example we have parsed the same file as the in the previous section into
 a numpy array using the pandas module. Natually, this is just one way of
-creating a suitable numpy array. Input and output dimensions are directly
-deduced from the the tuple sizes.
+creating a suitable numpy array.
 
-Note that we have ignored the average output here, by default none of
-the three output pandas dataframes are accumulated.
+NOTE: Input and output dimensions are directly deduced from the the tuple sizes.
 
 In the following link:#quickstart.python.sampling[section] we will explain
 what each of these three dataframes exactly contains.
@@ -372,10 +403,10 @@ Sampling the network
 
 Optimization only steps down to the nearest local minimum from some initial
 random starting position. Only through sampling do we actually uncover the shape
-of the loss manifold and thereby are able to deduce whethr our network is
+of the loss manifold and thereby are able to deduce whether our network is
 efficient at doing its job.
 
-Nonetheless, optimization is always the initial step to sampling, as we need
+Nonetheless, optimization is always the initial step to sampling as we need
 our random starting configuration to touch base with the loss manifold. If we
 start at a hill, then the sampler will accumulate a lot of momentum when going
 downhill which will carry him on for a quite a while. In contrast, we want the
@@ -384,7 +415,7 @@ where gradients are small, best close to zero, and simply use random initial
 momenta.
 
 However, let us ignore this procedure for the moment and simply look at
-sampling from a random initial placeo n the loss manifold.
+sampling from a random initial place on the loss manifold.
 
 [source,python]
 ---------------
@@ -400,13 +431,14 @@ NOTE: In the context of sampling we use 'step_width' in place of 'learning_rate'
 Again, we produce three output arrays: run info, trajectory, and
 averages. Trajectories contains among others all parameter degrees of
 freedom for each step (or 'every_nth' step). Run info contains loss,
-accuracy, norm of gradient, norm of noise and others. Finally, in
-averages we compute averages over the trajectory such as average
-(ensemble) loss, average kinetic energy, average virial. There it is
+accuracy, norm of gradient, norm of noise and others, again for each step.
+Finally, in averages we compute running averages over the trajectory such as
+average (ensemble) loss, average kinetic energy, average virial. There it is
 advisable to skip some initial ateps ('burn_in_steps') to allow for
 some burn in time, i.e. for kinetic energies to adjust from initially
 zero momenta. Some columns depend on whether the sampler provides the
-specific quantity, e.g. SGLD does not have momentum, hence there will be
+specific quantity, e.g. link:#reference.samplers.sgld[SGLD] does not have
+momentum, hence there will be
 no average kinetic energy.
 
 [[quickstart.python.sampling.priors]]
@@ -414,12 +446,13 @@ Using a prior
 +++++++++++++
 
 You may add a prior to the sampling. At the current state two kinds of
-priors as follows are available: The options 'prior_upper_boundary' and
-'prior_lower_boundary' give the admitted interval per parameter. Within
-a relative distance of 0.01 (with respect to length of domain and only
-in that small region to the specified boundary) an additional force acts
-upon the particles to drive them back into the desired domain. Its
-magnitude increases with distance to the covered inside the boundary
+priors are available: wall-repelling and tethering.
+
+The options 'prior_upper_boundary' and 'prior_lower_boundary' give the admitted
+interval per parameter. Within a relative distance of 0.01 (with respect to
+length of domain and only in that small region next to the specified boundary)
+an additional force acts upon the particles to drive them back into the desired
+domain. Its magnitude increases with distance to the covered inside the boundary
 region. The distance is taken to the power of 'prior_power'. The force
 is modified by 'prior_factor'.
 
@@ -434,15 +467,30 @@ The prior force is acting directly on the variables. It does not modify
 momentum. Moreover, it is a force! In other words, it depends on step
 width. If the step width is too large and if the repelling force
 increases too steeply close to the walls with respect to the normal
-dynamics of the system, it may blow up.
+dynamics of the system, it may blow up. On the ither hand, if it is too weak,
+then particles may even escape.
 ====
 
 [[quickstart.python.sampling.optimize_then_sample]]
 First optimize, then sample
 +++++++++++++++++++++++++++
 
-We might also concatenate optimize and sample if, in between the two, we
-adjust the initial options provided to `tati` as follows:
+As we have already alluded to before, optimizing before sampling is the
+_recommended* procedure. In the following example, we concatenate the two.
+To this end, we might need to modify some of the options in between. Let us have
+a look, however with a slight twist.
+
+The dataset shown in Figure link:#quickstart.dataset[Dataset] can be even
+learned by a simpler network, namely only one of the input nodes is actually
+needed because of the symmetry.
+
+Hence, we look at such a network by using 'input_columns' to only use input
+column "x1" although the dataset contains both "x1" and "x2".
+
+Moreover, we will add a hidden layer with a single node and thus obtain a
+network as depicted in Figure link:#quickstart.network[Permutation symmetry].
+We add this node hidden node to make the loss manifold a little bit more
+interesting.
 
 [source,python]
 ---------------
@@ -452,32 +500,31 @@ include::simulation/complex/optimize_sample.py[]
 We needed to change the number of steps, set a sampling step width and add the
 sampler (which might depend on additional parameters, see <<reference.samplers>>
 ).
-At the very end we obtain pandas DataFrame containing runtime information,
+At the very end we again obtain `pandas` DataFrame containing runtime information,
 trajectory, and averages.
-
-[NOTE]
-====
-This is actually the _recommended_ way of doing sampling: First make sure that
-the parameters start in a local minimum and from there we explore the
-surrounding manifold.
-====
 
 [[quickstart.python.analysis]]
 Analysing trajectories
 ^^^^^^^^^^^^^^^^^^^^^^
 
-Analysis is so far constrained to parsing in run and trajectory files
-that you would write through optimization and sampling runs.
+Analysis involves parsing in run and trajectory files that you would write
+through optimization and sampling runs. Naturally, you could also perform this
+on the `pandas` dataframes directly. However, for completeness we will read
+from files in the examples of this section.
 
 To this end, specify `FLAGS.run_file` and `FLAGS.trajectory_file` with
 some valid file names.
+
+[[quickstart.python.analysis.averages]]
+Averages
+++++++++
 
 Subsequently, these may be easily parsed as follows, see also
 +tools/TATiAnalyser.in+ in the repository.
 
 [source,python]
 ---------------
-include::python/analyse.py[]
+include::python/analyse_averages.py[]
 ---------------
 
 This would give a plot of the running average for each parameter in the
@@ -485,29 +532,87 @@ trajectory file. In a similar, the run file can be loaded and its
 average quantities such as loss or kinetic energy be analysed and
 plotted.
 
+[[quickstart.python.analysis.diffusion_map]]
+Diffusion Map
++++++++++++++
+
+Further analysis can be deducted using diffusion maps. Diffusion maps can be
+summarized as follows:
+
+[quote, pydiffmap, https://pydiffmap.readthedocs.io/en/master/theory.html]
+_____
+Diffusion maps is a dimension reduction technique that can be used to discover
+low dimensional structure in high dimensional data. It assumes that the data
+points, which are given as points in a high dimensional metric space, actually
+live on a lower dimensional structure. To uncover this structure, diffusion
+maps builds a neighborhood graph on the data based on the distances between
+nearby points. Then a graph Laplacian L is constructed on the neighborhood
+graph. Many variants exist that approximate different differential operators.
+_____
+
+link:https://github.com/DiffusionMapsAcademics/pyDiffMap[pydiffmap] is an
+excellent Python package that performs the analysis which consists of computing
+the eigendecomposition of a sparse neighborhood graph where the Euclidean
+metric is used as distance measure.
+
+The important property is that one can prove point-wise convergence of the
+discrete eigenvectors of the diffusion maps to the eigenfunctions of the
+Fokker-Plank equation and thus to certain differential operators which are
+directly connected to the Langevin dynamics that underlies out sampling
+methods. In other words, diffusion map fits like a glove.
+
+The eigenvectors parametrize each one dimension of the lower-dimensional
+manifold on which the trajectory and therefore the sampled points live.
+The degrees of freedom of this manifold are typically called _collective
+variables_.
+
+Diffusion maps is a technique to find these collective variables automatically.
+
+NOTE: In the module `TrajectoryAnalyser` an early variant of pydiffmap can be
+found. pydiffmap if installed using link:https://pypi.org/project/pydiffmap/[pip]
+ is used in +TATiExplorer+ and +TATiAnalyser+ (see <<reference.cmdline>>) if
+ the option 'diffusion_map_method' is set to *pydiffmap*.
+
+Let us take a look at the eigenvectors of a very simple trajectory, sampled
+at a very low temperature.
+
+[source,python]
+---------------
+include::python/analyse_diffmap.py[]
+---------------
+
+You should then obtain the Figure link:#quickstart.python.analysis.diffusion_map.eigenvectors[Diffusion map analysis].
+
+[[quickstart.python.analysis.diffusion_map.eigenvectors]]
+.Diffusion map analysis: Plot of first against second eigenvector.
+image::pictures/eigenvectors.png[align="center",{basebackend@docbook:scaledwidth="25%":width=200}]
+
+NOTE: The true first eigenvector is constant and is therefore dropped in the
+function `compute_diffusion_maps()`.
+
 [[quickstart.python.exploration]]
 Exploring the loss manifold
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Exploration of the loss manifold is a bit more involved and hence uses a
 different part of the Python interface. We do not use the simulation interface
-anymore but the general Python interface as require more direct access to its
+anymore but the general Python interface as we require greater access to its
 internals.
 
 In general, the procedure has the following stages:
 
-* We sample a start trajectory.
-* For the current set of trajectory points we perform a diffusion map
+. [[step1]] We sample a start trajectory.
+. [[step2]] For the current set of trajectory points we perform a diffusion map
 analysis. Using the first eigenvector as the dominant diffusion mode, we
 pick the first corner points at its maximal component.
-* If more corner points are needed, then we look at the diffusion
+. [[step3]] If more corner points are needed, then we look at the diffusion
 distance with respect to already picked corner points over all
 eigenvectors of the diffusion map and pick the next point always such
 that it maximizes the diffusion distance to the present ones.
-* Finally, we sample further trajectories, one starting at each of the
+. [[step4]] Finally, we sample further trajectories, one starting at each of the
 picked corner points.
-* This is repeated (go to second step) for as many exploration steps as
-we want to do.
+. [[step5]] This is repeated (go to link:#step2[second step]) for as many
+exploration steps as we want to do.
 
 Note that each single trajectory is sampled in a special way:
 

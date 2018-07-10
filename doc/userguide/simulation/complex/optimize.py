@@ -10,7 +10,6 @@ nn = tati(
     optimizer="GradientDescent",
     output_activation="linear",
     seed=426,
-    step_width=1e-2
 )
 run_info, trajectory, averages = nn.fit()
 

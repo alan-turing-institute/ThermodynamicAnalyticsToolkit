@@ -14,7 +14,7 @@ more of the following operations:
 * Evaluating accuracy
 * Supplying a different dataset
 
-TATi's Python interface readily allows for these and has one beneficial
+TATi's `simulation` interface readily allows for these and has one beneficial
 feature: The network's topology is completely hidden with respect to the
 set of parameters. To elaborate on this: Tensorflow internally uses
 tensors to represent weights between layers. Therefore, its parameters

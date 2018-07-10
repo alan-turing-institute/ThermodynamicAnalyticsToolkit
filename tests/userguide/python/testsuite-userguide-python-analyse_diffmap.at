@@ -17,8 +17,8 @@
 #
 ### test on examples in the userguide
 
-AT_SETUP([Examples - analysis])
-AT_KEYWORDS([example python analyse])
+AT_SETUP([Examples - diffusion map analysis])
+AT_KEYWORDS([example python analyse diffusion_map ])
 
 # analyse a trajectory that was created by:
 # (Two clusters dataset with two inputs nodes, single output, linear activation)
@@ -37,9 +37,9 @@ AT_KEYWORDS([example python analyse])
 file="trajectory.csv"
 AT_CHECK([cp -f ${abs_top_srcdir}/tests/userguide/python/pre/trajectory-two_clusters-dim_500-gamma_10-beta_1e4-max_steps_1000-noise_0.1-linear-seed_426.csv $file], 0, [ignore], [ignore])
 AT_CHECK([../../run \
-	${abs_top_srcdir}/doc/userguide/python/analyse.py
+	${abs_top_srcdir}/doc/userguide/python/analyse_diffmap.py
 ], 0, [stdout], [stderr])
-AT_CHECK([test -e step-parameters.png], 0, [ignore], [ignore])
+AT_CHECK([test -e eigenvectors.png], 0, [ignore], [ignore])
 
 AT_CLEANUP
 

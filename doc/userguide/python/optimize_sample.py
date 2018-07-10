@@ -5,12 +5,14 @@ import numpy as np
 FLAGS = model.setup_parameters(
     batch_data_files=["dataset-twoclusters.csv"],
     batch_size=500,
+    hidden_dimension=[1],
+    input_columns=["x1"],
     learning_rate=1e-2,
     max_steps=100,
     optimizer="GradientDescent",
     output_activation="linear",
     seed=426,
-    step_width=1e-2
+    step_width=1e-2,
 )
 nn = model(FLAGS)
 nn.init_input_pipeline()
@@ -20,7 +22,9 @@ opt_run_info, opt_trajectory, _ = nn.train( \
     return_run_info=True, return_trajectories=True)
 
 FLAGS.max_steps = 1000
-FLAGS.sampler = "GeometricLangevinAlgorithm_2ndOrder"
+FLAGS.friction_constant = 10.
+FLAGS.inverse_temperature = 4.
+FLAGS.sampler = "BAOAB"
 nn.reset_parameters(FLAGS)
 nn.init_network(None, setup="sample")
 nn.reset_dataset()

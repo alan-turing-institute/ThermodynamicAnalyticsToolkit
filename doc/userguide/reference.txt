@@ -234,13 +234,13 @@ recommend <<BAOAB>> at the moment as it is the most accurate with second
 order convergence for average values over the step width size and even
 fourth order in the high-friction limit.
 
-NOTE: At the beginning of each the following subsections we give the name of the respective sampler in order to activate it using the `sampler` keyword, see <<quickstart.python.sampling>> and <<quickstart.cmdline.sampling>>.
+NOTE: At the beginning of each the following subsections we give the name of the respective sampler in order to activate it using the *sampler* keyword, see <<quickstart.python.sampling>> and <<quickstart.cmdline.sampling>>.
 
 [[reference.samplers.sgld]]
 Stochastic Gradient Langevin Dynamics
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-`sampler`: +StochasticGradientLangevinDynamics+
+*sampler*: +StochasticGradientLangevinDynamics+
 
 The Stochastic Gradient Langevin Dynamics (SGLD) was proposed by
 Welling2011 based on the <<SGD>>[Stochastic Gradient Descent], which is a
@@ -259,7 +259,7 @@ to be small enough with respect to the gradient sizes of your problem.
 Covariance Controlled Adaptive Langevin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-`sampler`: +CovarianceControlledAdaptiveLangevin+
+*sampler*: +CovarianceControlledAdaptiveLangevin+
 
 This is an extension of Stochastic Gradient Descent proposed by
 <<Shang2015>>. The key idea is to dissipate the extra heat caused by the
@@ -278,7 +278,7 @@ order.
 Geometric Langevin Algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-`sampler`: +Geometric Langevin Algorithms_1stOrder+, +Geometric Langevin Algorithms_2ndOrder+
+*sampler*: +Geometric Langevin Algorithms_1stOrder+, +Geometric Langevin Algorithms_2ndOrder+
 
 GLA results from a first-order splitting between the Hamiltonian and the
 Ornstein-Uhlenbeck parts, see <<Leimkuhler2015>>[section 2.2.3, Leimkuhler 2015] and also
@@ -301,7 +301,7 @@ need to be find by try&error and the moment.
 BAOAB
 ^^^^^
 
-`sampler`: +BAOAB+
+*sampler*: +BAOAB+
 
 BAOAB derives from the basic building blocks A (position update), B
 (momentum update), and O (noise update) into which the Langevin system
@@ -319,7 +319,7 @@ BAOAB has the same two additional parameters as given in the <<GLA>>s.
 Hamiltonian Monte Carlo
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-`sampler`: +HamiltonianMonteCarlo+
+*sampler*: +HamiltonianMonteCarlo+
 
 HMC is based on Hamiltonian dynamics instead of Langevin Dynamics. Noise
 only enters when, after the evaluation of an acceptance criterion, the
@@ -345,6 +345,27 @@ approximation still holds.
 This works for all of the aforementioned samplers as simply the gradient
 of each walker is rescaled.
 
+[[reference.reproducibility]]
+A Note on Reproducibility
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In many of the examples in the quickstart tutorials we have set a 'seed' value
+to enforce reproducible runs.
+
+We have gone through great lengths to make sure that runs using the same set
+of options yield the same output on every evocation.
+
+Tensorflow is not fully reproducible per se. Its internal random number seeds
+change when the computational graph changes. Its reduction operations are
+non-deterministic. The latter can be overcome by setting 'inter_ops_threads' to
+_1_, which take away some of the parallelization for the sake of
+reproducibility. The former is taken care of by TATi itself. We make sure to
+set the random number seeds deterministically to ensure that values are
+unchanged even if the graph is slighlty changed.
+
+If you find that this should not be the case, please file an issue, see
+<<introduction.feedback>>.
+
 [[reference.performance]]
 A Note on Performance
 ~~~~~~~~~~~~~~~~~~~~~
@@ -360,6 +381,9 @@ do when these expectations are not met, we invite to go through this section.
 In general, performance hinges *critically* on the input pipeline. In other
 words, it depends very much on how fast a specific machine setup can feed the
 dataset into the input layer of the neural network.
+
+NOTE: In our examples both datasets and networks are very small. This causes
+the sequential parts of tensorflow to overwhelm any kind of parallel execution.
 
 Typically, these datasets are stored as a set of files residing on disk. Note
 that reading from disk is very slow compared to reading from memory. Hence, the
