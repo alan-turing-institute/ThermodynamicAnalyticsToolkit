@@ -255,44 +255,48 @@ class Simulation(object):
             self._update_cache()
         return self._return_cache(key)
 
-    def loss(self):
+    def loss(self, walker_index=0):
         """ Evalutes the current loss.
 
-        :return: value of the loss function
+        :param walker_index: index of walker to use for fitting
+        :return: value of the loss function for walker `walker_index`
         """
-        return self._evaluate_cache("loss")[0]
+        return self._evaluate_cache("loss")[walker_index]
 
-    def gradients(self):
+    def gradients(self, walker_index=0):
         """ Evaluates the gradient of the loss with respect to the set
         of parameters at the current parameters.
 
         For sake of speed, the parameters have to be set beforehand.
 
-        :return: gradients
+        :param walker_index: index of walker to use for fitting
+        :return: gradients for walker `walker_index`
         """
         if "gradients" not in self._node_keys.keys():
             raise AttributeError("Gradient nodes have not been added to the graph.")
-        return self._evaluate_cache("gradients")[0]
+        return self._evaluate_cache("gradients")[walker_index]
 
-    def hessians(self):
+    def hessians(self, walker_index=0):
         """ Evaluates the hessian of the loss with respect to the
         set of parameters at the current parameters.
 
         For sake of speed, the parameters have to be set beforehand.
 
-        :return: hessian
+        :param walker_index: index of walker to use for fitting
+        :return: hessian for walker `walker_index`
         """
         if "hessians" not in self._node_keys.keys():
             raise AttributeError("Hessian nodes have not been added to the graph." \
                                  +" You need to explicitly set 'do_hessians' to True in options.")
-        return self._evaluate_cache("hessians")[0]
+        return self._evaluate_cache("hessians")[walker_index]
 
-    def score(self):
+    def score(self, walker_index=0):
         """ Evaluates the accuracy on the given dataset
 
-        :return: accuracy
+        :param walker_index: index of walker to use for fitting
+        :return: accuracy for walker `walker_index`
         """
-        return self._evaluate_cache("accuracy")[0]
+        return self._evaluate_cache("accuracy")[walker_index]
 
     @property
     def parameters(self):
@@ -340,20 +344,22 @@ class Simulation(object):
         self._check_nn()
         return self._nn.get_total_weight_dof() + self._nn.get_total_bias_dof()
 
-    def fit(self):
+    def fit(self, walker_index=0):
         """ Fits the parameters of the neural network to best match with the
         given dataset.
 
         Note that the parameters of the fit such as `optimizer`,
         `learning_rate` are all set in the `__init__()` options statement.
 
+        :param walker_index: index of walker to use for fitting
         :return: run_info, trajectory, averages
         """
 
         self._check_nn()
         self._nn.reset_dataset()
         run_info, trajectory, averages = \
-            self._nn.train(return_run_info=True, \
+            self._nn.train(walker_index,
+                           return_run_info=True, \
                            return_trajectories=True,
                            return_averages=True)
         self._nn.finish()
@@ -362,8 +368,13 @@ class Simulation(object):
     def sample(self):
         """ Performs sampling of the neural network's loss manifold.
 
-        Note that the parameters of the sampling such as `sampler`,
-        `step_width` are all set in the `__init__()` options statement.
+        NOTE:
+            The parameters of the sampling such as `sampler`, `step_width`
+            are all set in the `__init__()` options statement.
+
+        NOTE:
+            At the moment, this function will perform sampling for all walkers
+            at once.
 
         :return: run_info, trajectory, averages
         """
@@ -421,17 +432,17 @@ class Simulation(object):
             self._construct_nn()
         self._nn.reset_dataset()
 
-    def predict(self, features):
+    def predict(self, features, walker_index=0):
         """ Evaluates predictions (i.e. output of network) for the given features.
 
-        :param: features - features to evaluate network on
-        :return: predicted labels for `features`
+        :param: features - features to evaluate for network of walker `walker_index`
+        :return: labels for `features` predicted by walker `walker_index`
         """
         self._check_nn()
         # set up feed_dict
         feed_dict = {self._nn.xinput: features}
 
         # evaluate the output "y" nodes
-        y_node = self._nn.nn[0].get_list_of_nodes(["y"])
+        y_node = self._nn.nn[walker_index].get_list_of_nodes(["y"])
         y_eval = self._nn.sess.run(y_node, feed_dict=feed_dict)
         return y_eval
