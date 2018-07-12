@@ -1,0 +1,511 @@
+[[concepts.neural_networks]]
+Neural Networks
+~~~~~~~~~~~~~~~
+
+Having briefly explained how computations work in general with tensorflow, we
+would like to come to the concrete example of how neural networks are done in
+such a framework.
+
+Let us make a list of what we need to perform training of neural networks:
+
+- neural network with weights, biases, activation functions and so on
+- input pipeline that feeds in the dataset
+- elements of training: loss function, gradients, optimizer
+
+[[concepts.neural_networks.network_topology]]
+Network topology
+^^^^^^^^^^^^^^^^
+
+The neural network is itself a graph and also consists of nodes and edges.
+Each node has a bias value *b* acting as data-independent shifts and an
+activation function *f*. Edges connect nodes by stating which output of one
+node acts as input to another node. They have weights *w* that act as scaling
+factors, i.e. they are data-dependent.
+
+NOTE: Tensorflow comes with the link:https://www.tensorflow.org/tutorials/keras[`keras`]
+module that is a high-level API providing convenience functions to setup
+arbitrary network topologies in a layer-wise fashion. In order to maintain
+complete control over our network we will build it up from the bottom ourselves.
+
+To directly work on a concrete example, we will
+be using the "Hello, world" pendant of the machine learning world, namely the
+MNIST dataset: it consists of 55.000 grey-scale images, each 28x28 pixels. These
+contain hand-written digits, i.e. there are ten different classes to learn for
+the digits 0 to 9.
+Each pixel in the image has a single integer value in [0,255] which is usually
+converted to a floating point number in [0,1]. We will build a simple
+single-layer perceptron having one input and one output layer.
+
+WARNING: Although we let this example be guided by the dimensions of the MNIST
+dataset, we will not actually show how to use MNIST directly here for
+simplicity. We catch up on this in a supplement to this section on
+<<concepts.neural_networks>>.
+
+So, let's us build the first layer, namely the input layer. Inputs to the nodes
+of the input layer come from the outside, namely the user feeding in a dataset
+or a batch thereof. Tensorflow uses _placeholders_ `tf.Placeholder` as such
+nodes. They need to be given the "shape" (dimensions) of the values beforehand
+and tensorflow takes not that it needs to be fed the input using the `feed_dict`
+mechanism.
+
+CAUTION: Tensorflow uses the shape to check the consistency when connecting
+nodes, i.e. chaining functions. For example, a matrix-vector multiplication of
+ a (2,2) matrix with a (10,1) vector will not work.
+
+[source,python]
+----
+x = tf.Placeholder(float32, [None, 784], name="x")
+----
+
+Here, the dimension is 28x28=784. Note that we need to specify a type here.
+This is used to check that the value later fed into the network in place of
+this placeholders matches with the type specified. Moreover, the type is
+used in checking consistency when chaining nodes together. Some of the frequent
+types are float16, float64, even int16. Moreover, we have set a name for
+the node to ease debugging and readability of error messages.
+
+What's the purpose of `None`? Remember that we do not have just one image but
+55.000 and they are fed in batches into the network. As the `batch_size` is not
+known a-priori and tensorflow does not allow a placeholder in the definition
+of the shape, it makes up for it by allowing to specify `None` for all
+dimension not known a-priori.
+
+In TATi an additional layer is set in between where a subselection of
+features can be used and further allowing for transformation with trigonometric
+functions, i.e. *sin(x1)* would use the sine of the first input dimension as
+one input to the network.
+
+This is possible as placeholders (and also variables) can be spliced in a
+pythonic fashion.
+
+[source,python]
+----
+list_of_nodes = [tf.sin(x[0])]
+----
+
+Eventually, all these are stacked together to form a single node.
+
+[source,python]
+----
+x = tf.transpose(tf.stack(list_of_nodes))
+----
+
+Naturally, this may change the input dimension which is important for the
+subsequent layer. `x.get_shape()` returns an array of all its dimensions.
+
+Then we continue with the next layer, the output layer. In essence, our network
+computes the function latexmath:[f(Wx+b)], where *W* is the weight matrix, *x*
+is the input vector and *b* is a bias vector.
+
+Weights and biases are represented by variables `tf.Variable()`, an activation
+function could be `tf.nn.relu()`. Edges are obtained through algebraic
+operations such as addition and multiplication and of course concatenation of
+functions. Naturally, tensorflow offers a whole flock of different activation
+functions.
+
+In contrast to placeholders, variables and constants need to be initialized
+right from the start. So, how do we initialize the weights and biases?
+Tensorflow has of course _random numbers_ and we simply generate a matrix
+containing random numbers. The bias vector is usually set to a small, non-zero
+value, here *0.1*.
+
+CAUTION: Taking control of the seed of the random number generator will be a
+critical step and is the main reason for building networks up from the bottom.
+Although tensorflow offers setting `tf.set_global_seed()` which derives seeds
+for all internal random number sequences in a deterministic fashion, this
+fashion changes when a single node (even non-dependent) is added to the
+computational graph.
+This is therefore *unusable in a scientific context* where reproducible
+experiments are a top concern.
+
+All together, we construct the output layer therefore as follows.
+
+[source,python]
+----
+seed=426
+w_init = tf.random_uniform((784,10), minval=-0.5, maxval=0.5, seed=seed,
+  dtype=tf.float32)
+b_init = tf.constant(0.1, shape=shape, dtype=tf.float32)
+W = tf.Variabel(w_init, type=tf.float32)
+b = tf.Variable(b_init, type=tf.float32)
+pre_act = W*x+b
+output = tf.nn.linear(pre_act)
+----
+
+We fix an arbitrary seed which is used for the random number generator
+producing the components of the initial weight matrix uniformly in the range
+[-0.5, 0.5]. Moreover, we have a vector with constant components of 0.1. From
+these two we created two variables.
+Next, we have created a node `pre_act` containing the input to the activation
+function obtained from algebraic operations on these variables. Then, we obtain
+the `output` as the output of the activation function with this input.
+
+Adding a _hidden layer_ is then as simple as adding another weight matrix where
+we need to use a *different* seed for its random numbers and setting up the
+function latexmath:[f_o(W_o f_h(W_h x+b_h) + b_o)], where we used indices *h*
+and *o* for the hidden and output layer.
+
+This way we can construct arbitrary feed-forward networks.
+
+Variables are internally marked as _trainable_ by default. This means that they
+go into a special internal collection and we will later see where this is needed
+when we get to the training part. One can exclude a variable by either stating
+`..., trainable=False,...` in its construction or by removing it from the
+collection lateron. A reference to it can be obtained by
+`tf.get_collection_ref(...)`. Note that `tf.get_collection()` only returns a
+copy.
+
+[[concepts.neural_networks.input_pipeline]]
+Input pipeline
+^^^^^^^^^^^^^^
+
+The next step is a bit more involved: Datasets are usually a stored on hard
+drives. We need to parse the files and prepare them in such a way that they can
+be processed by tensorflow. In our case, we need to convert them to `numpy`
+arrays or directly to tensorflow tensors (which is much the same thing
+interface-wise).
+
+NOTE: This input pipeline crucially determines the performance of the network
+overall. If the data is not fed in fast enough, we encounter "data-starvation",
+i.e. the actual training is idling, waiting for the data to be copied to the
+right internal places.
+
+Tensorflow since version 1.4 offers the `tf.data` module with its `Dataset`
+class. This module allows to perform all the preprocessing _within the
+computational graph_. This module conceptually uses three ingredients: tensors,
+transformations, and the iterator. We'll discuss each of them.
+
+So, how do we actually parse in those files?
+
+First of all, we need to tell tensorflow what those files actually are, i.e.
+we need to provide filenames.
+
+[source,python]
+----
+filenames = ["test.csv"] # provide list of strings with (CSV) filenames
+dataset = tf.data.Dataset.from_tensor_slices(filenames)
+----
+
+This is the initial information, the _tensor_ ingredient, that the Dataset
+module needs. Here, some dataset in a file +test.csv+.
+However, we still need to parse the files. Tensorflow has the specialized
+classes `tf.data.TextLineDataset` and  `tf.data.TFRecordDataset` for this
+purpose. They parse text and tfrecored files. To allow using this in parallel
+tensorflow offers `tf.data.Dataset.interleave()`, our first _transformation_
+
+[source,python]
+----
+dataset = dataset.interleave(lambda filename: (
+                    tf.data.TextLineDataset(filename)
+                        .skip(1)
+                        .filter(lambda line: tf.not_equal(tf.substr(line, 0, 1), '#'))),
+                cycle_length=self.NUM_PARALLEL_CALLS)
+----
+
+You see a `lambda` expression in the interleave arguments. What this unnamed
+function does is use each filename in turn as the argument to instantiate
+one `TextLineDataset` class. Moreover, we advice the class to skip the first
+line (containing the header) and also to ignore any lines that start with a
+comment sign ('#'). `cycle_length` then states how many threads are used in
+parallel to parse in files. (From tf1.6 this has changed to
+`parallel_interleave()`).
+The result is that we now have a dataset consisting of single lines read from the
+files.
+
+NOTE: Do not be misled: We do not have a dataset in memory now! We have only
+added more nodes to the computational graph that _would_ parse in the files and
+split them up into single lines, when triggered to do so in graph evaluation.
+
+These lines need to be split up (using the "," as separator) and sorted into
+features and labels. For this we need a small function that has user information
+on the number of feature and label columns (although this could be provided from
+the header as well).
+
+[source,python]
+----
+def decode_csv_line(line, defaults, input_dimension, output_dimension):
+  items = tf.decode_csv(line, list(defaults.values()))
+
+  # reshape into proper tensors
+  features = tf.stack(items[0:input_dimension])
+  label = tf.reshape(tf.convert_to_tensor(items[input_dimension: \
+    input_dimension+output_dimension], dtype=tf.int32), [output_dimension])
+
+  # return last element as label, rest as features
+  return features, labels
+----
+
+Note that `tf.decode_csv` is a tensorflow-internal function for splitting
+up csv files. This function will fill missing values by using the `defaults`
+which is a dict with every column name as key and a respective default value.
+
+This function is going to be used in the second "transformation", `map()`.
+
+[source,python]
+----
+dataset = self.dataset.map(
+                functools.partial(decode_csv_line, defaults=defaults,
+                                  input_dimension=input_dimension,
+                                  output_dimension=output_dimension),
+                num_parallel_calls=self.NUM_PARALLEL_CALLS)
+----
+
+Here, we used `functools.partial` to partially fix some of the arguments of
+`decode_csv` such that it can be used as functor inside the `map()` call.
+Notice that we may again perform this transformation in parallel when setting
+`num_parallel_calls` appropriately.
+
+Now, we are almost finished. The data is already available in the format
+recognized by tensorflow. However, we still need to do the typical tasks of
+shuffling, batching, and so on.
+
+[source,python]
+----
+dataset = dataset.shuffle().batch(batch_size)
+dataset = dataset.repeat(ceil(max_steps*batch_size/dimension))
+----
+
+Here, we need to two more pieces of informations from the user, `batch_size`
+and `max_steps` which give the size of the portions of the dataset used for
+feeding and the number of feeding steps in total.
+
+TIP: `cache()` stores parsed in files and transformations and therefore greatly
+speeds up feeding after the first epoch (after the whole dataset has been
+parsed). This will give one or two orders of magnitude in performance. The best
+place is right after the last `map()`.
+
+TIP: `prefetch()` will tell tensorflow to interleave operations of fetching
+and transforming data with subsequent matrix algebra tasks for a better
+parallel workload. This typically gives another factor of 2 in performance. The
+best place is at the very end of the `dataset` construction.
+
+Last but not least, we need an _iterator_. Iterators are a well-known concept
+in pass:[C++] and they are the same in tensorflow. Iterators point to specific
+batches of the dataset, deliver the batch on evaluation and advance, i.e. think
+of it as `i++` in pass:[C++] lingo.
+
+Let us construct the iterator that will produce the batch of features (and
+labels) on evaluation which we need to feed into the network.
+
+[source,python]
+----
+iterator = dataset.make_initializable_iterator()
+batch_next = iterator.get_next()
+----
+
+We first construct an (initializable) iterator for our dataset and then we
+create the node that will produce the next batch of features and labels.
+
+There are different flavours of iterators: the standard iterator may run through
+the dataset just once. The (re-)initializable iterator can go over the dataset
+multiple times if it is reset. Last, there are feedable iterators that can work
+on different datasets, which allows switching between train and test dataset.
+
+Instantiating a session object, we could now take a look at the first batch as
+follows:
+
+[source,python]
+----
+with tf.Session() as sess:
+  sess.run(iterator.initializer)
+  features, labels = sess.run(batch_next)
+  print([features, labels])
+----
+
+Here, we first have to initialize the iterator (which also resets it to the
+beginning), next we evaluate and print the first batch.
+
+NOTE: One could also have provided the filenames through placeholders. In this
+case one needs to supply additionally `feed_dict={filenames: ["..."]}` with
+the list of files.
+
+[[concepts.neural_networks.training]]
+Training
+^^^^^^^^
+
+Now, we come to the last ingredient to neural network training, namely how to
+do the training itself.
+
+Training essentially is done by minimizing a function. This function in this
+context here is called the _loss_ which compares the predicted output of the
+network with the labels of the dataset.
+Moreover, we need _gradients_, i.e. derivatives of the loss function with
+respect to degrees of freedom of the network, namely weights and
+biases.
+Finally, we need an _update method_ or optimizer that refines these degrees
+making use of gradients, e.g., Gradient Descent.
+
+Let us look at the _optimizer_ first and then fill in the other gaps.
+Furthermore, let us consider a concrete example, namely we want to find the
+approximate minimum of the function latexmath:[2x^2-5x+4]. It is convex,
+alright, hence there will be only a single, global minimum.
+
+[source, python]
+----
+import tensorflow as tf
+
+x = tf.Variable(10.0)
+f_x = 2. * tf.pow(x,2.) - 5. * x + 4.
+
+opt = tf.train.GradientDescentOptimizer(0.1).minimize(f_x)
+
+with tf.Session() as sess:
+    sess.run(tf.global_variables_initializer())
+    for i in range(50):
+        print(sess.run([opt, x, f_x]))
+----
+
+We first set up the variable `x` that is modified during the optimization.
+Next, we set up the function `f_x` to minimize. We instantiate the
+`tf.train.GradientDescentOptimizer` class, giving it a learning rate or step
+width, and we use `minimize()` to tell it which function we actually want to
+minimize.
+
+NOTE: In place of the value *0.1* we could also give the class a placeholder
+as the learning rate. Then, we may flexibly provide the learning rate in each
+iteration step and could for example tune it adaptively.
+
+Noticee something? We did not give the variable `x` to the `minimize()` call.
+The reason is that tensorflow has an internal collection called "trainables".
+All variables are automatically added to this collection unless excluded (see
+end of <<concepts.neural_networks.network_topology>>). Gradients will always be
+calculated with respect to all variables in this collection.
+
+Running this for 50 steps, we obtain an approximate solution `1.2500001` with
+a function value of `0.87500024`.
+
+The gradients are determined completely internally. Each (activation) function
+has an encoded analytical derivative. Through chain-rule, also known as back-
+propagation, the gradients are computed. There is _no_ numerical derivation
+taking place.
+
+Similar to the above example, we also train our network. The only thing we need
+to change is the loss function. Here, we will use the mean squared loss
+latexmath:[||F_D(x) - y||^2], where latexmath:[F_D(x)] is the black-box neural
+network function depending implicitly on the dataset -- in other words, the
+predictions of the network -- and *y* is the labels of the dataset.
+
+[source,python]
+----
+dataset_labels = tf.Placeholder(tf.float32, [None, 10], name="labels")
+mean_squared = tf.losses.mean_squared_error(labels=dataset_labels, predictions=output)
+learning_rate - tf.Placeholder(tf.float32, name="learning_rate")
+train_step = tf.train.GradientDescentOptimizer(learning_rate).minimize(mean_squared)
+----
+
+First, we need a placeholder for the labels of the dataset in the same way we
+needed placeholders for the features of the dataset for the input layer.
+Next, we have created the loss function `mean_squared` that depends on these
+`dataset_labels` and the `output` layer of our network.
+As a last step, we add the training method which receives the placeholder for
+the learning rate and tell it to minimize the loss function.
+
+The `minimize()` naturally again returns a node in the computational graph
+`train_step`. This function call has added a lot of nodes to the graph that
+trigger calculating the gradients and modifying the weights and biases via
+the update rule. In the chapter on how to extend the capabilities of tensorflow
+we will see how this works in detail.
+
+Evaluating `train_step` will trigger a single update step. Triggering it again
+will cause another iteration step. Of course, this calls for a loop as follows:
+
+[source,python]
+----
+with tf.Session() as sess:
+  try:
+    while(True):
+      batch_features, batch_labels = session.run([features,labels])
+      print(session.run([train_step,mean_squared],
+        feed_dict={
+          input: batch_features,
+          dataset_labels: batch_labels,
+          learning_rate: 0.1,
+          }))
+  except tf.errors.OutOfRangeError:
+    print("End of dataset")
+----
+
+We instantiate a session object and perform basically an infinite loop. In the
+loop body we first evaluate the nodes `features` and `labels` which provide
+the current batch from the dataset in return. These go into the `feed_dict` for
+the `session.run()` that performs a single update step.
+
+As the iterator will raise a `tf.errors.OutOfRangeError` exception when it
+reaches the end of the dataset and we have told the dataset to repeat itself
+such that we may obtain `max_steps` batches, it will perform exactly those
+steps and then exit the loop.
+
+[[concepts.neural_networks.training.chained_pipeine]]
+Chaining feeding and training
++++++++++++++++++++++++++++++
+
+As a last note we would like to show that it is possible to combine the two
+`run()` calls in the example training loop above into a single call.
+
+As the `tf.data.Dataset` module simply adds nodes to the computational
+graph that perform the parsing of the data and therefore `features` and
+`labels` are nothing but nodes in this graph, we may connect them directly to
+the input layer.
+
+In place of the input layer placeholders `x` we use `features` directly to
+construt our single-layer perceptron network.
+
+[source,python]
+----
+# ...
+pre_act = W * features +b
+output = tf.nn.linear(pre_act)
+----
+
+Furthermore, when creating the loss function, instead of giving the placeholder
+`dataset_labels` for the labels we use `labels` directly.
+
+[source,python]
+----
+# ...
+mean_squared = tf.losses.mean_squared_error(labels=labels, predictions=output)
+# ...
+----
+
+The loop looks then much simpler, namely like this.
+
+[source,python]
+----
+feed_dict = { learning_rate: 0.1}
+with tf.Session() as sess:
+  try:
+    while(True):
+      print(session.run([train_step,mean_squared],
+        feed_dict=feed_dict))
+  except tf.errors.OutOfRangeError:
+    print("End of dataset")
+----
+
+Note that we still need a `feed_dict` for values such as `learning_rate`.
+However, as the dict does not change per iteration step we may construct it
+beforehand.
+
+In principle, this second version should save an additional copy in memory
+when the provided datsaset batch is copied into the `batch_features` and
+`batch_labels` variables and then into the network's session instead of
+being directly referenced within the network's session.
+
+TIP: Even though in many places in the tensorflow tutorials the use of
+`feed_dict` for feeding in the dataset is strongly discouraged and therefore
+one would expect this second approach to work much faster, we have not noticed
+any difference in performance between either version despite extensive tests
+and measurements.
+
+We presume that `batch_features` and `batch_labels` are references to the
+internal arrays within the session object. This would explain why there is
+no difference in performance.
+
+CAUTION: The second version has the drawback that the input pipeline has to
+be created first and the network crucially depends on it. It is not so
+easy anymore to exchange datasets. To some extent it is still possible using
+feedable iterators.
+Hence, the second approach sacrifices flexibility of the network.
+
+WARNING: The second version has another drawback: Whenever a node is evaluated
+in a separate `run()` call that depends on `features` or `labels` it will
+trigger the dataset's iterator to advance!

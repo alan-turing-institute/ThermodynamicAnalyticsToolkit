@@ -1,0 +1,77 @@
+Thermodynamic Analytics Toolkit (TATi) - Programmer's Guide
+===========================================================
+:Author:      Frederik Heber
+:Email:       frederik.heber@gmail.com
+:keywords:    neural networks, loss, loss manifold, sampling, exploration
+:description: TATi is a software suite based on tensorflow that brings enhanced
+              sampling methods based on Langevin Dynamics and Hamiltonian
+              Dynamics to neural network training.
+:Date:        {revdate}
+:Revision:    TATi {revnumber}
+:toc:
+//:toc-placement: preamble
+:doctype:     book
+:imagesdir:   {imagesdir}
+:Website:     https://github.com/alan-turing-institute/ThermodynamicAnalyticsToolkit
+
+image::./pictures/tati_logo.png[alt="TATi logo",align="center",{basebackend@docbook:scaledwidth="80%":width=700}]
+
+.{revdate} {version-label}: {revnumber}
+***************************************
+TATi is a software suite written in Python based on link:https://www.tensorflow.org/[tensorflow]'s
+Python API. It brings advanced sampling methods (GLA1 and GLA2, BAOAB, HMC) to
+_neural network training_. Its *tools* allow to assess the loss manifold's
+topology that depends on the employed neural network and the dataset. Moreover,
+its *simulation* module makes applying present sampling Python codes in the
+context of neural networks easy and straight-forward. The goal of the software
+is to enable the user to analyze and adapt the network employed for a specific
+classification problem to best fit her or his needs.
+
+TATi has received financial support from a seed funding grant and through a
+Rutherford fellowship from the Alan Turing Institute in London (R-SIS-003,
+R-RUT-001) and EPSRC grant no. EP/P006175/1 (Data Driven Coarse Graining using
+Space-Time Diffusion Maps, B. Leimkuhler PI).
+
+'Frederik Heber'
+***************************************
+
+[[introduction]]
+Introduction
+------------
+
+Performing efficient neural network training or sampling requires many ingredients.
+In this programmer's guide we would like to equip you with the necessary
+knowledge of the abstract concepts and also we would like to show how to
+extend link:https://www.tensorflow.org/[Tensorflow]'s capabilities with respect
+to implementing sampling methodshow to do achieve the specific
+implementation as it is done in TATi.
+
+NOTE: In case you are generally unfamiliar with TATi, we would like to refer you to
+the userguide that is also contained in the documentation of this package.
+
+In detail, this guide will give introductory details on the inner workings and
+major  concepts of tensorflow. Moreover, we give extensive details on what is
+needed to perform neural network training using tensorflow including
+implementation examples. We conclude with providing details on how tensorflow
+was extended in order to allow for advanced sampling methods to be incorporated
+in the course of TATi and how general programming concepts like local and
+global variables, branching can be executed. This will allow you to build upon
+this knowledge and extend TATi with your own ideas taking full advantage of
+the Tensorflow performance.
+
+[[concepts]]
+Concepts
+--------
+
+include::programmersguide_computational_graph.txt[]
+
+include::programmersguide_tensorflow.txt[]
+
+include::programmersguide_neural_networks.txt[]
+
+[[extensions]]
+Tensorflow extensions
+---------------------
+
+In this section we will elaborate on different concepts in order to extend
+tensorflow to enable implementation of sampling methods.

@@ -1,0 +1,66 @@
+[[concepts.computational_graph]]
+Computational Graph
+~~~~~~~~~~~~~~~~~~~
+
+Underlying all of tensorflow and typically most of the Machine Learning (ML)
+frameworks is the concept of a _computational graph_.
+
+A graph consists of a set of nodes V and a set of edges E. Edges
+latexmath:[e_{ij} \in E] connect two nodes latexmath:[v_i, v_j] and may be
+directed.
+
+In the context of a computational graph functions and variables represent the
+nodes and directed edges represent dependencies between.
+
+[[concepts.computational_graph.figure]]
+.Computational Graph: Sum function node depending on the input of two variable nodes
+image::./pictures/computational_graph.png[{basebackend@docbook:scaledwidth="25%":width=250}]
+
+Let us have a concrete example and take a look at Figure
+link:#concepts.computational_graph.figure[Computational Graph].
+There, we have two variable nodes *a* and *b* and one summation node latexmath:[\Sigma]
+that depends on the two.
+
+Assume we want to evaluate the sum function. The function node can be imagined
+as a callback whose parameters are supplied by *a* and *b*. Knowing the
+dependencies encoded in the edges of the computational graph, we know how to
+execute the callback and evaluate the sum.
+
+NOTE: Graphs are standard concepts in computer science and enjoy a large
+variety of algorithms that discover their properties such a shortest paths,
+number of connected components, cliques, cycles, and so on. Standard algorithms
+such  as Breadth-First Search (BFS) and Depth-First Search (DFS) allow to
+explore and enumerate all dependencies. For details, see
+link:https://www.springer.com/de/book/9783662536216[Graph Theory, Reinhard Diestel]
+and other textbooks.
+
+Naturally, the variables *a* may themselves be functions depending on other
+variables. I.e. arbitrary function concatentations are possible. Moreover, even
+operations such as assignments are admissible. When the assignment is triggered,
+using another node as input, this value is written to the internal state of a
+variable node. Finally, nodes can also be combined into groups such that the
+execution of the group node triggers the execution of all contained nodes.
+This allows to program whole algorithms within the framework of computational
+graphs.
+
+NOTE: The graph is usually never completely evaluated. All nodes that the
+evaluation node does not depend on do not need to be considered or even touched.
+
+Think of the computional graph of another way of writing a computer program
+where the program consists of many very tiny functions (nodes) and the edges
+encode which function relies/calls which other function. Using the program
+means executing certain functions that in turn trigger a the execution of
+many other functions (those they depend on along the edges of the graph) in
+order to deliver their output value.
+
+This concept has even more advantages:
+
+- _lazy evaluation_, i.e., only computes what is necessary and first when it is
+ needed.
+- the graph can be analysed for independent or only loosely dependent parts
+which therefore can be trivially or at least easily parallelized.
+- when using GPUs the analysis of the graph containing sizes of the all
+variable nodes allows to decide where operations should place for smaller
+runtime: on the CPU or on the GPU. The latter requires additional copying to
+the GPU memory, however the GPU is generally much faster at executing linear
+algebra operations such as matrix-vector multiplications.
