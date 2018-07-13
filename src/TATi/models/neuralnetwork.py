@@ -80,8 +80,7 @@ class NeuralNetwork(object):
         test_nodes = list(map(lambda key: self.get(key), keys))
         for key, node in zip(keys, test_nodes):
             if node is None:
-                logging.info ("Node " + key + " could not be retrieved from dict or is None.")
-                raise AssertionError
+                raise AssertionError("Node " + key + " could not be retrieved from dict or is None.")
         return test_nodes
 
     def get_dict_of_nodes(self, keys):
