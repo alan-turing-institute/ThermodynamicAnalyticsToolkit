@@ -2,32 +2,36 @@
 Tensorflow
 ~~~~~~~~~~
 
-Historically, there were different approaches in setting up and using this
+Historically, there were different approaches in setting up and using the
 computational graph.
 link:https://deeplearning.net/software/theano[theano]
 required to actually compile code that would form the graph.
 In link:https://www.tensorflow.org/[tensorflow] the graph needs to be static
-throughout the program: first the graph is constructed, then the a session
-object instantiated and nodes evaluated. This session object contains the
-internal state of the graph and every of its nodes. Note that while the graph is
+throughout the program: first the graph is constructed, then a session
+object is instantiated and nodes are evaluated. This session object contains the
+internal state of the graph and of every node. Note that while the graph is
 static, the session is not, i.e. the contents of  variables, may naturally
-change. Only adding more nodes has a bad effect on performance.
+change.
 link:https://pytorch.org[Pytorch] on the other hand strictly believes in a
 dynamical graph, i.e. there is no session object containing temporary values
 but the internal state is directly encoded with each node.
 
 NOTE: From Tensorflow version 1.6 so-called "eager execution" was introduced
-to allow for the same dynamical graph use as with PyTorch. However, at the time
-of writing (tf1.9) the static graph is generally faster and generally adapts
-better to different hardwares and GPU setups, see tensorflow's
-link:https://www.tensorflow.org/community/roadmap[roadmap] on eager execution.
+to allow for the same dynamical graph use as with PyTorch. Before that adding
+more nodes to the graph after the session had been created had a bad effect on
+performance. However, at the time of writing (tf1.9) the static graph is
+generally faster and generally adapts better to different hardwares and GPU
+setups, see tensorflow's link:https://www.tensorflow.org/community/roadmap[roadmap]
+on eager execution.
 In general, static graphs will always execute faster than dynamic graphs.
 
 [[concepts.tensorflow.graph_construction]]
 Constructing a graph
 ^^^^^^^^^^^^^^^^^^^^
 
-Let us directly see at how the above graph is constructed using tensorflow.
+Let us directly see how the above graph, see Figure
+link:#concepts.computational_graph.figure[Computational Graph] is constructed
+using tensorflow.
 
 [source,python]
 -----
@@ -35,7 +39,7 @@ import tensorflow as tf
 
 a = tf.Constant(2.)
 b = tf.Constant(3.)
-sum = a + b   # alternatively: tf.add(a,b)
+sum = tf.add(a,b)
 -----
 
 We imported the tensorflow module and then created two nodes containing constant
@@ -58,26 +62,35 @@ This will print *5.0* as the result of the operation. The `Session` object
 contains all the temporary memory required for containing information in
 nodes.
 
-Tensorflow internally has a default graph to which all create nodes are
-associated and the `Session` takes hold of it. The graph can be resetted by
+Tensorflow internally has a default graph to which all created nodes are
+associated and of which the `Session` takes hold. The graph can be reset by
 calling `tf.reset_default_graph()`.
 
-Tensorflow has a whole assortment of the usual functions. Let us enumerate a few
-of them: `tf.multiply`, `tf.exp`, `tf.sin`, .... For standard algebraic
-operations the operators have been overloaded such that the node references
-such as `a` and `b` in our example can be combined to a sum node by `a + b` or
-similarly `a * b` for their product. Moreover, `2. * a - b` will automatically
-add constant nodes containing here the additional value *2.*.
+Tensorflow has a whole assortment of arithmetic, basic mathematical, linear
+algebra and similar functions, see link:https://www.tensorflow.org/api_guides/python/math_ops[Math Ops].
+
+TIP: Functions for standard algebraic operations such as sum, difference,
+(scalar) multiplication the respective python operators have been overloaded.
+To give an example, `tf.add(a,b)` can also be written as `a+b`. Moreover,
+Tensorflow will automatically convert constant python variables into its
+tensors, e.g., `2. * a - b`. This allows to write mathematical operations
+in the same way as if manipulating `numpy` arrays.
 
 [[concepts.tensorflow.variables]]
 Variables
 ^^^^^^^^^
 
-Constants are given at the graphs construction at may not change. However,
-there also variables whose contents may change. These are constructed by
-giving an initial_value, a (derived) type and a name.
+Constants are given at the graph's construction and may not change. However,
+there also variables. These are constructed by giving an initial_value, a
+(derived) type and a name, i.e., in the same way as the constants. However,
+in contrast to constants variables allow _assignment_.
 
-The shape is most important and it is derived from the _initial value_.
+The shape is most important and for variables it is derived from the
+_initial value_. Tensorflow uses the shape to check the consistency when
+connecting nodes, i.e. chaining functions. For example, a matrix-vector
+multiplication of a (2,2) matrix with a (10,1) vector will not work because
+their shapes do not match.
+
 
 [source,python]
 -----
@@ -87,15 +100,22 @@ v = tf.Variable(a, name="zero_vector")
 W = tf.Variable(b, name="random_matrix")
 -----
 
+We first construct a vector of 784 components, all zero. Next, we create a
+a randon matrix of 784 by 10 components, its values uniformly drawn from the
+interval [-0.5,0.5]. These serve as initial values to initialize the two
+variables *v* and *W*, we instantiate afterwards.
+
 As you notice immediately, tensorflow has functions in likeness very similar
-to numpy. First, `a` is a vector with 784 zero components. Then, a random
+to `numpy`. First, `a` is a vector with 784 zero components. Then, a random
 (constant)  matrix `b` is constructed. Finally, both are used as initial values
 for variables. Of course, even higher  order tensor can be constructed.
 
 NOTE: As these tensors "flow" through the computational graph, this gave rise to
 the name "tensorflow".
 
-A _type_ can be `tf.int`, `tf.float32`, `tf.float64`, and so on.
+The _type_ can be `tf.int`, `tf.float32`, `tf.float64`, and so on. Tensorflow
+will admonish operations where the types are not used consistently. Tensors
+must be explicitly converted to another type using `tf.cast()`.
 
 The _name_ identifies the node - in general, each node has a name and this eases
 debugging and allows for readable errors messages.
@@ -104,23 +124,21 @@ CAUTION: In contrast to constants and the up-coming placeholders, variables
 _used_ in evaluation need to be initialized once at the beginning of the
 session. Use `session.run(tf.global_variables_initializer())`.
 
-There are actually three different types of variables: `tf.constant`,
+All in all there are actually three different types of variables: `tf.constant`,
  `tf.Variable`, and `tf.placeholder`. The last of which we come to now.
 
-The distinction between variables and constants is that variables allow
-assignment and the latter do not. Placeholders, however, are more complicated.
-They represent a value of predefined shape that is supplied by the user lateron.
-In other words, while constants have to be given at "compile-time" (when
-writing the python program), placeholder values are supplied at "run-time"
+[[concepts.tensorflow.placeholders]]
+Placeholders
+^^^^^^^^^^^^
+
+Placeholders represent a value of a predefined shape that is supplied by the
+user lateron. In other words, while constants have to be given at "compile-time"
+(when writing the python program), placeholder values are supplied at "run-time"
 (when the program is executed).
 
-[[concepts.tensorflow.feeding_values]]
-Feeding values
-^^^^^^^^^^^^^^
-
-Placeholders allow for far more flexibility. For example, one could extend the
-above example to a small program that would sum two arbitrary values given by
-the user in the following way.
+This allows for great flexibility. For example, one could extend the above
+example to a small program that would sum two arbitrary values given by the
+user in the following way.
 
 [source,python]
 -----
@@ -134,21 +152,32 @@ sess = tf.Session()
 print(sess.run(sum, feed_dict={a: float(sys.argv[1]), b: float(sys.argv[2])}))
 -----
 
-Here, we use `sys.argv[..]` to read the first and second command-line
-argument if you would call this script in a file `sum.py` as `python3 sum.py 2. 3.`.
-For simplicity of the example we do not catch any errors such as missing
-arguments.
+As you see the two `tf.constant()` nodes *a* and *b* have been replaced by
+`tf.placeholder()` where we set the shape to `()`, signifying a scalar value.
+Next, we again create the sum node and instantiate a `Session` object as before.
+In the last line, execute `run()` on the session. However, there we needed to
+supply an additional parameter, the `feed_dict`.
 
-Of course, this is a silly example! However, it serves a point. Notice the
-`feed_dict` argument to the `Session.run()` statement? This is the way _all
-placeholder values_ are "fed" into the computational graph from the outside.
+This is because a placeholder is nothing but a promise to tensorflow that we
+will provide a value of the designated shape lateron. The means of providing
+the value is the feed_dict.
 
 This `feed_dict` is simply a python `dict` with keys and values. The keys are
 are simply the node references themselves and the values are whatever the user
 decides to feed in.
 
-NOTE: Not all values for each placeholders need to be fed all the time, namely
-only those the evaluated nodes depend on.
+Here, we use `sys.argv[..]` to read the first and second command-line
+argument if you call this script in a file `sum.py` as `python3 sum.py 2. 3.`.
+For simplicity of the example we do not catch any errors such as missing
+arguments.
+
+Of course, this is a silly example! However, it serves a point. Through the
+feed_dict all values may enter that the user needs to specify outside of your
+algorithm and outside of the tensorflow graph. All parameters that control how
+a method executes typically should be placeholders.
+
+NOTE: Not all values for each placeholder need to be fed each time `run()` is
+executed, but only those which the evaluated node(s) depend on.
 
 [[concepts.tensorflow.summary]]
 Summary

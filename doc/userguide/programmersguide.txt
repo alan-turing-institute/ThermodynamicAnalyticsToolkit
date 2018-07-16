@@ -41,10 +41,9 @@ Introduction
 
 Performing efficient neural network training or sampling requires many ingredients.
 In this programmer's guide we would like to equip you with the necessary
-knowledge of the abstract concepts and also we would like to show how to
-extend link:https://www.tensorflow.org/[Tensorflow]'s capabilities with respect
-to implementing sampling methodshow to do achieve the specific
-implementation as it is done in TATi.
+knowledge of the abstract concepts of computational graphs, show how to
+generally use link:https://www.tensorflow.org/[Tensorflow] and moreover how to
+extend it to advanced sampling methods as it is done in TATi.
 
 NOTE: In case you are generally unfamiliar with TATi, we would like to refer you to
 the userguide that is also contained in the documentation of this package.
@@ -54,10 +53,10 @@ major  concepts of tensorflow. Moreover, we give extensive details on what is
 needed to perform neural network training using tensorflow including
 implementation examples. We conclude with providing details on how tensorflow
 was extended in order to allow for advanced sampling methods to be incorporated
-in the course of TATi and how general programming concepts like local and
-global variables, branching can be executed. This will allow you to build upon
-this knowledge and extend TATi with your own ideas taking full advantage of
-the Tensorflow performance.
+in the course of TATi. To this end, we show how general programming concepts
+like local and global variables, branching and so on can be executed. This will
+allow you to extend TATi with your own ideas taking full advantage of the
+Tensorflow performance.
 
 [[concepts]]
 Concepts

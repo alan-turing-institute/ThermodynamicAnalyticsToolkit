@@ -5,15 +5,17 @@ Computational Graph
 Underlying all of tensorflow and typically most of the Machine Learning (ML)
 frameworks is the concept of a _computational graph_.
 
-A graph consists of a set of nodes V and a set of edges E. Edges
+A graph consists of a set of vertices V and a set of edges E. Edges
 latexmath:[e_{ij} \in E] connect two nodes latexmath:[v_i, v_j] and may be
 directed.
 
 In the context of a computational graph functions and variables represent the
-nodes and directed edges represent dependencies between.
+vertices and directed edges represent dependencies between. In Tensorflow's
+documentation and tutorials the vertices are referred to as _nodes_. Hence, we
+will use the term nodes in the following, too.
 
 [[concepts.computational_graph.figure]]
-.Computational Graph: Sum function node depending on the input of two variable nodes
+.Computational Graph: Sum function node depending on the input of two variable nodes *a* and *b*.
 image::./pictures/computational_graph.png[{basebackend@docbook:scaledwidth="25%":width=250}]
 
 Let us have a concrete example and take a look at Figure
@@ -43,15 +45,15 @@ execution of the group node triggers the execution of all contained nodes.
 This allows to program whole algorithms within the framework of computational
 graphs.
 
-NOTE: The graph is usually never completely evaluated. All nodes that the
-evaluation node does not depend on do not need to be considered or even touched.
+NOTE: The graph is usually never completely evaluated. When evaluating a certain
+node, then only dependent nodes must be evaluated, too. All other nodes are
+ignored.
 
-Think of the computional graph of another way of writing a computer program
-where the program consists of many very tiny functions (nodes) and the edges
+Think of the computional graph of another way of writing a computer program.
+The program consists of many very tiny functions (nodes) and the edges
 encode which function relies/calls which other function. Using the program
-means executing certain functions that in turn trigger a the execution of
-many other functions (those they depend on along the edges of the graph) in
-order to deliver their output value.
+means executing certain functions that in turn trigger the execution of
+many other functions in order to deliver their output value.
 
 This concept has even more advantages:
 
@@ -59,8 +61,11 @@ This concept has even more advantages:
  needed.
 - the graph can be analysed for independent or only loosely dependent parts
 which therefore can be trivially or at least easily parallelized.
-- when using GPUs the analysis of the graph containing sizes of the all
-variable nodes allows to decide where operations should place for smaller
-runtime: on the CPU or on the GPU. The latter requires additional copying to
-the GPU memory, however the GPU is generally much faster at executing linear
-algebra operations such as matrix-vector multiplications.
+- as nodes consist of tiny functions, their computational complexity can be
+estimated depending on the size of their input arguments. This allows to
+queue the evaluation of nodes very efficiently.
+
+NOTE: Tensorflow uses the graph analysis to automatically decide whether CPU
+or GPU will execute the necessary computations for evaluating a node. Although
+this automatic association can be overriden, ther is usually no need to.
+This is different in the dynamic graph setting where the user needs to decide.
