@@ -43,6 +43,7 @@ DEPENDENCIES = \
 	introduction.txt \
 	programmersguide.txt \
 	programmersguide_computational_graph.txt \
+	programmersguide_extensions_samplers.txt \
 	programmersguide_neural_networks.txt \
 	programmersguide_tensorflow.txt \
 	quickstart.txt \

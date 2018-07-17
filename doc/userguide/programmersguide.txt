@@ -14,6 +14,8 @@ Thermodynamic Analytics Toolkit (TATi) - Programmer's Guide
 :imagesdir:   {imagesdir}
 :Website:     https://github.com/alan-turing-institute/ThermodynamicAnalyticsToolkit
 
+:icons:       font
+:latexmath:
 image::./pictures/tati_logo.png[alt="TATi logo",align="center",{basebackend@docbook:scaledwidth="80%":width=700}]
 
 .{revdate} {version-label}: {revnumber}
@@ -74,3 +76,15 @@ Tensorflow extensions
 
 In this section we will elaborate on different concepts in order to extend
 tensorflow to enable implementation of sampling methods.
+
+include::programmersguide_extensions_samplers.txt[]
+
+include::glossary.txt[]
+
+include::bibliography.txt[]
+
+[[debugging]]
+Debugging tensorflow code
+--------------------------
+
+include::programmersguide_debugging_tips.txt[]
