@@ -251,6 +251,16 @@ for computing gradients. The central idea behind SGLD was to add an
 additional noise term whose magnitude then controls the noise induced by
 the approximate gradients.
 
+Implements a Stochastic Gradient Langevin Dynamics Sampler
+  in the form of a TensorFlow Optimizer, overriding tensorflow.python.training.Optimizer.
+
+The step update is:
+[latex]$\Delta\Theta = - \nabla \beta U(\Theta) \Delta t + \sqrt{\Delta t} G$,
+where
+[latex]$\beta$
+is the inverse temperature coefficient, $\Delta t$ is the (discretization)
+step width and $\Theta$ is the parameter vector and $U(\Theta)$ the energy or loss function.
+
 [NOTE]
 ====
 *SGLD* is very much like *SGD* and *GD* in terms that the `step_width` needs
