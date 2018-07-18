@@ -179,7 +179,7 @@ class HamiltonianMonteCarloSampler(StochasticGradientLangevinDynamicsSampler):
                     return tf.identity(old_total_energy_t)
 
         max_value_t = tf.constant(1.0, dtype=dds_basetype)
-        p_accept = tf.minimum(max_value_t, tf.exp(old_total_energy_t - current_energy))
+        p_accept = tf.minimum(max_value_t, tf.exp( -(1./inverse_temperature_t) * (current_energy - old_total_energy_t)))
 
         def accept_reject_block():
             return tf.cond(
@@ -187,11 +187,12 @@ class HamiltonianMonteCarloSampler(StochasticGradientLangevinDynamicsSampler):
                 accept_block, reject_block)
 
         # prior force act directly on var
-        ub_repell, lb_repell = self._apply_prior(var)
-        prior_force = step_width_t * (ub_repell + lb_repell)
+        #ub_repell, lb_repell = self._apply_prior(var)
+        #prior_force = step_width_t * (ub_repell + lb_repell)
 
         # update variables
-        scaled_momentum = step_width_t * momentum_criterion_block_t - prior_force
+        #scaled_momentum = step_width_t * momentum_criterion_block_t - prior_force
+        scaled_momentum = step_width_t * momentum_criterion_block_t
 
         # DONT use nodes in the control_dependencies, always functions!
         def step_block():

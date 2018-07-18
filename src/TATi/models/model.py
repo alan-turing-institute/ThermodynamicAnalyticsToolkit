@@ -790,7 +790,6 @@ class model:
                 averages.append(pd.DataFrame(
                     np.zeros((steps, no_params)),
                     columns=header))
-
         run_info = None
         if return_run_info:
             run_info = []
@@ -1055,6 +1054,7 @@ class model:
                                                                             precision=output_precision)] \
                                         + ['{:{width}.{precision}e}'.format(average_loss, width=output_width,
                                                                             precision=output_precision)]
+
                         if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
                             averages_line += ['{:{width}.{precision}e}'.format(average_virials, width=output_width,
                                                                                precision=output_precision)]
@@ -1062,11 +1062,19 @@ class model:
                             averages_line += ['{:{width}.{precision}e}'.format(x, width=output_width,
                                                                            precision=output_precision)
                                           for x in [average_kinetic_energy,average_virials]]
+                        if self.FLAGS.sampler == "HamiltonianMonteCarlo":
+                            if (rejected_eval[walker_index]+accepted_eval[walker_index]) > 0:
+                                average_rejection_rate = rejected_eval[walker_index]/(rejected_eval[walker_index]+accepted_eval[walker_index])
+                            else:
+                                average_rejection_rate = 0
+                            averages_line += ['{:{width}.{precision}e}'.format(average_rejection_rate, width=output_width,
+                                                                               precision=output_precision)]
 
                         if self.config_map["do_write_averages_file"]:
                             self.averages_writer.writerow(averages_line)
                         if return_averages:
                             averages[walker_index].loc[written_row] = averages_line
+
 
                     if self.config_map["do_write_run_file"] or return_run_info:
                         run_line  = []
