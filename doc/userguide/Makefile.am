@@ -66,16 +66,16 @@ thermodynamicanalyticstoolkit.xml: $(srcdir)/userguide.txt $(DEPENDENCIES) $(src
 	$(ASCIIDOC) -b docbook -aimagesdir=$(srcdir) -arevdate=$(revdate) -aversion-label=@PACKAGE@ -arevnumber=$(version) -o $@ $<
 
 thermodynamicanalyticstoolkit.html: $(srcdir)/userguide.txt $(DEPENDENCIES) $(srcdir)/.git-version
-	$(ASCIIDOC) -b html5 -a toc2 -a numbered -aimagesdir=$(srcdir) -arevdate=$(revdate) -aversion-label=@PACKAGE@ -arevnumber=$(version) -o $@ $<
+	$(ASCIIDOC) -b html5 -a toc2 -a icons -a latexmath -a numbered -aimagesdir=$(srcdir) -arevdate=$(revdate) -aversion-label=@PACKAGE@ -arevnumber=$(version) -o $@ $<
 
 thermodynamicanalyticstoolkit.pdf: thermodynamicanalyticstoolkit.xml
 	$(DBLATEX) --param=doc.lot.show=figure,table $< $@
 
 programmersguide.xml: $(srcdir)/programmersguide.txt $(DEPENDENCIES) $(srcdir)/.git-version
-	$(ASCIIDOC) -b docbook -aimagesdir=$(srcdir) -arevdate=$(revdate) -aversion-label=@PACKAGE@ -arevnumber=$(version) -o $@ $<
+	$(ASCIIDOC) -b docbook -a icons -aimagesdir=$(srcdir) -arevdate=$(revdate) -aversion-label=@PACKAGE@ -arevnumber=$(version) -o $@ $<
 
 programmersguide.html: $(srcdir)/programmersguide.txt $(DEPENDENCIES) $(srcdir)/.git-version
-	$(ASCIIDOC) -b html5 -a toc2 -a numbered -aimagesdir=$(srcdir) -arevdate=$(revdate) -aversion-label=@PACKAGE@ -arevnumber=$(version) -o $@ $<
+	$(ASCIIDOC) -b html5 -a icons -a latexmath -a toc2 -a numbered -aimagesdir=$(srcdir) -arevdate=$(revdate) -aversion-label=@PACKAGE@ -arevnumber=$(version) -o $@ $<
 
 programmersguide.pdf: programmersguide.xml
 	$(DBLATEX) --param=doc.lot.show=figure,table $< $@
