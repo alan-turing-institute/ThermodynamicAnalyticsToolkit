@@ -1,3 +1,111 @@
-[[debugging]]
+[[debugging.tips]]
 Tips
 ~~~~
+
+The tips and guidelines we have revolve around the following concepts:
+
+- print statements
+- debugger
+- toy models and minimum working examples
+
+[[debugging.tips.print]]
+Print statement
+^^^^^^^^^^^^^^^
+
+Our first advice is to make use of `tf.Print()` when something does not look
+right. It serves a similar purpose as would a `print()` statement in normal
+python code: We want to inspect the value of a certain variable or we want to
+see when the program reaches a certain point in its control flow.
+
+Because of the nature of the computational graph, we cannot simply add a
+node using `tf.Print()` and be done. We have to make sure that the node is
+actually executed in the evaluation of the graph. In other words, it needs to
+be inserted in the proper place.
+
+To enable placement in arbitrary positions, `tf.Print()` works the same way as
+`tf.identity()` does, i.e. it is a pass-thru node that simply passes the value
+of its argument on. However, it has the side-effect of printing a `message`
+together with `data`.
+
+Imagine we wanted to inspect whether the random number tensor in our
+link:#extensions.samplers.branching[Branching]
+example before would not actually be evaluated two times. Or even three times
+in the naive example. Therefore, let us modify the `branching_t` statement and
+the function definitions as follows:
+
+.Print debugging in the tensorflow lingo
+[source, python]
+----
+def accept_low():
+  with tf.control_dependencies([lower_sum.assign(lower_sum + random_t)]):
+  return tf.Print(random_t, [random_t], message="random number low") # <1>
+
+def accept_high():
+  with tf.control_dependencies([higher_sum.assign(higher_sum + random_t)]):
+  return tf.Print(random_t, [random_t], message="random number high") # <1>
+
+branching_t = tf.cond(tf.less(
+    tf.Print(random_t, [random_t], message="random number"), threshold),
+  accept_low, accept_high) # <2>
+----
+
+<1> Here, we have simply replaced the identity by the print statement.
+<2> In the branching statement we do not use `random_t` directly but let it
+pass thru the print statement first.
+
+This way the we obtain two messages per loop iteration and we can easily
+compare the values of the message with "random number" to the one from
+"random number low" or "random number high".
+
+[[debugging.tips.debugger]]
+Using the debugger
+^^^^^^^^^^^^^^^^^^
+
+`tfdbg` is a specialized link:https://www.tensorflow.org/guide/debugger[debugger]
+for inspecting tensorflow's computational graphs.
+
+It is added when the `Session` object is modified in the following way:
+
+[source,python]
+----
+sess = tf_debug.LocalCLIDebugWrapperSession(sess, ui_type=FLAGS.ui_type)
+----
+
+The debugger is more powerful when inspecting multiple values, executing the
+program through `run`. This will stop once per encountered `session.run()`
+statement. `lt` lists all tensors. `pt` prints the value of a particular
+tensor. We refer to above linked tutorial on how to use the debugger.
+
+Debugging is also possible through TensorBoard which is a webserver specialized
+on displaying inputs, outputs and states of the tensorflow graph.
+
+It is added when the `Session` is modified like this.
+
+[source,python]
+----
+sess = tf_debug.TensorBoardDebugWrapperSession( sess,
+    FLAGS.tensorboard_debug_address)
+----
+
+This debugger is essentially a graphical interface with many of the features
+of the command-line (CLI) debugger. It requires a running tensorboard session.
+Again, we refer the reader to the tutorial.
+
+[[debugging.tips.toy_models]]
+Understanding through toy models
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+One last way of debugging a program is in making a _minimum working example_.
+
+This could for example be a toy model such as simple harmonic oscillator
+where analytical properties are known.
+
+In general, when something is not working right, then try to make the code
+that is not working as small as possible. Throw away any other code that has
+nothing to do with the problem.
+
+As a start, you can use the code examples in this guide to build a light-weight
+GLA2 sampler on a single-layer perceptron. By feeding a dataset consisting of
+a single *0.* as feature and a single *0.* as its label and using the
+`mean_squared` loss, you obtain a harmonic oscillator in the single bias
+variable.
