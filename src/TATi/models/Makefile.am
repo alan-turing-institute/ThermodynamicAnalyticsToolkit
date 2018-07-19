@@ -1,6 +1,7 @@
 TATI_models_PYTHON = \
     basetype.py \
     model.py \
+	networkparameter_adapter.py \
 	neuralnet_parameters.py \
 	neuralnetwork.py \
 	__init__.py

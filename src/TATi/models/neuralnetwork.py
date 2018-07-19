@@ -354,6 +354,7 @@ class NeuralNetwork(object):
         """ Prepares nodes for training the neural network using an optimizer.
 
         :param loss: node for the desired loss function to minimize during training
+        :param global_step: global_step node
         """
         with tf.name_scope('train'):
             trainables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)

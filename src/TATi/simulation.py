@@ -8,6 +8,7 @@ import logging
 from TATi.models.model import model
 from TATi.options.pythonoptions import PythonOptions
 from TATi.parameters.parameters import Parameters
+from TATi.models.networkparameter_adapter import NetworkParameterAdapter
 
 
 class Simulation(object):
@@ -160,6 +161,7 @@ class Simulation(object):
             self._nn.reset_dataset()
             self._init_node_keys()
             self._reset_cache()
+            self._lazy_nn_construction = False
 
     def _check_nn(self):
         if self._nn is None:
@@ -187,7 +189,11 @@ class Simulation(object):
         affected_parts = list(affected_parts)
         logging.info("Parts affected by change of options are "+str(affected_parts)+".")
 
-        if "network" in affected_parts:
+        if "network" in affected_parts and self._lazy_nn_construction:
+            # Save network parameters
+            values = self.parameters
+            old_dimensions = [self._nn.FLAGS.input_dimension,
+                              self._nn.FLAGS.hidden_dimension, self._nn.FLAGS.output_dimension]
             # reset the network and tensorflow's default graph
             self._nn = model(self._options)
         if "input" in affected_parts:
@@ -199,10 +205,27 @@ class Simulation(object):
                 self._nn.init_input_pipeline()
         if "network" in affected_parts:
             # reconstruct the network
+            was_lazy = self._lazy_nn_construction
             self._construct_nn()
+            if not was_lazy:
+                try:
+                    self._reassign_parameters(values, old_dimensions)
+                except ValueError:
+                    logging.warning("New network has random starting parameters as it has less layers than the old one.")
         if "input" in affected_parts:
             self._nn.reset_dataset()
 
+    def _reassign_parameters(self, values, dimensions):
+        """ Reassigns a parameter set of a possibly smaller or larger network
+
+        :param values: old weights and biases
+        :param dimensions: dimensions of old network
+        """
+        new_values = NetworkParameterAdapter(values, dimensions,
+                                [self.options.input_dimension]+ \
+                                    self.options.hidden_dimensions+ \
+                                [self.options.input_dimension])
+        self._nn.assign_neural_network_parameters(new_values)
 
     def _return_cache(self, key):
         """ This returns the cached element named `key` and resets the entry.
