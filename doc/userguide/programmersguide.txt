@@ -3,9 +3,9 @@ Thermodynamic Analytics Toolkit (TATi) - Programmer's Guide
 :Author:      Frederik Heber
 :Email:       frederik.heber@gmail.com
 :keywords:    neural networks, loss, loss manifold, sampling, exploration
-:description: TATi is a software suite based on tensorflow that brings enhanced
-              sampling methods based on Langevin Dynamics and Hamiltonian
-              Dynamics to neural network training.
+:description: TATi is a software suite based on tensorflow that brings enhanced +
+              sampling methods based on Langevin Dynamics and Hamiltonian +
+              Dynamics to neural network training. +
 :Date:        {revdate}
 :Revision:    TATi {revnumber}
 :toc:
@@ -95,6 +95,8 @@ Tensorflow has similar statements but they work in the particular manner of the
 computational graph.
 
 include::programmersguide_debugging_tips.txt[]
+
+:numbered!:
 
 include::glossary.txt[]
 
