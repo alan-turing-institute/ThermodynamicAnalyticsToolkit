@@ -29,52 +29,52 @@ class Simulation(object):
         "batch_data_files": ["input", "network"],
         "batch_data_file_type": ["input", "network"],
         "batch_size": ["input"],
-        "burn_in_steps": [],
-        "collapse_after_steps": [],
-        "covariance_blending": [],
-        "diffusion_map_method": [],
+        "burn_in_steps": [],        # only used in python code
+        "collapse_after_steps": [], # only used in python code
+        "covariance_blending": ["network"],
+        "diffusion_map_method": [], # only used in python code
         "do_hessians": ["network"],
         "dropout": ["network"],
-        "every_nth": [],
+        "every_nth": [],            # only used in python code
         "fix_parameters": ["network"],
-        "friction_constant": [],
-        "hamiltonian_dynamics_time": [],
+        "friction_constant": [],    # passed as placeholder
+        "hamiltonian_dynamics_time": [], # used inly in python code, passed as placeholder next_eval_step_t
         "hidden_activation": ["network"],
         "hidden_dimension": ["network"],
         "in_memory_pipeline": ["input"],
         "input_columns": ["input"],
         "input_dimension": ["input", "network"],
-        "inter_ops_threads": [],
-        "intra_ops_threads": [],
-        "inverse_temperature": [],
-        "learning_rate": [],
-        "loss": ["loss"],
+        "inter_ops_threads": ["network"],    # affects Session instantiation
+        "intra_ops_threads": ["network"],
+        "inverse_temperature": [],  # passed as placeholder
+        "learning_rate": [],        # passed as placeholder
+        "loss": ["network"],        # is used in gradients, model.loss, neuralnetwork.summary node wrong
         "max_steps": ["input"],
-        "number_of_eigenvalues": [],
+        "number_of_eigenvalues": [],# used only in python code
         "number_walkers": ["network"],
-        "optimizer": [],
+        "optimizer": ["network"],   # optimizer instance added to network
         "output_activation": ["network"],
         "output_dimension": ["input", "network"],
         "parse_parameters_file": ["network"],
         "parse_steps": ["network"],
-        "prior_factor": [],
-        "prior_lower_boundary": [],
-        "prior_power": [],
-        "prior_upper_boundary": [],
-        "progress": [],
+        "prior_factor": ["network"],    # would need to reset "sampler.set_prior"
+        "prior_lower_boundary": ["network"],
+        "prior_power": ["network"],
+        "prior_upper_boundary": ["network"],
+        "progress": [],             # only used in python code
         "restore_model": ["network"],
         "run_file": ["network"],
-        "sampler": [],
+        "sampler": ["network"],     # adds a specific sampler instance to network
         "save_model": ["network"],
         "seed": ["network"],
-        "sigma": [],
-        "sigmaA": [],
-        "sql_db": [],
-        "step_width": [],
+        "sigma": ["network"],       # served as values, might be replaced by placeholders
+        "sigmaA": ["network"],      # served as values, might be replaced by placeholders
+        "sql_db": [],               # affects only runtime, not used in simulation
+        "step_width": [],           # fed via placeholder
         "summaries_path": ["network"],
         "trajectory_file": ["network"],
-        "use_reweighting": [],
-        "verbose": [],
+        "use_reweighting": [],      # only used in python code
+        "verbose": [],              # only used in python code, log level changed on assignment by pythonoptions.set
     }
 
     def __init__(self, **kwargs):
@@ -186,6 +186,10 @@ class Simulation(object):
                 affected_parts.add(value)
         affected_parts = list(affected_parts)
         logging.info("Parts affected by change of options are "+str(affected_parts)+".")
+
+        if "network" in affected_parts:
+            # reset the network and tensorflow's default graph
+            self._nn = model(self._options)
         if "input" in affected_parts:
             if self._options._option_map["in_memory_pipeline"]:
                 features = self._nn.input_pipeline.features
@@ -193,6 +197,10 @@ class Simulation(object):
                 self._nn.provide_data(features, labels)
             else:
                 self._nn.init_input_pipeline()
+        if "network" in affected_parts:
+            # reconstruct the network
+            self._construct_nn()
+        if "input" in affected_parts:
             self._nn.reset_dataset()
 
 
