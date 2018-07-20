@@ -6,23 +6,34 @@ class Parameters(object):
 
     """
 
-    def __init__(self, nn):
+    def __init__(self, nn, param_names):
+        """
+
+        :param nn: ref to model object
+        :param param_names: names of parameters to represent inside model, e.g. ["weights", "biases"]
+        """
         self._nn = nn
+        if len(param_names) != 2:
+            raise ValueError("We need two parameter names, one for weights, one for biases.")
+        self._param_names = param_names
 
     def __len__(self):
-        """ Returns the number of parameters.
-
-        :return: number of parameters
-        """
-        return self._nn.get_total_weight_dof() + self._nn.get_total_bias_dof()
-
-    def num_walkers(self):
         """ Returns the number of walkers, i.e. the number of parameter sets
         of same length.
 
+        :return: number of parameters
+        """
+        return max(1,self._nn.FLAGS.number_walkers)
+
+    def num_parameters(self, walker_index=0):
+        """ Returns the number of parameters.
+
+        :param walker_index: index of walker
         :return: number of walkers/parameter sets
         """
-        return self._nn.FLAGS.number_walkers
+        self._valid_walker_index(walker_index)
+        return getattr(self._nn, self._param_names[0])[walker_index].get_total_dof() \
+               + getattr(self._nn, self._param_names[1])[walker_index].get_total_dof()
 
     def _valid_walker_index(self, walker_index):
         """ Ascertains that `walker_index` is in valid range.
@@ -30,7 +41,7 @@ class Parameters(object):
         :param walker_index: index of walker
         :return: True - walker index is valid, False - not
         """
-        assert( 0 <= walker_index < self.num_walkers() )
+        assert( 0 <= walker_index < self.__len__() )
 
     def __getitem__(self, walker_index):
         """ Returns the parameters of a specific walker `walker_index`.
@@ -39,10 +50,14 @@ class Parameters(object):
         :return: parameter set of the respective walker
         """
         self._valid_walker_index(walker_index)
-        weights_eval = self._nn.weights[walker_index].evaluate(self._nn.sess)
-        biases_eval = self._nn.biases[walker_index].evaluate(self._nn.sess)
-        return list(itertools.chain(weights_eval, biases_eval))
-
+        try:
+            weights_eval = \
+                getattr(self._nn, self._param_names[0])[walker_index].evaluate(self._nn.sess)
+            biases_eval = \
+                getattr(self._nn, self._param_names[1])[walker_index].evaluate(self._nn.sess)
+            return list(itertools.chain(weights_eval, biases_eval))
+        except AttributeError:
+            raise ValueError("The current sampler does not have momenta.")
 
     def __setitem__(self, walker_index, parameters):
         """ Sets the parameters for a specific walker
@@ -51,10 +66,15 @@ class Parameters(object):
         :param parameters: set of new parameters
         """
         self._valid_walker_index(walker_index)
-        assert(len(parameters) == self.__len__())
-        weights_dof = self._nn.weights[walker_index].get_total_dof()
-        self._nn.weights[walker_index].assign(self._nn.sess, parameters[0:weights_dof])
-        self._nn.biases[walker_index].assign(self._nn.sess, parameters[weights_dof:])
+        assert(len(parameters) == self.num_parameters())
+        weights_dof = getattr(self._nn, self._param_names[0])[walker_index].get_total_dof()
+        try:
+            getattr(self._nn, self._param_names[0])[walker_index].assign(
+                self._nn.sess, parameters[0:weights_dof])
+            getattr(self._nn, self._param_names[1])[walker_index].assign(
+                self._nn.sess, parameters[weights_dof:])
+        except AttributeError:
+            raise ValueError("The current sampler does not have momenta.")
 
     def __repr__(self):
         """ Prints all parameters of all walkers.
@@ -62,7 +82,7 @@ class Parameters(object):
         :return: string with all parameters from all walkers
         """
         output = "["
-        for i in range(self.num_walkers()):
+        for i in range(self.__len__()):
             if i != 0:
                 output += ","
             output += str(self.__getitem__(i))

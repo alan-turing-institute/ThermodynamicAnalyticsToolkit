@@ -122,7 +122,8 @@ class Simulation(object):
         # construct nn if dataset has been provided
         self._construct_nn()
 
-        self._parameters = Parameters(self._nn)
+        self._parameters = Parameters(self._nn, ["weights", "biases"])
+        self._momenta = Parameters(self._nn, ["momenta_weights", "momenta_biases"])
 
     def _init_node_keys(self):
         """ Initializes the set of cached variables with nodes from the tensorflow's
@@ -348,16 +349,21 @@ class Simulation(object):
         :param values: new parameters to set
         """
         self._check_nn()
-        for i in range(self._parameters.num_walkers()):
+        for i in range(len(self._parameters)):
             self._parameters[i] = values
 
     @property
     def momenta(self):
         """ Returns the current momentum to each parameter.
 
-        :return: momenta
+        :return: momenta or None if sampler does not support momenta
         """
-        raise NotImplementedError("Momenta are not yet implemented.")
+        self._check_nn()
+        try:
+            return self._momenta
+        except ValueError:
+            logging.error("%s does not have momenta." % (self._options.sampler))
+            return None
 
     @momenta.setter
     def momenta(self, values):
@@ -365,7 +371,13 @@ class Simulation(object):
 
         :param values: new momenta to set
         """
-        raise NotImplementedError("Momenta are not yet implemented.")
+        self._check_nn()
+        try:
+            for i in range(len(self._momenta)):
+                self._momenta[i] = values
+        except ValueError:
+            logging.error("%s does not have momenta." % (self._options.sampler))
+            return None
 
     def num_parameters(self):
         """ Returns the number of parameters of the neural network.

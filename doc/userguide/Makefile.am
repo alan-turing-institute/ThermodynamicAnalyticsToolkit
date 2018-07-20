@@ -25,6 +25,7 @@ PYTHON_EXAMPLES = \
 	$(srcdir)/python/writing_data.py \
 	$(srcdir)/simulation/complex/eval_loss_gradient.py \
 	$(srcdir)/simulation/complex/fix_parameter.py \
+	$(srcdir)/simulation/complex/momenta_invalid_sampler.py \
 	$(srcdir)/simulation/complex/optimize.py \
 	$(srcdir)/simulation/complex/optimize_sample.py \
 	$(srcdir)/simulation/complex/sample.py \
@@ -37,6 +38,9 @@ PYTHON_EXAMPLES = \
 	$(srcdir)/simulation/evaluate_gradients.py \
 	$(srcdir)/simulation/evaluate_hessians.py \
 	$(srcdir)/simulation/requesting_parameters.py \
+	$(srcdir)/simulation/requesting_momenta.py \
+	$(srcdir)/simulation/setting_momenta.py \
+	$(srcdir)/simulation/setting_momenta_walkers.py \
 	$(srcdir)/simulation/setting_parameters.py \
 	$(srcdir)/simulation/setting_parameters_walkers.py \
 	$(srcdir)/simulation/setting_up_network.py \

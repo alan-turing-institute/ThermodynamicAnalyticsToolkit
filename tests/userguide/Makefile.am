@@ -37,6 +37,7 @@ TESTSCRIPTS += \
 	$(srcdir)/simulation/complex/testsuite-userguide-simulation-complex.at \
 	$(srcdir)/simulation/complex/testsuite-userguide-simulation-complex-eval_loss_gradient.at \
 	$(srcdir)/simulation/complex/testsuite-userguide-simulation-complex-fix_parameter.at \
+	$(srcdir)/simulation/complex/testsuite-userguide-simulation-complex-momenta_invalid_sampler.at \
 	$(srcdir)/simulation/complex/testsuite-userguide-simulation-complex-optimize.at \
 	$(srcdir)/simulation/complex/testsuite-userguide-simulation-complex-optimize_sample.at \
 	$(srcdir)/simulation/complex/testsuite-userguide-simulation-complex-sample.at \
@@ -50,8 +51,11 @@ TESTSCRIPTS += \
 	$(srcdir)/simulation/testsuite-userguide-simulation-evaluate_loss.at \
 	$(srcdir)/simulation/testsuite-userguide-simulation-evaluate_predict.at \
 	$(srcdir)/simulation/testsuite-userguide-simulation-fit.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-requesting_momenta.at \
 	$(srcdir)/simulation/testsuite-userguide-simulation-requesting_parameters.at \
 	$(srcdir)/simulation/testsuite-userguide-simulation-sample.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-setting_momenta.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-setting_momenta_walkers.at \
 	$(srcdir)/simulation/testsuite-userguide-simulation-setting_parameters.at \
 	$(srcdir)/simulation/testsuite-userguide-simulation-setting_parameters_walkers.at \
 	$(srcdir)/simulation/testsuite-userguide-simulation-setting_up_network.at \

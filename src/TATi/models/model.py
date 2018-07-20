@@ -70,7 +70,9 @@ class model:
 
         # mark placeholder neuralnet_parameters as to be created (over walker)
         self.weights = []
+        self.momenta_weights = []
         self.biases = []
+        self.momenta_biases = []
 
         # mark placeholders for gradient and hessian computation as to be created
         self.gradients = None
@@ -456,28 +458,30 @@ class model:
         # setup training/sampling
         if setup is not None:
             if "train" in setup:
+                self.optimizer = []
                 for i in range(self.FLAGS.number_walkers):
                     with tf.variable_scope("var_walker" + str(i + 1)):
                     #with tf.name_scope('gradients_walker'+str(i+1)):
-                        self.nn[i].add_train_method(self.loss[i], optimizer_method=self.FLAGS.optimizer, prior=prior)
+                        self.optimizer.append(self.nn[i].add_train_method(self.loss[i], optimizer_method=self.FLAGS.optimizer, prior=prior))
             if "sample" in setup:
-                sampler = []
+                self.sampler = []
                 for i in range(self.FLAGS.number_walkers):
                     if self.FLAGS.seed is not None:
                         walker_seed = self.FLAGS.seed + i
                     else:
                         walker_seed = self.FLAGS.seed
-                    sampler.append(self.nn[i]._prepare_sampler(self.loss[i], sampling_method=self.FLAGS.sampler,
-                                                               seed=walker_seed, prior=prior,
-                                                               sigma=self.FLAGS.sigma, sigmaA=self.FLAGS.sigmaA,
-                                                               covariance_blending=self.FLAGS.covariance_blending))
+                    self.sampler.append(self.nn[i]._prepare_sampler(
+                        self.loss[i], sampling_method=self.FLAGS.sampler,
+                        seed=walker_seed, prior=prior,
+                        sigma=self.FLAGS.sigma, sigmaA=self.FLAGS.sigmaA,
+                        covariance_blending=self.FLAGS.covariance_blending))
                 # create gradients
                 grads_and_vars = []
                 for i in range(self.FLAGS.number_walkers):
                     with tf.name_scope('gradients_walker'+str(i+1)):
                         trainables = tf.get_collection_ref(self.trainables[i])
-                        grads_and_vars.append(sampler[i].compute_and_check_gradients(self.loss[i],
-                                                                                     var_list=trainables))
+                        grads_and_vars.append(self.sampler[i].compute_and_check_gradients(
+                            self.loss[i], var_list=trainables))
 
                 # combine gradients
                 #for i in range(self.FLAGS.number_walkers):
@@ -491,8 +495,9 @@ class model:
                 for i in range(self.FLAGS.number_walkers):
                     with tf.variable_scope("var_walker" + str(i + 1)):
                         global_step = self.nn[i]._prepare_global_step()
-                        train_step = sampler[i].apply_gradients(grads_and_vars, i, global_step=global_step,
-                                                                name=sampler[i].get_name())
+                        train_step = self.sampler[i].apply_gradients(
+                            grads_and_vars, i, global_step=global_step,
+                            name=self.sampler[i].get_name())
                     self.nn[i].summary_nodes['sample_step'] = train_step
         else:
             logging.info("Not adding sample or train method.")
@@ -528,15 +533,33 @@ class model:
                     inter_op_parallelism_threads=self.FLAGS.inter_ops_threads))
 
         if len(self.weights) == 0:
+            assert(len(self.momenta_weights) == 0 )
             assert( len(split_weights) == self.FLAGS.number_walkers )
             for i in range(self.FLAGS.number_walkers):
                 self.weights.append(neuralnet_parameters(split_weights[i]))
-                assert( self.weights[i].get_total_dof() == self.get_total_weight_dof() )
+            assert( self.weights[i].get_total_dof() == self.get_total_weight_dof() )
+            if setup is not None and "sample" in setup:
+                for i in range(self.FLAGS.number_walkers):
+                    momenta_weights = [self.sampler[i].get_slot(v, "momentum")
+                                       for v in split_weights[i]]
+                    if len(momenta_weights) > 0 and momenta_weights[0] is not None:
+                        self.momenta_weights.append(neuralnet_parameters(momenta_weights))
+                    else:
+                        self.momenta_weights.append(None)
         if len(self.biases) == 0:
+            assert( len(self.momenta_biases) == 0 )
             assert( len(split_biases) == self.FLAGS.number_walkers )
             for i in range(self.FLAGS.number_walkers):
                 self.biases.append(neuralnet_parameters(split_biases[i]))
             assert (self.biases[i].get_total_dof() == self.get_total_bias_dof())
+            if setup is not None and "sample" in setup:
+                for i in range(self.FLAGS.number_walkers):
+                    momenta_biases = [self.sampler[i].get_slot(v, "momentum")
+                                      for v in split_biases[i]]
+                    if len(momenta_biases) > 0 and momenta_biases[0] is not None:
+                        self.momenta_biases.append(neuralnet_parameters(momenta_biases))
+                    else:
+                        self.momenta_biases.append(None)
 
         if self.FLAGS.fix_parameters is not None:
             all_values = []

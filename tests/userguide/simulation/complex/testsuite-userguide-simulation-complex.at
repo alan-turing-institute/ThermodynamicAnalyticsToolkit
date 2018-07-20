@@ -23,6 +23,7 @@ m4_include([simulation/complex/testsuite-userguide-simulation-complex-sample.at]
 m4_include([simulation/complex/testsuite-userguide-simulation-complex-supply_dataset.at])
 m4_include([simulation/complex/testsuite-userguide-simulation-complex-optimize_sample.at])
 m4_include([simulation/complex/testsuite-userguide-simulation-complex-eval_loss_gradient.at])
+m4_include([simulation/complex/testsuite-userguide-simulation-complex-momenta_invalid_sampler.at])
 
 # tests on specific examples
 m4_include([simulation/complex/testsuite-userguide-simulation-complex-fix_parameter.at])
