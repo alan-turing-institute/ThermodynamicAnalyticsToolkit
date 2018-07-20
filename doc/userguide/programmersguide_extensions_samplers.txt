@@ -14,20 +14,21 @@ tensorflow.
 
 We split this part of the guide into three sections.
 
-. first, we need to explain how an optimizer is implemented in tensorflow,
+. First, we need to explain how an optimizer is implemented in tensorflow,
 namely we will be looking at the `tf.train.GradientDescentOptimizer`
 implementation.
 . then, we will talk how to extend this implementation by deriving a new
 class from it which overrides certain functions.
 . finally, we elaborate on how to store information in local and global
-variables ,
+variables,
 . and how to do branching.
 
 [[extensions.samplers.optimizers]]
 Optimizers in Tensorflow
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-A <<GD>> optimizer is implemented in the class `tf.train.GradientDescentOptimizer`.
+A link:#GD[Gradient Descent] optimizer is implemented in the class
++tf.train.GradientDescentOptimizer+.
 We first look at the base class and then see how in the framework given by the
 base class a Gradient Descent update step is realized.
 
@@ -35,15 +36,16 @@ base class a Gradient Descent update step is realized.
 Base class Optimizer
 ++++++++++++++++++++
 
-Its base class `Optimizer` contains several functions, see
+The base class `Optimizer` contains several functions, see
 +tensorflow/python/training/optimizer.py+ in your local tensorflow installation.
 We will describe some of those functions briefly. However, it is not necessary
 to know them by heart. We only go through this to elucidate the general
 setup as given by the framework.
 
 In the following, the (list of) variables stands for the variables which are
-modified in order to minimize the loss. The gradients are derivatives of said
-loss function with respect to these variables.
+modified in order to minimize the loss, i.e. the list of trainables. The
+gradients are derivatives of said loss function with respect to these
+variables.
 
 - `__init__()`
 +
@@ -67,8 +69,8 @@ for each variable with its respective gradient.
 
 - `_prepare()`
 +
-This is called inside `_apply_gradients()` is used to convert any python
-values given inside the init call into valid tensorflow tensors.
+This is called inside `_apply_gradients()` and used to convert any given python
+values in `__init__()` call to valid tensorflow tensors.
 
 - `_apply_dense()`
 +
@@ -81,8 +83,9 @@ variable and so on.
 
 - `_create_slots()`
 +
-Creates a new variable that is directly associated with a present tensor. This
-are called _slots_. Here, this tensor is typically the variables.
+Creates a new variable that is directly associated with a present tensor. These
+are called _slots_. Here, this tensor is typically one of the trainable
+variables.
 
 - `_zeros_slot()`
 +
@@ -101,14 +104,14 @@ Note that there are three types of functions.
 
 Moreover, there is a certain hierarchy of functions for computing gradients and
 applyting them.
-`minimize()` is the function that we know already. It simply combines the calls
-of two other functions. Then, we are leaving the official part of the Python
-interface and come to functions that are considered private.
+`minimize()` is the function that we have used already. It simply combines the
+calls of two other functions. Then, we are leaving the official part of the
+Python interface and come to functions that are considered private.
 
 NOTE: Python functions starting with an underscore are private by naming
 convention but they are not protected from any actual access.
 
-Of the these two called functions is `_apply_gradients()` which uses
+One of the these two called functions is `_apply_gradients()` which uses
 `_prepare()` and `_apply_dense()` (we will ignore the other variants in
 this guide as the changes would be equivalent). The latter is the main work
 horse.
@@ -129,16 +132,17 @@ same function will be called for both weights and biases.
 GradientDescentOptimizer
 ++++++++++++++++++++++++
 
-Let us now turn to the implementation of the Gradient Descent optimizer.
+Let us now turn to the implementation of the Gradient Descent optimizer in the
+tensorflow code base, see +tensorflow/python/training/gradient_descent.py+.
 
 - `__init__()`
 +
 Overrides the base function to store the variable `learning_rate` received as
-parameter as a member variable.
+parameter in a member variable.
 
 - `_prepare()`
 +
-converts the received variable into a proper tensorflow tensor using
+Converts the received variable into a proper tensorflow tensor using
 `convert_to_tensor()`. This step is necessary as the `GradientDescentOptimizer`
 can also be a given a python `float` as the learning rate.
 
@@ -149,11 +153,11 @@ Implements the actual update step.
 NOTE: We again ignore all the other implementations in the functions related
 to `_apply_dense()`
 
-The actual code inside `_apply_dense()`is not very illustrative. There is a lot
+The actual code inside `_apply_dense()` is not very illustrative. There is a lot
 of abstraction code to switch between eager and static execution and so forth.
-Eventually and hidden deep inside the tensorflow implementation, the code
-makes use of a very efficient implementation in C++ that performs well on both
-CPUs and GPUs.
+Eventually and hidden deep inside the tensorflow code base, the code
+makes use of a very efficient implementation in C++ to perform the actual
+update step that performs well on both CPUs and GPUs.
 
 Therefore, let's do the (python) implementation ourselves in the following
 example. Remember that the update step in Gradient Descent is
@@ -172,22 +176,22 @@ from tensorflow.python.training import optimizer
 class GradientDescentOptimizer(optimizer):
 ...
   def _apply_dense(self, grad, var):
-    scaled_gradient = grad * self._learning_rate_tensor
-    var_update_t = state_ops.assign_sub(var, scaled_gradient)
-    return control_flow_ops.group(*[var_update_t])
+    scaled_gradient = grad * self._learning_rate_tensor # <1>
+    var_update_t = state_ops.assign_sub(var, scaled_gradient) # <2>
+    return control_flow_ops.group(*[var_update_t]) # <3>
 ...
 ----
 
-First, inside `_apply_dense()` we create a helper node that is referenced
+<1> First, inside `_apply_dense()` we create a helper node that is referenced
 by `scaled_gradient` where we simply multiply the converted learning rate
 with the gradient tensor `grad`.
-Next, we perform the actual update of the variable tensor `var` using an
+<2> Next, we perform the actual update of the variable tensor `var` using an
 assignment operation. Here, we use a special variant of it that subtracts
 the given value from the tensor.
-The last steps consists of returning a list of nodes that need to be executed
-to fully perform the update on this particular variable tensor. In our case
-it is just a single node, namely `var_update_t` that is referencing the update
-stop.
+<3> The last steps consists of returning a list of nodes that need to be
+executed to fully perform the update on this particular variable tensor. In our
+case it is just a single node, namely `var_update_t` that is referencing the
+update stop.
 
 Note that `var_update_t` depends on `scaled_grad`. Hence, we do not have to
 give the latter in the returned list of nodes as it will be evaluated (and
@@ -226,7 +230,7 @@ Variables of the first kind: slots
 
 First of all, we need more variables. latexmath:[x_n] is given by `var`
 and latexmath:[\nabla_x L(x_n)] is given by `grad`. Both are simply parameters
-to the `_applydense()` function. However, we lack a variable to store the
+to the `_apply_dense()` function. However, we lack a variable to store the
 momenta latexmath:[p_n].
 
 For this purpose, we can use _slots_. Slots are an official mechanism of
@@ -240,9 +244,9 @@ friction constant latexmath:[\gamma]
 and the learning rate latexmath:[\lambda]
 which we will call _step width_ to distinguish samplers from optimizers.
 
-There is one more: GLA2 contains a noise term latexmath:[\eta_n].
+and there is one more: GLA2 contains a noise term latexmath:[\eta_n].
 To this end, we require a random number generator that produces random numbers
-of the same _shape_ as `var` (or `grad`). These are created by `tf.random_uniform()`
+of the same _shape_ as `var` (or equivalently `grad`). These are created by `tf.random_uniform()`
 as you will see further below in `_prepare_dense()`.
 To reproducibly create the noise, this function takes a random number seed.
 This seed value needs to come from an extra placeholder.
@@ -308,8 +312,9 @@ def _prepare_dense():
   return step_width_t, inverse_temperature_t, friction_constant_t, random_noise_t
 ----
 
-<1> In the first three lines we simply use `math_ops.cast()` to convert the given
-value to the same type as `var`. This type is contained in `var.dtype.base_dtype`.
+<1> In the first three lines we simply use `math_ops.cast()` to convert the
+given parameter tensor to the same type as `var`. This type is contained in
++var.dtype.base_dtype+.
 <2> we branch depending on whether the given `seed` value, stored in the
 member variable `_seed` is `None` or not.
 <3> If the seed is `None`, i.e. not set, then we create the random noise tensor
@@ -336,7 +341,7 @@ for the formulas.
 However, if we want to translate the set of equations directly into tensorflow
 instructions inside the body of `_apply_dense()` we face a restriction.
 Remember that `_apply_dense()` is called inside `_apply_gradients()` which is
-called after compute_gradients()`.
+called after `compute_gradients()`.
 In other words, the gradients have been computed just before.
 
 Hence, in the initial step we have an evaluation of term latexmath:[\nabla_x L(x_n)]
@@ -346,17 +351,17 @@ completely rewrite the base `Optimizer` class.
 
 WARNING: Rewriting tensorflow classes is perfectly possible. However, tensorflow
 only tries to keep the official public part of API unchanged. As most of
-the `Optimizer` class' functions are private, their bodies and their signature
+the `Optimizer` class functions are private, their bodies and their signature
 may change with future versions of tensorflow and even without official notice.
-Tensorflow updates at roughly between every and every two months. In general,
-this will lock the applicability of such an implementation to a very specific
-tensorflow version.
+Tensorflow updates roughly every two months. In general, this would  lock the
+applicability of such an implementation to a very specific tensorflow version.
 
 However, there is another solution to this. Remember that the list of four
 steps above is continued for a certain number of steps, i.e. after step _4._ in
-link:#extensions.samplers.simple.gla2[GLA2] at *n* follows step _1._ at *n+1*.
+link:#extensions.samplers.simple.gla2[GLA2] at iteration *n* follows step _1._
+at *n+1*.
 In other words, we may cyclically rearrange the steps, ignoring that the first
-step is then longer correct.
+step is then no longer correct.
 
 CAUTION: It is still important _where_ to evaluate quantities such as kinetic
 energy. I.e. their evaluation must be cyclically rearranged in accordance.
@@ -369,7 +374,7 @@ BOBA. See <<Leimkuhler2012>> for the nomenclature of the steps *A*, *B*, *O*.
 [source, python]
 ----
 def _apply_dense(self, grad, var):
-  step_width_t, beta_t, gamma_t, random_noise_t = self._prepare_dense(grad, var) # <1>
+  step_width, beta, gamma, random_noise_t = self._prepare_dense(grad, var) # <1>
   momentum = self.get_slot("momentum") # <2>
   scaled_gradient = grad * step_width_t # <3>
 
@@ -377,8 +382,8 @@ def _apply_dense(self, grad, var):
   momentum_half_step = momentum - 0.5 * scaled_gradient # <3>
 
   # 4. p_{n+1} = \alpha \widehat{p}_{n+1} + \sqrt{\frac{1-\alpha^2}{\beta}} \cdot \eta_n
-  alpha = tf.exp(-friction_constant_t * step_width_t) # <4>
-  noise_scale = tf.sqrt((1.-tf.pow(alpha, 2))/inverse_temperature_t) # <4>
+  alpha = tf.exp(-friction_constant * step_width) # <4>
+  noise_scale = tf.sqrt((1.-tf.pow(alpha, 2))/inverse_temperature) # <4>
   scaled_noise = noise_scale * random_noise_t # <4>
   momentum_noise_step = alpha * momentum_half_step + scaled_noise # <4>
 
@@ -386,7 +391,7 @@ def _apply_dense(self, grad, var):
   momentum_t = momentum.assign(momentum_noise_step - 0.5 * scaled_gradient) # <5>
 
   # 2. x_{n+1} = x_n + \lambda p_{n+\tfrac 1 2}
-  var_update_t = state_ops.assign_add(var, step_width_t * momentum_t) # <6>
+  var_update_t = state_ops.assign_add(var, step_width * momentum_t) # <6>
 
   return control_flow_ops.group(*[var_update]) # <7>
 ----
@@ -394,17 +399,18 @@ def _apply_dense(self, grad, var):
 As this is quite a large example, let's go through the lines step by step.
 
 <1> First, we use `_prepare_dense()` to obtain the three tensors containing
-our parameters `step_width` latexmath:[\delta t], `inverse_temperature` latexmath:[\beta],
-and `friction_constant` latex:[\gamma]. Moreover, we get the random number
+our parameters `step_width` latexmath:[\delta t], +beta+ latexmath:[\beta],
+and +gamma+ latexmath:[\gamma]. Moreover, we get the random number
 tensor that is our source of normally distributed noise latexmath:[\eta_n].
-<2> Next, we get the slot variable `momentum`. `grad` and `var` we have obtained
-as parameters to `_apply_dense()`.
+<2> Next, we get the slot variable `momentum`. We have obtained `grad` and
+`var` as parameters to `_apply_dense()`.
 <3> Then comes the first momentum integration step, *B*. We create a helper
 node `scaled_gradient` that contains the gradient tensor scaled by the step
-width. Then, we assign the update to a temporary tensor named `momentum_half_step_t`.
+width. Then, we assign the update to a temporary tensor named
+`momentum_half_step`.
 <4> For the following *O* step, we need to compute latexmath:[\alpha]. To this
-end, we create several temporary nodes `alpha_t`, `noise_scale`, and finally
-`scaled_noise` to obtain the factor in the first in `alpha_t` and the second term
+end, we create several temporary nodes `alpha`, `noise_scale`, and finally
+`scaled_noise` to obtain the factor in the first in `alpha` and the second term
 in `scaled_noise` of step *4.* in link:#extensions.samplers.simple.gla2[GLA2].
 <5> Now, we are actually at step *1.* of the split formulation for the
 Langevin dynamics time integration. We perform another *B* step. However, this
@@ -413,14 +419,14 @@ done whenever we evaluate `momentum_t`: it will _both_ return the momentum after
 the second *B* step _and_ assign its value to the slot `momentum`!
 <6> Finally, we come to the *A* step where the variables in `var` are updated
 using the updated momentum in `momentum_t` just as in step *2.*.
-<7> The very last step consists of returning a list of nodes, here `[var_update_t]`
-to trigger the actual evaluation.
+<7> The very last step consists of returning a list of nodes, here
+`[var_update_t]` to trigger the actual evaluation.
 
 Let us elaborate a bit why in the last step we only need a single tensor in the
 list: `var_update_t` depends on `momentum_t`. Hence, it triggers the evaluation
-of that node. `momentum_t` depends on `momentum_noise_step_t` and `scaled_gradient`.
-Hence, it will trigger those two nodes. `momentum_noise_step_t` in turn triggers
-evaluation of `alpha_t`, `momentum_half_step_t`, and `scaled_noise`. Finally,
+of that node. `momentum_t` depends on `momentum_noise_stept` and `scaled_gradient`.
+Hence, it will trigger those two nodes. `momentum_noise_step` in turn triggers
+evaluation of `alpha`, `momentum_half_step`, and `scaled_noise`. Finally,
 `scaled_noise` depends on `noise_scale` and `random_noise_t`.
 
 So, all created nodes are actually evaluated when `var_update_t` 's evaluation
@@ -429,7 +435,8 @@ is triggered.
 And that's it. We are done with adding a GLA2 sampler.
 
 NOTE: It is a good idea to adhere to a certain naming convention: Nodes that
-actually modify the state, e.g., by assigning a new value to a slot, are
+actually modify the state -- by assigning a new value to a slot or by
+calling a random number generator which modifies its internal state, ... -- are
 suffixed by `.._t` as a reminder that these are tensorflow *tensors*. All
 helper nodes in the above example do not have this suffix.
 
@@ -437,6 +444,7 @@ CAUTION: The above lines could principally be in any order as the order of
 execution comes purely from their dependence on one another in the computational
 graph. They are still in order because during construction we need the right
 python variables referencing tensorflow nodes at hand.
+We will come to this point in the next session.
 
 [[extensions.samplers.variables]]
 Local and global variables
@@ -449,6 +457,8 @@ computational graph.
 
 Tensorflow maintains a dictionary of all nodes in its graph by which we could
 try to access the `momentum` slots. The key is always the `name` of the node.
+Therefore, we could access momenta by an additional `Session.run()` call after
+the sampling step.
 However, then we cannot evaluate the kinetic energy at the right point, namely
 just before step 5 and not after step 7 or before step 1.
 
@@ -468,7 +478,7 @@ Creating a resource variable
 
 While the `momentum` slot is _local_ to the specific `_apply_dense()` context,
 these variables will have a _global_ character to them. Therefore, they are
-created outside of the `_apply_dense()` somewhere before you instantiate the
+created outside of the `_apply_dense()` somewhere before we instantiate the
 sampler `GLA2Sampler`.
 
 .Resource variable
@@ -481,9 +491,9 @@ with tf.variable_scope("accumulate", reuse=False):
 ----
 
 Here, we first set a variable scope: all variables in that scope will have
-their names prefxied with "accumulate/", i.e. the name of the kinetic energy
+their names prefixed with "accumulate/", i.e. the name of the kinetic energy
 variable is "accumulate/kinetic_energy".
-We mark it as not trainable, after all it's just another variable.
+We mark it as not trainable, after all it is designed as pure storage.
 Its shape defines it as a scalar quantity. Its `dtype` is simply `tf.float32`.
 Note this should match with the type of the trainable variables, see
 link:#concepts.neural_networks.network_topology.output[Output layer] where we
@@ -510,10 +520,10 @@ with tf.variable_scope("accumulate", reuse=True):
       kinetic_energy = tf.get_variable("kinetic_energy", dtype=tf.float32)
 ----
 
-Before you strain your eyes too hard to spot the _actual difference_, let us
-hightlight them: `..., reuse=True` means that if the variable is already
-present, tensorflow simply returns a reference. Moreover, this time store
-the reference that `tf.get_variable()` returns in `kinetic_energy_t`.
+Before you strain your eyes too hard to spot the _important difference_, let us
+hightlight it: `reuse=True` means that if the variable is already
+present, tensorflow simply returns a reference. Moreover, this time we store
+the reference that `tf.get_variable()` returns in `kinetic_energy`.
 
 Then, we may extend our present implementation of GLA2 in `_apply_dense()` in
 the following way to also accumulate the kinetic energy.
@@ -543,21 +553,23 @@ def _apply_dense(self, grad, var):
 ----
 
 <1> We obtain a reference to the already created resource variable.
-<2> Next, we add the contribution from latexmath:[1/2 p_{n}^t p_{n}] to the
-resource variable.
-<3> Adding a `tf.control_dependencies()` to the statements in the `with` context
+<2> Next, we add the contribution from latexmath:[\tfrac 1 2 p_{n}^t p_{n}] to
+the resource variable.
+<3> Adding a `tf.control_dependencies()` in a `with` context
 instructs tensorflow that all nodes in the list have to be evaluated before any
 of the statements inside the context are evaluated. This ensures that we add
 the kinetic energy contribution before continuing with step *1.* in
 link:#extensions.samplers.simple.gla2[GLA2].
+Remember that evaluation is determined by dependence and not by order of
+appearance in the python code.
 <4> We need to make sure that the assignment actually takes place by adding
-it to the list of returned variables.
+it to the list of returned variables, as `var_update_t` does not depend on it.
 
 [[extensions.samplers.variables.evaluating_resource]]
 Evaluating a resource variable
 ++++++++++++++++++++++++++++++
 
-Evaluating the variable is simply just the same as any other node in tensorflow,
+Evaluating the variable is simply the same as any other node in tensorflow,
 using the `run()` statement of a session object. Assume we have obtained the
 reference to the kinetic energy as `kinetic_energy`, see
 link:#extensions.samplers.variables.assign_resource[Assigning a resource].
@@ -575,7 +587,7 @@ Zeroing to a resource variable
 
 There is one last step: If we want to have the current kinetic energy per step
 and not some average, then we need to zero the resource variable before
-continuing the next train step.
+continuing the next sampling step.
 
 To this end, we need to create an assignment node _before_ we instantiate the
 `Session`. The assignment will place the constants scalar of *0.* in the
@@ -591,13 +603,13 @@ with tf.Session() as sess:
   sess.run(zero_kinetic_energy_t)
 ----
 
-Now, that you can access the kinetic energy, you try to access other
+Now, that you can access the kinetic energy, do try to access other
 quantities. Running averages are simply obtained by not setting to zero and
 dividing by the number of steps on output.
 Virials can be computed by looking at the scalar product of gradients and
 variables, `tf.reduce_sum(tf.multiply(grad,var))`. Norms of gradients, noise,
-momenta, and so on can be obtained in the same way. For each a resource
-variable is required.
+momenta, and so on can be obtained in the same way. For each a diferent
+resource fvariable is required.
 
 [[extensions.samplers.branching]]
 Branching
@@ -605,11 +617,10 @@ Branching
 
 As the last topic in this guide we come to an issue that has some peculiarities
 about it.
-
 We would like to add nodes to the graph such that either one node or another
 is evaluated depending on a given condition.
 
-Let us look at a simple example in familiar python
+Let us look at a simple example in familiar python code.
 
 .Branching in python
 [source, python]
@@ -617,6 +628,7 @@ Let us look at a simple example in familiar python
 import numpy as np
 np.random.seed(426)
 
+steps = 100
 threshold = 0.5
 lower_sum = 0
 higher_sum = 0
@@ -628,10 +640,10 @@ for i in range(0, 100):
   else:
     higher_sum += value # <3>
 
-print([lower_sum, higher_sum])
+print([lower_sum/steps, higher_sum/steps])
 ----
 
-This is a really contrived example:
+This is really a contrived example:
 
 <1> We throw a random die to uniformly produce a number in [0,1].
 <2> When the value is less than *0.5*, we add it to `lower_sum`.
@@ -645,10 +657,10 @@ again: You need to give function handlers as second and third argument, _not_
 tensorflow nodes! However, you can wrap your node in a dummy function that
 returns it. This is the first peculiarity but there is another. The first is not
 too bad because tensorflow will throw an error informing you that it needs a
-function in place of a node. The second one is more mean.
+function in place of a node. The second one is more subtle to debug.
 
 Let us first take a look at *how not to do it*, i.e. let us deliberately
-stumble over the second one.
+stumble over the second peculiarity.
 
 .Naive branching implementation
 [source, python]
@@ -676,9 +688,9 @@ with tf.Session() as sess:
 
 <1> First, we create several variables in the same way as we instantiated python
 variables before.
-<2> The first difference is that we have to create a source of random number
-in the form of the tensor. However, this should be quite familiar as we had
-to do the same thing for the sampler.
+<2> The first difference is that we have to create a source of random numbers.
+However, this should be quite familiar as we had to do the same thing for the
+sampler implementation above.
 <3> Next, circumventing pecularity number one we define two functions that sum
 onto the `lower_sum` and `higher_sum` variables through assignment.
 <4> Then we come to the branching statement. Using `tf.less()` we make a
@@ -688,19 +700,19 @@ constant `threshold`. `tf.cond()` then should execute either `accept_low` or
 <5> We evaluate the branching node for 100 steps.
 <6> And finally we print the two resulting averages for either sum.
 
-What is the result: something close to *0.5, 0.5*?! We had expected this to
+And the result is: something close to *0.5, 0.5*?! We had expected this to
 be *0.25, 0.75*.
 
 What has happened?
 When tensorflow evaluates the `tf.cond()` statement it needs to look at _both_
-the possible true and false branches in deciding on which nodes they depend on.
+the possible true and false branches in deciding which nodes they depend on.
 Somehow this also seems to make it necessary to evaluate them. In other words,
 in the naive way above both branches are executed and we obtain two equivalent
 sums.
 
-The workaround is to hide away all _side effects_ of your branches inside a
-`tf.control_dependencies()` statement and only return a dummy node, e.g., using
-`tf.identity()`.
+The workaround is to hide away all _side effects_, i.e. changing the state,
+of your branches inside a `tf.control_dependencies()` statement and only return
+a dummy node, e.g., using `tf.identity()`.
 
 .Changes for a working branching implementation
 [source, python]
@@ -720,8 +732,8 @@ This now returns the expected output.
 
 In our corrections we have circumvented another peculiarity: Inside the control
 dependency there _must not appear nodes_. Tensorflow will not throw an error
-but these will no be triggered. There always have to be statements.
-After all, this is why this workaround is working at all.
+but these will not be triggered. Depenedencies must be always given as
+statements. After all, this is why this workaround is working at all.
 
 To make this concrete, _the following does nothing_.
 
@@ -746,6 +758,7 @@ the branching statement one could easily implement a loop. There is also a
 link:https://www.tensorflow.org/api_guides/python/control_flow_ops#Control_Flow_Operations[Control Flow Operations]
 for a complete list of all control flow operatipons that tensorflow supports.
 
-NOTE: Not every one of them is useful. In our case of the sampler is perfectly
-acceptable to have a hybrid python/tensorflow implementation as each train step
-depends on the former and therefore no parallelization is possible there.
+NOTE: Not every one of them is useful. In our case of the sampler it is
+perfectly acceptable to have a hybrid python/tensorflow implementation as each
+train step depends on the former and therefore no parallelization is possible
+there.

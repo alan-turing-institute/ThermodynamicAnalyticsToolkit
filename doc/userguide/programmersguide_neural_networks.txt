@@ -374,8 +374,7 @@ Training is done by minimizing a function. The function in this context here
 is called the _loss_. It compares the predicted output of the network with
 the labels of the dataset.
 Moreover, we need _gradients_, i.e. derivatives of the loss function with
-respect to degrees of freedom of the network, namely weights and
-biases.
+respect to degrees of freedom of the network, weights and biases.
 Finally, we need an _update method_ or optimizer that refines these degrees
 making use of gradients, e.g., Gradient Descent.
 
@@ -388,8 +387,7 @@ we know it has a single global extremum (a minimum).
 ----
 import tensorflow as tf
 
-# prepare the computational graph with ...
-# ... x and f(x) ...
+# prepare the computational graph with x and f(x) ...
 x = tf.Variable(10.0)
 f_x = 2. * tf.pow(x,2.) - 5. * x + 4.
 
@@ -414,13 +412,15 @@ as the learning rate. Then, we may flexibly provide the learning rate in each
 iteration step and could for example tune it adaptively.
 
 Notice something? We did not give the variable `x` to the `minimize()` call.
-The reason is that tensorflow has an internal collection called "trainables".
+The reason is that tensorflow has an internal collection called "trainables",
+use `tf.trainable_variables()`.
 All variables are automatically added to this collection unless excluded (see
 end of <<concepts.neural_networks.network_topology>>). Gradients will always be
 calculated with respect to all variables in this collection.
 
-Running this for 50 steps, we obtain an approximate solution `x=1.2500001` with
-a function value of `f(x)=0.87500024`.
+Running the example for 50 steps, we obtain an approximate solution
+`x=1.2500001` with a function value of `f(x)=0.87500024`. In other words, the
+optimizer has been doing its job properly.
 
 The gradients are determined completely internally. Each (activation) function
 has an encoded analytical derivative. Through chain rule, also known as back-
@@ -429,10 +429,12 @@ taking place.
 
 Similar to the above example, we will now also train our neural network.
 The only thing we need to change is the loss function. Here, we will use the
-mean squared loss latexmath:[||F_D(x) - y||^2]. Here, latexmath:[F_D(x)] is
+mean squared loss latexmath:[||F_D(x) - y||^2], where latexmath:[F_D(x)] is
 the black-box neural network function depending implicitly on the dataset. It
 returns a vector (or matrix) of all predictions. These are compared to *y*, the
 labels of the dataset.
+
+Let us setup the loss function and instantiate the optimizer.
 
 [source,python]
 ----
@@ -450,16 +452,15 @@ previously.
 As a last step, we add the training method which receives the placeholder for
 the learning rate and tell it to minimize the loss function.
 
-The `minimize()` naturally does not perform any minimization itself but again
-just returns a node in the computational graph named `train_step`.
+The `minimize()` call naturally does not perform any minimization itself but
+again just returns a node in the computational graph named `train_step`.
 This function call has added a lot of nodes to the graph that trigger
 calculating the gradients and modifying the weights and biases via the update
-rule. In the chapter <<extensions.samplers>> on how to extend the capabilities
-of tensorflow to allow for new sampling methods we will see how this works in
-detail.
+rule. We will see how this works in detail in <<extensions.samplers>> covering
+how to extend the capabilities of tensorflow to allow for new sampling methods.
 
 Evaluating `train_step` will trigger a single update step. Triggering it again
-will cause another iteration step. Of course, this calls for a loop as follows:
+will cause another iteration step. Of course, this calls for a loop.
 
 [source,python]
 ----
@@ -486,8 +487,8 @@ the second `session.run()` that performs a single update step.
 
 As the iterator will raise a `tf.errors.OutOfRangeError` exception when it
 reaches the end of the dataset and we have told the dataset to repeat itself
-such that we may obtain `max_steps` batches, it will perform exactly those
-number of steps and then exit the loop.
+in such a way that we may obtain `max_steps` batches, it will perform exactly
+those number of steps and then exit the loop.
 
 [[concepts.neural_networks.training.chained_pipeine]]
 Chaining feeding and training
@@ -502,7 +503,7 @@ graph that perform the parsing of the data and therefore `features` and
 the input layer.
 
 In place of the input layer placeholders `x` we use `features` directly to
-construt our single-layer perceptron network.
+construct our single-layer perceptron network.
 
 [source,python]
 ----
@@ -544,6 +545,7 @@ In principle, this second version should save an additional copy in memory
 when the provided datsaset batch is copied into the `batch_features` and
 `batch_labels` variables and then into the network's session instead of
 being directly referenced within the network's session.
+However, there is no change in performance. Both versions are equally fast.
 
 TIP: Even though in many places in the tensorflow tutorials the use of
 `feed_dict` for feeding in the dataset is strongly discouraged and therefore
@@ -557,8 +559,8 @@ no difference in performance.
 
 CAUTION: The second version has the drawback that the input pipeline has to
 be created first and the network crucially depends on it. It is not so
-easy anymore to exchange datasets. To some extent it is still possible using
-feedable iterators.
+easy anymore to exchange datasets as when using placeholders to feed the
+dataset. To some extent it is still possible using feedable iterators.
 Hence, the second approach sacrifices flexibility of the network.
 
 WARNING: The second version has another drawback: Whenever a node is evaluated

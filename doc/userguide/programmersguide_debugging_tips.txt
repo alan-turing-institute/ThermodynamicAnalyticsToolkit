@@ -2,18 +2,18 @@
 Tips
 ~~~~
 
-The tips and guidelines we have revolve around the following concepts:
+The tips and guidelines revolve around the following concepts:
 
-- print statements
-- debugger
-- toy models and minimum working examples
+- print statements,
+- debugger,
+- toy models and minimum working examples.
 
 [[debugging.tips.print]]
 Print statement
 ^^^^^^^^^^^^^^^
 
 Our first advice is to make use of `tf.Print()` when something does not look
-right. It serves a similar purpose as would a `print()` statement in normal
+right. It serves a similar purpose as would a `print()` statement do in normal
 python code: We want to inspect the value of a certain variable or we want to
 see when the program reaches a certain point in its control flow.
 
@@ -24,13 +24,24 @@ be inserted in the proper place.
 
 To enable placement in arbitrary positions, `tf.Print()` works the same way as
 `tf.identity()` does, i.e. it is a pass-thru node that simply passes the value
-of its argument on. However, it has the side-effect of printing a `message`
-together with `data`.
+of its argument on, see Figure link:#debugging.tips.print.pass_thru[Pass-thru node].
+However, it has the side-effect of printing a `message` together with `data`.
+
+[[debugging.tips.print.pass_thru]]
+.Pass-thur node: `tf.Print()` simply passes thru input to output
+image::pictures/pass-thru_node.png[align="center",{basebackend@docbook:scaledwidth="40%":width=350}]
 
 Imagine we wanted to inspect whether the random number tensor in our
 link:#extensions.samplers.branching[Branching]
 example before would not actually be evaluated two times. Or even three times
-in the naive example. Therefore, let us modify the `branching_t` statement and
+in the naive example: Once for evaluating `branching_t` and two more times when
+adding onto either sum.
+
+Does this value coincide each time? Or has a new random number been triggered?
+We can deduce the behavior from the result *0.25, 0.75*.
+Nonetheless, let us do this properly.
+
+Therefore, let us modify the `branching_t` statement and
 the function definitions as follows:
 
 .Print debugging in the tensorflow lingo
@@ -53,7 +64,7 @@ branching_t = tf.cond(tf.less(
 <2> In the branching statement we do not use `random_t` directly but let it
 pass thru the print statement first.
 
-This way the we obtain two messages per loop iteration and we can easily
+This way we obtain two messages per loop iteration and we can easily
 compare the values of the message with "random number" to the one from
 "random number low" or "random number high".
 
@@ -71,7 +82,7 @@ It is added when the `Session` object is modified in the following way:
 sess = tf_debug.LocalCLIDebugWrapperSession(sess, ui_type=FLAGS.ui_type)
 ----
 
-The debugger is more powerful when inspecting multiple values, executing the
+The debugger is more powerful when inspecting multiple values. Execute the
 program through `run`. This will stop once per encountered `session.run()`
 statement. `lt` lists all tensors. `pt` prints the value of a particular
 tensor. We refer to above linked tutorial on how to use the debugger.
@@ -98,7 +109,8 @@ Understanding through toy models
 One last way of debugging a program is in making a _minimum working example_.
 
 This could for example be a toy model such as simple harmonic oscillator
-where analytical properties are known.
+where analytical properties such as the
+mean loss are known that we may compute and compare against.
 
 In general, when something is not working right, then try to make the code
 that is not working as small as possible. Throw away any other code that has
@@ -109,3 +121,7 @@ GLA2 sampler on a single-layer perceptron. By feeding a dataset consisting of
 a single *0.* as feature and a single *0.* as its label and using the
 `mean_squared` loss, you obtain a harmonic oscillator in the single bias
 variable.
+
+But a toy model may also be much simpler, consisting only of two variables and
+a statement combining the two. It may help understanding how a tensorflow
+statement works, see link:#concepts.tensorflow.graph_construction[Constructing a graph].
