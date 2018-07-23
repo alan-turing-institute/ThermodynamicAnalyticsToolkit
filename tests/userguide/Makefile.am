@@ -47,6 +47,7 @@ TESTSCRIPTS += \
 	$(srcdir)/simulation/testsuite-userguide-simulation-change_dataset_array.at \
 	$(srcdir)/simulation/testsuite-userguide-simulation-change_dataset_csv.at \
 	$(srcdir)/simulation/testsuite-userguide-simulation-evaluate_accuracy.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-evaluate_dataset.at \
 	$(srcdir)/simulation/testsuite-userguide-simulation-evaluate_gradients.at \
 	$(srcdir)/simulation/testsuite-userguide-simulation-evaluate_hessians.at \
 	$(srcdir)/simulation/testsuite-userguide-simulation-evaluate_loss.at \

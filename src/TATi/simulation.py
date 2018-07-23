@@ -126,6 +126,14 @@ class Simulation(object):
         self._parameters = Parameters(self._nn, ["weights", "biases"])
         self._momenta = Parameters(self._nn, ["momenta_weights", "momenta_biases"])
 
+    @staticmethod
+    def help(key=None):
+        """ Prints help for each option or all option names if key is None
+
+        :param key: name of option or None for list of options
+        """
+        PythonOptions.help(key)
+
     def _construct_nn(self):
         """ Constructs the neural network is dataset is present.
         """
@@ -390,12 +398,7 @@ class Simulation(object):
 
         :return: array of features and labels, each a numpy array of `batch_size`
         """
-        #self._check_nn()
-        if self._nn is not None:
-            return self._nn.input_pipeline.next_batch(
-                self._nn.sess, auto_reset=True)
-        else:
-            return None
+        return self._cache.dataset
 
     @dataset.setter
     def dataset(self, value):

@@ -21,6 +21,7 @@
 m4_include([simulation/testsuite-userguide-simulation-change_dataset_array.at])
 m4_include([simulation/testsuite-userguide-simulation-change_dataset_csv.at])
 m4_include([simulation/testsuite-userguide-simulation-evaluate_accuracy.at])
+m4_include([simulation/testsuite-userguide-simulation-evaluate_dataset.at])
 m4_include([simulation/testsuite-userguide-simulation-evaluate_gradients.at])
 m4_include([simulation/testsuite-userguide-simulation-evaluate_hessians.at])
 m4_include([simulation/testsuite-userguide-simulation-evaluate_loss.at])

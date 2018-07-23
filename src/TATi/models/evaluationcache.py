@@ -27,6 +27,8 @@ class EvaluationCache(object):
         self._nn = nn
         self._cache = {}
         self._node_keys = {}
+        self._features = None
+        self._labels = None
 
     def _init_node_keys(self):
         """ Initializes the set of cached variables with nodes from the tensorflow's
@@ -51,11 +53,23 @@ class EvaluationCache(object):
         elif "hessians" in self._node_keys.keys():
             del self._node_keys["hessians"]
 
+    @property
+    def dataset(self):
+        """ Getter to the current dataset.
+
+        :return: features, labels
+        """
+        if self._features is None or self._labels is None:
+            self._update_cache()
+        return self._features, self._labels
+
     def reset(self):
         """ This resets the cache to None for all cached variables.
         """
         for key in self._node_keys.keys():
             self._cache[key] = [None]*self._nn.FLAGS.number_walkers
+        self._features = None
+        self._labels = None
 
     def _return_cache(self, key, walker_index=None):
         """ This returns the cached element named `key` and resets the entry.
@@ -90,10 +104,17 @@ class EvaluationCache(object):
     def _update_cache(self):
         """ Updates the contents of the cache from the network's values.
         """
+        self._advance_iterator()
         nodes = list(self._node_keys.values())
         values = self._evaluate(nodes)
         for key, value in zip(self._node_keys.keys(), values):
             self._cache[key] = value
+
+    def _advance_iterator(self):
+        """ Advances the iterator and caches dataset internally.
+        """
+        self._features, self._labels = self._nn.input_pipeline.next_batch(
+            self._nn.sess, auto_reset=True)
 
     def _evaluate(self, nodes):
         """ Helper function to evaluate an arbitrary node of tensorflow's
@@ -102,11 +123,9 @@ class EvaluationCache(object):
         :param nodes: node to evaluate in `session.run()`
         :return: result of node evaluation
         """
-        features, labels = self._nn.input_pipeline.next_batch(
-            self._nn.sess, auto_reset=True)
         feed_dict = {
-            self._nn.xinput: features,
-            self._nn.nn[0].placeholder_nodes["y_"]: labels}
+            self._nn.xinput: self._features,
+            self._nn.nn[0].placeholder_nodes["y_"]: self._labels}
         eval_nodes = self._nn.sess.run(nodes, feed_dict=feed_dict)
         return eval_nodes
 

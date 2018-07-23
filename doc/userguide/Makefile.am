@@ -33,11 +33,12 @@ PYTHON_EXAMPLES = \
 	$(srcdir)/simulation/complex/supply_dataset.py \
 	$(srcdir)/simulation/change_dataset_array.py \
 	$(srcdir)/simulation/change_dataset_csv.py \
-	$(srcdir)/simulation/evaluate_loss.py \
-	$(srcdir)/simulation/evaluate_predict.py \
 	$(srcdir)/simulation/evaluate_accuracy.py \
+	$(srcdir)/simulation/evaluate_dataset.py \
 	$(srcdir)/simulation/evaluate_gradients.py \
 	$(srcdir)/simulation/evaluate_hessians.py \
+	$(srcdir)/simulation/evaluate_loss.py \
+	$(srcdir)/simulation/evaluate_predict.py \
 	$(srcdir)/simulation/initializing_momenta.py \
 	$(srcdir)/simulation/requesting_parameters.py \
 	$(srcdir)/simulation/requesting_momenta.py \
