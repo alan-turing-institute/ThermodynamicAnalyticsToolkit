@@ -4,6 +4,7 @@ The simulation module contains the interface to generically access neural networ
 """
 
 import logging
+import numpy as np
 
 from TATi.models.model import model
 from TATi.options.pythonoptions import PythonOptions
@@ -136,7 +137,8 @@ class Simulation(object):
         # TODO: This still needs to be adapted for multiple walkers, i.e. made into lists
         self._node_keys = {
                 "loss": self._nn.loss,
-                "accuracy": self._nn.nn[0].get_list_of_nodes(["accuracy"])
+                "accuracy": [self._nn.nn[i].get_list_of_nodes(["accuracy"])
+                             for i in range(self._nn.FLAGS.number_walkers)]
             }
         # add hessians and gradients only when nodes are present
         if self._nn.gradients is not None:
@@ -152,7 +154,7 @@ class Simulation(object):
         """ This resets the cache to None for all cached variables.
         """
         for key in self._node_keys.keys():
-            self._cache[key] = None
+            self._cache[key] = [None]*self._nn.FLAGS.number_walkers
 
     def _construct_nn(self):
         """ Constructs the neural network is dataset is present.
@@ -228,25 +230,35 @@ class Simulation(object):
                                 [self.options.input_dimension])
         self._nn.assign_neural_network_parameters(new_values)
 
-    def _return_cache(self, key):
+    def _return_cache(self, key, walker_index=None):
         """ This returns the cached element named `key` and resets the entry.
 
         :param key: key of cached variable
-        :return: values stored in cache for `key`
+        :param walker_index: index of walker to access or None for all
+        :return: value(s) stored in cache for `key`
         """
         assert( key in self._cache.keys() )
         print(self._cache)
-        value = self._cache[key]
-        self._cache[key] = None
+        if walker_index is None:
+            value = self._cache[key]
+            for i in range(self._nn.FLAGS.number_walkers):
+                self._cache[key][walker_index] = None
+        else:
+            value = self._cache[key][walker_index]
+            self._cache[key][walker_index] = None
         return value
 
-    def _check_cache(self, key):
+    def _check_cache(self, key, walker_index=None):
         """ Checks whether a value to `key` is in cache at the moment
 
         :param key: name to cached variable
-        :return: True - value is cached, False - None is stored in cache
+        :param walker_index: index of walker to access or None for all
+        :return: True - values are cached, False - None is stored in cache
         """
-        return self._cache[key] is not None
+        if walker_index is None:
+            return (self._cache[key] is not None).all()
+        else:
+            return self._cache[key][walker_index] is not None
 
     def _update_cache(self):
         """ Updates the contents of the cache from the network's values.
@@ -275,17 +287,18 @@ class Simulation(object):
         eval_nodes = self._nn.sess.run(nodes, feed_dict=feed_dict)
         return eval_nodes
 
-    def _evaluate_cache(self, key):
+    def _evaluate_cache(self, key, walker_index=0):
         """ Evaluates the variable `key` either from cache or updating if not
         present there.
 
         :param key: key of variable
+        :param walker_index: index of walker to access
         :return: valueto current batch of `key`
         """
         self._check_nn()
-        if not self._check_cache(key):
+        if not self._check_cache(key, walker_index):
             self._update_cache()
-        return self._return_cache(key)
+        return self._return_cache(key, walker_index)
 
     def loss(self, walker_index=0):
         """ Evalutes the current loss.
@@ -293,7 +306,7 @@ class Simulation(object):
         :param walker_index: index of walker to use for fitting
         :return: value of the loss function for walker `walker_index`
         """
-        return self._evaluate_cache("loss")[walker_index]
+        return self._evaluate_cache("loss", walker_index)
 
     def gradients(self, walker_index=0):
         """ Evaluates the gradient of the loss with respect to the set
@@ -306,7 +319,7 @@ class Simulation(object):
         """
         if "gradients" not in self._node_keys.keys():
             raise AttributeError("Gradient nodes have not been added to the graph.")
-        return self._evaluate_cache("gradients")[walker_index]
+        return self._evaluate_cache("gradients", walker_index)
 
     def hessians(self, walker_index=0):
         """ Evaluates the hessian of the loss with respect to the
@@ -320,7 +333,7 @@ class Simulation(object):
         if "hessians" not in self._node_keys.keys():
             raise AttributeError("Hessian nodes have not been added to the graph." \
                                  +" You need to explicitly set 'do_hessians' to True in options.")
-        return self._evaluate_cache("hessians")[walker_index]
+        return self._evaluate_cache("hessians", walker_index)
 
     def score(self, walker_index=0):
         """ Evaluates the accuracy on the given dataset
@@ -328,7 +341,7 @@ class Simulation(object):
         :param walker_index: index of walker to use for fitting
         :return: accuracy for walker `walker_index`
         """
-        return self._evaluate_cache("accuracy")[walker_index]
+        return self._evaluate_cache("accuracy", walker_index)
 
     @property
     def parameters(self):
@@ -351,6 +364,7 @@ class Simulation(object):
         self._check_nn()
         for i in range(len(self._parameters)):
             self._parameters[i] = values
+        self._reset_cache()
 
     @property
     def momenta(self):
@@ -429,10 +443,11 @@ class Simulation(object):
                            return_run_info=True, \
                            return_trajectories=True,
                            return_averages=True)
+        self._reset_cache()
         return run_info, trajectory, averages
 
     def sample(self):
-        """ Performs sampling of the neural network's loss manifold.
+        """ Performs sampling of the neural network's loss manifold for all walkers.
 
         NOTE:
             The parameters of the sampling such as `sampler`, `step_width`
@@ -450,6 +465,7 @@ class Simulation(object):
             self._nn.sample(return_run_info=True, \
                             return_trajectories=True,
                             return_averages=True)
+        self._reset_cache()
         return run_info, trajectory, averages
 
     @property
@@ -496,6 +512,7 @@ class Simulation(object):
             self._lazy_nn_construction = False
             self._construct_nn()
         self._nn.reset_dataset()
+        self._reset_cache()
 
     def predict(self, features, walker_index=0):
         """ Evaluates predictions (i.e. output of network) for the given features.
