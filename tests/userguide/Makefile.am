@@ -37,6 +37,7 @@ TESTSCRIPTS += \
 	$(srcdir)/simulation/complex/testsuite-userguide-simulation-complex.at \
 	$(srcdir)/simulation/complex/testsuite-userguide-simulation-complex-eval_loss_gradient.at \
 	$(srcdir)/simulation/complex/testsuite-userguide-simulation-complex-fix_parameter.at \
+	$(srcdir)/simulation/complex/testsuite-userguide-simulation-complex-gla2_sampler.at \
 	$(srcdir)/simulation/complex/testsuite-userguide-simulation-complex-momenta_invalid_sampler.at \
 	$(srcdir)/simulation/complex/testsuite-userguide-simulation-complex-optimize.at \
 	$(srcdir)/simulation/complex/testsuite-userguide-simulation-complex-optimize_sample.at \

@@ -20,6 +20,7 @@
 # tests on simple behavior
 m4_include([simulation/complex/testsuite-userguide-simulation-complex-optimize.at])
 m4_include([simulation/complex/testsuite-userguide-simulation-complex-sample.at])
+m4_include([simulation/complex/testsuite-userguide-simulation-complex-gla2_sampler.at])
 m4_include([simulation/complex/testsuite-userguide-simulation-complex-supply_dataset.at])
 m4_include([simulation/complex/testsuite-userguide-simulation-complex-optimize_sample.at])
 m4_include([simulation/complex/testsuite-userguide-simulation-complex-eval_loss_gradient.at])

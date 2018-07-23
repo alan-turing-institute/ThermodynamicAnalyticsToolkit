@@ -25,6 +25,7 @@ PYTHON_EXAMPLES = \
 	$(srcdir)/python/writing_data.py \
 	$(srcdir)/simulation/complex/eval_loss_gradient.py \
 	$(srcdir)/simulation/complex/fix_parameter.py \
+	$(srcdir)/simulation/complex/gla2_sampler.py \
 	$(srcdir)/simulation/complex/momenta_invalid_sampler.py \
 	$(srcdir)/simulation/complex/optimize.py \
 	$(srcdir)/simulation/complex/optimize_sample.py \
