@@ -43,6 +43,5 @@ $(srcdir)/version.py: $(srcdir)/.git-version
 
 $(srcdir)/__init__.py: $(srcdir)/.git-version
 	echo "__version__ = \"$(PACKAGE_VERSION)\"" >$@
-	echo -e -n "\n" >>$@
 	echo "import TATi.simulation" >>$@
 	echo "TATi.simulation = TATi.simulation.Simulation" >>$@
