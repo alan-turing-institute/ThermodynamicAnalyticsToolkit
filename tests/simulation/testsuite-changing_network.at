@@ -19,7 +19,7 @@
 
 AT_SETUP([Simulation - changing network])
 AT_KEYWORDS([simulation changing network])
-AT_XFAIL_IF([/bin/true])
+AT_XFAIL_IF([$BIN_TRUE])
 
 AT_CHECK([cp -f \
     ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/pre/dataset-twoclusters.csv \

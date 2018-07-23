@@ -22,12 +22,22 @@ if test -z $ASCIIDOC; then
 	AC_MSG_WARN([asciidoc not found, cannot build from asciidoc sources])
 fi
 AC_CHECK_PROGS([DBLATEX], [dblatex])
-	if test -z $DBLATEX; then
-	   AC_MSG_WARN([dblatex not found, cannot render userguide PDF])
+if test -z $DBLATEX; then
+   AC_MSG_WARN([dblatex not found, cannot render userguide PDF])
 fi
 AC_CHECK_PROGS([HIGHLIGHT], [source-highlight])
-	if test -z $HIGHLIGHT; then
-	   AC_MSG_WARN([GNU's source-highlight not found, cannot syntex-highlight code blocks in userguide])
+if test -z $HIGHLIGHT; then
+   AC_MSG_WARN([GNU's source-highlight not found, cannot syntex-highlight code blocks in userguide])
+fi
+
+# We use /bin/true for checking certain tests
+# /bin/true is in /usr/in/true on MacOs
+AC_CHECK_PROGS([BIN_TRUE], [true])
+if test -z $BIN_TRUE; then
+	AC_MSG_WARN([Could not find /bin/true or similar."])
+	# false is more portable than true: Missing binary will result in 127, which !
+	# converts to 0, i.e. always skip
+	BIN_TRUE="! /bin/false"
 fi
 
 AC_CONFIG_FILES(

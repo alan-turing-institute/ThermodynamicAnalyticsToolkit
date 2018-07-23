@@ -32,7 +32,7 @@
 
 AT_SETUP([Tensorflaw - repeat, shuffle non-unique values])
 AT_KEYWORDS([tensorflaw reproducibility repeat shuffle])
-AT_XFAIL_IF([/bin/true])
+AT_XFAIL_IF([$BIN_TRUE])
 
 AT_CHECK([../../../run \
 	${abs_top_srcdir}/tests/tensorflow/Reproducibility/pre/repeat_shuffle_reproducibility.py \

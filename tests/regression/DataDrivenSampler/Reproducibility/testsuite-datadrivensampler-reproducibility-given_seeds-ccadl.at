@@ -19,7 +19,7 @@
 
 AT_SETUP([Sampler Reproducibility CCAdL - same and different seed])
 AT_KEYWORDS([reproducibility seed twoclusters tatisampler ccadl])
-AT_SKIP_IF([/bin/true])
+AT_SKIP_IF([$BIN_TRUE])
 
 # PROBLEM:
 # Since WalkerEnsemble branch CCAdL's reproducibility test does not work any

@@ -35,7 +35,7 @@
 
 AT_SETUP([Tensorflaw - concat drops variable character])
 AT_KEYWORDS([tensorflaw concat variable])
-AT_XFAIL_IF([/bin/true])
+AT_XFAIL_IF([$BIN_TRUE])
 
 AT_CHECK([../../../run \
 	${abs_top_srcdir}/tests/tensorflow/NonVariables/pre/concat_not_variable.py
