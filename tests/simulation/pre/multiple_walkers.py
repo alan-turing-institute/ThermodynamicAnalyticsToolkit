@@ -37,5 +37,5 @@ assert( (gradients_first == nn.gradients(walker_index=1)).all() )
 # train network
 nn.fit()
 
-print(nn.score()[0])
+assert( nn.score()[0] == 1. )
 

@@ -19,7 +19,6 @@
 
 AT_SETUP([Examples - simulation, quickstart: supplying dataset])
 AT_KEYWORDS([example simulation complex supply_dataset])
-AT_XFAIL_IF([/bin/true])
 
 # train and test dataset prepared as follows:
 # TATiDatasetWriter --data_type 2 --dimension 500 --seed 426 --noise 0.1 --train_test_ratio 0 --test_data_files dataset-twoclusters.csv

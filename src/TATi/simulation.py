@@ -9,6 +9,7 @@ import numpy as np
 from TATi.models.model import model
 from TATi.options.pythonoptions import PythonOptions
 from TATi.parameters.parameters import Parameters
+from TATi.models.evaluationcache import EvaluationCache
 from TATi.models.networkparameter_adapter import NetworkParameterAdapter
 
 
@@ -117,8 +118,7 @@ class Simulation(object):
 
         # we need to evaluate loss, gradients, hessian, accuracy, ... on the 
         # same batch. Hence, we cache the results here for one-time gets
-        self._cache = {}
-        self._node_keys = {}
+        self._cache = EvaluationCache(self._nn)
 
         # construct nn if dataset has been provided
         self._construct_nn()
@@ -126,44 +126,14 @@ class Simulation(object):
         self._parameters = Parameters(self._nn, ["weights", "biases"])
         self._momenta = Parameters(self._nn, ["momenta_weights", "momenta_biases"])
 
-    def _init_node_keys(self):
-        """ Initializes the set of cached variables with nodes from the tensorflow's
-        graph.
-
-        Note:
-            As we may initialize first after having set up the network, this
-            needs to go into an extra function.
-        """
-        # TODO: This still needs to be adapted for multiple walkers, i.e. made into lists
-        self._node_keys = {
-                "loss": self._nn.loss,
-                "accuracy": [self._nn.nn[i].get_list_of_nodes(["accuracy"])
-                             for i in range(self._nn.FLAGS.number_walkers)]
-            }
-        # add hessians and gradients only when nodes are present
-        if self._nn.gradients is not None:
-            self._node_keys["gradients"] = self._nn.gradients
-        elif "gradients" in self._node_keys.keys():
-            del self._node_keys["gradients"]
-        if self._nn.hessians is not None:
-            self._node_keys["hessians"] = self._nn.hessians
-        elif "hessians" in self._node_keys.keys():
-            del self._node_keys["hessians"]
-
-    def _reset_cache(self):
-        """ This resets the cache to None for all cached variables.
-        """
-        for key in self._node_keys.keys():
-            self._cache[key] = [None]*self._nn.FLAGS.number_walkers
-
     def _construct_nn(self):
         """ Constructs the neural network is dataset is present.
         """
         if not self._lazy_nn_construction:
             self._nn.init_network(None, setup="trainsample", add_vectorized_gradients=True)
             self._nn.reset_dataset()
-            self._init_node_keys()
-            self._reset_cache()
+            self._cache._init_node_keys()
+            self._cache.reset()
             self._lazy_nn_construction = False
 
     def _check_nn(self):
@@ -230,112 +200,54 @@ class Simulation(object):
                                 [self.options.input_dimension])
         self._nn.assign_neural_network_parameters(new_values)
 
-    def _return_cache(self, key, walker_index=None):
-        """ This returns the cached element named `key` and resets the entry.
+    def _evaluate_cache(self, key, walker_index=None):
+        """ Evaluates the neural network from the possibly cached values.
 
-        :param key: key of cached variable
-        :param walker_index: index of walker to access or None for all
-        :return: value(s) stored in cache for `key`
+        :param key: name of node
+        :param walker_index: index of walker to evaluate or None for all
+        :return: value for the given node and walker
         """
-        assert( key in self._cache.keys() )
-        print(self._cache)
-        if walker_index is None:
-            value = self._cache[key]
-            for i in range(self._nn.FLAGS.number_walkers):
-                self._cache[key][walker_index] = None
+        if walker_index is None and self._nn.FLAGS.number_walkers == 1:
+            return self._cache.evaluate(key, walker_index)[0]
         else:
-            value = self._cache[key][walker_index]
-            self._cache[key][walker_index] = None
-        return value
+            return self._cache.evaluate(key, walker_index)
 
-    def _check_cache(self, key, walker_index=None):
-        """ Checks whether a value to `key` is in cache at the moment
-
-        :param key: name to cached variable
-        :param walker_index: index of walker to access or None for all
-        :return: True - values are cached, False - None is stored in cache
-        """
-        if walker_index is None:
-            return (self._cache[key] is not None).all()
-        else:
-            return self._cache[key][walker_index] is not None
-
-    def _update_cache(self):
-        """ Updates the contents of the cache from the network's values.
-        """
-        nodes = list(self._node_keys.values())
-        print(nodes)
-        values = self._evaluate(nodes)
-        print(values)
-        for key, value in zip(self._node_keys.keys(), values):
-            print("Setting "+key+" to "+str(value))
-            self._cache[key] = value
-
-    def _evaluate(self, nodes):
-        """ Helper function to evaluate an arbitrary node of tensorflow's
-        internal graph.
-
-        :param nodes: node to evaluate in `session.run()`
-        :return: result of node evaluation
-        """
-        self._check_nn()
-        features, labels = self._nn.input_pipeline.next_batch(
-            self._nn.sess, auto_reset=True)
-        feed_dict = {
-            self._nn.xinput: features,
-            self._nn.nn[0].placeholder_nodes["y_"]: labels}
-        eval_nodes = self._nn.sess.run(nodes, feed_dict=feed_dict)
-        return eval_nodes
-
-    def _evaluate_cache(self, key, walker_index=0):
-        """ Evaluates the variable `key` either from cache or updating if not
-        present there.
-
-        :param key: key of variable
-        :param walker_index: index of walker to access
-        :return: valueto current batch of `key`
-        """
-        self._check_nn()
-        if not self._check_cache(key, walker_index):
-            self._update_cache()
-        return self._return_cache(key, walker_index)
-
-    def loss(self, walker_index=0):
+    def loss(self, walker_index=None):
         """ Evalutes the current loss.
 
-        :param walker_index: index of walker to use for fitting
+        :param walker_index: index of walker to use or None for all
         :return: value of the loss function for walker `walker_index`
         """
         return self._evaluate_cache("loss", walker_index)
 
-    def gradients(self, walker_index=0):
+    def gradients(self, walker_index=None):
         """ Evaluates the gradient of the loss with respect to the set
         of parameters at the current parameters.
 
         For sake of speed, the parameters have to be set beforehand.
 
-        :param walker_index: index of walker to use for fitting
+        :param walker_index: index of walker to use for fitting or None for all
         :return: gradients for walker `walker_index`
         """
-        if "gradients" not in self._node_keys.keys():
+        if not self._cache.hasNode("gradients"):
             raise AttributeError("Gradient nodes have not been added to the graph.")
         return self._evaluate_cache("gradients", walker_index)
 
-    def hessians(self, walker_index=0):
+    def hessians(self, walker_index=None):
         """ Evaluates the hessian of the loss with respect to the
         set of parameters at the current parameters.
 
         For sake of speed, the parameters have to be set beforehand.
 
-        :param walker_index: index of walker to use for fitting
+        :param walker_index: index of walker to use for fitting or None for all
         :return: hessian for walker `walker_index`
         """
-        if "hessians" not in self._node_keys.keys():
+        if not self._cache.hasNode("hessians"):
             raise AttributeError("Hessian nodes have not been added to the graph." \
                                  +" You need to explicitly set 'do_hessians' to True in options.")
         return self._evaluate_cache("hessians", walker_index)
 
-    def score(self, walker_index=0):
+    def score(self, walker_index=None):
         """ Evaluates the accuracy on the given dataset
 
         :param walker_index: index of walker to use for fitting
@@ -364,7 +276,7 @@ class Simulation(object):
         self._check_nn()
         for i in range(len(self._parameters)):
             self._parameters[i] = values
-        self._reset_cache()
+        self._cache.reset()
 
     @property
     def momenta(self):
@@ -443,7 +355,7 @@ class Simulation(object):
                            return_run_info=True, \
                            return_trajectories=True,
                            return_averages=True)
-        self._reset_cache()
+        self._cache.reset()
         return run_info, trajectory, averages
 
     def sample(self):
@@ -465,7 +377,7 @@ class Simulation(object):
             self._nn.sample(return_run_info=True, \
                             return_trajectories=True,
                             return_averages=True)
-        self._reset_cache()
+        self._cache.reset()
         return run_info, trajectory, averages
 
     @property
@@ -491,7 +403,6 @@ class Simulation(object):
 
         :return: accuracy for `dataset`
         """
-        print("set")
         if isinstance(value, str) or \
                 (isinstance(value, list) and isinstance(value[0], str)):
             # file name: parse
@@ -512,12 +423,13 @@ class Simulation(object):
             self._lazy_nn_construction = False
             self._construct_nn()
         self._nn.reset_dataset()
-        self._reset_cache()
+        self._cache.reset()
 
     def predict(self, features, walker_index=0):
         """ Evaluates predictions (i.e. output of network) for the given features.
 
         :param: features - features to evaluate for network of walker `walker_index`
+        :param walker_index: index of walker to use for prediction
         :return: labels for `features` predicted by walker `walker_index`
         """
         self._check_nn()
