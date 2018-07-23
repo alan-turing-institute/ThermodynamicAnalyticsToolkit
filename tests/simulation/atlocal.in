@@ -1,0 +1,4 @@
+prefix='@prefix@'
+exec_prefix='@prefix@'
+topdir='@abs_top_builddir@'
+bindir='@bindir@'

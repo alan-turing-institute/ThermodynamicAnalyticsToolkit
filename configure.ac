@@ -53,14 +53,18 @@ AC_CONFIG_TESTDIR([tests/regression])
 AC_CONFIG_FILES(
 	tests/regression/atlocal
 	tests/regression/Makefile)
+AC_CONFIG_TESTDIR([tests/simulation])
+AC_CONFIG_FILES(
+	tests/simulation/atlocal
+	tests/simulation/Makefile)
+AC_CONFIG_TESTDIR([tests/tensorflow])
 AC_CONFIG_FILES(
 	tests/tensorflow/atlocal
 	tests/tensorflow/Makefile)
-AC_CONFIG_TESTDIR([tests/tensorflow])
+AC_CONFIG_TESTDIR([tests/userguide])
 AC_CONFIG_FILES(
 	tests/userguide/atlocal
 	tests/userguide/Makefile)
-AC_CONFIG_TESTDIR([tests/userguide])
 AC_CONFIG_FILES([tests/check_package], [chmod +x tests/check_package])
 AC_CONFIG_FILES([tests/check_package_version], [chmod +x tests/check_package_version])
 AC_CONFIG_FILES([tests/TATiDatasetParser], [chmod +x tests/TATiDatasetParser])
