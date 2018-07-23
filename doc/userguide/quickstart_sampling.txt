@@ -1,0 +1,143 @@
+[[quickstart.sampling]]
+Sampling in neural networks
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[[quickstart.dataset]]
+.Dataset: "Two Clusters" dataset consisting of two normally distributed point clouds in two dimensions
+image::pictures/dataset_two_clusters.png[align="center",{basebackend@docbook:scaledwidth="45%":width=400}]
+
+Assume we are given a very simple data set as depicted in
+link:#quickstart.dataset[Dataset]. The goal is to
+classify all red and blue dots into two different classes. This problem
+is quite simple to solve: a line in the two-dimensional space can easily
+separate the two classes.
+
+A very simple neural network, a perceptron, is all we need: it uses two
+inputs nodes, namely each coordinate component, latexmath:[$x_{1}$] and
+latexmath:[$x_{2}$], and a single output node with an activation
+function latexmath:[$f$] whose sign gives the class the input item
+belongs to. The network is given in
+link:#quickstart.perceptron[Network].
+
+TIP: A little while later we will see that an even simpler network suffices to
+classify the dataset well, which is intrinsically one-dimensional.
+
+[[quickstart.perceptron]]
+.Network: Single-layer perceptron with weights and biases
+image::pictures/simple_single_layer_perceptron.png[align="center",{basebackend@docbook:scaledwidth="25%":width=200}]
+
+Traing a Neural Network
+^^^^^^^^^^^^^^^^^^^^^^^
+
+In the following we want to use the mean square loss, i.e. the euclidean
+distance between the output from the network and the expected values per
+item, as the network's loss function. The loss depends implicitly on the
+dataset and explicitly on the weights and biases associated with the
+network. In our case, we have two weights for the two edges between
+input nodes, latexmath:[$w_{1}$] and latexmath:[$w_{2}$], and the output
+node and a single bias attached to the output node latexmath:[$b$].
+
+The general goal of training is to find the set of parameters that achieve the
+lowest loss. To this end, we use the gradient that is readily obtained from the
+neural netwotk through backpropagation of the analytically known derivatives of
+the activation functions. The parameters are modified using Gradient Descent
+until the gradient becomes zero (or we stop before that).
+
+What is Sampling?
+^^^^^^^^^^^^^^^^^
+
+Sampling typically has quite a different perspective: There, we look at a
+system of particles that have two internal properties: _location_ and
+_momentum_. The location is simply their current value, that changes through
+its momentum over time. The momentum again changes because the particle are
+affected by a potential. The system is described by a so-called
+Hamilton operator that gives rise to its same named dynamics. If noise is
+additionally taken into account, then instead we look at Langevin Dynamics.
+_Noise is essential_: It is connected to the concept of _temperature_ as
+the average squared momenta of each particle, the kinetic energy. High
+temperature therefore means large amounts of noise, while low temperature is
+associated with small amounts.
+Temperature is connected to the concept of heat bath that is a reservoir of
+kinetic energy allowing the particles to overcome barriers.
+
+Returning to the neural networks, the role of the particles is taken up by
+the degrees of freedom of the system: weights and biases. The loss
+function is called the _potential_ and it is accompanied by a _kinetic
+energy_ that is simply the sum of all squared momenta. Adding Momentum
+to Optimizers in neural networks is a concept known already and inspired
+by physics. There, it counteracts areas of the loss function where it is
+essentially flat and the gradient therefore close to zero.
+
+Sampling produces trajectories of particles moving along the manifold.
+Integrals along these trajectories, if they are long enough, are
+equivalent to integrating over the whole manifold, if the system is
+ergodic.  And this is the key point!
+Essentially, it enables us to replace integrals over the whole (and possibly
+very high-dimensional domain) by a one-dimensional integral along the
+trajectory. This reduces dimensional complexity significantly if not all areas
+in the high-dimensional domain contribute equally to the integral, if the
+contribution from many areas is negligible (think: weight latexmath:[\exp(-l(x))]
+in integrand with a high value for latexmath:[l(x)]). All we need to do is have
+the sampling produce trajectories only in the areas of interest.
+
+By using sampling we mean to discover more of the loss manifold than
+just the closest local minimum, namely all minima. This excludes all regions
+with large loss function values. In other words, we would like to sample
+in such a way as only to stay in regions of the loss manifold associated
+with small values. Generating trajectories by dynamics where the
+negative of the gradient acts as a driving force onto each particle
+automatically brings them into regions where the loss' value is small.
+However, in general all possible minima locations will not form a connected
+region on the loss manifold. These minima regions may be separated by barriers
+which are needed to overcome. We distinguish two kinds,
+
+* entropic barriers,
+* and enthalpic barriers.
+
+Both of which are conceptually very simple. The enthalpic barrier is
+simply a ridge that is very high where the particles would need a large
+momentum to overcome it. Entropic barriers on the other hand are
+passages very small in volume that are simply very difficult to find. In
+order to overcome barriers of the first kind, higher temperatures
+suffice. For the second type of barrier, this is not so easy.
+Metaphorically speaking, we are looking for a possibly very small door like
+Alice in Wonderland.
+
+What Does the Landscape Look Like?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Let us have a closer look at a very simple loss landscape. In Figure
+link:#quickstart.landscape.neuralnetwork[Permutation symmetry] we
+look at a very simple network of a single input node, with a single
+hidden layer containing just one node and a single output layer.
+Activation function is linear everywhere. We set the output node's and
+hidden node's bias to zero. The dataset contains two cluster of points,
+one (label -1) centered at -2, another (label +1) centered at 2 which is
+essentially the one given in Figure link:#quickstart.dataset[Dataset] if
+projected onto x or y axis. Any product of the two degrees of freedom of the
+network, namely its two weights, equal to unity will classify the data
+well.
+
+[[quickstart.network]]
+.Permutation symmetry: Neural network with permutation symmetry to provoke multiple minima
+image:pictures/neuralnetwork_permutation_symmetry.png[align="center",{basebackend@docbook:scaledwidth="50%":width=500}]
+
+In Figure link:#quickstart.landscape.loss[Loss manifold] we then
+turn to the loss landscape depending on either weight. We see two minima
+basins both of hyperbole or "banana" shape. There is a clear (enthalpic)
+potential barrier in between.
+
+In the figure we also give a trajectory as squiggly black line. Here, we have
+chosen such an (inverse) temperature value such that it is able to pass the
+potential barrier and reach the other minima basin. As we have mentioned before,
+higher temperature helps to overcome enthalpic barriers.
+
+[[quickstart.landscape.loss]]
+.Loss manifold: Loss landscape with an example trajectory
+image:pictures/losslandscape_permutation_symmetry.png[scaledwidth=45.0%]
+
+This quick description of the problem of sampling in the context of
+neural networks in data science should have acquainted you with some of the
+physical concepts underlying the idea of sampling. It hopefully has prepared
+you for the following quickstart tutorial on how to actually use
+ThermodynamicAnalyticsToolkit to perform sampling.

@@ -22,7 +22,7 @@ nn = tati(
     step_width=1e-2,
     trajectory_file="trajectory.csv",
 )
-opt_run_info, opt_trajectory, _ = nn.fit()
+training_data = nn.fit()
 
 nn.set_options(
     friction_constant = 10.,
@@ -30,8 +30,8 @@ nn.set_options(
     max_steps = 5000,
 )
 
-sample_run_info, sample_trajectory, _ = nn.sample()
+sampling_data = nn.sample()
 
 print("Sample results")
-print(np.asarray(sample_run_info[0][0:10]))
-print(np.asarray(sample_trajectory[0][0:10]))
+print(np.asarray(sampling_data.run_info[0:10]))
+print(np.asarray(sampling_data.trajectory[0:10]))

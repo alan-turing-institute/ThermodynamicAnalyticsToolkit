@@ -11,6 +11,7 @@ from TATi.options.pythonoptions import PythonOptions
 from TATi.parameters.parameters import Parameters
 from TATi.models.evaluationcache import EvaluationCache
 from TATi.models.networkparameter_adapter import NetworkParameterAdapter
+from TATi.models.trajectorydata import TrajectoryData
 
 
 class Simulation(object):
@@ -356,7 +357,8 @@ class Simulation(object):
         `learning_rate` are all set in the `__init__()` options statement.
 
         :param walker_index: index of walker to use for fitting
-        :return: run_info, trajectory, averages
+        :return: `TrajectoryData` containing run_info, trajectory, averages
+                pandas dataframes
         """
 
         self._check_nn()
@@ -367,7 +369,7 @@ class Simulation(object):
                            return_trajectories=True,
                            return_averages=True)
         self._cache.reset()
-        return run_info, trajectory, averages
+        return TrajectoryData(run_info, trajectory, averages)
 
     def sample(self):
         """ Performs sampling of the neural network's loss manifold for all walkers.
@@ -380,7 +382,8 @@ class Simulation(object):
             At the moment, this function will perform sampling for all walkers
             at once.
 
-        :return: run_info, trajectory, averages
+        :return: `TrajectoryData` containing run_info, trajectory, averages
+                pandas dataframes
         """
         self._check_nn()
         self._nn.reset_dataset()
@@ -389,7 +392,7 @@ class Simulation(object):
                             return_trajectories=True,
                             return_averages=True)
         self._cache.reset()
-        return run_info, trajectory, averages
+        return TrajectoryData(run_info, trajectory, averages)
 
     @property
     def dataset(self):

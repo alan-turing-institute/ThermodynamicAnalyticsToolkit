@@ -11,9 +11,9 @@ nn = tati(
     seed=426,
     step_width=1e-2
 )
-run_info, trajectory, averages = nn.sample()
+sampling_data = nn.sample()
 
 print("Sample results")
-print(np.asarray(run_info[0][0:10]))
-print(np.asarray(trajectory[0][0:10]))
-print(np.asarray(averages[0][0:10]))
+print(np.asarray(sampling_data.run_info[0:10]))
+print(np.asarray(sampling_data.trajectory[0:10]))
+print(np.asarray(sampling_data.averages[0:10]))

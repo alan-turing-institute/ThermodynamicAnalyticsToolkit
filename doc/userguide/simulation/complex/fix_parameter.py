@@ -9,7 +9,7 @@ nn = tati(
     seed=426,
 )
 
-run_info, trajectory, _ = nn.fit()
+training_data = nn.fit()
 
 print("Train results")
-print(np.asarray(trajectory[0:5]))
+print(np.asarray(training_data.trajectory[0:5]))

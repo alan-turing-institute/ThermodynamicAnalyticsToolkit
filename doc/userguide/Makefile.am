@@ -54,10 +54,13 @@ DEPENDENCIES = \
 	bibliography.txt \
 	glossary.txt \
 	introduction.txt \
+	quickstart_cmdline.txt \
+	quickstart_sampling.txt \
+	quickstart_simulation.txt \
 	quickstart.txt \
 	reference.txt \
+	reference_simulation.txt \
 	tensorflow_flaws.txt \
-	userguide.txt \
 	$(PYTHON_EXAMPLES)
 
 EXTRA_DIST = \
@@ -70,16 +73,21 @@ versionfile = $(srcdir)/.git-version
 version = $(shell cat $(versionfile))
 revdate = $(shell date +%Y-%m-%d)
 
-thermodynamicanalyticstoolkit.xml: $(srcdir)/userguide.txt $(DEPENDENCIES) $(srcdir)/.git-version
+#thermodynamicanalyticstoolkit.xml: $(srcdir)/userguide.txt
+
+#thermodynamicanalyticstoolkit.html: $(srcdir)/userguide.txt
+
+%.xml: $(srcdir)/%.txt $(DEPENDENCIES) $(srcdir)/.git-version
 	$(ASCIIDOC) -b docbook -aimagesdir=$(srcdir) -arevdate=$(revdate) -aversion-label=@PACKAGE@ -arevnumber=$(version) -o $@ $<
 
-thermodynamicanalyticstoolkit.html: $(srcdir)/userguide.txt $(DEPENDENCIES) $(srcdir)/.git-version
+%.html: $(srcdir)/%.txt $(DEPENDENCIES) $(srcdir)/.git-version
 	$(ASCIIDOC) -b html5 -a toc2 -a numbered -aimagesdir=$(srcdir) -arevdate=$(revdate) -aversion-label=@PACKAGE@ -arevnumber=$(version) -o $@ $<
 	
-thermodynamicanalyticstoolkit.pdf: thermodynamicanalyticstoolkit.xml
+%.pdf: %.xml
 	$(DBLATEX) --param=doc.lot.show=figure,table $< $@
 
-all: thermodynamicanalyticstoolkit.pdf thermodynamicanalyticstoolkit.html
+all: userguide.pdf userguide.html \
+    roadmap.pdf roadmap.html
 
 FORCE:
 

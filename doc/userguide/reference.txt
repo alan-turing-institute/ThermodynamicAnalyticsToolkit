@@ -234,7 +234,9 @@ recommend <<BAOAB>> at the moment as it is the most accurate with second
 order convergence for average values over the step width size and even
 fourth order in the high-friction limit.
 
-NOTE: At the beginning of each the following subsections we give the name of the respective sampler in order to activate it using the *sampler* keyword, see <<quickstart.python.sampling>> and <<quickstart.cmdline.sampling>>.
+NOTE: At the beginning of each the following subsections we give the name of
+the respective sampler in order to activate it using the *sampler* keyword,
+see <<quickstart.simulation.sampling>> and <<quickstart.cmdline.sampling>>.
 
 [[reference.samplers.sgld]]
 Stochastic Gradient Langevin Dynamics
@@ -400,12 +402,16 @@ depending on your hard drive setup.
 .In memory pipeline
 ======
 If your dataset fits in memory, it is advised to use the `InMemoryPipeline`
-by either setting the appropriate parameters in the *FLAGS* parameter
-structure, see <<quickstart.python>>.
+by setting the appropriate options in `tati` instantiation, see 
+<<quickstart.simulation>>.
 
 [source, python]
 ----------------
-FLAGS.in_memory_pipeline = True
+nn = tati(
+	# ...
+	in_memory_pipeline = True,
+	# ...
+)
 ----------------
 
 When using the command-line interface, add the respective option, see <<quickstart.cmdline>>.
@@ -458,12 +464,6 @@ yet.
 [[references.performance.runtime_comparison_gpu]]
 .Runtime comparison, GPU: 2x V100 cards, network with a single hidden layer and various numbers of nodes on a random MNIST dataset
 image::pictures/time_per_nth_step_hidden_dimension-hash_912b074-dimension_5000-batch_size_100-semilogy-2018-06-27.png[alt="runtime comparison",{basebackend@docbook:scaledwidth="60%":width=600}]
-
-[[reference.exploring]]
-Exploring the manifold
-~~~~~~~~~~~~~~~~~~~~~~
-
-still empty
 
 [[reference.miscellaneous]]
 Miscellaneous
