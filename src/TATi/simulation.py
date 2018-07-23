@@ -379,6 +379,22 @@ class Simulation(object):
             logging.error("%s does not have momenta." % (self._options.sampler))
             return None
 
+    def init_momenta(self, inverse_temperature = None):
+        """ Reinitializes the network parameter's momenta from gaussian distribution
+        with `inverse_temperature` as stddev and 0 mean.
+
+        Note:
+            This uses numpy's standard_normal to initialize.
+            Set `numpy.random.seed()` to obtain reproducible runs.
+
+        :param inverse_temperature: inverse temperature for momenta scaling or None for default
+        """
+        if inverse_temperature is None:
+            inverse_temperature = self._nn.FLAGS.inverse_temperature
+        for i in range(len(self._parameters)):
+            self.momenta = \
+                np.random.standard_normal(size=(self.num_parameters()))*inverse_temperature
+
     def num_parameters(self):
         """ Returns the number of parameters of the neural network.
 
@@ -386,6 +402,14 @@ class Simulation(object):
         """
         self._check_nn()
         return self._nn.get_total_weight_dof() + self._nn.get_total_bias_dof()
+
+    def num_walkers(self):
+        """ Returns the number of replicated copies of the neural network, i.e. walkers
+
+        :return: number of walkers/replicated copies of the network
+        """
+        self._check_nn()
+        return self._nn.FLAGS.number_walkers
 
     def fit(self, walker_index=0):
         """ Fits the parameters of the neural network to best match with the

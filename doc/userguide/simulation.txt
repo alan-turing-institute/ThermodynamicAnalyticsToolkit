@@ -1,6 +1,6 @@
 [[reference.simulation]]
-Using TATi as general interface
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Simulation module: A General NN interface
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When trying out new methods on sampling or training neural networks, one
 needs to play around with the network directly. This may require one or
@@ -9,6 +9,8 @@ more of the following operations:
 * Setting up a specific network
 * Setting a specific set of parameters
 * Requesting the current set of parameters
+* Requesting the current momenta
+* (Re-)initialize momenta
 * Evaluating the loss and/or gradients
 * Evaluating the predicted labels for another dataset
 * Evaluating accuracy
@@ -35,7 +37,8 @@ time they are modified.
 In other words, this interface is good for trying out a quick-and-dirty
 approach to implementing a new method or idea. However, it is not suited
 for production runs of training a network. In the latter case it is
-recommended to implement your method within Tensorflow.
+recommended to implement your method within Tensorflow, see the programmer's
+guide that should accompany your installation.
 
 [[reference.simulation.tensorflow_internals]]
 Tensorflow internals
@@ -261,6 +264,62 @@ include::simulation/setting_parameters_walkers.py[]
 
 As you see, accessing `parameters` will access all walkers at once. On the
 hand, accessing `parameters[i]` will access only the parameters of walker `i`.
+
+CAUTION: You cannot set a single parameter of a walker, i.e.
+`nn.parameters[0][0] = 1.` will not fail but it will also _not_ set the first
+parameter of the first walker to *1.*. Essentially, you are setting the first
+component of the returned numpy array to *1.* and then discard it immediately
+as you hold no reference to it any longer.
+
+NOTE: Setting single parameters is deliberately not supported as it would only
+be possible through obtaining all parameters, setting the single component, and
+then assigning all parameters again which is possibly a very costly operation.
+
+[[reference.simulation.parameters.requesting_momenta]]
+Requesting momenta
+++++++++++++++++++
+
+In the same way as requesting the current set of parameters we can also access
+the momenta.
+
+[source,python]
+---------------
+include::simulation/requesting_momenta.py[]
+---------------
+
+This will return a `numpy` array of the current set of momenta if the sampler
+supports it. Otherwise this will raise a `ValueError`.
+
+[[reference.simulation.parameters.setting_momenta]]
+Setting and initializing momenta
+++++++++++++++++++++++++++++++++
+
+Equivalently to requesting momenta, they also can be set just as the set of
+parameters.
+
+[source,python]
+---------------
+include::simulation/setting_momenta.py[]
+---------------
+
+In this example, we first look at the old momenta and then set them to random
+values from a normal distribution.
+
+Naturally, this works in the same way for multiple walkers as it worked for
+the parameters.
+
+TIP: The `simulation` interface has a convenience function to reset all
+momenta  from a normal distribution with zero mean according to a given
+`inverse_temperature`.
+
+[source,python]
+---------------
+include::simulation/initializing_momenta.py[]
+---------------
+
+This will reset the momenta such tat they match an average temperature of *10*.
+In case of multiple walkers each walker will be initialized with different
+momenta.
 
 [[reference.simulation.evaluation]]
 Evaluation

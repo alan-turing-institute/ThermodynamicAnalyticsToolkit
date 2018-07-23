@@ -38,6 +38,7 @@ PYTHON_EXAMPLES = \
 	$(srcdir)/simulation/evaluate_accuracy.py \
 	$(srcdir)/simulation/evaluate_gradients.py \
 	$(srcdir)/simulation/evaluate_hessians.py \
+	$(srcdir)/simulation/initializing_momenta.py \
 	$(srcdir)/simulation/requesting_parameters.py \
 	$(srcdir)/simulation/requesting_momenta.py \
 	$(srcdir)/simulation/setting_momenta.py \
