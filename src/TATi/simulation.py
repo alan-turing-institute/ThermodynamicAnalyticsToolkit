@@ -162,6 +162,9 @@ class Simulation(object):
         affected_parts = list(affected_parts)
         logging.info("Parts affected by change of options are "+str(affected_parts)+".")
 
+        if "network" in affected_parts:
+            raise ValueError("Changing the network is not yet supported.")
+
         if "network" in affected_parts and self._lazy_nn_construction:
             # Save network parameters
             values = self.parameters

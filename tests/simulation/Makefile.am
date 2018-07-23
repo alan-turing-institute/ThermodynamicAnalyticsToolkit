@@ -9,6 +9,7 @@ TESTSCRIPTS =
 # PLEASE adhere to alphabetical ordering of TESTSCRIPTS
 TESTSCRIPTS += \
 	$(srcdir)/testsuite.at \
+	$(srcdir)/testsuite-changing_network.at \
     $(srcdir)/testsuite-multiple_walkers.at \
     $(srcdir)/testsuite-parameters_access.at
 
