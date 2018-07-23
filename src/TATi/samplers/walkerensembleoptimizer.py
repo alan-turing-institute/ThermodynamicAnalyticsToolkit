@@ -340,7 +340,7 @@ class WalkerEnsembleOptimizer(Optimizer):
         c = lambda i, x: tf.less(i, number_dim)
         r, mean_eval = tf.while_loop(c, body_mean, (i, means), name="means_loop")
         means = mean_eval # tf.Print(mean_eval, [mean_eval.name, tf.size(mean_eval), mean_eval], "mean_eval: ")
-        print(means)
+        #print(means)
 
         # complicated way of constructing a D \times D matrix when we cannot use
         # D directly and only have a D vector as template: use an outer product
@@ -351,7 +351,7 @@ class WalkerEnsembleOptimizer(Optimizer):
         cov = tf.Variable(
             expanded_template * tf.transpose(expanded_template),
             trainable=False, dtype=dds_basetype, name="covariance_bias")
-        print(cov)
+        #print(cov)
 
         # pair of indices for the covariance loop
         Pair = collections.namedtuple('Pair', 'i, j')
