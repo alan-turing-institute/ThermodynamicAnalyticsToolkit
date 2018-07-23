@@ -20,7 +20,7 @@
 AT_SETUP([Tensorflow - stack means covariance])
 AT_KEYWORDS([tensorflow stack_means_cov])
 
-AT_CHECK([../../run \
+AT_CHECK([../../../run \
 	${abs_top_srcdir}/tests/tensorflow/pre/stack_means_cov.py
 ], 0, [stdout], [stderr])
 

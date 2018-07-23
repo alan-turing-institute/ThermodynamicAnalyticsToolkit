@@ -20,7 +20,7 @@
 AT_SETUP([Tensorflow - cholesky])
 AT_KEYWORDS([tensorflow cholesky])
 
-AT_CHECK([../../run \
+AT_CHECK([../../../run \
 	${abs_top_srcdir}/tests/tensorflow/pre/cholesky.py
 ], 0, [stdout], [stderr])
 

@@ -20,7 +20,7 @@
 AT_SETUP([Tensorflow - test covariance tf])
 AT_KEYWORDS([tensorflow test_covariance_tf])
 
-AT_CHECK([../../run \
+AT_CHECK([../../../run \
 	${abs_top_srcdir}/tests/tensorflow/pre/test_covariance_tf.py
 ], 0, [stdout], [stderr])
 

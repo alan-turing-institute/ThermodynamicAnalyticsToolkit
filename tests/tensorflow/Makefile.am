@@ -35,6 +35,7 @@ EXTRA_DIST = \
 	$(TESTSUITE) \
 	atlocal.in \
 	package.m4 \
+	pre \
 	$(TESTSCRIPTS) \
 	NonVariables \
 	Reproducibility

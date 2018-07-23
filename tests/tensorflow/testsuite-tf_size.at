@@ -20,7 +20,7 @@
 AT_SETUP([Tensorflow - tf size])
 AT_KEYWORDS([tensorflow tf_size])
 
-AT_CHECK([../../run \
+AT_CHECK([../../../run \
 	${abs_top_srcdir}/tests/tensorflow/pre/tf_size.py
 ], 0, [stdout], [stderr])
 

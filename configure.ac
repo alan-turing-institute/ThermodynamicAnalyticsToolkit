@@ -72,8 +72,7 @@ AC_CONFIG_FILES([tests/TATiAnalyser], [chmod +x tests/TATiAnalyser])
 AC_CONFIG_FILES([tests/TATiInputSpaceSampler], [chmod +x tests/TATiInputSpaceSampler])
 AC_CONFIG_FILES([tests/TATiLossFunctionSampler], [chmod +x tests/TATiLossFunctionSampler])
 AC_CONFIG_FILES([tests/NumericalDiff], [chmod +x tests/NumericalDiff])
-AC_CONFIG_FILES([tests/userguide/run], [chmod +x tests/userguide/run])
-AC_CONFIG_FILES([tests/tensorflow/run], [chmod +x tests/tensorflow/run])
+AC_CONFIG_FILES([tests/run], [chmod +x tests/run])
 AC_CONFIG_FILES([
         doc/Makefile
         doc/userguide/Makefile

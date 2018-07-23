@@ -23,7 +23,7 @@ AT_KEYWORDS([example python analyse diffusion_map ])
 # analyse a trajectory that was created by simulation/complex/optimize_sample.py
 file="trajectory.csv"
 AT_CHECK([cp -f ${abs_top_srcdir}/tests/userguide/python/pre/trajectory-two_clusters-dim_500-gamma_10-beta_.2-fix_parameters_biases-hidden_dimension_1-max_steps_5000-prior_-2_2-noise_0.1-linear-seed_426.csv $file], 0, [ignore], [ignore])
-AT_CHECK([../../run \
+AT_CHECK([../../../run \
 	${abs_top_srcdir}/doc/userguide/python/analyse_diffmap.py
 ], 0, [stdout], [stderr])
 AT_CHECK([test -e eigenvectors.png], 0, [ignore], [ignore])

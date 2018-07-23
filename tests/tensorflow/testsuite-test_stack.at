@@ -20,7 +20,7 @@
 AT_SETUP([Tensorflow - test tf stack])
 AT_KEYWORDS([tensorflow test_stack])
 
-AT_CHECK([../../run \
+AT_CHECK([../../../run \
 	${abs_top_srcdir}/tests/tensorflow/pre/test_stack.py
 ], 0, [stdout], [stderr])
 

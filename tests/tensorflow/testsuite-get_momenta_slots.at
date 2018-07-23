@@ -20,7 +20,7 @@
 AT_SETUP([Tensorflow - get momenta slots])
 AT_KEYWORDS([tensorflow get_momenta_slots])
 
-AT_CHECK([../../run \
+AT_CHECK([../../../run \
 	${abs_top_srcdir}/tests/tensorflow/pre/get_momenta_slots.py \
 	${abs_top_srcdir}/tests/tensorflow/pre/dataset-twospirals.csv
 ], 0, [stdout], [stderr])

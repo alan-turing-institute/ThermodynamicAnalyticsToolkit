@@ -20,7 +20,7 @@
 AT_SETUP([Tensorflow - read MNIST])
 AT_KEYWORDS([tensorflow read_MNIST])
 
-AT_CHECK([../../run \
+AT_CHECK([../../../run \
 	${abs_top_srcdir}/tests/tensorflow/pre/read_MNIST.py \
 	${abs_top_srcdir}/tests/tensorflow/pre/dataset-mnist.tfrecords \
 	${abs_top_srcdir}/tests/tensorflow/pre/parameters.npy \

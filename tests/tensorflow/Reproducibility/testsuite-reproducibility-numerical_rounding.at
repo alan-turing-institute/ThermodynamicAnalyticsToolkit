@@ -31,7 +31,7 @@ AT_SETUP([Tensorflaw - rounding error on summation])
 AT_KEYWORDS([tensorflaw reproducibility numerical rounding])
 AT_XFAIL_IF([/bin/true])
 
-AT_CHECK([../../run \
+AT_CHECK([../../../run \
 	${abs_top_srcdir}/tests/tensorflow/Reproducibility/pre/numerical_rounding.py
 ], 0, [stdout], [stderr])
 

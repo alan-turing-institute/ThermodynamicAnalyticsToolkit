@@ -27,7 +27,7 @@ AT_KEYWORDS([example simulation complex supply_dataset])
 # run 1
 AT_CHECK([cp -f ${abs_top_srcdir}/tests/userguide/simulation/complex/pre/dataset-twoclusters.csv .], 0, [ignore], [ignore])
 AT_CHECK([cp -f ${abs_top_srcdir}/tests/userguide/simulation/complex/pre/dataset-twoclusters-test.csv .], 0, [ignore], [ignore])
-AT_CHECK([../../run \
+AT_CHECK([../../../run \
 	${abs_top_srcdir}/doc/userguide/simulation/complex/supply_dataset.py
 ], 0, [stdout], [stderr])
 AT_CHECK([grep "Accuracy: 0.992" stdout], 0, [ignore], [ignore])
