@@ -429,7 +429,8 @@ info, trajectory, and averages. Trajectories contains among others all
 parameter degrees of freedom for each step (or 'every_nth' step). Run info
 contains loss, accuracy, norm of gradient, norm of noise and others, again for
 each step. Finally, in averages we compute running averages over the trajectory
-such as average (ensemble) loss, average kinetic energy, average virial.
+such as average (ensemble) loss, average kinetic energy, average virial, see
+link:#reference.concepts[general concepts]. 
 
 Take a peep at `sampling_data.run_info.columns` to see all columns in the
 run info dataframe (and similarly for the others.)
@@ -478,7 +479,7 @@ the desired domain.
 If upper and lower boundary coincide, then we have the case of
 tethering, where all parameters are pulled inward to the same point.
 
-At the moment prioring of just a subset of particles is not supported.
+At the moment applying prior on just a subset of particles is not supported.
 
 [NOTE]
 ====

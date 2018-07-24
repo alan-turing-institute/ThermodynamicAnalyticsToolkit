@@ -66,6 +66,14 @@ velocity Verlet/leapfrog, that are employed to propagate both particle
 position (i.e. the parameter value) and its momentum through time. Note
 that momentum and velocity are actually equivalent as usually the mass
 is set to unity.
++
+The kinetic energy is computed as sum over kinetic energies of each parameter.
+
+- Virials
++
+Virials are defined as one half of the sum over the scalar product of
+gradients with parameters, see https://en.wikipedia.org/wiki/Virial_theorem.
+
 
 - Optimizers
 +
