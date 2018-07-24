@@ -33,6 +33,8 @@ loss function determines the best set of parameters for a given task.
 
 - Loss
 +
+The default is 'mean_squared'.
+
 The loss function determines for a given (labeled) dataset what set of
 neural network's parameters are best. Note that there are losses that do
 not require labels though. Different losses result in different set of
