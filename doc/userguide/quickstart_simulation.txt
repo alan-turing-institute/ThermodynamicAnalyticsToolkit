@@ -747,3 +747,16 @@ is encoded as a single job, similarly performing a diffusion map analysis and so
 on. All these jobs are placed in the queue. `run_all_jobs()` will launch the
 jobs one after the other, or even in parallel if 'number_processes' is larger
 than *1*.
+
+Conclusion
+^^^^^^^^^^
+
+This has been the quickstart introduction to the `simulation` interface.
+
+If you want to take this further, we recommend reading how to implement a
+link:#reference.implementing_sampler[GLA2 sampler] using this module.
+
+If you still want to take it further, then you need to look at the
+ifdef::basebackend-docbook[ programmer's guide ]
+ifdef::basebackend-html[ link:programmersguide.html[programmer's guide] ]
+that should accompany your installation.

@@ -28,6 +28,8 @@ AT_CHECK([cp -f ${abs_top_srcdir}/tests/userguide/simulation/complex/pre/dataset
 AT_CHECK([../../../run \
 	${abs_top_srcdir}/doc/userguide/simulation/complex/gla2_sampler.py
 ], 0, [stdout], [stderr])
+AT_CHECK([grep "tep #0: 0.9707.* at .0.04547.*, 0.3234.*." stdout], 0, [ignore], [ignore])
+AT_CHECK([grep "tep #1: 0.968.* at .0.0491.*, 0.3270.*." stdout], 0, [ignore], [ignore])
 
 AT_CLEANUP
 

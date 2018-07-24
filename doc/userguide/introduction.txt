@@ -11,10 +11,10 @@ image::pictures/tati-mindmap.png[align="right",alt="TATi mindmap",{basebackend@d
 If you know what all of this means, you might probably be interested. If not,
 then read on to the next section.
 
-ifdef::basebackend@docbook[]
-link:roadmap.html[roadmap]
-endif::[]
-NOTE: TATi is growing, see the roadmap for things to come.
+NOTE: TATi is growing, see the
+ifdef::basebackend-docbook[ roadmap ]
+ifdef::basebackend-html[ link:roadmap.html[roadmap] ]
+for things to come.
 
 [[introduction.needtoknow]]
 Before you start

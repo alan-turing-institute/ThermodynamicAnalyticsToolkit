@@ -347,6 +347,8 @@ approximation still holds.
 This works for all of the aforementioned samplers as simply the gradient
 of each walker is rescaled.
 
+include::reference_implementing_sampler.txt[]
+
 [[reference.reproducibility]]
 A Note on Reproducibility
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -402,7 +404,7 @@ depending on your hard drive setup.
 .In memory pipeline
 ======
 If your dataset fits in memory, it is advised to use the `InMemoryPipeline`
-by setting the appropriate options in `tati` instantiation, see 
+by setting the appropriate options in `tati` instantiation, see
 <<quickstart.simulation>>.
 
 [source, python]

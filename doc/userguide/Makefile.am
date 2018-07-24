@@ -59,6 +59,7 @@ DEPENDENCIES = \
 	quickstart_simulation.txt \
 	quickstart.txt \
 	reference.txt \
+	reference_implementing_sampler.txt \
 	reference_simulation.txt \
 	tensorflow_flaws.txt \
 	$(PYTHON_EXAMPLES)
@@ -82,7 +83,7 @@ revdate = $(shell date +%Y-%m-%d)
 
 %.html: $(srcdir)/%.txt $(DEPENDENCIES) $(srcdir)/.git-version
 	$(ASCIIDOC) -b html5 -a toc2 -a numbered -aimagesdir=$(srcdir) -arevdate=$(revdate) -aversion-label=@PACKAGE@ -arevnumber=$(version) -o $@ $<
-	
+
 %.pdf: %.xml
 	$(DBLATEX) --param=doc.lot.show=figure,table $< $@
 
@@ -105,4 +106,3 @@ EXTRA_DIST += \
 
 $(srcdir)/version.txt: $(srcdir)/.git-version
 	cat $(srcdir)/.git-version >$@
-
