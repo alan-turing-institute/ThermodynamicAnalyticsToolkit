@@ -82,7 +82,7 @@ revdate = $(shell date +%Y-%m-%d)
 	$(ASCIIDOC) -b docbook -aimagesdir=$(srcdir) -arevdate=$(revdate) -aversion-label=@PACKAGE@ -arevnumber=$(version) -o $@ $<
 
 %.html: $(srcdir)/%.txt $(DEPENDENCIES) $(srcdir)/.git-version
-	$(ASCIIDOC) -b html5 -a toc2 -a numbered -aimagesdir=$(srcdir) -arevdate=$(revdate) -aversion-label=@PACKAGE@ -arevnumber=$(version) -o $@ $<
+	$(ASCIIDOC) -b html5 -a toc2 -a latexmath -a numbered -aimagesdir=$(srcdir) -arevdate=$(revdate) -aversion-label=@PACKAGE@ -arevnumber=$(version) -o $@ $<
 
 %.pdf: %.xml
 	$(DBLATEX) --param=doc.lot.show=figure,table $< $@
