@@ -334,6 +334,7 @@ class model:
             input_columns = get_list_from_string(self.FLAGS.input_columns)
             self.xinput, self.x = create_input_layer(self.input_dimension, input_columns)
 
+        fixed_variables = []
         if self.nn is None:
             self.nn = []
             self.loss = []
@@ -369,6 +370,22 @@ class model:
                         self.nn[-1].placeholder_nodes["y"],
                         self.nn[-1].placeholder_nodes["y_"],
                         self.output_type)
+
+                    if self.FLAGS.fix_parameters is not None:
+                        names, values = self.split_parameters_as_names_values(self.FLAGS.fix_parameters)
+                        fixed_variables.append(self.fix_parameters(names))
+                        logging.info("Excluded the following degrees of freedom: " + str(fixed_variables[-1]))
+                        # exclude fixed degrees also from trainables_per_walker sets
+                        trainables = tf.get_collection_ref(self.trainables[i])
+                        for var in fixed_variables[-1]:
+                            removed_vars = model._fix_parameter_in_collection(trainables, var)
+                            # make sure we remove one per walker
+                            if len(removed_vars) != 1:
+                                raise ValueError(
+                                    "Cannot find " + var + " in walker " + str(i) + "." +
+                                    " Have you checked the spelling, e.g., output/biases/Variable:0?")
+                            logging.debug("Remaining trainable variables in walker " + str(i + 1)
+                                          + ": " + str(tf.get_collection_ref(self.trainables[i])))
 
                     if self.FLAGS.do_hessians or add_vectorized_gradients:
                         # create node for gradient and hessian computation only if specifically
@@ -407,29 +424,17 @@ class model:
             for i in range(self.FLAGS.number_walkers):
                 self.loss.append(self.nn[i].get_list_of_nodes(["loss"])[0])
 
+                if self.FLAGS.fix_parameters is not None:
+                    names, values = self.split_parameters_as_names_values(self.FLAGS.fix_parameters)
+                    fixed_variables.append(self.fix_parameters(names))
+                    logging.info("Excluded the following degrees of freedom: " + str(fixed_variables[-1]))
+
+        logging.debug("Remaining global trainable variables: " + str(variables.trainable_variables()))
+
         # create global variables, one for every walker in its replicated graph
         self.create_resource_variables()
         self.static_vars, self.zero_assigner, self.assigner = \
             self._create_static_variable_dict(self.FLAGS.number_walkers)
-
-        if self.FLAGS.fix_parameters is not None:
-            names, values = self.split_parameters_as_names_values(self.FLAGS.fix_parameters)
-            fixed_variables = self.fix_parameters(names)
-            logging.info("Excluded the following degrees of freedom: "+str(fixed_variables))
-            # exclude fixed degrees also from trainables_per_walker sets
-            for i in range(self.FLAGS.number_walkers):
-                trainables = tf.get_collection_ref(self.trainables[i])
-                for var in fixed_variables:
-                    removed_vars = model._fix_parameter_in_collection(trainables, var)
-                    # make sure we remove one per walker
-                    if len(removed_vars) != 1:
-                        raise ValueError(
-                            "Cannot find "+var+" in walker "+str(i)+"." \
-                            " Have you checked the spelling, e.g., output/biases/Variable:0?")
-                logging.debug("Remaining trainable variables in walker "+str(i+1)
-                             +": "+str(tf.get_collection_ref(self.trainables[i])))
-
-        logging.debug("Remaining global trainable variables: "+str(variables.trainable_variables()))
 
         # set number of degrees of freedom
         split_weights = self._split_collection_per_walker(
@@ -564,13 +569,14 @@ class model:
         if self.FLAGS.fix_parameters is not None:
             all_values = []
             all_variables = []
-            for i in range(len(fixed_variables)):
-                var_name = fixed_variables[i]
-                if var_name in self.fixed_variables.keys():
-                    all_variables.extend(self.fixed_variables[var_name])
-                    all_values.extend([values[i]]*len(self.fixed_variables[var_name]))
-                else:
-                    logging.warning("Could not assign "+var_name+" a value as it was not found before.")
+            for k in range(self.FLAGS.number_walkers):
+                for i in range(len(fixed_variables[k])):
+                    var_name = fixed_variables[k][i]
+                    if var_name in self.fixed_variables.keys():
+                        all_variables.extend(self.fixed_variables[var_name])
+                        all_values.extend([values[i]]*len(self.fixed_variables[var_name]))
+                    else:
+                        logging.warning("Could not assign "+var_name+" a value as it was not found before.")
             fix_parameter_assigns = self.create_assign_parameters(all_variables, all_values)
 
         ### Now the session object is created, graph must be done here!
