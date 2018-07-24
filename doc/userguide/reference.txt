@@ -284,8 +284,8 @@ Geometric Langevin Algorithms
 
 GLA results from a first-order splitting between the Hamiltonian and the
 Ornstein-Uhlenbeck parts, see <<Leimkuhler2015>>[section 2.2.3, Leimkuhler 2015] and also
-<<Leimkuhler2012>>. It provides second order accuracy at basically no extra
-cost.
+<<Leimkuhler2012>>. GLA2 provides second order accuracy at basically no extra
+cost over GLA1.
 
 [NOTE]
 ====
