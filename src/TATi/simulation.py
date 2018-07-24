@@ -274,7 +274,10 @@ class Simulation(object):
         :return: parameters
         """
         self._check_nn()
-        return self._parameters
+        if len(self._parameters) == 1:
+            return self._parameters[0]
+        else:
+            return self._parameters
 
     @parameters.setter
     def parameters(self, values):
