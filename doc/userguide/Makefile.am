@@ -61,6 +61,7 @@ DEPENDENCIES = \
 	reference.txt \
 	reference_implementing_sampler.txt \
 	reference_simulation.txt \
+	reference_simulation_harmonic_oscillator.txt \
 	tensorflow_flaws.txt \
 	$(PYTHON_EXAMPLES)
 

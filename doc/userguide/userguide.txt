@@ -41,6 +41,8 @@ include::quickstart.txt[]
 
 include::reference.txt[]
 
+include::reference_simulation_harmonic_oscillator.txt[]
+
 include::tensorflow_flaws.txt[]
 
 :numbered!:
