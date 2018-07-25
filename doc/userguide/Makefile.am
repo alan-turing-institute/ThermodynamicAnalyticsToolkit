@@ -46,6 +46,9 @@ DEPENDENCIES = \
     programmersguide_debugging_tips.txt \
 	programmersguide_extensions_samplers.txt \
 	programmersguide_neural_networks.txt \
+	programmersguide_tati_buildsystem.txt \
+	programmersguide_tati_structure.txt \
+	programmersguide_tati_versioncontrol.txt \
 	programmersguide_tensorflow.txt \
 	quickstart.txt \
 	reference.txt \

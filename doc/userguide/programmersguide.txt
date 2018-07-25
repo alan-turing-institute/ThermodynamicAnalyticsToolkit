@@ -98,6 +98,22 @@ computational graph.
 
 include::programmersguide_debugging_tips.txt[]
 
+[[tati]]
+Setup of TATi
+-------------
+
+In this chapter we want to explain the program structure of TATi, namely its
+
+- directory and python module structure
+- build system
+- version control system (git)
+
+include::programmersguide_tati_structure.txt[]
+
+include::programmersguide_tati_buildsystem.txt[]
+
+include::programmersguide_tati_versioncontrol.txt[]
+
 :numbered!:
 
 include::glossary.txt[]
