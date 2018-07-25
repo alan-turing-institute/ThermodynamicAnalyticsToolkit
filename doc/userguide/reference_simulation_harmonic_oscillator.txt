@@ -1,8 +1,8 @@
 [[reference_simulation_harmonic_oscillator]]
 Examples
 --------
-In this section we provide some basic models, which can provide a useful tool
-to study numerical integrators.
+We show how to set up some basic models, which can be a useful tool
+to study and test methods.
 
 [[reference_simulation_harmonic_oscillator.harmonic_oscillator]]
 Harmonic oscillator
@@ -11,588 +11,71 @@ Harmonic oscillator
 It can be sometimes useful to use TATi to simulate simple harmonic oscillator.
 This model can be obtained by training neural network with one parameter
 on one point latexmath:[X=1] in dimension one with label
-equal to zero and using mean square loss function. More precisely, the cost function
-becomes:
+equal to zero, i.e. latexmath:[Y=0], and using mean square loss function and
+linear activation function.
+More precisely, the cost function
+becomes in this setting:
 
 latexmath:[L(\omega | X,Y) = | \omega X + b - Y|^2],
 
 where we fix the bias latexmath:[b=0].
 
 
-- Dataset
+- Dataset:
 +
-The dataset contains a fixed number of datums of input tuples and output
-tuples. They are typically referred to as _features_ and _labels_ in
-the machine learning community. Basically, they are samples taken from
-the unknown function which we wish to approximate using the neural
-network. If the output tuples are binary in each component, the
-approximation problem is called a _classification_ problem. Otherwise,
-it is a _regression_ problem.
+---------------
+from TATi.common import data_numpy_to_csv
+import numpy as np
 
-- Neural network
+X = np.asarray([[1]])
+Y = np.asarray([[0]])
+
+# prepare and save the trivial data set for later
+datasetName = 'dataset_ho.csv'
+data_numpy_to_csv(X, Y, datasetName)
+numberOfPoints = 1
+---------------
+- Setup and train neural network:
 +
-The neural network is a black-box representing a certain set of general
-functions that are efficient in solving classification problems (among
-others). They are parametrized explicitly using weights and biases and
-implicitly through the topology of the network (connections of nodes
-residing in layers) and the activation functions used. Moreover, the
-loss function determines the best set of parameters for a given task.
-
-- Loss
-+
-The default is 'mean_squared'.
-
-The loss function determines for a given (labeled) dataset what set of
-neural network's parameters are best. Note that there are losses that do
-not require labels though. Different losses result in different set of
-parameters. It is a high-dimensional manifold that we want to learn and
-capture using the neural network. It implicitly depends on the given
-dataset and explicitly on the parameters of the neural network, namely
-weights and biases. Dual to the loss function is the network's output
-that explicitly depends on the dataset's current datum (fed into the
-network) and implicitly on the parameters.
-+
-Most important to understand about the loss is that it is a _non-convex_
-function and therefore in general does not just have a single minimum.
-This makes the task of finding a good set of parameters that (globally)
-minimize the loss difficult as one would have to find each and every
-minima in this high-dimensional manifold and check whether it is
-actually the global one.
-
-- Momenta and kinetic energy
-+
-Momenta is a concept taken over from physics where the parameters are
-considered as particles each in a one-dimensional space where the loss
-is a potential function whose ( negative) gradient acts as a force onto
-the particle driving them down-hill (towards the local minimum). This
-force is integrated in a classical Newton's mechanic style, i.e.
-Newton's equation of motion is discretized with small time steps
-(similar to the learning rate in Gradient Descent). This gives first
-rise to/velocity and second to momenta, i.e. second order ordinary
-differential equation (ODE) split up into a system of two
-one-dimensional ODEs. There are numerous stable time integrators, i.e.
-velocity Verlet/leapfrog, that are employed to propagate both particle
-position (i.e. the parameter value) and its momentum through time. Note
-that momentum and velocity are actually equivalent as usually the mass
-is set to unity.
-+
-The kinetic energy is computed as sum over kinetic energies of each parameter.
-
-- Virials
-+
-Virials are defined as one half of the sum over the scalar product of
-gradients with parameters, see https://en.wikipedia.org/wiki/Virial_theorem.
-
-
-- Optimizers
-+
-Optimizers are used to drive the parameters to the local minimum from a
-given (random) starting position. <<GD>> is best known,
-but there are more elaborate Optimizers that use the concept of momentum
-as well. This helps in overcoming flat parts of the manifold where the
-gradient is effectively zero but momentum still drives the particles
-towards the minimum.
-
-- Samplers
-+
-The goal of samplers is different than the goal of optimizers. Samplers
-such as <<GLA>> aim at discovering a great deal of the manifold, not constraint
-to the local minimum. Usually, they are started from the local minimum and
-drive the particles further and further out until new minima are found
-between which potential barriers had to be overcome.
-
-[[reference.neural_networks]]
-Neural Networks
-~~~~~~~~~~~~~~~
-
-A neural network (NN) is a tool used in the context of machine learning.
-Formally, it is a graph with nodes and edges, where nodes represent
-(simple) functions. The edges represent scalar values by which the
-output of one node is scaled as input to another node. The scalar value
-is called _weight_ and each node also has a constant value, the _bias_,
-that does not depend on the input of other nodes. Nodes are organized in
-layers and nodes are (mostly) only connected between adjacent layer.
-Special are the very first layer with input nodes that simply accept
-input from the user and the very last layer whose output is eventually
-all that matters.
-
-Typically, a NN might be used for the task of classification: Data is
-fed into the network's input layer and its output layer has nodes equal
-to the number of classes to be distinguished. This can for example be
-used for image classification.
-
-The essential task at hand is to determine a good set of parameters,
-i.e. values for the weights and biases, such that the task is performed
-best with respect to some measure.
-
-[[reference.loss]]
-The loss function
-~~~~~~~~~~~~~~~~~
-
-At the moment, there are two little utility programs that help in
-evaluating the loss function given a certain dataset, namely the
-`TATiLossFunctionSampler`. Let us give an example call right away.
-
-[source,bash]
----------------
-include::cmdline/lossfunctionsampler-trajectory.sh[]
----------------
-
-It takes as input the dataset file `dataset-twoclusters.csv` and
-either a parameter file +trajectory.csv+. This will cause the program
-the re-evaluate the loss function at the trajectory points which should
-hopefully give the same values as already stored in the trajectory file
-itself.
-
-However, this may be used with a different dataset file, e.g. the
-testing or validation dataset, in order to evaluate the generalization
-error in terms of the overall accuracy or the loss at the points along
-the given trajectory.
-
-Interesting is also the second case, where instead of giving a
-parameters file, we sample the parameter space equidistantly as follows:
-
-[source,bash]
----------------
-include::cmdline/lossfunctionsampler-grid.sh[]
----------------
-
-Here, sample for each weight in the interval [-5,5] at 11 points (10 +
-endpoint), and similarly for the weights in the interval [-1,1] at 5
-points.
-
-[NOTE]
-====
-For anything but trivial networks the computational cost quickly becomes
-prohibitively large. However, you may use `fix_parameter` to lower the
-computational cost by choosing a certain subsets of weights and biases to
-sample.
-====
-
-[source,bash]
----------------
-include::cmdline/lossfunctionsampler-fix_parameter.sh[]
----------------
-
-Moreover, using `exclude_parameters` can be used to exclude parameters
-from the variation, i.e. this subset is kept at fixed values read from
-the file given by `parse_parameters_file` where the row designated by
-the value in `parse_steps` is taken.
-
-This can be used to assess the shape of the loss manifold around a found
-minimum.
-
-[source,bash]
----------------
-include::cmdline/lossfunctionsampler-exclude_parameters.sh[]
----------------
-
-Here, we have excluded the second weight, named *w1*, from the sampling.
-Note that all weight and all bias degrees of freedom are simply
-enumerated one after the other when going from the input layer till the
-output layer.
-
-Furthermore, we have specified a file containing center points for all
-excluded parameters. This file is of CSV style having a column *step* to
-identify which row is to be used and moreover a column for every
-(excluded) parameter that is fixed at a value unequal to 0. Note that
-the minima file written by `TATiExplorer` can be used as this centers
-file. Moreover, also the trajectory files have the same structure.
-
-[[reference.network]]
-The learned function
-~~~~~~~~~~~~~~~~~~~~
-
-The second little utility programs does not evaluate the loss function
-itself but the unknown function learned by the neural network depending
-on the loss function, called the +TATiInputSpaceSampler+. In other
-words, it gives the classification result for data point sampled from an
-equidistant grid. Let us give an example call right away.
-
-[source,bash]
----------------
-include::cmdline/inputspacesampler.sh[]
----------------
-
-Here, `batch_data_files` is an input file but it does not need to be
-present. (Sorry about that abuse of the parameter as usually
-`batch_data_files` is read-only. Here, it is overwritten!). Namely, it
-is generated by the utility in that it equidistantly samples the input
-space, using the interval [-4,4] for each input dimension and 10+1
-samples (points on -4 and 4 included). The parameters file
-+trajectory.csv+ now contains the values of the parameters (weights
-and biases) to use on which the learned function depends or by, in other
-words, by which it is parametrized. As the trajectory contains a whole
-flock of these, the `parse_steps` parameter tells it which steps to
-use for evaluating each point on the equidistant input space grid,
-simply referring to rows in said file.
-
-[NOTE]
-====
-For anything but trivial input spaces the computational cost quickly
-becomes prohibitively large. But again `fix_parameters` is heeded and can be
-used to fix certain parameters. This is even necessary if parsing a trajectory
-that was created using some parameters fixed as they then will _not_
-appear in the set of parameters written to file. This will raise an
-error as the file will contain too few values.
-====
-
-[[reference.samplers]]
-Samplers
-~~~~~~~~
-
-Samplers are at the core of all exploration. In this section we will
-give a few words on advice on the various samplers implemented in this
-package.
-
-Naturally, not all of them are equivalent. Some are more robust with
-respect to the choice of the step sizes than others. In general, we
-recommend <<BAOAB>> at the moment as it is the most accurate with second
-order convergence for average values over the step width size and even
-fourth order in the high-friction limit.
-
-NOTE: At the beginning of each the following subsections we give the name of the respective sampler in order to activate it using the *sampler* keyword, see <<quickstart.python.sampling>> and <<quickstart.cmdline.sampling>>.
-
-[[reference.samplers.sgld]]
-Stochastic Gradient Langevin Dynamics
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-*sampler*: +StochasticGradientLangevinDynamics+
-
-The Stochastic Gradient Langevin Dynamics (SGLD) was proposed by
-Welling2011 based on the <<SGD>>[Stochastic Gradient Descent], which is a
-variant of the <<GD>>[Gradient Descent] using only a subset of the dataset
-for computing gradients. The central idea behind SGLD was to add an
-additional noise term whose magnitude then controls the noise induced by
-the approximate gradients.
-
-Implements a Stochastic Gradient Langevin Dynamics Sampler
-  in the form of a TensorFlow Optimizer, overriding tensorflow.python.training.Optimizer.
-
-The step update is:
-latexmath:[\theta^{n+1} = \theta^{n} - \beta \nabla  U(\theta) \Delta t + \sqrt{\Delta t} G^n],
-where
-latexmath:[\beta] is the inverse temperature coefficient, latexmath:[\Delta t] is the (discretization)
-step width and latexmath:[\theta] is the parameter vector and latexmath:[U(\theta)] the energy or loss function.
-
-[NOTE]
-====
-*SGLD* is very much like *SGD* and *GD* in terms that the `step_width` needs
-to be small enough with respect to the gradient sizes of your problem.
-====
-
-[[reference.samplers.ccadl]]
-Covariance Controlled Adaptive Langevin
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-*sampler*: +CovarianceControlledAdaptiveLangevin+
-
-This is an extension of Stochastic Gradient Descent proposed by
-<<Shang2015>>. The key idea is to dissipate the extra heat caused by the
-approximate gradients through a suitable thermostat. However, the
-discretisation used here is not based on the (first-order)
-Euler-Maruyama as <<SGLD>> but on <<GLA>> 2nd order.
-
-[NOTE]
-====
-`sigma` and `sigmaA` are two additional parameters that control the action
-of the thermostat. Moreover, we require the same parameters as for <<GLA>> 2nd
-order.
-====
-
-[[reference.samplers.gla]]
-Geometric Langevin Algorithms
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-*sampler*: +Geometric Langevin Algorithms_1stOrder+, +Geometric Langevin Algorithms_2ndOrder+
-
-GLA results from a first-order splitting between the Hamiltonian and the
-Ornstein-Uhlenbeck parts, see <<Leimkuhler2015>>[section 2.2.3, Leimkuhler 2015] and also
-<<Leimkuhler2012>>. If the Hamiltonian part is discretized with a scheme of second order,
-it provides second order accuracy at basically no extra
-cost.
-
-The update step of the parameters for second order GLA is BABO:
-
-latexmath:[B: p^{n+1/2} = p^n -\nabla U(q^n)\frac{\Delta t}{2}]
-
-latexmath:[A: q^{n+1} =q^n+M^{-1}p^{n+1/2}\Delta t]
-
-latexmath:[B: \tilde{p}^{n+1} = p^{n+1/2} -\nabla U(q^{n+1})\frac{\Delta t}{2}]
-
-latexmath:[O: p^{n+1} = \alpha_{\Delta t}\tilde{p}^{n+1}+ \sqrt{\frac{1-\alpha_{\Delta t}^2}{\beta}M}G^n]
-where latexmath:[\alpha_{\Delta t}=exp(-\gamma \Delta t)] and latexmath:[G\sim N (0, 1)].
-
-The first order GLA is BAO.
-
-[NOTE]
-====
-All GLA samplers have two more parameters: `inverse_temperature` (usually denoted as latexmath:[\beta]) and `friction_constant` (usually denoted as latexmath:[\gamma]). Inverse
-temperature controls the average momentum of each parameter while the
-friction constant decides over how much of the momentum is replaced by
-random noise, i.e. the random walker character of the trajectory.
-
-Good values for beta depend on the loss manifold and its barriers and
-need to be find by try&error at the moment.
-====
-
-[[reference.samplers.baoab]]
-BAOAB
-^^^^^
-
-*sampler*: +BAOAB+
-
-BAOAB derives from the basic building blocks A (position update), B
-(momentum update), and O (noise update) into which the Langevin system
-is split up. Each step is solved in a separate step. Hence, we perform a
-B step, then an A step, ... and so on. This scheme has second-order
-accuracy and superb overall accuracy with respect to positions. See
-Leimkuhler2012 for more details.
-
-The update step of the parameters is:
-
-latexmath:[B: p^{n+1/2} = p^n -\nabla U(q^n)\frac{\Delta t}{2}]
-
-latexmath:[A: q^{n+1} =q^n+M^{-1}p^{n+1/2}\frac{\Delta t}{2}]
-
-latexmath:[O: p^{n+1} = \alpha_{\Delta t}\tilde{p}^{n+1}+ \sqrt{\frac{1-\alpha_{\Delta t}^2}{\beta}M}G^n]
-
-latexmath:[A: q^{n+1} =q^n+M^{-1}p^{n+1/2}\frac{\Delta t}{2}]
-
-latexmath:[B: p^{n+1/2} = p^n -\nabla U(q^n)\frac{\Delta t}{2}]
-
-where latexmath:[\alpha_{\Delta t}=exp(-\gamma \Delta t)] and latexmath:[G\sim N (0, 1)].
-
-
-[NOTE]
-====
-BAOAB has the same two additional parameters as given in the <<GLA>>s.
-====
-
-[[reference.samplers.hmc]]
-Hamiltonian Monte Carlo
-^^^^^^^^^^^^^^^^^^^^^^^
-
-*sampler*: +HamiltonianMonteCarlo+
-
-Hamiltonian dynamics is Metropolis like scheme. For more details see Neal 2012.
-
-[[reference.samplers.walkerensemble]]
-Ensemble of Walkers
-^^^^^^^^^^^^^^^^^^^
-
-Ensemble of Walkers uses a collection of walkers that exchange gradient
-and parameter information in each step in order to calculate a
-preconditioning matrix. This preconditioning allows to explore elongated
-minimum basins faster than independent walkers would do alone, see
-Matthews2018.
-
-This is activated by setting the `number_walkers` to a value larger than
-1. Note that `covariance_blending` controls the magnitude of the
-covariance matrix approximation and `collapse_after_steps` controls
-after how many steps the walkers are restarted at the parameter
-configuration of the first walker to ensure that the harmonic
-approximation still holds.
-
-This works for all of the aforementioned samplers as simply the gradient
-of each walker is rescaled.
-
-[[reference.reproducibility]]
-A Note on Reproducibility
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-In many of the examples in the quickstart tutorials we have set a 'seed' value
-to enforce reproducible runs.
-
-We have gone through great lengths to make sure that runs using the same set
-of options yield the same output on every evocation.
-
-Tensorflow is not fully reproducible per se. Its internal random number seeds
-change when the computational graph changes. Its reduction operations are
-non-deterministic. The latter can be overcome by setting 'inter_ops_threads' to
-_1_, which take away some of the parallelization for the sake of
-reproducibility. The former is taken care of by TATi itself. We make sure to
-set the random number seeds deterministically to ensure that values are
-unchanged even if the graph is slighlty changed.
-
-If you find that this should not be the case, please file an issue, see
-<<introduction.feedback>>.
-
-[[reference.performance]]
-A Note on Performance
-~~~~~~~~~~~~~~~~~~~~~
-
-Performance is everything in the world of neural network training. Codes and
-machines are measured by how fast they perform in images/second when training
-AlexNet or other networks on the ImageNet dataset, see link:https://www.tensorflow.org/performance/benchmarks[Tensorflow Benchmarks].
-
-We worked hard to ensure that whatever Tensorflow offers in performance is also
-seen when using TATi. In order to guide the user in what to expect and what to
-do when these expectations are not met, we invite to go through this section.
-
-In general, performance hinges *critically* on the input pipeline. In other
-words, it depends very much on how fast a specific machine setup can feed the
-dataset into the input layer of the neural network.
-
-NOTE: In our examples both datasets and networks are very small. This causes
-the sequential parts of tensorflow to overwhelm any kind of parallel execution.
-
-Typically, these datasets are stored as a set of files residing on disk. Note
-that reading from disk is very slow compared to reading from memory. Hence, the
-first step is to read the dataset from disk and this will completely dominate
-the computational load at the beginning.
-
-If the dataset is small enough to completely fit in memory, TATi will uses
-Tensorflow's _caching_ to speed up the operations. This will become noticeable
-after the first epoch, i.e. when all batches of the dataset have been processed
-exactly once. Caching delivers at least a tenfold increase in learning speed,
-depending on your hard drive setup.
-
-[NOTE]
-.In memory pipeline
-======
-If your dataset fits in memory, it is advised to use the `InMemoryPipeline`
-by either setting the appropriate parameters in the *FLAGS* parameter
-structure, see <<quickstart.python>>.
-
-[source, python]
 ----------------
-FLAGS.in_memory_pipeline = True
+import TATi.simulation as tati
+
+nn = tati(
+    batch_data_files=[datasetName],
+    batch_size=numberOfPoints,
+    dropout=None,
+    fix_parameters="output/biases/Variable:0=0.",
+    output_dimension=1,
+    input_dimension=1,
+    output_activation = "linear",
+    inverse_temperature=1.0,
+    loss="mean_squared",
+    max_steps=10000,
+    sampler="BAOAB",
+    seed=426,
+    step_width=0.5,
+    friction_constant=1000.0,
+    trajectory_file="trajectory_ho.csv",
+    verbose=1
+)
+
+run_info, trajectory, averages = nn.sample()
 ----------------
 
-When using the command-line interface, add the respective option, see <<quickstart.cmdline>>.
-
-[source, bash]
-----------------
-...
-  --in_memory_pipeline 1 \
-...
-----------------
-
-======
-
-Furthermore, TATi uses Tensorflow's prefetching to interleave feeding and
-training operations. This will take effect roughly after the second epoch.
-Prefetching will show an increase by another factor of 2.
-
-A typical runtime profile is given in Figure <<references.performance.runtime_comparison_cpu>>
-where we show the time spent for every 10 steps over the whole history. This is
-done by simply plotting the 'time_per_nth_step' column from the run file against
-the 'step' column.
-There, we have used the <<BAOAB>> sampler. Initially, there is a large peak
-caused by the necessary parsing of the dataset from disk. This is followed by a
-period where the caching is effective and runtime per nth step has dropped
-dramatically. From this time on, Tensorflow will be able to make use of parallel
-threads for training. Then, we see another drop when prefetching kicks in.
-
-[[references.performance.runtime_comparison_cpu]]
-.Runtime comparison, CPU: Core i7, network with a single hidden layer and various numbers of nodes on a random MNIST dataset
-image::pictures/time_per_nth_step_hidden_dimension-dimension_16000-batch_size_1000-2018-06-28.png[alt="runtime comparison",{basebackend@docbook:scaledwidth="60%":width=600}]
-
-Note that Tensorflow has been designed to use GPGPU cards such as offered by
-NVIDIA (and also Google's own domain-specific chip called Tensor Proccessing
-Unit). If such a GPGPU card is employed, the actual linear algebra operations
-necessary for the gradient calculation and weight and bias updates during
-training will become negligible except for very large networks (1e6 dof and
-beyond).
-
-In <<references.performance.runtime_comparison_gpu>> we give the same runtime
-profile as before. In contrast to before, the simulation is now done on a
-system with 2 NVIDIA V100 cards. Comparing this to figure <<references.performance.runtime_comparison_cpu>>
-we notice that now all curves associated to different number of nodes in the
-hidden layer (*hidden_dimension*) basically lie on top of each other. In the
-runtime profile on CPUs alone there is a clear trend for networks with more
-degrees of freedom to significantly require more time per training step. We
-conclude that with these networks (784 input nodes, 10 output nodes,
-*hidden_dimension* hidden nodes, i.e. ~1e6 dof) the V100s do not see full load,
-yet.
-
-[[references.performance.runtime_comparison_gpu]]
-.Runtime comparison, GPU: 2x V100 cards, network with a single hidden layer and various numbers of nodes on a random MNIST dataset
-image::pictures/time_per_nth_step_hidden_dimension-hash_912b074-dimension_5000-batch_size_100-semilogy-2018-06-27.png[alt="runtime comparison",{basebackend@docbook:scaledwidth="60%":width=600}]
-
-[[reference.exploring]]
-Exploring the manifold
-~~~~~~~~~~~~~~~~~~~~~~
-
-still empty
-
-[[reference.miscellaneous]]
-Miscellaneous
-~~~~~~~~~~~~~
-
-[[reference.miscellaneous.parameter_freeze]]
-Freezing parameters
-^^^^^^^^^^^^^^^^^^^
-
-Sometimes it might be desirable to freeze parameters during training or
-sampling. This can be done as follows:
-
-[source,python]
----------------
-include::python/fix_parameter.py[]
----------------
-
-Note that you need to initialize the network without adding training or
-sampling methods, i.e. `setup` is None. Then, we fix the parameter
-where we give its name in full tensorflow parlance. Afterwards, we may
-add sample or training nodes and start training/sampling.
-
-====
-[NOTE]
-
-Single values cannot be frozen but only entire weight matrices or bias
-vectors per layer at the moment.
-====
-
-[[reference.miscellaneous.progress_bar]]
-Displaying a progress bar
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
-For longer simulation runs it is desirable to obtain an estimate after a
-few steps of the time required for the entire run.
-
-This is possible using the `progress` option. Specified to 1 or True it
-will produce a progress bar showing the total number of steps, the
-iterations per second, the elapsed time since start and the estimated
-time till finish.
-
-This features requires the link:https://github.com/tqdm/tqdm[tqdm] package.
-
-[NOTE]
-====
-On the debug verbosity level per output step also an estimate of the
-remaining run time is given.
-====
-
-[[reference.miscellaneous.summaries]]
-Tensorflow summaries
-^^^^^^^^^^^^^^^^^^^^
-
-Tensorflow delivers a powerful instrument for inspecting the inner
-workings of its computational graph: TensorBoard.
-
-This tool allows also to inspect values such as the activation
-histogram, the loss and accuracy and many other parameters and values
-internal to TATi.
-
-Supplying a path +/foo/bar+ present in the file system using the
-`summaries_path` variable, summaries are automatically written to the
-path and can be inspected with the following call to tensorboard.
-
-[source,bash]
----------------
-tensorboard --logdir /foo/bar
----------------
-
-The tensorboard essentially comprises a web server for rendering the
-nodes of the graph and figures of the inspected values inside a web page.
-On execution it provides a URL that needs to be entered in any
-web browser to access the web page.
+- Sampled trajectory:
++
+The output trajectory is distributed w.r.t. to a Gaussian, i.e. the density
+of X:=weight0 is latexmath:[exp(-X^2)], see Figure link:#reference_simulation_harmonic_oscillator.harmonic_oscillator[Gaussian distribution].
 
 
-[NOTE]
-====
-The accumulation and writing of the summaries has quite an impact on
-TATi's overall performance and is therefore switched off by default.
-====
+[reference_simulation_harmonic_oscillator.harmonic_oscillator[density]]
+.Gaussian distribution. Histogram of the trajectories obtained by simulating 1D harmonic oscillator with BAOAB sampler.
+image::pictures/density_harmonic_oscillator.png[alt="runtime comparison",{basebackend@docbook:scaledwidth="40%":width=400}]
+
+[reference_simulation_harmonic_oscillator.blobs]]
+Blobs
+~~~~~
+
+[reference_simulation_harmonic_oscillator.mnist]]
+MNIST
+~~~~~
