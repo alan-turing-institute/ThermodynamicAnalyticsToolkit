@@ -60,6 +60,10 @@ nn = tati(
 )
 
 run_info, trajectory, averages = nn.sample()
+
+df_trajectories = pd.DataFrame(trajectory)
+# sampled trajectory
+weight0 = np.asarray(df_trajectories['weight0']
 ----------------
 
 - Sampled trajectory:
