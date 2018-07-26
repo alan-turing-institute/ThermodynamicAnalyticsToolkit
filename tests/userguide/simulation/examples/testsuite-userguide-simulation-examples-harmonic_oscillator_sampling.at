@@ -1,0 +1,44 @@
+#
+#    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
+#    Copyright (C) 2018 The University of Edinburgh
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### test on examples in the reference section userguide
+
+AT_SETUP([Examples - simulation: Harmonic oscillator, sampling])
+AT_KEYWORDS([example simulation harmonic_oscillator sampling])
+
+# see test on harmonic_oscillator_dataset.py for preparing dataset
+
+AT_CHECK([cp -f ${abs_top_srcdir}/tests/userguide/simulation/examples/pre/dataset-harmonic_oscillator.csv \
+    dataset_ho.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../run \
+	${abs_top_srcdir}/doc/userguide/simulation/examples/harmonic_oscillator_sampling.py
+], 0, [stdout], [stderr])
+
+# now compare (exclude time_per_nth_step column)
+AT_CHECK([../../../NumericalDiff \
+    --general_threshold 1e-7 absolute \
+    --column_drop time_per_nth_step id -- \
+    run_ho.csv ${abs_top_srcdir}/tests/userguide/simulation/examples/post/run_ho.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff \
+    --general_threshold 1e-7 absolute \
+    --column_drop id -- \
+    trajectory_ho.csv ${abs_top_srcdir}/tests/userguide/simulation/examples/post/trajectory_ho.csv], 0, [ignore], [ignore])
+
+
+
+AT_CLEANUP
+

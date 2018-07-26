@@ -94,9 +94,9 @@ to the local minimum. Usually, they are started from the local minimum and
 drive the particles further and further out until new minima are found
 between which potential barriers had to be overcome.
 
-[[reference.neural_networks]]
+[[reference.concepts.neural_networks]]
 Neural Networks
-~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^
 
 A neural network (NN) is a tool used in the context of machine learning.
 Formally, it is a graph with nodes and edges, where nodes represent
@@ -118,9 +118,9 @@ The essential task at hand is to determine a good set of parameters,
 i.e. values for the weights and biases, such that the task is performed
 best with respect to some measure.
 
-[[reference.loss]]
+[[reference.concepts.loss]]
 The loss function
-~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^
 
 At the moment, there are two little utility programs that help in
 evaluating the loss function given a certain dataset, namely the
@@ -192,9 +192,9 @@ identify which row is to be used and moreover a column for every
 the minima file written by `TATiExplorer` can be used as this centers
 file. Moreover, also the trajectory files have the same structure.
 
-[[reference.network]]
+[[reference.concepts.network]]
 The learned function
-~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^
 
 The second little utility programs does not evaluate the loss function
 itself but the unknown function learned by the neural network depending
@@ -229,6 +229,8 @@ that was created using some parameters fixed as they then will _not_
 appear in the set of parameters written to file. This will raise an
 error as the file will contain too few values.
 ====
+
+include::reference_examples.txt[]
 
 [[reference.samplers]]
 Samplers

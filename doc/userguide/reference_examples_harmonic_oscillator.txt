@@ -1,0 +1,57 @@
+[[reference_simulation_harmonic_oscillator]]
+Examples
+--------
+We show how to set up some basic models, which can be a useful tool
+to study and test methods.
+
+[[reference_simulation_harmonic_oscillator.harmonic_oscillator]]
+Harmonic oscillator
+~~~~~~~~~~~~~~~~~~~
+
+It can be sometimes useful to use TATi to simulate a simple harmonic oscillator.
+This model can be obtained by training the neural network with one parameter
+on one point latexmath:[X=1] in dimension one with a label
+equal to zero, i.e. latexmath:[Y=0], and using the mean square loss function and
+linear activation function.
+More precisely, the cost function becomes in this setting:
+
+latexmath:[L(\omega | X,Y) = | \omega X + b - Y|^2],
+
+where we fix the bias latexmath:[b=0].
+
+- Dataset:
++
+[source,python]
+---------------
+include::simulation/examples/harmonic_oscillator_dataset.py[]
+---------------
+
+- Setup and train neural network:
++
+----------------
+include::simulation/examples/harmonic_oscillator_sampling.py[]
+----------------
+
+- Sampled trajectory:
++
+The output trajectory in +trajectory_ho.csv+ or `weight0` is distributed w.r.t.
+a Gaussian, i.e. the density of X:=weight0 is latexmath:[exp(-X^2)], see Figure
+link:#reference_simulation_harmonic_oscillator.harmonic_oscillator[Gaussian distribution].
+
+NOTE: The figure was obtained with setting `max_steps` to 10000.
+
+[reference_simulation_harmonic_oscillator.harmonic_oscillator[density]]
+.Gaussian distribution: Histogram of the trajectories obtained by simulating 1D harmonic oscillator with BAOAB sampler.
+image::pictures/density_harmonic_oscillator.png[alt="density harmonic oscillator",{basebackend@docbook:scaledwidth="40%":width=400}]
+
+[reference_simulation_harmonic_oscillator.blobs]]
+Blobs
+~~~~~
+
+TODO
+
+[reference_simulation_harmonic_oscillator.mnist]]
+MNIST
+~~~~~
+
+TODO

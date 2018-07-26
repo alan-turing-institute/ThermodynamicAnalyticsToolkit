@@ -31,6 +31,8 @@ PYTHON_EXAMPLES = \
 	$(srcdir)/simulation/complex/optimize_sample.py \
 	$(srcdir)/simulation/complex/sample.py \
 	$(srcdir)/simulation/complex/supply_dataset.py \
+	$(srcdir)/simulation/examples/harmonic_oscillator_dataset.py \
+	$(srcdir)/simulation/examples/harmonic_oscillator_sampling.py \
 	$(srcdir)/simulation/change_dataset_array.py \
 	$(srcdir)/simulation/change_dataset_csv.py \
 	$(srcdir)/simulation/evaluate_accuracy.py \
@@ -68,9 +70,10 @@ DEPENDENCIES = \
 	quickstart_simulation.txt \
 	quickstart.txt \
 	reference.txt \
+	reference_examples.txt \
+	reference_examples_harmonic_oscillator.txt \
 	reference_implementing_sampler.txt \
 	reference_simulation.txt \
-	reference_simulation_harmonic_oscillator.txt \
 	tensorflow_flaws.txt \
 	$(PYTHON_EXAMPLES)
 

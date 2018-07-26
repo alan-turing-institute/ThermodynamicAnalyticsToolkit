@@ -1,0 +1,5 @@
+[[reference.examples]]
+Examples
+~~~~~~~~
+
+include::reference_examples_harmonic_oscillator.txt[]

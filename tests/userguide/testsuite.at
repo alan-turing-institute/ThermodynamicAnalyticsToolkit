@@ -33,5 +33,6 @@ m4_include(python/testsuite-userguide-python.at)
 
 # tests for simulation interface examples in userguide
 m4_include(simulation/complex/testsuite-userguide-simulation-complex.at)
+m4_include(simulation/examples/testsuite-userguide-simulation-examples.at)
 m4_include(simulation/testsuite-userguide-simulation.at)
 
