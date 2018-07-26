@@ -1,8 +1,6 @@
 import logging
 import sqlite3
 
-from TATi.common import get_list_from_string
-
 class runtime(object):
     """ This class contains runtime information and capability
     to write these to an sqlite file.
@@ -62,7 +60,7 @@ class runtime(object):
                     {in_memory_pipeline}, {input_dimension}, {inter_ops_threads}, {intra_ops_threads}, \
                     {output_dimension}, {seed}, {step_width}, {init_time}, {train_time}, {overall_time});
                 """
-                hidden_dimension = [int(i) for i in get_list_from_string(self.FLAGS.hidden_dimension)]
+                hidden_dimension = self.FLAGS.hidden_dimension
                 min_nodes = 0
                 max_nodes = 0
                 if len(hidden_dimension) != 0:
@@ -78,6 +76,10 @@ class runtime(object):
                     dataset_dimension = self.FLAGS.dimension
                 except AttributeError:
                     dataset_dimension = self.FLAGS.batch_size
+                try:
+                    step_width = self.FLAGS.step_width
+                except AttributeError:
+                    step_width = self.FLAGS.learning_rate
                 add_values_command = add_values_format.format(
                     batch_size=self.FLAGS.batch_size,
                     dimension=dataset_dimension,
@@ -90,7 +92,7 @@ class runtime(object):
                     intra_ops_threads=intra_ops_threads,
                     output_dimension=self.FLAGS.output_dimension,
                     seed=self.FLAGS.seed,
-                    step_width=self.FLAGS.step_width,
+                    step_width=step_width,
                     init_time=self.time_init_network,
                     train_time=self.time_train_network,
                     overall_time=self.time_overall)

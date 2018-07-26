@@ -11,6 +11,11 @@ image::pictures/tati-mindmap.png[align="right",alt="TATi mindmap",{basebackend@d
 If you know what all of this means, you might probably be interested. If not,
 then read on to the next section.
 
+NOTE: TATi is growing, see the
+ifdef::basebackend-docbook[ roadmap ]
+ifdef::basebackend-html[ link:roadmap.html[roadmap] ]
+for things to come.
+
 [[introduction.needtoknow]]
 Before you start
 ~~~~~~~~~~~~~~~~
@@ -35,11 +40,17 @@ Typically, optimzation in neural network training employs methods such
 as Gradient Descent, Stochastic Gradient Descent or derived methods
 using momentum such as ADAM and so on. The loss function itself may be
 convex, however, the loss manifold given a large dataset is not convex
-in general. Hence, these methods will only find local minima. Therefore,
-the eventually trained set of parameters of the neural network is not
-optimal. Naturally, this ignores question about the generalization error.
-Nonetheless, neural networks, given enough data and processing
-power, work marvelously and one may wonder why.
+in general. Hence, these methods will only find local minima. Naturally,
+multiple random starting positions are used and the winner takes it all.
+However, as there exponentially many minima this way we will never be able
+to glean any knowledge on how they are situated with respect to one another.
+We will never know how the network's topology, the number of nodes and so on
+influences it.
+Moreover, the eventually trained set of parameters of the neural network
+is never optimal. Not even when taking the generalization error into account.
+However, some simplicity must be hidden in those loss manifolds of neural
+networks: given enough data and processing power, they work marvelously even
+in spite of all these shortcomings and one may wonder why.
 
 The essential idea behind this program package is that we use sampling
 instead of optimization: we are not interested in the local minimum
@@ -74,7 +85,8 @@ neural networks.
 image::pictures/tati_simulations-architecture.png[{basebackend@docbook:scaledwidth="60%":width=500}]
 
 It can be used both as python module and as stand-alone command-line
-tools.
+tools. The former is called the *simulation* module and will probably be your
+first contact point with TATi.
 
 [[introduction.installation]]
 Installation
@@ -133,7 +145,7 @@ in the following manner:
 
 ---------------
 conda create -n tensorflow python=3.5 -y
-  conda install -n tensorflow -y \
+conda install -n tensorflow -y \
      tensorflow numpy scipy pandas scikit-learn matplotlib
 ---------------
 
@@ -221,7 +233,7 @@ Enter the directory
 cd thermodynamicanalyticstoolkit
 ---------------
 
-Continue then in section link:#configure_make_install[].
+Continue then in section link:#configure_make_install[Configure, make, install].
 
 [[introduction.installation.repository]]
 ==== From cloned repository
@@ -261,7 +273,7 @@ executable on your system.
 [NOTE]
 =========================
 In case of having used _anaconda_ for the installation of required packages,
-then you need to look in
+then you need to use
 
 ---------------
 $HOME/.conda/envs/tensorflow/bin/python3
@@ -277,26 +289,17 @@ installation steps above.
 We recommend executing (after `make install` was run)
 
 ---------------
-make check
+make -j4 check
 ---------------
 
 additionally. This will execute every test on the extensive testsuite
 and report any errors. None should fail. If all fail, a possible cause
 might be a not working tensorflow installation. If some fail, please
 contact the author.
+The extra argument *-j4* instructs +make+ to use four threads in parallel for
+testing. Use as many as you have cores on your machine.
 =========================
 
-
-[TIP]
-=========================
-As always with GNU make you may use
----------------
-make -j4 check
----------------
-to execute four processes in parallel performing the checks which should
-give a significant speed up. Replace "4" by the number of cores in your
-machine or any other number you find appropriate.
-=========================
 
 [[introduction.license]]
 License

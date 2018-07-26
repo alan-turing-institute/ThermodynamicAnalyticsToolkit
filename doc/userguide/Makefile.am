@@ -12,30 +12,43 @@ PYTHON_EXAMPLES = \
 	$(srcdir)/cmdline/parse_dataset.sh \
 	$(srcdir)/cmdline/sample.sh \
 	$(srcdir)/cmdline/write_dataset.sh \
-	$(srcdir)/python/analyse.py \
+	$(srcdir)/python/analyse_averages.py \
+	$(srcdir)/python/analyse_diffmap.py \
 	$(srcdir)/python/eval_loss_gradient.py \
 	$(srcdir)/python/explore.py \
 	$(srcdir)/python/fix_parameter.py \
-	$(srcdir)/python/general_nn/change_dataset_array.py \
-	$(srcdir)/python/general_nn/change_dataset_csv.py \
-	$(srcdir)/python/general_nn/evaluate_loss.py \
-	$(srcdir)/python/general_nn/evaluate_prediction.py \
-	$(srcdir)/python/general_nn/evaluate_accuracy.py \
-	$(srcdir)/python/general_nn/evaluate_gradients.py \
-	$(srcdir)/python/general_nn/evaluate_hessians.py \
-	$(srcdir)/python/general_nn/requesting_parameters.py \
-	$(srcdir)/python/general_nn/reset_dataset.py \
-	$(srcdir)/python/general_nn/reset_dataset_auto.py \
-	$(srcdir)/python/general_nn/setting_parameters.py \
-	$(srcdir)/python/general_nn/setting_up_network.py \
-	$(srcdir)/python/general_nn/supply_dataset_array.py \
-	$(srcdir)/python/general_nn/supply_dataset_csv.py \
 	$(srcdir)/python/optimize.py \
 	$(srcdir)/python/optimize_sample.py \
 	$(srcdir)/python/plot_optimize.py \
 	$(srcdir)/python/sample.py \
 	$(srcdir)/python/supply_dataset.py \
-	$(srcdir)/python/writing_data.py
+	$(srcdir)/python/writing_data.py \
+	$(srcdir)/simulation/complex/eval_loss_gradient.py \
+	$(srcdir)/simulation/complex/fix_parameter.py \
+	$(srcdir)/simulation/complex/gla2_sampler.py \
+	$(srcdir)/simulation/complex/momenta_invalid_sampler.py \
+	$(srcdir)/simulation/complex/optimize.py \
+	$(srcdir)/simulation/complex/optimize_sample.py \
+	$(srcdir)/simulation/complex/sample.py \
+	$(srcdir)/simulation/complex/supply_dataset.py \
+	$(srcdir)/simulation/change_dataset_array.py \
+	$(srcdir)/simulation/change_dataset_csv.py \
+	$(srcdir)/simulation/evaluate_accuracy.py \
+	$(srcdir)/simulation/evaluate_dataset.py \
+	$(srcdir)/simulation/evaluate_gradients.py \
+	$(srcdir)/simulation/evaluate_hessians.py \
+	$(srcdir)/simulation/evaluate_loss.py \
+	$(srcdir)/simulation/evaluate_predict.py \
+	$(srcdir)/simulation/initializing_momenta.py \
+	$(srcdir)/simulation/requesting_parameters.py \
+	$(srcdir)/simulation/requesting_momenta.py \
+	$(srcdir)/simulation/setting_momenta.py \
+	$(srcdir)/simulation/setting_momenta_walkers.py \
+	$(srcdir)/simulation/setting_parameters.py \
+	$(srcdir)/simulation/setting_parameters_walkers.py \
+	$(srcdir)/simulation/setting_up_network.py \
+	$(srcdir)/simulation/supply_dataset_array.py \
+	$(srcdir)/simulation/supply_dataset_csv.py
 
 DEPENDENCIES = \
 	bibliography.txt \
@@ -50,10 +63,14 @@ DEPENDENCIES = \
 	programmersguide_tati_structure.txt \
 	programmersguide_tati_versioncontrol.txt \
 	programmersguide_tensorflow.txt \
+	quickstart_cmdline.txt \
+	quickstart_sampling.txt \
+	quickstart_simulation.txt \
 	quickstart.txt \
 	reference.txt \
+	reference_implementing_sampler.txt \
+	reference_simulation.txt \
 	tensorflow_flaws.txt \
-	userguide.txt \
 	$(PYTHON_EXAMPLES)
 
 EXTRA_DIST = \
@@ -66,25 +83,22 @@ versionfile = $(srcdir)/.git-version
 version = $(shell cat $(versionfile))
 revdate = $(shell date +%Y-%m-%d)
 
-thermodynamicanalyticstoolkit.xml: $(srcdir)/userguide.txt $(DEPENDENCIES) $(srcdir)/.git-version
+#thermodynamicanalyticstoolkit.xml: $(srcdir)/userguide.txt
+
+#thermodynamicanalyticstoolkit.html: $(srcdir)/userguide.txt
+
+%.xml: $(srcdir)/%.txt $(DEPENDENCIES) $(srcdir)/.git-version
 	$(ASCIIDOC) -b docbook -aimagesdir=$(srcdir) -arevdate=$(revdate) -aversion-label=@PACKAGE@ -arevnumber=$(version) -o $@ $<
 
-thermodynamicanalyticstoolkit.html: $(srcdir)/userguide.txt $(DEPENDENCIES) $(srcdir)/.git-version
-	$(ASCIIDOC) -b html5 -a toc2 -a icons -a latexmath -a numbered -aimagesdir=$(srcdir) -arevdate=$(revdate) -aversion-label=@PACKAGE@ -arevnumber=$(version) -o $@ $<
+%.html: $(srcdir)/%.txt $(DEPENDENCIES) $(srcdir)/.git-version
+	$(ASCIIDOC) -b html5 -a toc2 -a numbered -aimagesdir=$(srcdir) -arevdate=$(revdate) -aversion-label=@PACKAGE@ -arevnumber=$(version) -o $@ $<
 
-thermodynamicanalyticstoolkit.pdf: thermodynamicanalyticstoolkit.xml
+%.pdf: %.xml
 	$(DBLATEX) --param=doc.lot.show=figure,table $< $@
 
-programmersguide.xml: $(srcdir)/programmersguide.txt $(DEPENDENCIES) $(srcdir)/.git-version
-	$(ASCIIDOC) -b docbook -a icons -aimagesdir=$(srcdir) -arevdate=$(revdate) -aversion-label=@PACKAGE@ -arevnumber=$(version) -o $@ $<
-
-programmersguide.html: $(srcdir)/programmersguide.txt $(DEPENDENCIES) $(srcdir)/.git-version
-	$(ASCIIDOC) -b html5 -a icons -a latexmath -a toc2 -a numbered -aimagesdir=$(srcdir) -arevdate=$(revdate) -aversion-label=@PACKAGE@ -arevnumber=$(version) -o $@ $<
-
-programmersguide.pdf: programmersguide.xml
-	$(DBLATEX) --param=doc.lot.show=figure,table $< $@
-
-all: thermodynamicanalyticstoolkit.pdf thermodynamicanalyticstoolkit.html programmersguide.html programmersguide.pdf
+all: programmersguide.pdf programmersguide.html \
+	userguide.pdf userguide.html \
+    roadmap.pdf roadmap.html
 
 FORCE:
 

@@ -22,12 +22,22 @@ if test -z $ASCIIDOC; then
 	AC_MSG_WARN([asciidoc not found, cannot build from asciidoc sources])
 fi
 AC_CHECK_PROGS([DBLATEX], [dblatex])
-	if test -z $DBLATEX; then
-	   AC_MSG_WARN([dblatex not found, cannot render userguide PDF])
+if test -z $DBLATEX; then
+   AC_MSG_WARN([dblatex not found, cannot render userguide PDF])
 fi
 AC_CHECK_PROGS([HIGHLIGHT], [source-highlight])
-	if test -z $HIGHLIGHT; then
-	   AC_MSG_WARN([GNU's source-highlight not found, cannot syntex-highlight code blocks in userguide])
+if test -z $HIGHLIGHT; then
+   AC_MSG_WARN([GNU's source-highlight not found, cannot syntex-highlight code blocks in userguide])
+fi
+
+# We use /bin/true for checking certain tests
+# /bin/true is in /usr/in/true on MacOs
+AC_CHECK_PROGS([BIN_TRUE], [true])
+if test -z $BIN_TRUE; then
+	AC_MSG_WARN([Could not find /bin/true or similar."])
+	# false is more portable than true: Missing binary will result in 127, which !
+	# converts to 0, i.e. always skip
+	BIN_TRUE="! /bin/false"
 fi
 
 AC_CONFIG_FILES(
@@ -39,8 +49,11 @@ AC_CONFIG_FILES(
 	src/TATi/exploration/Makefile
 	src/TATi/models/Makefile
 	src/TATi/models/input/Makefile
+	src/TATi/options/Makefile
+	src/TATi/parameters/Makefile
 	src/TATi/runtime/Makefile
 	src/TATi/samplers/Makefile
+	src/TATi/tools/Makefile
 	tests/Makefile)
 AC_CONFIG_TESTDIR([tests/integration])
 AC_CONFIG_FILES(
@@ -50,14 +63,18 @@ AC_CONFIG_TESTDIR([tests/regression])
 AC_CONFIG_FILES(
 	tests/regression/atlocal
 	tests/regression/Makefile)
+AC_CONFIG_TESTDIR([tests/simulation])
+AC_CONFIG_FILES(
+	tests/simulation/atlocal
+	tests/simulation/Makefile)
+AC_CONFIG_TESTDIR([tests/tensorflow])
 AC_CONFIG_FILES(
 	tests/tensorflow/atlocal
 	tests/tensorflow/Makefile)
-AC_CONFIG_TESTDIR([tests/tensorflow])
+AC_CONFIG_TESTDIR([tests/userguide])
 AC_CONFIG_FILES(
 	tests/userguide/atlocal
 	tests/userguide/Makefile)
-AC_CONFIG_TESTDIR([tests/userguide])
 AC_CONFIG_FILES([tests/check_package], [chmod +x tests/check_package])
 AC_CONFIG_FILES([tests/check_package_version], [chmod +x tests/check_package_version])
 AC_CONFIG_FILES([tests/TATiDatasetParser], [chmod +x tests/TATiDatasetParser])
@@ -69,8 +86,7 @@ AC_CONFIG_FILES([tests/TATiAnalyser], [chmod +x tests/TATiAnalyser])
 AC_CONFIG_FILES([tests/TATiInputSpaceSampler], [chmod +x tests/TATiInputSpaceSampler])
 AC_CONFIG_FILES([tests/TATiLossFunctionSampler], [chmod +x tests/TATiLossFunctionSampler])
 AC_CONFIG_FILES([tests/NumericalDiff], [chmod +x tests/NumericalDiff])
-AC_CONFIG_FILES([tests/userguide/run], [chmod +x tests/userguide/run])
-AC_CONFIG_FILES([tests/tensorflow/run], [chmod +x tests/tensorflow/run])
+AC_CONFIG_FILES([tests/run], [chmod +x tests/run])
 AC_CONFIG_FILES([
         doc/Makefile
         doc/userguide/Makefile

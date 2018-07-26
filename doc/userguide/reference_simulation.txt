@@ -1,0 +1,486 @@
+[[reference.simulation]]
+Simulation module: A General NN interface
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When trying out new methods on sampling or training neural networks, one
+needs to play around with the network directly. This may require one or
+more of the following operations:
+
+* Setting up a specific network
+* Setting a specific set of parameters
+* Requesting the current set of parameters
+* Requesting the current momenta
+* (Re-)initialize momenta
+* Evaluating the loss and/or gradients
+* Evaluating the predicted labels for another dataset
+* Evaluating accuracy
+* Supplying a different dataset
+
+TATi's `simulation` interface readily allows for these and has one beneficial
+feature: The network's topology is completely hidden with respect to the
+set of parameters. To elaborate on this: Tensorflow internally uses
+tensors to represent weights between layers. Therefore, its parameters
+are organized in tensors. This structure makes it quite difficult to set
+or retrieve all parameters at once as their structure depends on the
+chosen topology of the neural network. When using TATi then all you see
+is a single vector of values containing all weights and biases of the
+network. This makes it easy to manipulate or store them.
+
+[NOTE]
+====
+However, this ease of use comes at the price of possibly increased
+computational complexity as an extra array is needed for the values and
+they need to be translated to the internal topology of the network every
+time they are modified.
+====
+
+In other words, this interface is good for trying out a quick-and-dirty
+approach to implementing a new method or idea. However, it is not suited
+for production runs of training a network. In the latter case it is
+recommended to implement your method within Tensorflow, see the programmer's
+guide that should accompany your installation.
+
+[[quickstart.simulation.tensorflow_internals]]
+Tensorflow internals
+^^^^^^^^^^^^^^^^^^^^
+
+Before we start, there are a few notes on how Tensorflow works
+internally that might be helpfup in understanding why things are done
+the way they are.
+
+Tensorflow internally represents all operations as nodes in a so-called
+computational graph. Edges between nodes tell tensorflow which
+operations' output is required as input to other operations, e.g. the
+ones requested to evaluate. For example, in order to evaluate the loss,
+it first needs to look at the dataset and also all weights and biases.
+Any variable is also represented as a node in the graph.
+
+All actual data is stored in a so-called _session_ object. Evaluations
+of nodes in the computational graph are done by giving a list of nodes
+to the `run()` function of this session object. This function usually
+requires a so-called _feed dict_, a dictionary containing any external
+values that are referenced through _placeholder_ nodes. When evaluating
+nodes, only that part of the feed dict needs to be given that is
+required for the nodes' evaluation. E.g. when assigning values to
+parameters through an assign operation using placeholders, we do not
+need to specify the dataset
+
+This has been very brief and for a more in-depth view into the design of
+Tensorflow, we refer to the programmer's guide or to the official tensorflow
+https://www.tensorflow.org/tutorial[tutorials].
+
+[[reference.simulation.help_options]]
+Help on Options
+^^^^^^^^^^^^^^^
+TATi has quite a number of options that control its behavior with respect
+to sampling, optimizing and so on. You can request help to a specific option.
+Let us inspect the help for `batch_data_files`:
+
+[source,python]
+---------------
+>>> from TATi.simulation as tati
+>>> tati.help("batch_data_files")
+Option name: batch_data_files
+Description: set of files to read input from
+Type       : list of <class 'str'>
+Default    : []
+---------------
+
+This will print a description, give the default value and expected type.
+
+Moreover, in case you have forgotten the name of one of the options.
+
+[source,python]
+---------------
+>>> from TATi.simulation as tati
+>>> tati.help()
+averages_file:             CSV file name to write ensemble averages information such as average kinetic, potential, virial
+batch_data_file_type:      type of the files to read input from
+ <remainder omitted>
+---------------
+
+This will print a general help listing all available options.
+
+[[reference.simulation.setup]]
+Setup
+^^^^^
+
+Let's first look at how to set up the neural network and supply it with
+a dataset.
+
+[[reference.simulation.setup.notation]]
+Notation
+++++++++
+
+In the following, we will use the following notation:
+
+- dataset: latexmath:[D = \{X,Y\}] with features latexmath:[X=\{x_d\}] and labels
+latexmath:[Y=\{y_d\}]
+- batch of the dataset: latexmath:[D_i=\{X_i, Y_i\}]
+- network parameters: latexmath:[w=\{w_1, w_M\}]
+- momenta of network parameters: latexmath:[p=\{p_1, p_M\}]
+- neural network function: latexmath:[F_w(x)]
+- loss function: latexmath:[L_D(w) = \sum_i l(F_w(x_i), y_i)] with a loss
+latexmath:[l(x,y)]
+- gradients: latexmath:[\nabla_w L_D(w)]
+- hessians: latexmath:[H_{ij} = \partial_{w_i} \partial_{w_j} L_D(w)]
+
+[[reference.simulation.setup.setting_up_network]]
+Setting up the network
+++++++++++++++++++++++
+
+Let's first create a neural network. At the moment of writing TATi is
+constrained to multi-layer perceptrons but this will soon be extened to
+convolutational and other networks.
+
+Multi-layer perceptrons are characterized by the number of layers, the
+number of nodes per layer and the output function used in each node.
+
+[source,python]
+---------------
+include::simulation/setting_up_network.py[]
+---------------
+
+In the above example, we specify a neural network of two hidden layers,
+each having 8 nodes. We use the "rectified linear" activation function
+for these nodes. The output nodes are activated by a linear function.
+
+[NOTE]
+====
+At the moment it is not possible to set different activation functions
+for individual nodes or between hidden layers.
+====
+
+For a full (and up-to-date) list of all available activation functions,
+please look at TATi/models/model.py, `get_activations()`.
+
+[NOTE]
+====
+Note that (re-)creating the `tati_model` instance model will always reset the
+computational graph of tensorflow in case you need to add nodes.
+====
+
+[[reference.simulation.setup.supply_dataset]]
+Supply dataset as array
++++++++++++++++++++++++
+
+As a next step, we need to supply a dataset latexmath:[D]. This dataset will
+also necessitate a certain amount of input and output nodes.
+
+[NOTE]
+====
+At the moment only classification datasets can be set up.
+====
+There are basically two ways of supplying the dataset:
+
+* from a CSV file
+* from an internal (numpy) array
+
+We will give examples for both ways here.
+
+[source,python]
+---------------
+include::simulation/supply_dataset_array.py[]
+---------------
+
+The `batch_data_files` always needs to be a list as multiple files may
+be given. `batch_data_file_type` gives the type of the files.
+Currently *csv* and *tfrecord* are supported choices.
+
+Note that you can combine all parameters for specifying the data set files
+with the ones characterizing the neural network above to the `__init__()` call
+of `TATi.simulation`. In that case you do not need to call `reset_parameters()`.
+
+We repeat the example given in
+link:#quickstart.simulation.sampling.supply_dataset[Supplying Dataset].
+
+[source,python]
+---------------
+include::simulation/supply_dataset_csv.py[]
+---------------
+
+There, we read a dataset from a CSV file into a pandas dataframe which
+afterwards is converted to a numpy array and then handed over to the
+`provide_dataset()` function of the model interface. Naturally, if the
+dataset is present in memory, it can be given right away and we do not
+need to parse a CSV file.
+
+Note that the essential difference between these two examples is one uses
+`batch_data_files` to request parsing the dataset from file while the other
+example assigns the dataset through the `dataset` parameter.
+
+TIP: You can easily inspect the current batch by looking at `nn.dataset`.
+
+[[reference.simulation.parameters]]
+Parameters
+^^^^^^^^^^
+
+Next, we look at how to inspect and modify the neural network's
+parameters.
+
+[[reference.simulation.parameters.requesting_parameters]]
+Requesting parameters
++++++++++++++++++++++
+
+The network's parameters consist of a single vector latexmath:[w] where weights
+and biases are concatenated in the following fashion: weight matrix to first
+layer, weight matrix to second layer, ..., bias vector to first layer. In
+other words, first all weights, then all biases.
+
+[source,python]
+---------------
+include::simulation/requesting_parameters.py[]
+---------------
+
+The class `tati` simply has an internal object `parameters` which allows
+to access them like a numpy array.
+
+[[reference.simulation.parameters.setting_parameters]]
+Setting parameters
+++++++++++++++++++
+
+Setting the parameters is just as easy as requesting them.
+
+[source,python]
+---------------
+include::simulation/setting_parameters.py[]
+---------------
+
+Here, we create the numpy array filled with zeros by requesting the
+total number of weight and bias degrees of freedom, i.e. the number of
+parameters of the network in `num_parameters()`. Afterwards, we simply
+assign the `parameters` object to this new array of values.
+
+[[reference.simulation.parameters.setting_parameters_walkers]]
+Setting parameters of each walker
++++++++++++++++++++++++++++++++++
+
+Did you know that you can have multiple walkers that `fit()` or `sample()`. In
+other words, there can be replicated versions of the neural network. Each has
+its own set of parameters and may move through the loss manifold individually.
+
+The key option to enable this is to set 'number_walkers' larger than *1* in
+the options to `tati`.
+
+This will automatically create copies of the network, each having a different
+random starting position. Let us take a look at the following example where
+we set the parameters of all and individual walkers.
+
+[source,python]
+---------------
+include::simulation/setting_parameters_walkers.py[]
+---------------
+
+As you see, accessing `parameters` will access all walkers at once. On the
+hand, accessing `parameters[i]` will access only the parameters of walker `i`.
+
+CAUTION: You cannot set a single parameter of a walker, i.e.
+`nn.parameters[0][0] = 1.` will not fail but it will also _not_ set the first
+parameter of the first walker to *1.*. Essentially, you are setting the first
+component of the returned numpy array to *1.* and then discard it immediately
+as you hold no reference to it any longer.
+
+NOTE: Setting single parameters is deliberately not supported as it would only
+be possible through obtaining all parameters, setting the single component, and
+then assigning all parameters again which is possibly a very costly operation.
+This is a tensorflow restriction.
+
+[[reference.simulation.parameters.requesting_momenta]]
+Requesting momenta
+++++++++++++++++++
+
+In the same way as requesting the current set of parameters we can also access
+the momenta latexmath:[p].
+
+[source,python]
+---------------
+include::simulation/requesting_momenta.py[]
+---------------
+
+This will return a `numpy` array of the current set of momenta if the sampler
+supports it. Otherwise this will raise a `ValueError`.
+
+[[reference.simulation.parameters.setting_momenta]]
+Setting and initializing momenta
+++++++++++++++++++++++++++++++++
+
+Equivalently to requesting momenta, they also can be set just as the set of
+parameters.
+
+[source,python]
+---------------
+include::simulation/setting_momenta.py[]
+---------------
+
+In this example, we first look at the old momenta and then set them to random
+values from a normal distribution.
+
+Naturally, this works in the same way for multiple walkers as it worked for
+the parameters.
+
+TIP: The `simulation` interface has a convenience function to reset all
+momenta  from a normal distribution with zero mean according to a given
+`inverse_temperature`.
+
+[source,python]
+---------------
+include::simulation/initializing_momenta.py[]
+---------------
+
+This will reset the momenta such that they match an average temperature of *10*.
+In case of multiple walkers each walker will be initialized with different
+momenta.
+
+[[reference.simulation.evaluation]]
+Evaluation
+^^^^^^^^^^
+
+Now, we are in the position to evaluate our neural network. Or neural networks,
+in case you specified 'number_walkers' larger than *1*, see link:#reference.simulation.parameters.setting_parameters_walkers[Setting parameters of each walker].
+
+NOTE: 'walker_index' in each of the following functions determines which of
+the walkers is evaluated. If no index is given, then all are evaluated, i.e.
+a list of values is returned.
+If there is just a single walker, the list is reduced to its first component
+automatically.
+
+[[reference.simulation.evaluation.loss]]
+Evaluate loss
++++++++++++++
+
+Now, all is set to actually evaluate the loss function latexmath:[L_D(w)] for
+the first time. As a default the mean squared distance latexmath:[l(x,y) = ||x-y||^2]
+is chosen as the loss function. However, by setting the `loss` in the initial
+parameters to `tati` appropriately, all other loss functions that tensorflow
+offers are available, too.
+For a full (and up-to-date) list please refer to +TATi/models/model.py+,
+function `add_losses()`.
+
+[source,python]
+---------------
+include::simulation/evaluate_loss.py[]
+---------------
+
+This will simply return the loss.
+
+[[reference.simulation.evaluation.gradients]]
+Evaluate gradients
+++++++++++++++++++
+
+Gradient information is similarly important as the loss function itself,
+latexmath:[\nabla_w L_D(w)].
+
+[source,python]
+---------------
+include::simulation/evaluate_gradients.py[]
+---------------
+
+Remember that all parameters are vectorized, hence, the
+`gradients()` object returned is actually a numpy array containing
+per component the gradient with respect to the specific parameter.
+
+NOTE: The gradients are given in exactly the same order as the order of
+the parameter vector latexmath:[w].
+
+[[reference.simulation.evaluation.hessians]]
+Evaluate Hessians
++++++++++++++++++
+
+Apart from gradient information hessians latexmath:[H_{ij}] are also available.
+Note however that hessians are both very expensive to compute and to setup as
+many nodes needed to be added to the computational graph. Therefore, in
+the initial parameters to `tati` you need to explicitly state
+`do_hessians=True` in order to activate their creation!
+
+[source,python]
+---------------
+include::simulation/evaluate_hessians.py[]
+---------------
+
+Again remember that all parameters are vectorized, hence, the
+`hessians()` object returned is actually a numpy array containing
+per component the gradient with respect to the specific parameter.
+
+[[reference.simulation.evaluation.accuracy]]
+Evaluate accuracy
++++++++++++++++++
+
+Evaluating accuracy is as simple as evaluating the loss.
+
+[source,python]
+---------------
+include::simulation/evaluate_accuracy.py[]
+---------------
+
+The accuracy is simply comparing the signs of predicted label and label given
+in the dataset over all the batch or dataset.  In other words in the binary
+classification setting we expect labels as latexmath:[\{-1,1\}].
+For multi-class classification labels are simply in latexmath:[\{0,1\}] and
+we compare which two classes have the largest output component, i.e. the
+likeliest to match. Again, this is reduced by taking the mean square over the
+whole dataset or batch.
+
+[[reference.simulation.evaluation.predict]]
+Evaluate predicted labels
++++++++++++++++++++++++++
+
+Naturally, obtaining the predictions is now just as simple.
+
+[source,python]
+---------------
+include::simulation/evaluate_predict.py[]
+---------------
+
+You have to supply a set of (new) features on which to evaluate the
+predictions. Here, we simply use a set of random values.
+
+[[reference.simulation.datasets]]
+Datasets
+^^^^^^^^
+
+Last but not least, how to change the dataset when it was already
+specified?
+
+[[reference.simulation.datasets.change]]
+Change the dataset
+++++++++++++++++++
+
+All evaluating takes place on the same dataset, once a network is trained.
+We have already seen how to get predictions for a different dataset.
+However, we might want to see its performance on a test or validation dataset.
+
+There are again two different ways because of the two different modes of
+feeding the dataset: from file and from an array.
+
+[source,python]
+---------------
+include::simulation/change_dataset_csv.py[]
+---------------
+
+In the first example, we set the `dataset` object of `tati` to a different
+(list of) files.
+This will automatically reset the input pipeline and prepare everything for
+feeding the new dataset.
+
+[source,python]
+---------------
+include::simulation/change_dataset_array.py[]
+---------------
+
+Switching to (another) dataset from an internal numpy array we again access
+the `dataset` array. Only this time we assign it to the numpy array.
+
+[NOTE]
+====
+You must not change the input or output dimension as the network itself
+is fixed.
+====
+
+[NOTE]
+====
+Note that changing the dataset actually modifies some nodes in
+Tensorflow's computational graph. This principally makes things a bit
+slower as the session object has already been created. Simply keep this
+in mind if slowness is suddenly bothering. You could store `parameters`,
+reset the `tati` object and restore them to avoid this.
+====

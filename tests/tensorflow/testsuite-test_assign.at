@@ -19,9 +19,9 @@
 
 AT_SETUP([Tensorflow - test assign on constant])
 AT_KEYWORDS([tensorflow test_assign])
-AT_XFAIL_IF([/bin/true])
+AT_XFAIL_IF([$BIN_TRUE])
 
-AT_CHECK([../../run \
+AT_CHECK([../../../run \
 	${abs_top_srcdir}/tests/tensorflow/pre/test_assign.py
 ], 0, [stdout], [stderr])
 

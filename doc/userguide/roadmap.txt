@@ -1,0 +1,51 @@
+Thermodynamic Analytics Toolkit (TATi) - Roadmap
+================================================
+:Author:      Frederik Heber
+:Email:       frederik.heber@gmail.com
+:keywords:    neural networks, loss, loss manifold, sampling, exploration
+:description: TATi is a software suite based on tensorflow that brings enhanced
+              sampling methods based on Langevin Dynamics and Hamiltonian
+              Dynamics to neural network training.
+:Date:        {revdate}
+:Revision:    TATi {revnumber}
+:doctype:     article
+:imagesdir:   {imagesdir}
+:Website:     https://github.com/alan-turing-institute/ThermodynamicAnalyticsToolkit
+
+image::./pictures/tati_logo.png[alt="TATi logo",align="center",{basebackend@docbook:scaledwidth="80%":width=700}]
+
+.{revdate} {version-label}: {revnumber}
+***************************************
+TATi is a software suite written in Python based on link:https://www.tensorflow.org/[tensorflow]'s
+Python API. It brings advanced sampling methods (GLA1 and GLA2, BAOAB, HMC) to
+_neural network training_. Its *tools* allow to assess the loss manifold's
+topology that depends on the employed neural network and the dataset. Moreover,
+its *simulation* module makes applying present sampling Python codes in the
+context of neural networks easy and straight-forward. The goal of the software
+is to enable the user to analyze and adapt the network employed for a specific
+classification problem to best fit her or his needs.
+
+TATi has received financial support from a seed funding grant and through a
+Rutherford fellowship from the Alan Turing Institute in London (R-SIS-003,
+R-RUT-001) and EPSRC grant no. EP/P006175/1 (Data Driven Coarse Graining using
+Space-Time Diffusion Maps, B. Leimkuhler PI).
+
+'Frederik Heber'
+***************************************
+
+[[roadmap]]
+Roadmap
+-------
+
+TATi is a work in progress and always open for enhancements be it from the side
+of its core programmers or from collaborators.
+
+The following items are on the current roadmap in no specific order and subject
+to change:
+
+- Remodeling of the general python interface (*not* `simulation`)
+- Allowing arbitrary option changes in `simulation.set_options()`
+- Taking over parameters to enlarged neural networks as best as possible
+- Fixing CCAdL and possibly allowing for more covariance-controlling thermostats
+- Adding support for network topologies other than fully connected feed-forward,
+  i.e. multi-layer perceptrons

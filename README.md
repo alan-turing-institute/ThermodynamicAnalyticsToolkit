@@ -23,9 +23,12 @@ Rutherford fellowship from the Alan Turing Institute in London (R-SIS-003,
 R-RUT-001) and EPSRC grant no. EP/P006175/1 (Data Driven Coarse Graining using
 Space-Time Diffusion Maps, B. Leimkuhler PI)
 
-Please refer to INSTALL for installation instructions. When cloning from
-github please call the bootstrap.sh script (requiring installed autotools and
-automake packages).
+In general, see doc/userguide for all manuals and guides accompanying this
+package.
+
+Please refer to the guide (see introduction.txt) for installation instructions.
+As a fall-back have a look at INSTALL. When cloning from github please call 
+the bootstrap.sh script (requiring installed autotools and automake packages).
 
 NOTE: If you only want to *use* the package and *do not plan to submit code*, 
 it is strongly advised to *use the "release" tarballs* instead of cloning the 

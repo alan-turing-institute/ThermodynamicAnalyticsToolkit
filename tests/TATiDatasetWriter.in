@@ -4,7 +4,7 @@
 
 . ../../atlocal
 
-"${AUTOTEST_PATH}/TATiDatasetWriter" \
+"${AUTOTEST_PATH}/TATi/tools/TATiDatasetWriter" \
 ${1+"$@"}
 
 status=$?

@@ -4,12 +4,16 @@ SUBDIRS = \
     exploration \
     models \
     models/input \
+    options \
+    parameters \
     runtime \
-    samplers
+    samplers \
+    tools
 
 TATI_PYTHON = \
 	common.py \
 	TrajectoryAnalyser.py \
+	simulation.py \
 	$(srcdir)/version.py \
 	__init__.py
 
@@ -39,3 +43,5 @@ $(srcdir)/version.py: $(srcdir)/.git-version
 
 $(srcdir)/__init__.py: $(srcdir)/.git-version
 	echo "__version__ = \"$(PACKAGE_VERSION)\"" >$@
+	echo "import TATi.simulation" >>$@
+	echo "TATi.simulation = TATi.simulation.Simulation" >>$@

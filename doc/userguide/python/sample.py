@@ -17,7 +17,6 @@ nn.init_network(None, setup="sample")
 nn.reset_dataset()
 run_info, trajectory, averages = nn.sample(return_run_info=True, \
   return_trajectories=True, return_averages=True)
-nn.finish()
 
 print("Sample results")
 print(np.asarray(run_info[0][0:10]))

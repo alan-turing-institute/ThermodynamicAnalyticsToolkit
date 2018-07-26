@@ -5,17 +5,15 @@
 
 from TATi.models.model import model
 from TATi.models.basetype import dds_basetype
-from TATi.common import get_list_from_string
 
 import argparse
-import numpy as np
 import sys
 import tensorflow as tf
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--batch_data_files", type=str, default=None, \
 	help="Input dataset file")
-parser.add_argument("--hidden_dimension", type=str, nargs='+', default=[], \
+parser.add_argument("--hidden_dimension", type=int, nargs='+', default=[], \
 	help="Column name speciyfing the eigenvector to inspect for maximum length")
 parser.add_argument("--loss", type=str, default=None, \
 	help="loss function to use")

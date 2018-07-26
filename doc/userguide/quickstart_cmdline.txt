@@ -1,0 +1,299 @@
+[[quickstart.cmdline]]
+Using command-line interface
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+All the tests use the command-line interface and for performing rigorous
+scientific experiments, we recommend using this interface as well. Here,
+it is to do parameter studies and have extensive runs using different
+seeds.
+
+[[quickstart.cmdline.writing_dataset]]
+Creating the dataset
+^^^^^^^^^^^^^^^^^^^^
+
+As data is read from file, this file needs to be created beforehand.
+
+For a certain set of simple classification problems, namely those that
+can be found in the tensorflow playground, we have added a
+TATiDatasetWriter` that spills out the dataset in CSV format.
+
+[source,bash]
+---------------
+include::cmdline/write_dataset.sh[]
+---------------
+
+This will write 500 datums of the dataset type 2 ("two clusters") to a
+file ``testset-twoclusters.csv'' using all of the points as we have set
+the test/train ratio to 0. Note that we also perturb the points by 0.1
+relative noise.
+
+[[quickstart.cmdline.parsing_dataset]]
+Parsing the dataset
+^^^^^^^^^^^^^^^^^^^
+
+Similarly, for testing the dataset can be parsed using the same
+tensorflow machinery as is done for sampling and optimizing, using
+
+[source,bash]
+---------------
+include::cmdline/parse_dataset.sh[]
+---------------
+
+where the _seed_ is used for shuffling the dataset.
+
+[[quickstart.cmdline.optimizing]]
+Optimizing the network
+^^^^^^^^^^^^^^^^^^^^^^
+
+As weights (and biases) are usually uniformly random initialized and the
+potential may therefore start with large values, we first have to
+optimize the network, using (Stochastic) Gradient Descent (GD).
+
+[source,bash]
+---------------
+include::cmdline/optimize.sh[]
+---------------
+
+This call will parse the dataset from the file
+"dataset-twoclusters.csv". It will then perform a (Stochastic) Gradient
+Descent optimization in batches of 50 (10% of the dataset) of the
+parameters of the network using a step width/learning rate of 0.01 and
+do this for 1000 steps after which it stops and writes the resulting
+neural network in a TensorFlow-specific format to a set of files, one of
+which is called `model.ckpt.meta` (and the other filenames are derived
+from this).
+
+We have also created a file `run.csv` which contains among others the
+loss at each (``every_nth'', respectively) step of the optimization run.
+Plotting the loss over the step column from the run file will result in
+a figure similar to in
+link:#quickstart.simulation.optimizing.plot[Loss history].
+
+
+[NOTE]
+====
+Since Tensorflow 1.4 an absolute path is required for the storing the
+model. In the example we use the current directory returned by the unix
+command `pwd`.
+====
+
+If you need to compute the optimal step width, which is possible for
+smaller networks from the largest eigenvalue of the hessian matrix, then
+use the option ``do_hessians 1'' to activate it.
+
+[NOTE]
+====
+The creation of the nodes is costly, latexmath:[O(N^2)] in the number of
+parameters of the network N. Hence, may not work for anything but small
+networks and should be done on purpose.
+====
+
+In case you have read the quickstart tutorial on the Python interface
+before, then the names of the command-line option will probably remind
+you of the variables in the FLAGS structure.
+
+[[quickstart.cmdline.sampling]]
+Sampling trajectories on the loss manifold
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+We continue from this optimized or equilibrated state with sampling. It
+is called equilibrated as the network's parameter should now be close to
+a (local) minimum of the potential function and hence in equilibrium.
+This means that small changes to the parameters will result in gradients
+that force it back into the minimum.
+
+Let us call the sampler.
+
+[source,bash]
+---------------
+include::cmdline/sample.sh[]
+---------------
+
+This will cause the sampler to parse the same dataset as before.
+Moreover, the sampler will load the neural network from the model, i.e.
+using the optimized parameters right from the start. Afterwards it will
+use the GLA in 2nd order discetization using again 'step_width' of 0.01
+and running for 1000 steps in total. The GLA is a descretized variant of
+Langevin Dynamics whose accuracy scales with the inverse square of the
+'step_width' (hence, 2nd order).
+
+The seed is needed as we sample using Langevin Dynamics where a noise
+term is present. The term basically ascertains a specific temperature
+which is proportional to the average momentum of each particle.
+
+After it has finished, it will create three files; a run file
+`run.csv` containing run time information such as the step, the
+potential, kinetic and total energy at each step, a trajectory file
+`trajectory.csv` with each parameter of the neural network at each step,
+and an averages file `averages.csv` containing averages accumulated
+along the trajectory such as average kinetic energy, average virial (
+connected to the kinetic energy through the virial theorem, valid if a
+prior keeps parameters bound to finite values), and the average
+(ensemble) loss. Moreover, for the HMC sampler the average rejection
+rate is stored there. The first two files we need in the next stage.
+
+[[quickstart.cmdline.analysing]]
+Analysing trajectories
+^^^^^^^^^^^^^^^^^^^^^^
+
+Eventually, we now perform the diffusion map analysis on the obtained
+trajectories. The trajectory file written in the last step is simply a
+matrix of dimension (number of parameters) times (number of trajectory
+steps). The eigenvector to the largest (but one) eigenvalue will give
+the dominant direction in which the trajectory is moving.
+
+[NOTE]
+====
+The largest eigenvalue is usually unity and its eigenvector is constant.
+Therefore, it is omitted. That's why indexing for the diffusion maps
+eigenvectors starts at 1 (omitted the constant eigenvector 0).
+====
+
+The analysis can perform three different tasks:
+
+* Calculating averages.
+* Calculating the diffusion map's largest eigenvalues and eigenvectors.
+* Calculating landmarks and level sets to obtain an approximation to the
+free energy.
+
+[[quickstart.cmdline.analysing.averages]]
+Averages
+++++++++
+
+Averages are calculated by specifying two options as follows:
+
+[source,bash]
+---------------
+include::cmdline/analyse_average.sh[]
+---------------
+
+This will load both the run file `run.csv` and the trajectory file
+`trajectory.csv`and average over them using only every 10th data point
+(_every_nth_) and also dropping the first steps below 100
+(_drop_burnin_). It will produce then ten averages (_steps_) for each of
+energies in the run file and each of the parameters in the trajectories
+file (along with the variance) from the first non-dropped step till one
+of the ten end steps. These end steps are obtained by equidistantly
+splitting up the whole step interval.
+
+Eventually, we have two output file. The averages over the run
+information such as total, kinetic, and potential energy in
+`average_run.csv`. Also, we have the averages over the degrees of
+freedom in `average_trajectories.csv`.
+
+[NOTE]
+====
+Averages depend crucially on the number of steps we average over. I.e.
+the more points we throw away, the less accurate it becomes. In other
+words, if large accuracy is required, the averages file (if it contains
+the value of interest) is a better place to look for.
+====
+
+[[quickstart.cmdline.analysing.diffusion_map]]
+Diffusion map
++++++++++++++
+
+The eigenvalues and eigenvectors can be written as well to two output
+files.
+
+[source,bash]
+---------------
+include::cmdline/analyse_diffmap.sh[]
+---------------
+
+The files ending in `..values.csv` contains the eigenvalues in two
+columns, the first is the eigenvalue index, the second is the
+eigenvalue.
+
+The other file ending in `..vectors.csv` is simply a matrix of the
+eigenvector components in one direction and the trajectory steps in the
+other. Additionally, it contains the parameters at the steps and also
+the loss and the kernel matrix entry.
+
+Note that again the all values up till step 100 are dropped and only
+every 10th trajectory point is considered afterwards.
+
+There are two methods available. Here, we have used the simpler (and
+less accurate) (plain old) vanilla method. The other is called TMDMap.
+
+If you have installed the _pydiffmap_ python package, this mal also be
+specified as diffusion map method. It has the benefit of an interal
+optimal parameter choice. Hence, it should behave more robustly than the
+other two methods. TMDMap is different only in reweighting tre samples
+according to the specific temperature.
+
+[[quickstart.cmdline.analysing.free_energy]]
+Free energy
++++++++++++
+
+Last but not least, the free energy is calculated.
+
+[source,bash]
+---------------
+include::cmdline/analyse_free_energy.sh[]
+---------------
+
+This will extract landmark points from the trajectory. Basically, the
+loss manifold is discretized using these landmarks where all
+configurations close to a landmark step are combined onto a so-called
+level-set, i.e. all these configurations have a similar loss function
+value. By knowing the number of configurations in each level set and
+knowing the level sets loss value, an approximation of the free energy
+is computed.
+
+This is computed for every step of the trajectory and it is insightful
+to look at the free energy over the course of the trajectory represented
+by the first eigenvalue. If in this graph clear minima with maxima in
+between can be seen, then there are enthalpic barriers between two local
+minima. If on the other hand there are flat areas, then we found
+entropic barriers.
+
+Both these types of barriers obstruct trajectories and keep the
+optimization trapped in so-called meta-stable states. Each type of
+barrier requires a different type of remedy to overcome.
+
+[[quickstart.cmdline.exploration]]
+Exploring the loss manifold
++++++++++++++++++++++++++++
+
+Eventually, we are not interested in obtaining trajectories on the loss
+manifold. Instead we would like to find the global minima. Or at least
+have a good idea about whether the minimas we have found so far are
+reasonable.
+
+To this end, a command-line tool called `TATiExplorer` is provided. The
+idea is to make use of the diffusion map with its diffusion distance to
+assess what part of the loss manifold has been explored already.
+Moreover, we use multiple trajectories that are spawned from a specific
+number of places that are maximally separate with respect to their
+diffusion distance. This will ensure that we cover the most ground
+possible.
+
+In the end, the eigenvectors obtained through a run using the
+`TATiExplorer` will return the dominant diffusion directions and
+therefore those pointing in the direction along the minima, i.e. where
+the sampling usually gets stuck and remains for a while, hence diffusion
+is slow.
+
+[source,bash]
+---------------
+include::cmdline/exploring.sh[]
+---------------
+
+In the example we call the explorer utility in much the same way as we
+have called the sampler. There are some additional options that give the
+number of eigenvalues to calculate and which diffusion map method to
+use. Note that `max_steps` now gives the number of steps of a single
+leg. Further down you find what a lag actually is.
+
+Furthermore, there are two options unique to the explorer. This is
+`max_legs` which gives the maximum number of legs to look at. Each leg
+goes over max_steps. After that a diffusion map analysis is performed
+that checks whether the eigenvalues have converged already. If yes, the
+trajectory is ended, if not we continue with a new leg (of max_steps
+steps). If no convergence should occur, max_legs gives the maximum
+number of legs after which the trajectory is terminated regardlessly.
+
+Finally, we run multiple trajectories in parallel from starting points
+that are maximally apart from each other in the sense of the diffusion
+distances. This is controlled by `number_of_parallel_trajectories`.

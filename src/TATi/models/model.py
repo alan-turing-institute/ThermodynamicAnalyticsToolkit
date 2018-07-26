@@ -1,17 +1,14 @@
-from builtins import staticmethod
-
 import logging
+import time
+from builtins import staticmethod
 from math import sqrt, exp
+
 import numpy as np
 import pandas as pd
-
-# scipy does not automatically import submodules
-from scipy import sparse
-from scipy.sparse import linalg
 import scipy.sparse as sps
-
 import tensorflow as tf
-import time
+# scipy does not automatically import submodules
+from scipy.sparse import linalg
 
 try:
     from tqdm import tqdm # allows progress bar
@@ -30,9 +27,9 @@ from TATi.common import create_input_layer, file_length, get_list_from_string, \
 from TATi.models.input.datasetpipeline import DatasetPipeline
 from TATi.models.input.inmemorypipeline import InMemoryPipeline
 from TATi.models.basetype import dds_basetype
-from TATi.models.mock_flags import MockFlags
 from TATi.models.neuralnet_parameters import neuralnet_parameters
 from TATi.models.neuralnetwork import NeuralNetwork
+from TATi.options.pythonoptions import PythonOptions
 
 
 class model:
@@ -47,39 +44,12 @@ class model:
         # the neural network
         tf.reset_default_graph()
 
-        self.FLAGS = FLAGS
-        self.config_map = initialize_config_map()
-
-        try:
-            FLAGS.max_steps
-        except AttributeError:
-            FLAGS.max_steps = 1
+        self.reset_parameters(FLAGS)
 
         self.number_of_parameters = 0   # number of biases and weights
 
         self.output_type = None
-        if len(FLAGS.batch_data_files) > 0:
-            self.input_dimension = self.FLAGS.input_dimension
-            self.output_dimension = self.FLAGS.output_dimension
-            if FLAGS.batch_data_file_type == "csv":
-                self.FLAGS.dimension = sum([file_length(filename)
-                                            for filename in FLAGS.batch_data_files]) \
-                                       - len(FLAGS.batch_data_files)
-                if self.output_dimension == 1:
-                    self.output_type = "binary_classification"  # labels in {-1,1}
-                else:
-                    self.output_type = "onehot_multi_classification"
-            elif FLAGS.batch_data_file_type == "tfrecord":
-                self.FLAGS.dimension = self._get_dimension_from_tfrecord(FLAGS.batch_data_files)
-                self.output_type = "onehot_multi_classification"
-            else:
-                logging.info("Unknown file type")
-                assert(0)
-            self._check_valid_batch_size()
-
-            logging.info("Parsing "+str(FLAGS.batch_data_files))
-
-            self.number_of_parameters = 0 # number of biases and weights
+        self.scan_dataset_dimension()
 
         # mark input layer as to be created
         self.xinput = None
@@ -100,7 +70,9 @@ class model:
 
         # mark placeholder neuralnet_parameters as to be created (over walker)
         self.weights = []
+        self.momenta_weights = []
         self.biases = []
+        self.momenta_biases = []
 
         # mark placeholders for gradient and hessian computation as to be created
         self.gradients = None
@@ -114,6 +86,35 @@ class model:
         self.averages_writer = None
         self.run_writer = None
         self.trajectory_writer = None
+
+    def scan_dataset_dimension(self):
+        if len(self.FLAGS.batch_data_files) > 0:
+            self.input_dimension = self.FLAGS.input_dimension
+            self.output_dimension = self.FLAGS.output_dimension
+            try:
+                self.FLAGS.add("dimension")
+            except AttributeError:
+                # add only on first call
+                pass
+            if self.FLAGS.batch_data_file_type == "csv":
+                self.FLAGS.dimension = sum([file_length(filename)
+                                            for filename in self.FLAGS.batch_data_files]) \
+                                       - len(self.FLAGS.batch_data_files)
+                if self.output_dimension == 1:
+                    self.output_type = "binary_classification"  # labels in {-1,1}
+                else:
+                    self.output_type = "onehot_multi_classification"
+            elif self.FLAGS.batch_data_file_type == "tfrecord":
+                self.FLAGS.dimension = self._get_dimension_from_tfrecord(self.FLAGS.batch_data_files)
+                self.output_type = "onehot_multi_classification"
+            else:
+                logging.info("Unknown file type")
+                assert(0)
+            self._check_valid_batch_size()
+
+            logging.info("Parsing "+str(self.FLAGS.batch_data_files))
+
+            self.number_of_parameters = 0 # number of biases and weights
 
     def init_input_pipeline(self):
         self.batch_next = self.create_input_pipeline(self.FLAGS)
@@ -180,6 +181,10 @@ class model:
         else:
             self.output_type = "onehot_multi_classification"
         assert( len(features) == len(labels) )
+        try:
+            self.FLAGS.dimension
+        except AttributeError:
+            self.FLAGS.add("dimension")
         self.FLAGS.dimension = len(features)
         self._check_valid_batch_size()
         self.input_pipeline = InMemoryPipeline(dataset=[features, labels],
@@ -228,6 +233,13 @@ class model:
         :param FLAGS: new set of parameters
         """
         self.FLAGS = FLAGS
+        self.config_map = initialize_config_map()
+
+        try:
+            self.FLAGS.max_steps
+        except KeyError:
+            self.FLAGS.add("max_steps")
+            self.FLAGS.max_steps = 1
 
     def create_resource_variables(self):
         """ Creates some global resource variables to hold statistical quantities
@@ -275,104 +287,8 @@ class model:
         self.save_model(model_filename)
 
     @staticmethod
-    def setup_parameters(
-            averages_file=None,
-            batch_data_files=[],
-            batch_data_file_type="csv",
-            batch_size=None,
-            collapse_after_steps=100,
-            covariance_blending=0.,
-            diffusion_map_method="vanilla",
-            do_hessians=False,
-            dropout=None,
-            every_nth=1,
-            fix_parameters=None,
-            friction_constant=0.,
-            hamiltonian_dynamics_time=10,
-            hidden_activation="relu",
-            hidden_dimension="",
-            in_memory_pipeline=False,
-            input_columns="",
-            input_dimension=2,
-            inter_ops_threads=1,
-            intra_ops_threads=None,
-            inverse_temperature=1.,
-            learning_rate=0.03,
-            loss="mean_squared",
-            max_steps=1000,
-            number_of_eigenvalues=4,
-            number_walkers=1,
-            optimizer="GradientDescent",
-            output_activation="tanh",
-            output_dimension=1,
-            parse_parameters_file=None,
-            parse_steps=[],
-            prior_factor=1.,
-            prior_lower_boundary=None,
-            prior_power=1.,
-            prior_upper_boundary=None,
-            progress=False,
-            restore_model=None,
-            run_file=None,
-            sampler="GeometricLangevinAlgorithm_1stOrder",
-            save_model=None,
-            seed=None,
-            sigma=1.,
-            sigmaA=1.,
-            step_width=0.03,
-            summaries_path=None,
-            trajectory_file=None,
-            use_reweighting=False,
-            verbose=0):
-            return MockFlags(
-                averages_file=averages_file,
-                batch_data_files=batch_data_files,
-                batch_data_file_type=batch_data_file_type,
-                batch_size=batch_size,
-                collapse_after_steps=collapse_after_steps,
-                covariance_blending=covariance_blending,
-                diffusion_map_method=diffusion_map_method,
-                do_hessians=do_hessians,
-                dropout=dropout,
-                every_nth=every_nth,
-                fix_parameters=fix_parameters,
-                friction_constant=friction_constant,
-                hamiltonian_dynamics_time=hamiltonian_dynamics_time,
-                hidden_activation=hidden_activation,
-                hidden_dimension=hidden_dimension,
-                in_memory_pipeline=in_memory_pipeline,
-                input_columns=input_columns,
-                input_dimension=input_dimension,
-                inter_ops_threads=inter_ops_threads,
-                intra_ops_threads=intra_ops_threads,
-                inverse_temperature=inverse_temperature,
-                learning_rate=learning_rate,
-                loss=loss,
-                max_steps=max_steps,
-                number_of_eigenvalues=number_of_eigenvalues,
-                number_walkers=number_walkers,
-                optimizer=optimizer,
-                output_activation=output_activation,
-                output_dimension=output_dimension,
-                parse_parameters_file=parse_parameters_file,
-                parse_steps=parse_steps,
-                prior_factor=prior_factor,
-                prior_lower_boundary=prior_lower_boundary,
-                prior_power=prior_power,
-                prior_upper_boundary=prior_upper_boundary,
-                progress=progress,
-                restore_model=restore_model,
-                run_file=run_file,
-                sampler=sampler,
-                save_model=save_model,
-                seed=seed,
-                sigma=sigma,
-                sigmaA=sigmaA,
-                step_width=step_width,
-                summaries_path=summaries_path,
-                trajectory_file=trajectory_file,
-                use_reweighting=use_reweighting,
-                verbose=verbose)
+    def setup_parameters(*args, **kwargs):
+            return PythonOptions(add_keys=True, value_dict=kwargs)
 
     def reset_dataset(self):
         """ Re-initializes the dataset for a new run
@@ -418,6 +334,7 @@ class model:
             input_columns = get_list_from_string(self.FLAGS.input_columns)
             self.xinput, self.x = create_input_layer(self.input_dimension, input_columns)
 
+        fixed_variables = []
         if self.nn is None:
             self.nn = []
             self.loss = []
@@ -434,14 +351,13 @@ class model:
                     self.nn[-1].placeholder_nodes['y_'] = self.true_labels
                     keep_prob_node = self.nn[-1].add_keep_probability()
                     keep_prob = None if self.FLAGS.dropout is None else keep_prob_node
-                    hidden_dimension = [int(i) for i in get_list_from_string(self.FLAGS.hidden_dimension)]
                     activations = NeuralNetwork.get_activations()
                     if self.FLAGS.seed is not None:
                         walker_seed = self.FLAGS.seed+i
                     else:
                         walker_seed = self.FLAGS.seed
                     self.loss.append(self.nn[-1].create(
-                        self.x, hidden_dimension, self.output_dimension,
+                        self.x, self.FLAGS.hidden_dimension, self.output_dimension,
                         labels=self.true_labels,
                         trainables_collection=self.trainables[-1],
                         seed=walker_seed,
@@ -455,6 +371,22 @@ class model:
                         self.nn[-1].placeholder_nodes["y_"],
                         self.output_type)
 
+                    if self.FLAGS.fix_parameters is not None:
+                        names, values = self.split_parameters_as_names_values(self.FLAGS.fix_parameters)
+                        fixed_variables.append(self.fix_parameters(names))
+                        logging.info("Excluded the following degrees of freedom: " + str(fixed_variables[-1]))
+                        # exclude fixed degrees also from trainables_per_walker sets
+                        trainables = tf.get_collection_ref(self.trainables[i])
+                        for var in fixed_variables[-1]:
+                            removed_vars = model._fix_parameter_in_collection(trainables, var)
+                            # make sure we remove one per walker
+                            if len(removed_vars) != 1:
+                                raise ValueError(
+                                    "Cannot find " + var + " in walker " + str(i) + "." +
+                                    " Have you checked the spelling, e.g., output/biases/Variable:0?")
+                            logging.debug("Remaining trainable variables in walker " + str(i + 1)
+                                          + ": " + str(tf.get_collection_ref(self.trainables[i])))
+
                     if self.FLAGS.do_hessians or add_vectorized_gradients:
                         # create node for gradient and hessian computation only if specifically
                         # requested as the creation along is costly (apart from the expensive part
@@ -465,7 +397,7 @@ class model:
                         trainables = tf.get_collection_ref(self.trainables[-1])
                         for tensor in trainables:
                             grad = tf.gradients(self.loss, tensor)
-                            print(grad)
+                            #print(grad)
                             vectorized_gradients.append(tf.reshape(grad, [-1]))
                         self.gradients.append(tf.reshape(tf.concat(vectorized_gradients, axis=0), [-1]))
 
@@ -492,26 +424,17 @@ class model:
             for i in range(self.FLAGS.number_walkers):
                 self.loss.append(self.nn[i].get_list_of_nodes(["loss"])[0])
 
+                if self.FLAGS.fix_parameters is not None:
+                    names, values = self.split_parameters_as_names_values(self.FLAGS.fix_parameters)
+                    fixed_variables.append(self.fix_parameters(names))
+                    logging.info("Excluded the following degrees of freedom: " + str(fixed_variables[-1]))
+
+        logging.debug("Remaining global trainable variables: " + str(variables.trainable_variables()))
+
         # create global variables, one for every walker in its replicated graph
         self.create_resource_variables()
         self.static_vars, self.zero_assigner, self.assigner = \
             self._create_static_variable_dict(self.FLAGS.number_walkers)
-
-        if self.FLAGS.fix_parameters is not None:
-            names, values = self.split_parameters_as_names_values(self.FLAGS.fix_parameters)
-            fixed_variables = self.fix_parameters(names)
-            logging.info("Excluded the following degrees of freedom: "+str(fixed_variables))
-            # exclude fixed degrees also from trainables_per_walker sets
-            for i in range(self.FLAGS.number_walkers):
-                trainables = tf.get_collection_ref(self.trainables[i])
-                for var in fixed_variables:
-                    removed_vars = model._fix_parameter_in_collection(trainables, var)
-                    # make sure we remove one per walker
-                    assert( len(removed_vars) == 1 )
-                logging.debug("Remaining trainable variables in walker "+str(i+1)
-                             +": "+str(tf.get_collection_ref(self.trainables[i])))
-
-        logging.debug("Remaining global trainable variables: "+str(variables.trainable_variables()))
 
         # set number of degrees of freedom
         split_weights = self._split_collection_per_walker(
@@ -538,45 +461,49 @@ class model:
             pass
 
         # setup training/sampling
-        if setup == "train":
-            for i in range(self.FLAGS.number_walkers):
-                with tf.variable_scope("var_walker" + str(i + 1)):
-                #with tf.name_scope('gradients_walker'+str(i+1)):
-                    self.nn[i].add_train_method(self.loss[i], optimizer_method=self.FLAGS.optimizer, prior=prior)
-        elif setup == "sample":
-            sampler = []
-            for i in range(self.FLAGS.number_walkers):
-                if self.FLAGS.seed is not None:
-                    walker_seed = self.FLAGS.seed + i
-                else:
-                    walker_seed = self.FLAGS.seed
-                sampler.append(self.nn[i]._prepare_sampler(self.loss[i], sampling_method=self.FLAGS.sampler,
-                                                           seed=walker_seed, prior=prior,
-                                                           sigma=self.FLAGS.sigma, sigmaA=self.FLAGS.sigmaA,
-                                                           covariance_blending=self.FLAGS.covariance_blending))
-            # create gradients
-            grads_and_vars = []
-            for i in range(self.FLAGS.number_walkers):
-                with tf.name_scope('gradients_walker'+str(i+1)):
-                    trainables = tf.get_collection_ref(self.trainables[i])
-                    grads_and_vars.append(sampler[i].compute_and_check_gradients(self.loss[i],
-                                                                                 var_list=trainables))
+        if setup is not None:
+            if "train" in setup:
+                self.optimizer = []
+                for i in range(self.FLAGS.number_walkers):
+                    with tf.variable_scope("var_walker" + str(i + 1)):
+                    #with tf.name_scope('gradients_walker'+str(i+1)):
+                        self.optimizer.append(self.nn[i].add_train_method(self.loss[i], optimizer_method=self.FLAGS.optimizer, prior=prior))
+            if "sample" in setup:
+                self.sampler = []
+                for i in range(self.FLAGS.number_walkers):
+                    if self.FLAGS.seed is not None:
+                        walker_seed = self.FLAGS.seed + i
+                    else:
+                        walker_seed = self.FLAGS.seed
+                    self.sampler.append(self.nn[i]._prepare_sampler(
+                        self.loss[i], sampling_method=self.FLAGS.sampler,
+                        seed=walker_seed, prior=prior,
+                        sigma=self.FLAGS.sigma, sigmaA=self.FLAGS.sigmaA,
+                        covariance_blending=self.FLAGS.covariance_blending))
+                # create gradients
+                grads_and_vars = []
+                for i in range(self.FLAGS.number_walkers):
+                    with tf.name_scope('gradients_walker'+str(i+1)):
+                        trainables = tf.get_collection_ref(self.trainables[i])
+                        grads_and_vars.append(self.sampler[i].compute_and_check_gradients(
+                            self.loss[i], var_list=trainables))
 
-            # combine gradients
-            #for i in range(self.FLAGS.number_walkers):
-            #    print("walker "+str(i))
-            #    var_list = [v for g, v in grads_and_vars[i] if g is not None]
-            #    grad_list = [g for g, v in grads_and_vars[i] if g is not None]
-            #    for j in range(len(grad_list)):
-            #         print(var_list[j])
+                # combine gradients
+                #for i in range(self.FLAGS.number_walkers):
+                #    print("walker "+str(i))
+                #    var_list = [v for g, v in grads_and_vars[i] if g is not None]
+                #    grad_list = [g for g, v in grads_and_vars[i] if g is not None]
+                #    for j in range(len(grad_list)):
+                #         print(var_list[j])
 
-            # add position update nodes
-            for i in range(self.FLAGS.number_walkers):
-                with tf.variable_scope("var_walker" + str(i + 1)):
-                    global_step = self.nn[i]._prepare_global_step()
-                    train_step = sampler[i].apply_gradients(grads_and_vars, i, global_step=global_step,
-                                                            name=sampler[i].get_name())
-                self.nn[i].summary_nodes['sample_step'] = train_step
+                # add position update nodes
+                for i in range(self.FLAGS.number_walkers):
+                    with tf.variable_scope("var_walker" + str(i + 1)):
+                        global_step = self.nn[i]._prepare_global_step()
+                        train_step = self.sampler[i].apply_gradients(
+                            grads_and_vars, i, global_step=global_step,
+                            name=self.sampler[i].get_name())
+                    self.nn[i].summary_nodes['sample_step'] = train_step
         else:
             logging.info("Not adding sample or train method.")
 
@@ -611,26 +538,45 @@ class model:
                     inter_op_parallelism_threads=self.FLAGS.inter_ops_threads))
 
         if len(self.weights) == 0:
+            assert(len(self.momenta_weights) == 0 )
             assert( len(split_weights) == self.FLAGS.number_walkers )
             for i in range(self.FLAGS.number_walkers):
                 self.weights.append(neuralnet_parameters(split_weights[i]))
-                assert( self.weights[i].get_total_dof() == self.get_total_weight_dof() )
+            assert( self.weights[i].get_total_dof() == self.get_total_weight_dof() )
+            if setup is not None and "sample" in setup:
+                for i in range(self.FLAGS.number_walkers):
+                    momenta_weights = [self.sampler[i].get_slot(v, "momentum")
+                                       for v in split_weights[i]]
+                    if len(momenta_weights) > 0 and momenta_weights[0] is not None:
+                        self.momenta_weights.append(neuralnet_parameters(momenta_weights))
+                    else:
+                        self.momenta_weights.append(None)
         if len(self.biases) == 0:
+            assert( len(self.momenta_biases) == 0 )
             assert( len(split_biases) == self.FLAGS.number_walkers )
             for i in range(self.FLAGS.number_walkers):
                 self.biases.append(neuralnet_parameters(split_biases[i]))
             assert (self.biases[i].get_total_dof() == self.get_total_bias_dof())
+            if setup is not None and "sample" in setup:
+                for i in range(self.FLAGS.number_walkers):
+                    momenta_biases = [self.sampler[i].get_slot(v, "momentum")
+                                      for v in split_biases[i]]
+                    if len(momenta_biases) > 0 and momenta_biases[0] is not None:
+                        self.momenta_biases.append(neuralnet_parameters(momenta_biases))
+                    else:
+                        self.momenta_biases.append(None)
 
         if self.FLAGS.fix_parameters is not None:
             all_values = []
             all_variables = []
-            for i in range(len(fixed_variables)):
-                var_name = fixed_variables[i]
-                if var_name in self.fixed_variables.keys():
-                    all_variables.extend(self.fixed_variables[var_name])
-                    all_values.extend([values[i]]*len(self.fixed_variables[var_name]))
-                else:
-                    logging.warning("Could not assign "+var_name+" a value as it was not found before.")
+            for k in range(self.FLAGS.number_walkers):
+                for i in range(len(fixed_variables[k])):
+                    var_name = fixed_variables[k][i]
+                    if var_name in self.fixed_variables.keys():
+                        all_variables.extend(self.fixed_variables[var_name])
+                        all_values.extend([values[i]]*len(self.fixed_variables[var_name]))
+                    else:
+                        logging.warning("Could not assign "+var_name+" a value as it was not found before.")
             fix_parameter_assigns = self.create_assign_parameters(all_variables, all_values)
 
         ### Now the session object is created, graph must be done here!
@@ -663,6 +609,9 @@ class model:
                 self.assign_weights_and_biases_from_file(self.FLAGS.parse_parameters_file, step,
                                                          walker_index=i, do_check=True)
 
+    def init_files(self, setup):
+        """ Initializes the output files.
+        """
         header = None
         if setup == "sample":
             header = self.get_sample_header()
@@ -674,8 +623,14 @@ class model:
                 if self.FLAGS.averages_file is not None:
                     self.config_map["do_write_averages_file"] = True
                     self.averages_writer, self.config_map["averages_file"] = setup_csv_file(self.FLAGS.averages_file, self.get_averages_header(setup))
+        except AttributeError:
+            pass
+        try:
             if self.run_writer is None:
                 self.run_writer = setup_run_file(self.FLAGS.run_file, header, self.config_map)
+        except AttributeError:
+            pass
+        try:
             if self.trajectory_writer is None:
                 self.trajectory_writer = setup_trajectory_file(self.FLAGS.trajectory_file,
                                                                self.weights[0].get_total_dof(),
@@ -794,6 +749,8 @@ class model:
         :return: either thrice None or lists (per walker) of pandas dataframes
                 depending on whether either parameter has evaluated to True
         """
+        self.init_files("sample")
+
         placeholder_nodes = [self.nn[walker_index].get_dict_of_nodes(
             ["current_step", "next_eval_step"])
             for walker_index in range(self.FLAGS.number_walkers)]
@@ -1049,9 +1006,9 @@ class model:
             if current_step % self.FLAGS.every_nth == 0:
                 current_time = time.process_time()
                 time_elapsed_per_nth_step = current_time - last_time
-                elapsed_time += time_elapsed_per_nth_step
-                if current_step != 0:
-                    estimated_time_left = self.FLAGS.max_steps*elapsed_time/current_step
+                if current_step > 1:
+                    elapsed_time += time_elapsed_per_nth_step
+                    estimated_time_left = (self.FLAGS.max_steps-current_step)*elapsed_time/(current_step-1)
                 else:
                     estimated_time_left = 0.
                 logging.debug("Output at step #" + str(current_step) \
@@ -1198,6 +1155,8 @@ class model:
         if self.FLAGS.summaries_path is not None:
             summary_writer.close()
 
+        self.finish_files()
+
         return run_info, trajectory, averages
 
     def _create_default_feed_dict_with_constants(self, walker_index=0):
@@ -1218,25 +1177,22 @@ class model:
 
         # add sampler options only when they are present in parameter struct
         param_dict = {}
-        for key in ["covariance_blending", "friction_constant", "inverse_temperature", "sigma", "sigmaA"]:
-            if hasattr(self.FLAGS, key):
+        for key in ["covariance_blending", "friction_constant", "inverse_temperature",
+                    "learning_rate", "sigma", "sigmaA", "step_width"]:
+            try:
                 param_dict[key] = getattr(self.FLAGS, key)
+            except AttributeError:
+                pass
         # special case because key and attribute's name differ
-        if hasattr(self.FLAGS, "hamiltonian_dynamics_time"):
+        try:
             param_dict["next_eval_step"] = self.FLAGS.hamiltonian_dynamics_time
+        except AttributeError:
+            pass
 
         # add other options that are present in any case
         param_dict.update({
             "current_step": 0,
             "keep_probability": self.FLAGS.dropout if self.FLAGS.dropout is not None else 0.})
-        try:
-            param_dict.update({"learning_rate": self.FLAGS.learning_rate})
-        except AttributeError:
-            pass
-        try:
-            param_dict.update({"step_width": self.FLAGS.step_width})
-        except AttributeError:
-            pass
 
         # for each parameter check for placeholder and add to dict on its presence
         default_feed_dict = {}
@@ -1261,6 +1217,8 @@ class model:
         :return: either twice None or a pandas dataframe depending on whether either
                 parameter has evaluated to True
         """
+        self.init_files("train")
+
         assert( walker_index < self.FLAGS.number_walkers)
 
         placeholder_nodes = self.nn[walker_index].get_dict_of_nodes(["learning_rate", "y_"])
@@ -1371,9 +1329,10 @@ class model:
             if current_step % self.FLAGS.every_nth == 0:
                 current_time = time.process_time()
                 time_elapsed_per_nth_step = current_time - last_time
-                elapsed_time += time_elapsed_per_nth_step
-                if current_step != 0:
-                    estimated_time_left = self.FLAGS.max_steps*elapsed_time/current_step
+                # neglect first step as initialization perturbs average
+                if current_step > 1:
+                    elapsed_time += time_elapsed_per_nth_step
+                    estimated_time_left = (self.FLAGS.max_steps-current_step)*elapsed_time/(current_step-1)
                 else:
                     estimated_time_left = 0.
                 logging.debug("Output at step #" + str(current_step) \
@@ -1435,6 +1394,8 @@ class model:
         if self.FLAGS.summaries_path is not None:
             summary_writer.close()
 
+        self.finish_files()
+
         return run_info, trajectory, averages
 
     def compute_optimal_stepwidth(self, walker_index=0):
@@ -1488,7 +1449,7 @@ class model:
         """
         return self.saver.save(self.sess, filename)
 
-    def finish(self):
+    def finish_files(self):
         """ Closes all open files and saves the model if desired
         """
         self.close_files()
@@ -1514,7 +1475,7 @@ class model:
         for i in range(len(_collection)):
             target_name = _collection[i].name
             walker_target_name = target_name[target_name.find("/")+1:]
-            logging.debug("Comparing to %s and %s" % (target_name, walker_target_name))
+            logging.debug("Comparing %s to %s and %s" % (_name, target_name, walker_target_name))
             if target_name == _name or walker_target_name == _name:
                 variable_indices.append(i)
         return variable_indices

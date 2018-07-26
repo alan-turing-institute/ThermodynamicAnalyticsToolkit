@@ -1,0 +1,156 @@
+[[reference.implementing_sampler]]
+Simulation module: Implementing a sampler
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We would like to demonstrate how to implement the <<GLA>> sampler of 2nd order
+using the simulation module.
+
+Let us look at the four integration steps.
+
+[[reference.implementing_sampler.gla2]]
+.Geometric Langevin Algorithm 2nd order
+--
+. latexmath:[p_{n+\tfrac 1 2} = p_n - \tfrac {\lambda}{2} \nabla_x L(x_n)]
+. latexmath:[x_{n+1} = x_n + \lambda p_{n+\tfrac 1 2}]
+. latexmath:[\widehat{p}_{n+1} = p_{n+\tfrac 1 2} - \tfrac {\lambda}{2} \nabla_x L(x_{n+1})]
+. latexmath:[p_{n+1} = \alpha \widehat{p}_{n+1} + \sqrt{\frac{1-\alpha^2}{\beta}} \cdot \eta_n]
+--
+
+If you are familar with the *A* (position integration), *B*
+(momentum integration), *O* (noise integration) notation, see <<Leimkuhler2012>>
+then you will notice that we have the steps: *BABO*.
+
+[[reference.implementing_sampler.naive_update]]
+Simple update implementation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Therefore, let us write a python function that works on several `numpy` arrays
+producing a single GLA2 update step by performing the four integration steps
+above. To this end, we make use `tati.gradients()` for computing the gradients
+latexmath:[\nabla_x L(x_{n+1})].
+
+.A first GLA2 update implementation
+[source,python]
+----
+def gla2_update_step(nn, momenta, step_width, beta, gamma): # <1>
+  # 1. p_{n+\tfrac 1 2} = p_n - \tfrac {\lambda}{2} \nabla_x L(x_n)
+  momenta -= .5*step_width * nn.gradients() # <2>
+
+  # 2. x_{n+1} = x_n + \lambda p_{n+\tfrac 1 2}
+  nn.parameters = nn.parameters + step_width * momenta  # <3>
+
+  # 3. \widehat{p}_{n+1} = p_{n+\tfrac 1 2} - \tfrac {\lambda}{2} \nabla_x L(x_{n+1})
+  momenta -= .5*step_width * nn.gradients()  # <4>
+
+  # 4. p_{n+1} = \alpha \widehat{p}_{n+1} + \sqrt{\frac{1-\alpha^2}{\beta}} \cdot \eta_n
+  alpha = math.exp(-gamma*step_width)
+  momenta = alpha * momenta + \
+            math.sqrt((1.-math.pow(alpha,2.))/beta) * np.random.standard_normal(momenta.shape) # <5>
+
+  return momenta
+----
+
+<1> In the function header we need access to the `tati` reference, to the
+`numpy` array containing the `momenta`. Moreover, we need a few parameters,
+namely the step width `step_width`, the inverse temperature factor `beta` and
+the friction constant `gamma`.
+
+<2> First, we perform the *B* step integrating the momenta.
+
+<3> Next comes the *A* step, integrating positions with the updated momenta.
+
+<4> Then, we integrate momenta again, *B*.
+
+<5> Last, we perform the noise integration *O*. First, we compute the value of
+latexmath:[\alpha_n] and the the momenta are partially reset by the noise.
+
+As the source of noise we have simply used `numpy`s standard normal
+distribution.
+
+TIP: It is advisable to fix the seed using `numpy.random.seed(426)` (or any
+other value) to allow for reproducible runs.
+
+We could have used `nn.momenta` for storing momenta. However, this
+needs some extra computations for assigning the momenta inside the tensorflow
+computational graph. As they are not needed in the graph anyway, we can store
+them outside directly.
+
+Note that we have been a bit wasteful in the above implementation but very
+close to the formulas in <<reference.implementing_sampler>>.
+
+[[reference.implementing_sampler.saving_old_gradients]]
+Saving a gradient evaluation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+We evaluate the gradient twice but actually only one evaluation would have been
+needed: The update gradients in step 3. are the same as the gradients in step 1.
+on the next iteration.
+
+Hence, let us refine the function with respect to this.
+
+.GLa2 update implementation with just one gradient evaluation
+[source,python]
+----
+def gla2_update_step(nn, momenta, old_gradients, step_width, beta, gamma):
+    # 1. p_{n+\tfrac 1 2} = p_n - \tfrac {\lambda}{2} \nabla_x L(x_n)
+    momenta -= .5*step_width * old_gradients
+
+    # 2. x_{n+1} = x_n + \lambda p_{n+\tfrac 1 2}
+    nn.parameters = nn.parameters + step_width * momenta
+
+    # \nabla_x L(x_{n+1})
+    gradients = nn.gradients()
+
+    # 3. \widehat{p}_{n+1} = p_{n+\tfrac 1 2} - \tfrac {\lambda}{2} \nabla_x L(x_{n+1})
+    momenta -= .5*step_width * gradients
+
+    # 4. p_{n+1} = \alpha \widehat{p}_{n+1} + \sqrt{\frac{1-\alpha^2}{\beta}} \cdot \eta_n
+    alpha = math.exp(-gamma*step_width)
+    momenta = alpha * momenta + \
+              math.sqrt((1.-math.pow(alpha,2.))/beta) * np.random.standard_normal(momenta.shape)
+
+    return gradients, momenta
+----
+
+Now, we use `old_gradients` in step 1. and return the updated gradients such
+that it can be given as old gradients in the next call.
+
+[[reference.implementing_sampler.loop_body]]
+The loop
+^^^^^^^^
+
+Now, we ad the loop body.
+
+[source,python]
+----
+import math
+import numpy as np
+import TATi.simulation as tati
+
+np.random.seed(426)
+
+nn = tati( # <1>
+    batch_data_files=["dataset-twoclusters.csv"],
+)
+
+momenta = np.zeros((nn.num_parameters())) # <2>
+old_gradients = np.zeros((nn.num_parameters())) # <2>
+
+for i in range(100):  # <3>
+    print("Current step #"+str(i)) # <3>
+    old_gradients, momenta = gla2_update_step(
+        nn, momenta, old_gradients, step_width=1e-2, beta=1e3, gamma=10) # <4>
+    print(nn.loss()) # <5>
+----
+
+<1> We instantiate a `tati` instance as usual, giving it the dataset and using
+its default single-layer perceptron topology.
+
+<2> We create two numpy arrays to contain the momenta and the old gradients.
+
+<3> We iterate for 100 steps, printing the current step.
+
+<4> We use the `gla2_update_step()` function written to perform a single update
+step. We store the returned gradients and momenta.
+
+<5> Finally, we print the loss per step.

@@ -20,7 +20,7 @@
 AT_SETUP([Tensorflow - train MNIST with input pipeline in graph])
 AT_KEYWORDS([tensorflow train_MNIST_pipeline_in_graph])
 
-AT_CHECK([../../run \
+AT_CHECK([../../../run \
 	${abs_top_srcdir}/tests/tensorflow/pre/train_MNIST_pipeline_in_graph.py \
 	--batch_data_files 	${abs_top_srcdir}/tests/tensorflow/pre/dataset-mnist.tfrecords \
     --hidden_dimension 10 \

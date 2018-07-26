@@ -20,7 +20,7 @@
 AT_SETUP([Tensorflow - tf cond])
 AT_KEYWORDS([tensorflow tf_cond])
 
-AT_CHECK([../../run \
+AT_CHECK([../../../run \
 	${abs_top_srcdir}/tests/tensorflow/pre/tf_cond.py
 ], 0, [stdout], [stderr])
 

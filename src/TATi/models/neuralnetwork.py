@@ -80,8 +80,7 @@ class NeuralNetwork(object):
         test_nodes = list(map(lambda key: self.get(key), keys))
         for key, node in zip(keys, test_nodes):
             if node is None:
-                logging.info ("Node " + key + " could not be retrieved from dict or is None.")
-                raise AssertionError
+                raise AssertionError("Node " + key + " could not be retrieved from dict or is None.")
         return test_nodes
 
     def get_dict_of_nodes(self, keys):
@@ -144,7 +143,6 @@ class NeuralNetwork(object):
                                       seed=output_seed)
         self.placeholder_nodes["y"] = y
 
-        logging.debug ("Creating summaries")
         self.add_losses(y, labels)
         loss = self.set_loss_function(loss_name)
 
@@ -356,6 +354,7 @@ class NeuralNetwork(object):
         """ Prepares nodes for training the neural network using an optimizer.
 
         :param loss: node for the desired loss function to minimize during training
+        :param global_step: global_step node
         """
         with tf.name_scope('train'):
             trainables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)

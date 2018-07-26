@@ -1,0 +1,7 @@
+Style guide
+===========
+
+- Options are set like 'batch_data_files'.
+- Filenames, executables, and paths are set like to +test.csv+.
+- Functions and classes are set like `tati`.
+- _emphasize_

@@ -23,7 +23,8 @@ TESTSCRIPTS += \
 	$(srcdir)/cmdline/testsuite-userguide-cmdline-sample.at \
 	$(srcdir)/cmdline/testsuite-userguide-cmdline-write_dataset.at \
 	$(srcdir)/python/testsuite-userguide-python.at \
-	$(srcdir)/python/testsuite-userguide-python-analyse.at \
+	$(srcdir)/python/testsuite-userguide-python-analyse_averages.at \
+	$(srcdir)/python/testsuite-userguide-python-analyse_diffmap.at \
 	$(srcdir)/python/testsuite-userguide-python-eval_loss_gradient.at \
 	$(srcdir)/python/testsuite-userguide-python-explore.at \
 	$(srcdir)/python/testsuite-userguide-python-fix_parameter.at \
@@ -32,7 +33,37 @@ TESTSCRIPTS += \
 	$(srcdir)/python/testsuite-userguide-python-plot_optimize.at \
 	$(srcdir)/python/testsuite-userguide-python-sample.at \
 	$(srcdir)/python/testsuite-userguide-python-supply_dataset.at \
-	$(srcdir)/python/testsuite-userguide-python-writing_data.at
+	$(srcdir)/python/testsuite-userguide-python-writing_data.at \
+	$(srcdir)/simulation/complex/testsuite-userguide-simulation-complex.at \
+	$(srcdir)/simulation/complex/testsuite-userguide-simulation-complex-eval_loss_gradient.at \
+	$(srcdir)/simulation/complex/testsuite-userguide-simulation-complex-fix_parameter.at \
+	$(srcdir)/simulation/complex/testsuite-userguide-simulation-complex-gla2_sampler.at \
+	$(srcdir)/simulation/complex/testsuite-userguide-simulation-complex-momenta_invalid_sampler.at \
+	$(srcdir)/simulation/complex/testsuite-userguide-simulation-complex-optimize.at \
+	$(srcdir)/simulation/complex/testsuite-userguide-simulation-complex-optimize_sample.at \
+	$(srcdir)/simulation/complex/testsuite-userguide-simulation-complex-sample.at \
+	$(srcdir)/simulation/complex/testsuite-userguide-simulation-complex-supply_dataset.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-change_dataset_array.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-change_dataset_csv.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-evaluate_accuracy.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-evaluate_dataset.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-evaluate_gradients.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-evaluate_hessians.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-evaluate_loss.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-evaluate_predict.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-fit.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-requesting_momenta.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-requesting_parameters.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-sample.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-setting_momenta.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-setting_momenta_walkers.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-setting_parameters.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-setting_parameters_walkers.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-setting_up_network.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-supply_dataset_array.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-supply_dataset_csv.at
+
 
 EXTRA_DIST = \
 	testsuite.at \

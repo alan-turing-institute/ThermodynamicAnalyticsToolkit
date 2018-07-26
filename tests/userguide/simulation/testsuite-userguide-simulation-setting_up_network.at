@@ -1,0 +1,34 @@
+#
+#    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
+#    Copyright (C) 2018 The University of Edinburgh
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### test on simulation network
+
+AT_SETUP([Examples - simulation: setting up network])
+AT_KEYWORDS([example simulation network])
+
+# dataset prepared as follows:
+# TATiDatasetWriter --data_type 2 --dimension 500 --seed 426 --noise 0.1 --train_test_ratio 0 --test_data_files dataset-twoclusters.csv
+
+# run 1
+AT_CHECK([cp -f ${abs_top_srcdir}/tests/userguide/simulation/pre/dataset-twoclusters.csv .], 0, [ignore], [ignore])
+AT_CHECK([../../../run \
+	${abs_top_srcdir}/doc/userguide/simulation/setting_up_network.py
+], 0, [stdout], [stderr])
+AT_CHECK([grep "105" stdout], 0, [ignore], [ignore])
+
+AT_CLEANUP
+

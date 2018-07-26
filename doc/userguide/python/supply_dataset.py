@@ -34,7 +34,6 @@ nn.reset_dataset()
 # sample
 run_info, trajectory, _ = nn.sample(return_run_info=True, \
   return_trajectories=True)
-nn.finish()
 
 print("Sample results")
 print(np.asarray(run_info[0][0:10]))

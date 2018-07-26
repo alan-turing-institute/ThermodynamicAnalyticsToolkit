@@ -1,0 +1,63 @@
+#!/usr/bin/env @PYTHON@
+
+import sys, getopt
+sys.path.insert(1, '@pythondir@')
+
+import argparse
+import logging
+import time
+import numpy as np
+import tensorflow as tf
+
+from TATi.models.model import model
+from TATi.options.commandlineoptions import CommandlineOptions
+from TATi.runtime.runtime import runtime
+
+options = CommandlineOptions()
+
+def parse_parameters():
+    """ Sets up the argument parser for parsing command line parameters into dictionary
+
+    :return: dictionary with parameter names as keys, unrecognized parameters
+    """
+
+    options.add_common_options_to_parser()
+    options.add_data_options_to_parser()
+    options.add_model_options_to_parser()
+    options.add_prior_options_to_parser()
+    options.add_sampler_options_to_parser()
+
+    return options.parse()
+
+
+def main(_):
+    rt = runtime(options)
+
+    time_zero = time.process_time()
+
+    network_model = model(options)
+
+    time_init_network_zero = time.process_time()
+
+    network_model.init_input_pipeline()
+    network_model.init_network(options.restore_model, setup="sample")
+    network_model.reset_dataset()
+
+    rt.set_init_network_time(time.process_time() - time_init_network_zero)
+
+    network_model.sample()
+
+    rt.set_train_network_time(time.process_time() - rt.time_init_network)
+
+    rt.set_overall_time(time.process_time() - time_zero)
+
+if __name__ == '__main__':
+    # setup logging
+    logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
+
+    unparsed = parse_parameters()
+
+    options.react_to_common_options()
+    options.react_to_sampler_options()
+
+    tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)

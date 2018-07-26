@@ -1,0 +1,762 @@
+[[quickstart.simulation]]
+Using module simulation
+~~~~~~~~~~~~~~~~~~~~~~~
+
+As promised before, the first contact point in this quickstart tutorial with
+TATi is the `simulation` module. It has been designed explicitly for
+ease-of-use and to contain any functionality required for the sampling approach.
+However, it can to training as well as you will see. Typically, everything is
+achieved through two or three commands: One to setup TATi by handing it a dash
+of options, then calling a function to `fit()` or `sample()`. In the very end
+of this quickstart you will learn how to implement your first sampler using this
+interface.
+
+If you have installed the package in the folder `/foo`, i.e. we have
+a folder `TATi` with a file `simulation.py` residing in there, then you
+probably need to add it to the `PYTHONPATH` as follows
+
+---------------
+PYTHONPATH=/foo python3
+---------------
+
+In this shell, you may import the sampling part of the package as
+follows
+
+---------------
+import TATi.simulation as tati
+---------------
+
+This will import the `Simulation` interface class as the shortcut `tati` from
+the file mentioned before. This class contains a set of convenience functions
+that hides all the complexity of setting up of input pipelines and networks.
+Accessing the loss function, gradients and alike or training and sampling can
+be done in just a few keystrokes.
+
+In order to make your own python scripts executable and know about the
+correct (possibly non-standard) path to ThermodynamicAnalyticsToolkit, place
+the following two lines at the veryg beginning of your script:
+
+---------------
+import sys
+sys.path.insert(1,"<path_to_TATi>/lib/python3.5/site-packages/")
+---------------
+
+where +<path_to_TATi>+ needs to be replaced by your specific
+installation path and +python3.5+ needs to be replaced if you are using a
+different python version. However, for the examples in this quickstart tutorial
+it is not necessary if you use +PYTHONPATH+.
+
+[[quickstart.simulation.notation]]
+Notation
+^^^^^^^^
+
+In the following, we will use the following notation:
+
+- dataset: latexmath:[D = \{X,Y\}] with features latexmath:[X=\{x_d\}] and labels
+latexmath:[Y=\{y_d\}]
+- batch of the dataset: latexmath:[D_i=\{X_i, Y_i\}]
+- network parameters: latexmath:[w=\{w_1, \ldots, w_M\}]
+- momenta of network parameters: latexmath:[p=\{p_1, \ldots, p_M\}]
+- neural network function: latexmath:[F_w(x)]
+- loss function: latexmath:[L_D(w) = \sum_i l(F_w(x_i), y_i)] with a loss
+latexmath:[l(x,y)]
+- gradients: latexmath:[\nabla_w L_D(w)]
+- Hessians: latexmath:[H_{ij} = \partial_{w_i} \partial_{w_j} L_D(w)]
+
+[[quickstart.simulation.general]]
+Instantiating TATi
+^^^^^^^^^^^^^^^^^^
+
+The first thing in all the following example we will do is instantiate the
+`tati` class.
+
+[source,python]
+----
+import TATi.simulation as tati
+
+nn = tati(
+  # comma-separated list of options
+)
+----
+
+Although it is the `simulation` module, we "nickname" it `tati` in the following
+and hence will simply refer to this instance as `tati.`
+
+This class takes a list of options in its construction or `__init__()` call.
+These options inform it about the dataset to use, the specific network topology,
+what sampler or optimizer to use and its parameters and so on.
+
+To see how this works, we will first need a dataset to work on.
+
+NOTE: All of the examples below can also be found in the folders
++doc/userguide/python+, +doc/userguide/simulation+, and +doc/userguide/simulation/complex+.
+
+[[quickstart.simulation.general.help_options]]
+Help on Options
++++++++++++++++
+
+`tati` has quite a number of options that control its behavior. You can
+request help to a specific option.
+Let us inspect the help for `batch_data_files`:
+
+[source,python]
+---------------
+>>> from TATi.simulation as tati
+>>> tati.help("batch_data_files")
+Option name: batch_data_files
+Description: set of files to read input from
+Type       : list of <class 'str'>
+Default    : []
+---------------
+
+This will print a description, give the default value and expected type.
+
+Moreover, in case you have forgotten the name of one of the options.
+
+[source,python]
+---------------
+>>> from TATi.simulation as tati
+>>> tati.help()
+averages_file:             CSV file name to write ensemble averages information such as average kinetic, potential, virial
+batch_data_file_type:      type of the files to read input from
+ <remainder omitted>
+---------------
+
+This will print a general help listing all available options.
+
+[[quickstart.simulation.setup]]
+Setup
+^^^^^
+
+In the following we will first be creating a dataset to work on. This example
+code will be the most extensive one. All following ones are rather short and
+straight-forward.
+
+[[quickstart.simulation.writing_data]]
+Preparing a dataset
+^^^^^^^^^^^^^^^^^^^
+
+Therefore, let us prepare the dataset, see the Figure link:#quickstart.dataset[Dataset],
+for our following experiments.
+
+At the moment, datasets are parsed from Comma Separated Values (CSV)
+or Tensorflow's own TFRecord files or can be provided in-memory from numpy
+arrays. In order for the following examples on optimization and sampling to
+work, we need such a data file containing features and labels.
+
+TATi provides a few simple dataset generators contained in the class
+`ClassificationDatasets`.
+
+One option therefore is to use the TATiDatasetWriter that provides access to
+`ClassificationDatasets`, see link:#quickstart.cmdline.writing_dataset[Writing a dataset].
+However, we can do the same using python as well. This should give you an idea
+that you are not constrained to the `simulation` part of the Python interface,
+see the reference on the general Python interface where we go through the
+same examples without importing `simulation`.
+
+[source,python]
+---------------
+include::python/writing_data.py[]
+---------------
+
+[WARNING]
+The labels need to be integer values. Importing will fail if they are not.
+
+After importing some modules we first fix the numpy seed to 426 in order
+to get the same items reproducibly. Then, we first create 500 items
+using the `ClassificationDatasets` class from the *TWOCLUSTERS* dataset with
+a random perturbation of relative 0.01 magnitude. We shuffle the dataset as the
+generators typically create first items of one label class and then items of
+the  other label class. This is not needed here as our 'batch_size' will equal
+the dataset size but it is good practice generally.
+
+[NOTE]
+The class `ClassificationDatasets` mimicks the dataset examples that can also
+be found on the link:https://playground.tensorflow.org/[Tensorflow playground].
+
+Afterwards, we write the dataset to a simple CSV file with columns "x1", "x2",
+and "label".
+
+[CAUTION]
+The file `dataset-twoclusters.csv` is used in the following examples, so keep
+it around.
+
+This is the very simple dataset we want to learn, sample from and exlore in the
+following.
+
+[[quickstart.simulation.simple_evaluation]]
+Evaluating loss and gradients
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Having created the dataset, we are good to go and the remaining examples are
+easy and straight-forward.
+
+The main idea of the `simulation` module is to be used as a simplified
+interface to access the loss and the gradients of the neural network without
+having to know about the internal of the neural network. In other words, we
+want to treat it as an abstract high-dimensional function, depending
+implicitly on the weights and explicitly on the dataset. Moreover, we have
+another abstract high-dimensional function, the loss that depends explicitly
+on the weights and implicitly on the dataset, whose derivative (the gradients
+with respect to the parameters) is available as a numpy array, see also the
+section link:#quickstart.simulation.notation[Notation].
+
+See the following example which sets up a simple fully-connected hidden network
+and evaluates loss and then the associated gradients.
+
+[source,python]
+---------------
+include::simulation/complex/eval_loss_gradient.py[]
+---------------
+
+All we need to do is set some parameters -- here, 'batch_data_files' sets the
+dataset file to parse, batch size of 10 and we use a linear output activation
+function -- assign all network parameters to zero and then evaluate first the
+loss and then the gradients of the network.
+
+[NOTE]
+Under the hood it is a bit more complicated: loss and gradients are inherently
+connected. If 'batch_size' is chosen smaller than the dataset dimension,
+naive evaluation of first loss and then gradients in two separate function calls
+would cause them to be evaluated on different batches. Depending on the size of
+the batch, the gradients will then not belong the to the respective loss
+evaluation and vice versa.
+Therefore, loss, accuracy, gradients, and hessians (if 'do_hessians' is True) are
+cached. Only when one of them is evaluated for the second time (e.g., inside the
+loop body on the next iteration), then the next batch is used. This makes sure
+that calling either `loss()` first and then `gradients()` or the other way
+round yields the same values connected to the same dataset batch.
+In essence, just don't worry about it!
+
+As you see in the above example, `tati` forms the general interface class that
+contains the network along with the dataset and everything in its internal
+state.
+
+This is basically all the access you need in order to use your own optimization,
+sampling, or exploration methods in the context of neural networks in a
+high-level, abstract way.
+
+[[quickstart.simulation.optimizing]]
+Optimizing the network
+^^^^^^^^^^^^^^^^^^^^^^
+
+Let us then start with optimizing the network, i.e. learning the data.
+
+[source,python]
+---------------
+include::simulation/complex/optimize.py[]
+---------------
+
+Again all options are set in the init call to the interface. These options
+control how the optimization is performed, what kind of network is created,
+how often values are stored, and so on.
+
+Let us quickly go through each of the parameters:
+
+* 'batch_size'
++
+sets the subset size of the data set looked at per training step, if
+smaller than dimension, then we add stochasticity/noise to the training
+but for the advantage of smaller runtime.
+
+* 'learning_rate'
++
+defines the scaling of the gradients in each training step, i.e. the
+learning rate. Values too large may miss the minimum, values too small
+need longer to reach it.
+
+* 'max_steps'
++
+gives the amount of training steps to be performed.
+
+* optimizer
++
+defines the method to use for training. Here, we use Gradient Descent
+(in case 'batch_size' is smaller than dimension, then we actually have
+Stochastic Gradient Descent).
+
+* 'output_activation'
++
+defines the activation function of all output nodes, here it is linear.
+Other choices are: tanh, relu, relu6.
+
+* 'seed'
++
+sets the seed of the random number generator. We will still have full
+randomness but in a deterministic manner, i.e. calling the same
+procedure again will bring up the exactly same values.
+
+In our case, the default option values are such that the network we use
+looks exactly as in the Figure link:#quickstart.perceptron[Network], namely
+a single-layer perceptron whose number of input and output nodes are completely
+fixed by the dataset. See link:#reference.simulation.setup.setting_up_network[Setting up the network]
+for more details on how to specify the network topology.
+
+TIP: In case you need to change these options elsewhere in your python code,
+use `set_options()`.
+
+WARNING: `set_options()` may need to reinitialize certain parts of `tati` s
+internal state depending on what options you choose to reset. Keep in mind
+that modifying the network will reinitialize all its parameters and other
+possible side-effects. See `simulation._affected_map` in
++src/TATi/simulation.py+ for an up-to-date list of what options affects what
+part of the state.
+
+For these small networks the option 'do_hessians' might be useful which will
+compute the hessian matrix at the end of the trajectory and use the
+largest eigenvalue to compute the optimal step width. This will add
+nodes to the underlying computational graph for computing the components
+of the hessian matrix. However, we will not do so here.
+
+[CAUTION]
+====
+The creation of these hessian evaluation nodes (not speaking of their
+evaluation) is a latexmath:[O(N^2)] process in the number of parameters of the
+network N. Hence, this should only be done for small networks and on purpose.
+====
+
+After the options have been provided, the network is initialized internally
+and automatically, we then call `fit()` which performs the training and returns
+a structure containing runtime info, trajectory, and averages as a pandas
+`DataFrame`.
+
+In the following section on link:#quickstart.simulation.sampling[sampling] we will
+explain what each of these three dataframes contains exactly.
+
+TIP: You want more output of what is actually going on in each training step?
+Set `verbose=1` or even `verbose=2` in the options when constructing `tati()`.
+
+Let us have a quick glance at the decrease of the loss function over the steps
+by using `matplotlib`. In other words, let us look at how effective the training
+has been.
+
+[[quickstart.simulation.optimizing.plot_optimize]]
+[source,python]
+---------------
+include::python/plot_optimize.py[]
+---------------
+
+The graph should look similar to the one obtained with `pgfplots` here (see
+https://sourceforge.net/pgfplots).
+
+.Loss history: Behavior of the loss over the optimization run
+image::pictures/optimization-step_loss.png[{basebackend@docbook:scaledwidth="60%":width=500}]
+
+As you see the loss has decreased quite quickly down to 1e-3. Go and have a
+look at the other columns such as accuracy. Or try to visualize the change
+in the parameters (weights and biases) in the trajectories dataframe. See
+link:https://pandas.pydata.org/pandas-docs/stable/10min.html[10 Minutes to pandas]
+if you are unfamiliar with the `pandas` module, yet.
+
+Obviously, we did not use a different dataset set for testing the effectiveness
+of the training which should commonly be done. This way we cannot check whether
+we have overfitted or not. However, our example is trivial by design and the
+network too small to be prone to overfitting this dataset.
+
+Nonetheless, we show how to supply a different dataset and evaluate loss and
+accuracy on it.
+
+[[quickstart.simulation.sampling.supply_dataset]]
+Provide your own dataset
+++++++++++++++++++++++++
+
+You can directly supply your own dataset, e.g., from a numpy array residing in
+memory. See the following example where we do not generate the data but parse
+them from a CSV file instead of using the pandas module.
+
+[source,python]
+---------------
+include::simulation/complex/supply_dataset.py[]
+---------------
+
+The major difference is that `batch_data_files` in `tati()` is now empty and
+instead we simply later assign `dataset` a numpy array to use. Note that we
+could also have supplied it directly with the filename +dataset-twoclusters.csv+,
+i.e. `nn.dataset = "dataset-twoclusters.csv"`.
+In this example we have parsed the same file as the in the previous section
+into a numpy array using the pandas module. Natually, this is just one way of
+creating a suitable numpy array.
+
+NOTE: Input and output dimensions are directly deduced from the the tuple sizes.
+
+NOTE: The nodes in the input layer can be modified using 'input_columns', e.g.,
+`input_columns=["x1", "sin(x2)", "x1^2"]`.
+
+[[quickstart.simulation.sampling]]
+Sampling the network
+^^^^^^^^^^^^^^^^^^^^
+
+Optimization only steps down to the nearest local minimum from some initial
+random starting position. Only through sampling do we actually uncover the shape
+of the loss manifold and thereby are able to deduce whether our network is
+efficient at doing its job.
+
+Nonetheless, optimization is always the initial step to sampling as we are
+still generally interested in all minimum regions.
+
+[NOTE]
+.Statistical background
+================
+In general, when sampling from a distribution (to compute empirical averages
+for example), one wants to start 'close to equilibrium', i.e. from states which
+are of high probability with respect to the target distribution (therefore
+the minima of the loss). The initial optimisation procedure is therefore a
+first guess to find such states, or at least to get close to them. In molecular
+dynamics, it is common to run sampling during an "equilibration period" in
+order to let the system relax to its equilibrium. During this equilibration
+time, the generated samples are not used for computing averages, as they will
+introduce large statistical error.
+================
+
+However, let us first ignore this good practice for a moment and simply look
+at sampling from a random initial place on the loss manifold. We will come
+back to it later on.
+
+[source,python]
+---------------
+include::simulation/complex/sample.py[]
+---------------
+
+Here, the 'sampler' setting takes the place of the 'optimizer' before as
+it states which sampling scheme to use. See <<reference.samplers>> for a
+complete list and their parameter names. Apart from that the example code
+is very much the same as in the example involving `fit()`.
+
+NOTE: In the context of sampling we use 'step_width' in place of 'learning_rate'.
+
+Again, we produce a single data structure that contains three data frames: run
+info, trajectory, and averages. Trajectories contains among others all
+parameter degrees of freedom for each step (or 'every_nth' step). Run info
+contains loss, accuracy, norm of gradient, norm of noise and others, again for
+each step. Finally, in averages we compute running averages over the trajectory
+such as average (ensemble) loss, average kinetic energy, average virial.
+
+Take a peep at `sampling_data.run_info.columns` to see all columns in the
+run info dataframe (and similarly for the others.)
+
+For the running averages it is advisable to skip some initial ateps
+('burn_in_steps') to allow for some burn in time, i.e. for kinetic energies to
+adjust from initially zero momenta.
+
+Some columns in averages and in run info depend on whether the sampler
+provides the specific quantity, e.g. link:#reference.samplers.sgld[SGLD] does
+not have momentum, hence there will be no average kinetic energy.
+
+[[quickstart.simulation.sampling.priors]]
+Using a prior
++++++++++++++
+
+You may add a prior to the sampling. At the current state two kinds of
+priors are available: wall-repelling and tethering.
+
+The options 'prior_upper_boundary' and 'prior_lower_boundary' give the admitted
+interval per parameter. Within a relative distance of 0.01 (with respect to
+length of domain and only in that small region next to the specified boundary)
+an additional force acts upon the particles to drives them back into the desired
+domain. Its magnitude increases with distance to the covered inside the boundary
+region. The distance is taken to the power of 'prior_power'. The force
+is scaled by 'prior_factor'.
+
+
+In detail, the prior consists of an extra force added to the time integration
+within each sampler. We compute its magnitude as
+
+[latexmath]
+++++
+\Theta(\frac{||x - \pi||}{\tau}-1.) \cdot a ||x - \pi||^n
+++++
+
+where *x* is the position of the particle, *a* is the 'prior_factor',
+latexmath:[\pi] is the position of the boundary ('prior_upper_boundary'
+latexmath:[\pi_{ub}] or 'prior_lower_boundary' latexmath:[\pi_{lb}]), and *n*
+is the `prior_power`. Finally, the force is only in effect within a distance of
+latexmath:[\tau = 0.01 \cdot || \pi_{ub} - \pi_{lb} ||] to either boundary by
+virtue of the Heaviside function latexmath:[\Theta()].
+Note that the direction of the force is such that it always points back into
+the desired domain.
+
+If upper and lower boundary coincide, then we have the case of
+tethering, where all parameters are pulled inward to the same point.
+
+At the moment prioring of just a subset of particles is not supported.
+
+[NOTE]
+====
+The prior force is acting directly on the variables. It does not modify
+momentum. Moreover, it is a force! In other words, it depends on step
+width. If the step width is too large and if the repelling force
+increases too steeply close to the walls with respect to the normal
+dynamics of the system, it may blow up. On the other hand, if it is too weak,
+then particles may even escape.
+====
+
+[[quickstart.simulation.sampling.optimize_then_sample]]
+First optimize, then sample
++++++++++++++++++++++++++++
+
+As we have already alluded to before, optimizing before sampling is the
+*recommended* procedure. In the following example, we concatenate the two.
+To this end, we might need to modify some of the options in between. Let us have
+a look, however with a slight twist.
+
+The dataset shown in Figure link:#quickstart.dataset[Dataset] can be even
+learned by a simpler network: only one of the input nodes is actually
+needed because of the symmetry.
+
+Hence, we look at such a network by using 'input_columns' to only use input
+column "x1" although the dataset contains both "x1" and "x2".
+
+Moreover, we will add a hidden layer with a single node and thus obtain a
+network as depicted in Figure link:#quickstart.network[Permutation symmetry].
+We add this hidden node to make the loss manifold a little bit more
+interesting.
+
+Additionally, we fix the biases to *0.* for both the hidden layer bias and the
+output bias. Effectively, we have two degrees of freedom left. This is not
+strictly necessary but allows to plot all degrees of freedom at once.
+
+Finally, we add a link:#quickstart.simulation.sampling.priors[prior].
+
+[source,python]
+---------------
+include::simulation/complex/optimize_sample.py[]
+---------------
+
+NOTE: Setting 'every_nth' large enough is essential when playing around with
+small networks and datsets as otherwise time spent writing files and adding
+values to arrays will dominate the actual neural network computations by far.
+
+As you see, some more options have popped up in the `__init__()` of the
+simulation interface: 'hidden_dimension' which is a list of the number of
+hidden nodes per layer, 'input_columns' which contains a list of strings,
+each giving the name of an input dimension (indexing starts at 1), and all
+sorts of 'prior_...' that define a wall-repelling prior, again see
+[[quickstart.simulation.priors]] for details. This will keep parameter values
+within the interval of [-2,2]. Last but not least, 'trajectory_file' writes
+all parameters per 'every_nth' step to this file.
+
+Moreover, we needed to change the number of steps, set a sampling step width
+and add the sampler (which might depend on additional parameters, see <<reference.samplers>>
+).
+At the very end we again obtain the data structure containing the `pandas`
+DataFrame containing runtime information, trajectory, and averages as its
+member variables.
+
+WARNING: This time we need the trajectory file for the upcoming analysis. Hence,
+we write it to a file using the 'trajectory_file' option. Keep the file around
+as it is needed in the following.
+
+Let us take a look at the two degrees of freedom of the network, namely the two
+weights, where we plot one against the other similarly to the
+link:#quickstart.simulation.optimizing.plot_optimize[Sampled weights] before.
+
+[[quickstart.simulation.analysis.optimize_sample.weights]]
+.Sampled weights: Plot of first against second weight.
+image::pictures/weights.png[align="center",{basebackend@docbook:scaledwidth="40%":width=400}]
+
+First of all, take note that the prior (given 'prior_force' is strong enough
+with respect to the chosen 'inverse_temperature') indeed retains both parameters
+within the interval [-2,2] as requested.
+
+Compare this to the Figure link:#quickstart.landscape.loss[Loss manifold]. You
+will notice that this trajectory (due to the large enough temperature) has also
+jumped over the ridge around the origin.
+
+NOTE: To bound the runtime of this example, we have set the parameters such that
+we obtain a good example of a barrier-jumping trajectory. The original values
+from the introduction are obtained when you reduce the 'inverse_temperature'
+to *4.* and increase 'max_steps' to *20000* (or even more) if you do not mind
+waiting a minute or two for the sampling to execute.
+
+[[quickstart.simulation.analysis]]
+Analysing trajectories
+^^^^^^^^^^^^^^^^^^^^^^
+
+Analysis involves parsing in run and trajectory files that you would write
+through optimization and sampling runs. Naturally, you could also perform this
+on the `pandas` dataframes directly. However, for completeness we will read
+from files in the examples of this section.
+
+To this end, specify `FLAGS.run_file` and `FLAGS.trajectory_file` with
+some valid file names.
+
+[[quickstart.simulation.analysis.averages]]
+Averages
+++++++++
+
+Subsequently, these may be easily parsed as follows, see also
++tools/TATiAnalyser.in+ in the repository.
+
+[source,python]
+---------------
+include::python/analyse_averages.py[]
+---------------
+
+This would give a plot of the running average for each parameter in the
+trajectory file. In a similar, the run file can be loaded and its
+average quantities such as loss or kinetic energy be analysed and
+plotted.
+
+[[quickstart.simulation.analysis.diffusion_map]]
+Diffusion Map
++++++++++++++
+
+Averages are interesting when the goal is to see whether a sampler indeed
+maintains the desired temperature.
+For inspecting the loss manifold, we need different analysis methods.
+Especially, we need ways of describing the minima basins and their shape. One
+such possibility are so-called collective variables, namely low-dimensional
+functions that describe the principal shape of the manifold of a minima.
+Another import property would be directions to get from one minima to another.
+This also can be encoded in a collective variable.
+
+These collective variables can be automatically deduced using diffusion maps.
+Diffusion maps, see <<Coifman2006>>, can be summarized as follows:
+
+[quote, pydiffmap, https://pydiffmap.readthedocs.io/en/master/theory.html]
+_____
+Diffusion maps is a dimension reduction technique that can be used to discover
+low dimensional structure in high dimensional data. It assumes that the data
+points, which are given as points in a high dimensional metric space, actually
+live on a lower dimensional structure. To uncover this structure, diffusion
+maps builds a neighborhood graph on the data based on the distances between
+nearby points. Then a graph Laplacian L is constructed on the neighborhood
+graph. Many variants exist that approximate different differential operators.
+_____
+
+link:https://github.com/DiffusionMapsAcademics/pyDiffMap[pydiffmap] is an
+excellent Python package that performs the analysis which consists of computing
+the eigendecomposition of a sparse neighborhood graph where the Euclidean
+metric is used as distance measure.
+
+The important property is that one can prove point-wise convergence of the
+discrete eigenvectors of the diffusion maps to the eigenfunctions of the
+Fokker-Plank equation and thus to certain differential operators which are
+directly connected to the Langevin dynamics that underlies out sampling
+methods. In other words, diffusion map fits like a glove.
+
+The eigenvectors parametrize each one dimension of the lower-dimensional
+manifold on which the trajectory and therefore the sampled points live.
+The degrees of freedom of this manifold are typically called _collective
+variables_.
+
+NOTE: In the module `TrajectoryAnalyser` an early variant of pydiffmap can be
+found. pydiffmap if installed using link:https://pypi.org/project/pydiffmap/[pip]
+ is used in +TATiExplorer+ and +TATiAnalyser+ (see <<quickstart.cmdline>>) if
+ the option 'diffusion_map_method' is set to *pydiffmap*.
+
+Let us take a look at the eigenvectors of the trajectory that we have sampled
+just before.
+
+[source,python]
+---------------
+include::python/analyse_diffmap.py[]
+---------------
+
+You should then obtain the Figure link:#quickstart.simulation.analysis.diffusion_map.eigenvectors[Diffusion map analysis].
+
+[[quickstart.simulation.analysis.diffusion_map.eigenvectors]]
+.Diffusion map analysis: Plot of first weight against second weight, colored by first eigenvector of the diffusion map kernel
+image::pictures/eigenvectors.png[align="center",{basebackend@docbook:scaledwidth="25%":width=200}]
+
+NOTE: The true first eigenvector is constant and is therefore dropped in the
+function `compute_diffusion_maps()`.
+
+Keep in mind that the ridge is at the origin and there are two hperbolic basins
+on either side in the all-positive and all-negative orthant of the 2d space.
+You see that as we color the trajectory points by the value of the dominant
+eigenvector, the path between these two minima is highlighted: from
+light green to dark blue.
+
+The eigenvector gives a direction: From the top right to the bottom left and
+therefore from one minimum basin to the other.
+
+The eigenvector component give the implicit evaluation of the collective
+variable function at each trajectory point, i.e. latexmath:[e_i = \xi(x_i)],
+where latexmath:[\xi(x)] is the collective variable and latexmath:[e_i] is the
+i-th component and latexmath:[x_i] the i-th trajectory point.
+
+The eigenvectors of the diffusion map kernel also give us a mean to assess
+distances between trajectory points by looking at the difference in values,
+latexmath:[|e_i - e_j|].
+This is the so-called _diffusion distance_. It tells us how difficult it is to
+diffuse from one point to the other. This diffusion distance is a key ingredient
+in the next topic: exploration.
+
+[[quickstart.simulation.exploration]]
+Exploring the loss manifold
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Exploration of the loss manifold is a bit more involved and hence uses a
+different part of the Python interface. We do not use the simulation interface
+anymore but the general Python interface as we require greater access to its
+internals.
+
+In general, the procedure has the following stages:
+
+. [[step1]] We sample a few starting trajectory.
+. [[step2]] For the current set of trajectory points we perform a diffusion map
+analysis. Using the first eigenvector as the dominant diffusion mode, we
+pick the first corner points at its maximal component.
+. [[step3]] If more corner points are needed, then we look at the diffusion
+distance with respect to already picked corner points over all
+eigenvectors of the diffusion map and pick the next point always such
+that it maximizes the diffusion distance to the present ones.
+. [[step4]] Finally, we sample further trajectories, one starting at each of the
+picked corner points.
+. [[step5]] This is repeated (go to link:#step2[second step]) for as many
+exploration steps as we want to do.
+
+Note that each single trajectory is sampled in a special way:
+
+* First, three legs of sampling are performed
+* Then, we analyse the resulting diffusion map.
+* If the eigenvalues have not yet converged with respect to some
+relative threshold, we continue for one more leg and analyse again after
+that
+* If they have converged, we stop.
+* Finally, we look at the norm of the gradients along the trajectory. If
+it is below a certain threshold, then within this section of the
+trajectory (with gradient norms beneath the threshold) we pick the
+smallest gradient value as the trajectory step being a possible minimum
+candidate.
+* For all minimum candidates (if any) we run additional optimization
+trajectories, e.g. using GradientDescent, to find a local minima.
+
+Have a look at the following example.
+
+WARNING: This example code is very much involved. Do not worry if you do not
+understand what is going on right away. This may become a lot simpler in future
+versions of TATi.
+
+[source,python]
+---------------
+include::python/explore.py[]
+---------------
+
+This performs exactly the procedure described before using very, very
+short trajectories ('max_steps'), only a few legs ('max_legs') and only
+a very limited number of exploration steps ('exploration_steps'). This is
+simple for the purpose of illustration. Naturally, larger values for all these
+parameters are required in order to explore complex manifolds and eventually
+find the global minimum.
+
+Note the calls to `run_all_jobs()`: What is happening behind the scenes is that
+the class `Explorer` contains a queue. Sampling a single leg of a trajectory
+is encoded as a single job, similarly performing a diffusion map analysis and so
+on. All these jobs are placed in the queue. `run_all_jobs()` will launch the
+jobs one after the other, or even in parallel if 'number_processes' is larger
+than *1*.
+
+Conclusion
+^^^^^^^^^^
+
+This has been the quickstart introduction to the `simulation` interface.
+
+If you want to take this further, we recommend reading how to implement a
+link:#reference.implementing_sampler[GLA2 sampler] using this module.
+
+If you still want to take it further, then you need to look at the
+ifdef::basebackend-docbook[ programmer's guide ]
+ifdef::basebackend-html[ link:programmersguide.html[programmer's guide] ]
+that should accompany your installation.

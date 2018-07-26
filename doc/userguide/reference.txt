@@ -108,457 +108,6 @@ The essential task at hand is to determine a good set of parameters,
 i.e. values for the weights and biases, such that the task is performed
 best with respect to some measure.
 
-[[reference.python_general_nn_usage]]
-Using TATi as general interface
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-When trying out new methods on sampling or training neural networks, one
-needs to play around with the network directly. This may require one or
-more of the following operations:
-
-* Setting up a specific network
-* Setting a specific set of parameters
-* Requesting the current set of parameters
-* Evaluating the loss and/or gradients
-* Evaluating the predicted labels for another dataset
-* Evaluating accuracy
-* Supplying a different dataset
-
-TATi's Python interface readily allows for these and has one beneficial
-feature: The network's topology is completely hidden with respect to the
-set of parameters. To elaborate on this: Tensorflow internally uses
-tensors to represent weights between layers. Therefore, its parameters
-are organized in tensors. This structure makes it quite difficult to set
-or retrieve all parameters at once as their structure depends on the
-chosen topology of the neural network. When using TATi then all you see
-is a single vector of values containing all weights and biases of the
-network. This makes it easy to manipulate or store them.
-
-[NOTE]
-====
-However, this ease of use comes at the price of possibly increased
-computational complexity as an extra array is needed for the values and
-they need to be translated to the internal topology of the network every
-time they are modified.
-====
-
-In other words, this interface is good for trying out a quick-and-dirty
-approach to implementing a new method or idea. However, it is not suited
-for production runs of training a network. In the latter case it is
-recommended to implement your method within Tensorflow.
-
-[[reference.python_general_nn_usage.tensorflow_internals]]
-Tensorflow internals
-^^^^^^^^^^^^^^^^^^^^
-
-Before we start, there are a few notes in how Tensorflow works
-internally that might be helpfup in understanding why things are done
-the way they are.
-
-Tensorflow internally represents all operations as nodes in a so-called
-computational graph. Edges between nodes tell tensorflow which
-operations' output is required as input to other operations, e.g. the
-ones requested to evaluate. For example, in order to evaluate the loss,
-it first needs to look at the dataset and also all weights and biases.
-Any variable is also represented as a node in the graph.
-
-All actual data is stored in a so-called _session_ object. Evaluations
-of nodes in the computational graph are done by giving a list of nodes
-to the `run()` function of this session object. This function usually
-requires a so-called _feed dict_, a dictionary containing any external
-values that are referenced through _placeholder_ nodes. When evaluating
-nodes, only that part of the feed dict needs to be given that is
-required for the nodes' evaluation. E.g. when assigning values to
-parameters through an assign operation using placeholders, we do not
-need to specify the dataset
-
-This has been very brief and for a more in-depth view into the design of
-Tensorflow, we refer to their
-https://www.tensorflow.org/tutorial[tutorials].
-
-In the following sections we present pieces of Python code essential for
-each of the aforementioned operations. In contrast to the quickstart
-code these are no longer self-contained but build upon one another.
-However, there is some branching, too. Hence, you are challenged to put
-the pieces you need together. As principle guideline: follow the order
-as it is given here.
-
-[[reference.python_general_nn_usage.setup]]
-Setup
-^^^^^
-
-Let's first look at how to set up the neural network and supply it with
-a dataset.
-
-[[reference.python_general_nn_usage.setup.setting_up_network]]
-Setting up the network
-++++++++++++++++++++++
-
-Let's first create a neural network. At the moment of writing TATi is
-constrained to multi-layer perceptrons but this will soon be extened to
-convolutational and other networks.
-
-Multi-layer perceptrons are characterized by the number of layers, the
-number of nodes per layer and the output function used in each node.
-
-[source,python]
----------------
-include::python/general_nn/setting_up_network.py[]
----------------
-
-In the above example, we specify a neural network of two hidden layers,
-each having 8 nodes. We use the "rectified linear" activation function
-for these nodes. The output nodes are activated by a linear function.
-
-[NOTE]
-====
-At the moment it is not possible to set different activation functions
-for individual nodes or between hidden layers.
-====
-
-For a full (and up-to-date) list of all available activation functions,
-please look at TATi/models/model.py, `get_activations()`.
-
-[NOTE]
-====
-Note that (re-)creating the `tati_model` instance model will always reset the
-computational graph of tensorflow in case you need to add nodes.
-====
-
-[[reference.python_general_nn_usage.setup.supply_dataset]]
-Supply dataset as array
-+++++++++++++++++++++++
-
-As a next step, we need to supply a dataset. This dataset will also
-necessitate a certain amount of input and output nodes.
-
-
-[NOTE]
-====
-At the moment only classification datasets can be setup.
-====
-There are basically two ways of supplying the dataset:
-
-* from a CSV file
-* from an internal (numpy) array
-
-We will give examples for both ways here.
-
-[source,python]
----------------
-include::python/general_nn/supply_dataset_array.py[]
----------------
-
-The `batch_data_files` always needs to be a list as multiple files may
-be given. `batch_data_file_type` gives the type of the files.
-Currently *csv* and *tfrecord* are supported choices.
-
-Note that you can combine the additional `FLAGS` given for specifying
-the data set files with the ones characterizing the neural network
-above. In that case you do not need to call `reset_parameters()`.
-
-We repeat the example given in
-link:#quickstart.python.sampling.supply_dataset[Supplying Dataset].
-
-[source,python]
----------------
-include::python/general_nn/supply_dataset_csv.py[]
----------------
-
-There, we read a dataset from a CSV file into a pandas dataframe which
-afterwards is converted to a numpy array and then handed over to the
-`provide_dataset()` function of the model interface. Naturally, if the
-dataset is present in memory, it can be given right away and we do not
-need to parse a CSV file.
-
-[[reference.python_general_nn_usage.setup.note_batching]]
-A note on batching
-++++++++++++++++++
-
-If you want to evaluate your dataset in batches, there are two notes to
-give:
-
-First, the parameter `batch_size` controls the size of the randomly
-chosen subset of the dataset on which the loss function is evaluated at
-the next call.
-
-Second, `max_steps` controls how many (internal) copies of the dataset
-are created. Once every batch of every copy has been delivered, the
-Dataset will signal this with an exceptions and stop. This can be
-overcome by either calling
-
-[source,python]
----------------
-include::python/general_nn/reset_dataset.py[]
----------------
-
-which will simply reset the iterator.
-
-Another approach is to tell the model right-away that we do not care
-when the dataset ends, i.e. to reset automatically.
-
-[source,python]
----------------
-include::python/general_nn/reset_dataset_auto.py[]
----------------
-
-Now, what is this `input_pipeline.next_batch()` you might wonder. We'll
-come to this, when we finally evaluate the loss.
-
-[[reference.python_general_nn_usage.parameters]]
-Parameters
-^^^^^^^^^^
-
-Next, we look at how to inspect and modify the neural network's
-parameters.
-
-[[reference.python_general_nn_usage.parameters.requesting_parameters]]
-Requesting parameters
-+++++++++++++++++++++
-
-Once the neural network is set up and the dataset is provided, we come
-closer to actually allowing to evaluate the network. But first, let us
-look at the initially random parameters.
-
-[source,python]
----------------
-include::python/general_nn/requesting_parameters.py[]
----------------
-
-As you see in the example, there are two entities in model that contain
-representations to the weights and biases of the neural network. Calling
-`evaluate()` on these, for which the _session_ object of tensorflow is
-required, which is also an entity in the model, will return arrays with
-their values.
-
-[[reference.python_general_nn_usage.parameters.setting_parameters]]
-Setting parameters
-++++++++++++++++++
-
-In the last section, we have already seen that there are `weights` and
-`biases` entities in the model that allow accessing their current value.
-They can also be used to set them. However, there is actually a
-convenience function in model that allows to set both at the same time
-from a single array (of the correct size).
-
-[source,python]
----------------
-include::python/general_nn/setting_parameters.py[]
----------------
-
-Here, we create the numpy array filled with zeros by requesting the
-total number of weight and bias degrees of freedom, i.e. the number of
-parameters of the network. Afterwards,
-`assign_neural_network_parameters()` is used to put these into the
-neural network.
-
-[[reference.python_general_nn_usage.evaluation]]
-Evaluation
-^^^^^^^^^^
-
-Now, we are in the position to evaluate our neural network.
-
-[[reference.python_general_nn_usage.evaluation.loss]]
-Evaluate loss
-+++++++++++++
-
-Now, all is set to actually evaluate the loss function for the first
-time As a default the mean squared distance is chosen as the loss
-function. However, by setting the `loss` in the initial parameters
-(`FLAGS`) appropriately, all other loss functions that tensorflow
-offers are available, too. For a full (and up-to-date) list please refer
-to TATi/models/model.py, function `add_losses()`.
-
-[source,python]
----------------
-include::python/general_nn/evaluate_loss.py[]
----------------
-
-Here, we have to do two things: First, we set up a `feed_dict` then we
-call `run()` of the _session_ object in order to evaluate the loss. Note
-that `run()` may be given a list of nodes and returns a list of
-evaluations, ready for unpacking.
-
-Note the two nodes that are turned from `next_batch()` from the input
-pipeline. These are nodes in the computational graph of tensorflow that
-trigger reading the CSV file or feeding parts of the internal array
-dataset into the graph. This input pipeline controls the flow of the
-dataset into the neural network. In other words, `next_batch()` does not
-return the next batch but nodes on whose evaluation the next batch is
-obtained.
-
-[[reference.python_general_nn_usage.evaluation.gradients]]
-Evaluate gradients
-++++++++++++++++++
-
-Gradient information is similarly important as the loss function itself.
-
-[source,python]
----------------
-include::python/general_nn/evaluate_gradients.py[]
----------------
-
-Remember that all parameters are vectorized, hence, the
-`gradients_eval` object returned is actually a numpy array containing
-per component the gradient with respect to the specific parameter.
-
-The procedure is very similar, the only diffence is that we evaluate
-another node. Keep in mind that `run()` may be given list of nodes, i.e.
-loss and gradients can be evaluated at the same time!
-
-[[reference.python_general_nn_usage.evaluation.hessians]]
-Evaluate Hessians
-+++++++++++++++++
-
-Apart from gradient information hessians are also available. Note
-however that hessians are both very expensive to compute and to setup as
-many nodes needed to be added to the computational graph. Therefore, in
-the initial parameters (`FLAGS`) you need to explicitly state
-`do_hessians=True` in order to activate their creation before
-`init_network()` is called!
-
-[source,python]
----------------
-include::python/general_nn/evaluate_hessians.py[]
----------------
-
-Remember that all parameters are vectorized, hence, the
-`gradients_eval` object returned is actually a numpy array containing
-per component the gradient with respect to the specific parameter.
-
-The procedure is very similar, the only diffence is that we evaluate
-another node. Keep in mind that `run()` may be given list of nodes,
-i.e. loss and gradients can be evaluated at the same time!
-
-[[reference.python_general_nn_usage.evaluation.accuracy]]
-Evaluate accuracy
-+++++++++++++++++
-
-Evaluating accuracy is as simple as evaluating the loss. It's just
-another node.
-
-[source,python]
----------------
-include::python/general_nn/evaluate_accuracy.py[]
----------------
-
-[[reference.python_general_nn_usage.evaluation.predictions]]
-Evaluate predicted labels
-+++++++++++++++++++++++++
-
-Naturally, obtaining the predictions is now just as simple.
-
-[source,python]
----------------
-include::python/general_nn/evaluate_prediction.py[]
----------------
-
-Note that omitted specifying _labels_ in the `feed_dict` as they are
-not need for evaluating the predictions.
-
-[[reference.python_general_nn_usage.datasets]]
-Datasets
-^^^^^^^^
-
-Last but not least, how to change the dataset when it was already
-specified?
-
-[[reference.python_general_nn_usage.datasets.change]]
-Change the dataset
-++++++++++++++++++
-
-Note all evaluating takes place on the same dataset, once a network is
-trained, we might want to see its performance on a test or validation
-dataset or we might want to see its predictions on an altogether
-different dataset (which does not have any labels).
-
-There are again two different ways because of the two different modes of
-feeding the dataset: from file and from an array.
-
-[source,python]
----------------
-include::python/general_nn/change_dataset_csv.py[]
----------------
-
-In the first example, we simply exchange the dataset file(s) in the
-parameters structure and call `create_input_pipeline()` which will reset
-the internal input pipeline on using the newly given files.
-
-[source,python]
----------------
-include::python/general_nn/change_dataset_array.py[]
----------------
-
-When switching to (another) dataset from an internal numpy array, then
-we simply need to call `provide_dataset()` which will reset the
-internal input pipeline.
-
-[NOTE]
-====
-Note that if you need this dataset only for predictions, then simply
-given a vector of zeros of the respective size as labels. They will not
-be evaluated for the predictions.
-====
-
-[NOTE]
-====
-You must not change the input or output dimension as the network itself
-is fixed.
-====
-
-[NOTE]
-====
-Note that changing the dataset actually modifies some nodes in
-Tensorflow's computational graph. This principally makes things a bit
-slower as the session object has already been created. Simply keep this
-in mind if slowness is suddenly bothering. Otherwise you can ignore it.
-====
-
-This is all for the moment.
-
-[[reference.python_general_nn_usage.list_of_nodes]]
-
-As a last item we given a list of nodes that might be interesting. They
-can all be obtained through ``get_list_of_nodes'' where the argument is
-a list of nodes to return.
-
-* accuracy
-+
-The accuracy of the prediction compared to the given labels. 1 is
-perfect, 0 is all wrong.
-
-* loss
-+
-The loss function
-
-* y
-+
-The neural network's output
-
-* y_
-+
-The labels given in the dataset
-
-There are a few internal entities to `model` that represent nodes ready
-for evaluation as well.
-
-* `model.gradients`
-+
-Vectorized gradients
-
-* `model.hessians`
-+
-Vectorized Hessian matrix, requires `do_hessians=True`
-
-* `model.xinput`
-+
-Placeholder node for feeding input values into neural network
-
-* `model.input_pipeline.next_batch()`
-+
-Returns a list of two nodes. The first gives the features from the
-current batch, the second gives the labels from the current batch.
-
 [[reference.loss]]
 The loss function
 ~~~~~~~~~~~~~~~~~
@@ -709,13 +258,15 @@ computational cost, it is generally recommended to pick BAOAB which has second
 order convergence and even fourth order in the high-friction limit, see
 <<Leimkuhler2012>> for details.
 
-NOTE: At the beginning of each the following subsections we give the name of the respective sampler in order to activate it using the `sampler` keyword, see <<quickstart.python.sampling>> and <<quickstart.cmdline.sampling>>.
+NOTE: At the beginning of each the following subsections we give the name of
+the respective sampler in order to activate it using the *sampler* keyword,
+see <<quickstart.simulation.sampling>> and <<quickstart.cmdline.sampling>>.
 
 [[reference.samplers.sgld]]
 Stochastic Gradient Langevin Dynamics
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-`sampler`: +StochasticGradientLangevinDynamics+
+*sampler*: +StochasticGradientLangevinDynamics+
 
 The Stochastic Gradient Langevin Dynamics (SGLD) was proposed by
 <<Welling2011>> based on the <<SGD>>[Stochastic Gradient Descent], which is a
@@ -734,7 +285,7 @@ to be small enough with respect to the gradient sizes of your problem.
 Covariance Controlled Adaptive Langevin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-`sampler`: +CovarianceControlledAdaptiveLangevin+
+*sampler*: +CovarianceControlledAdaptiveLangevin+
 
 This is an extension of Stochastic Gradient Descent proposed by
 <<Shang2015>>. The key idea is to dissipate the extra heat caused by the
@@ -753,12 +304,12 @@ order.
 Geometric Langevin Algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-`sampler`: +Geometric Langevin Algorithms_1stOrder+, +Geometric Langevin Algorithms_2ndOrder+
+*sampler*: +Geometric Langevin Algorithms_1stOrder+, +Geometric Langevin Algorithms_2ndOrder+
 
 GLA results from a first-order splitting between the Hamiltonian and the
 Ornstein-Uhlenbeck parts, see <<Leimkuhler2015>>[section 2.2.3, Leimkuhler 2015] and also
-<<Leimkuhler2012>>. It provides second order accuracy at basically no extra
-cost.
+<<Leimkuhler2012>>. GLA2 provides second order accuracy at basically no extra
+cost over GLA1.
 
 [NOTE]
 ====
@@ -776,7 +327,7 @@ need to be find by try&error and the moment.
 BAOAB
 ^^^^^
 
-`sampler`: +BAOAB+
+*sampler*: +BAOAB+
 
 BAOAB derives from the basic building blocks A (position update), B
 (momentum update), and O (noise update) into which the Langevin system
@@ -794,7 +345,7 @@ BAOAB has the same two additional parameters as given in the <<GLA>>s.
 Hamiltonian Monte Carlo
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-`sampler`: +HamiltonianMonteCarlo+
+*sampler*: +HamiltonianMonteCarlo+
 
 HMC is based on Hamiltonian dynamics instead of Langevin Dynamics. Noise
 only enters when, after the evaluation of an acceptance criterion, the
@@ -820,6 +371,29 @@ approximation still holds.
 This works for all of the aforementioned samplers as simply the gradient
 of each walker is rescaled.
 
+include::reference_implementing_sampler.txt[]
+
+[[reference.reproducibility]]
+A Note on Reproducibility
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In many of the examples in the quickstart tutorials we have set a 'seed' value
+to enforce reproducible runs.
+
+We have gone through great lengths to make sure that runs using the same set
+of options yield the same output on every evocation.
+
+Tensorflow is not fully reproducible per se. Its internal random number seeds
+change when the computational graph changes. Its reduction operations are
+non-deterministic. The latter can be overcome by setting 'inter_ops_threads' to
+_1_, which take away some of the parallelization for the sake of
+reproducibility. The former is taken care of by TATi itself. We make sure to
+set the random number seeds deterministically to ensure that values are
+unchanged even if the graph is slighlty changed.
+
+If you find that this should not be the case, please file an issue, see
+<<introduction.feedback>>.
+
 [[reference.performance]]
 A Note on Performance
 ~~~~~~~~~~~~~~~~~~~~~
@@ -836,6 +410,9 @@ In general, performance hinges *critically* on the input pipeline. In other
 words, it depends very much on how fast a specific machine setup can feed the
 dataset into the input layer of the neural network.
 
+NOTE: In our examples both datasets and networks are very small. This causes
+the sequential parts of tensorflow to overwhelm any kind of parallel execution.
+
 Typically, these datasets are stored as a set of files residing on disk. Note
 that reading from disk is very slow compared to reading from memory. Hence, the
 first step is to read the dataset from disk and this will completely dominate
@@ -851,12 +428,16 @@ depending on your hard drive setup.
 .In memory pipeline
 ======
 If your dataset fits in memory, it is advised to use the `InMemoryPipeline`
-by either setting the appropriate parameters in the *FLAGS* parameter
-structure, see <<quickstart.python>>.
+by setting the appropriate options in `tati` instantiation, see
+<<quickstart.simulation>>.
 
 [source, python]
 ----------------
-FLAGS.in_memory_pipeline = True
+nn = tati(
+	# ...
+	in_memory_pipeline = True,
+	# ...
+)
 ----------------
 
 When using the command-line interface, add the respective option, see <<quickstart.cmdline>>.
@@ -909,12 +490,6 @@ yet.
 [[references.performance.runtime_comparison_gpu]]
 .Runtime comparison, GPU: 2x V100 cards, network with a single hidden layer and various numbers of nodes on a random MNIST dataset
 image::pictures/time_per_nth_step_hidden_dimension-hash_912b074-dimension_5000-batch_size_100-semilogy-2018-06-27.png[alt="runtime comparison",{basebackend@docbook:scaledwidth="60%":width=600}]
-
-[[reference.exploring]]
-Exploring the manifold
-~~~~~~~~~~~~~~~~~~~~~~
-
-still empty
 
 [[reference.miscellaneous]]
 Miscellaneous

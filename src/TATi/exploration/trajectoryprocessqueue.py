@@ -118,10 +118,10 @@ class TrajectoryProcessQueue(TrajectoryJobQueue):
         :return:
         """
         while True:
-            print("Checking for next job, queue has approximate size "+str(self.queue.qsize()))
+            logging.debug("Checking for next job, queue has approximate size "+str(self.queue.qsize()))
             self.run_next_job(network_model, parameters)
             self.queue.task_done()
-        print("QUEUE IS EMPTY, process stopping.")
+        logging.info("QUEUE IS EMPTY, process stopping.")
 
     def start_processes(self, network_model, parameters):
         self.processes = [Process(target=self.run_next_job_till_queue_empty, args=(network_model, parameters,)) \
@@ -137,9 +137,9 @@ class TrajectoryProcessQueue(TrajectoryJobQueue):
         :param parameters:
         :return:
         """
-        print("Waiting for queue to empty")
+        logging.debug("Waiting for queue to empty")
         self.queue.join()
-        print("Queue is empty")
+        logging.debug("Queue is empty")
         assert( len(self.used_data_ids.copy()) == 0 )
 
     def stop_processes(self):
