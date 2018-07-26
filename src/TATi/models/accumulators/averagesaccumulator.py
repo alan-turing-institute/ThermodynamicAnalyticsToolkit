@@ -85,7 +85,13 @@ class AveragesAccumulator(Accumulator):
     def accumulate_nth_step(self, current_step, walker_index, written_row, values):
         if self._config_map["do_write_averages_file"] or self._return_averages:
             averages_line = self._accumulate_nth_step_line(current_step, walker_index, written_row, values)
-            if self._config_map["do_write_averages_file"]:
-                self._averages_writer.writerow(averages_line)
-            if self._return_averages:
-                self.averages[walker_index].loc[written_row] = averages_line
+            self._buffer.append(averages_line)
+
+        if self._next_eval_step is None or (current_step == self._next_eval_step[walker_index]):
+            if values.rejected == self._last_rejected:
+                for averages_line in self._buffer:
+                    if self._config_map["do_write_averages_file"]:
+                        self._averages_writer.writerow(averages_line)
+                    if self._return_averages:
+                        self.averages[walker_index].loc[written_row] = averages_line
+            self._buffer[:] = []

@@ -78,7 +78,13 @@ class RuninfoAccumulator(Accumulator):
                              "BAOAB",
                              "CovarianceControlledAdaptiveLangevinThermostat"]:
             run_line = self._accumulate_nth_step_line(current_step, walker_index, written_row, values)
-        if self._config_map["do_write_run_file"]:
-            self._run_writer.writerow(run_line)
-        if self._return_run_info:
-            self.run_info[walker_index].loc[written_row] = run_line
+        self._buffer.append(run_line)
+
+        if self._next_eval_step is None or (current_step == self._next_eval_step[walker_index]):
+            if values.rejected == self._last_rejected:
+                for run_line in self._buffer:
+                    if self._config_map["do_write_run_file"]:
+                        self._run_writer.writerow(run_line)
+                    if self._return_run_info:
+                        self.run_info[walker_index].loc[written_row] = run_line
+            self._buffer[:] = []

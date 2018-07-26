@@ -6,7 +6,9 @@ class Accumulator(object):
     output_precision = 8
 
     def __init__(self):
-        self._next_eval_step = None
+        self._next_eval_step = None # next step when to write buffer
+        self._buffer = []           # contains lines going to file or dataframe
+        self._last_rejected = 0     # stores the last rejected from AccumulatedValues
 
     def accumulate_each_step(self, current_step):
         """ Accumulate values each step internally.
@@ -22,5 +24,6 @@ class Accumulator(object):
         """
         raise AttributeError("Not implemented, you need to derive properly from this class.")
 
-    def inform_next_eval_step(self, next_eval_step):
+    def inform_next_eval_step(self, next_eval_step, rejected):
         self._next_eval_step = next_eval_step
+        self._last_rejected = rejected

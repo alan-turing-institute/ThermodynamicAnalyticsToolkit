@@ -19,8 +19,8 @@ class AccumulatedValues(object):
         self.kinetic_energy = None
         self.momenta = None
 
-        self.accepted = None
-        self.rejected = None
+        self.accepted = 0
+        self.rejected = 0
 
     def evaluate(self, sess, sampler, static_vars):
         if sampler in ["StochasticGradientLangevinDynamics",

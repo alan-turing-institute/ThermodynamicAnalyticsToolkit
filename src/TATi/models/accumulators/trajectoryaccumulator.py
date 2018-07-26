@@ -46,7 +46,13 @@ class TrajectoryAccumulator(Accumulator):
     def accumulate_nth_step(self, current_step, walker_index, written_row, values):
         if self._config_map["do_write_trajectory_file"] or self._return_trajectories:
             trajectory_line = self._accumulate_nth_step_line(current_step, walker_index, written_row, values)
-            if self._config_map["do_write_trajectory_file"]:
-                self._trajectory_writer.writerow(trajectory_line)
-            if self._return_trajectories:
-                self.trajectory[walker_index].loc[written_row] = trajectory_line
+            self._buffer.append(trajectory_line)
+
+        if self._next_eval_step is None or (current_step == self._next_eval_step[walker_index]):
+            if values.rejected == self._last_rejected:
+                for trajectory_line in self._buffer:
+                    if self._config_map["do_write_trajectory_file"]:
+                        self._trajectory_writer.writerow(trajectory_line)
+                    if self._return_trajectories:
+                        self.trajectory[walker_index].loc[written_row] = trajectory_line
+            self._buffer[:] = []

@@ -1028,10 +1028,10 @@ class model:
             })
 
             # set HMC specific nodes in feed_dict
-            next_eval_step = self._set_HMC_next_eval_step(current_step, HMC_placeholder_nodes, HMC_steps, feed_dict)
-            run_info.inform_next_eval_step(next_eval_step)
-            trajectory.inform_next_eval_step(next_eval_step)
-            averages.inform_next_eval_step(next_eval_step)
+            HMC_steps, feed_dict = self._set_HMC_next_eval_step(current_step, HMC_placeholder_nodes, HMC_steps, feed_dict)
+            run_info.inform_next_eval_step(HMC_steps, accumulated_values.rejected)
+            trajectory.inform_next_eval_step(HMC_steps, accumulated_values.rejected)
+            averages.inform_next_eval_step(HMC_steps, accumulated_values.rejected)
 
             # set global variable used in HMC sampler for criterion to initial loss
             self._set_HMC_eval_variables(current_step, HMC_current_set_nodes, HMC_eval_nodes, HMC_set_nodes, feed_dict)
