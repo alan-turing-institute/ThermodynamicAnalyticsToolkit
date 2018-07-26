@@ -166,20 +166,22 @@ class HamiltonianMonteCarloSampler(StochasticGradientLangevinDynamicsSampler):
         # I.E. DONT PLACE INSIDE NODES (confusing indeed)
         def accept_block():
             with tf.control_dependencies([virial_global_t]):
-                with tf.control_dependencies([old_total_energy_t.assign(current_energy),
-                                              initial_parameters.assign(var),
-                                              accepted_t.assign_add(1)]):
+                with tf.control_dependencies([
+                        old_total_energy_t.assign(current_energy),
+                        initial_parameters.assign(var),
+                        accepted_t.assign_add(1)]):
                     return tf.identity(old_total_energy_t)
 
         # DONT use nodes in the control_dependencies, always functions!
         def reject_block():
             with tf.control_dependencies([virial_global_t]):
-                with tf.control_dependencies([var.assign(initial_parameters),
-                                              rejected_t.assign_add(1)]):
+                with tf.control_dependencies([
+                        var.assign(initial_parameters),
+                        rejected_t.assign_add(1)]):
                     return tf.identity(old_total_energy_t)
 
         max_value_t = tf.constant(1.0, dtype=dds_basetype)
-        p_accept = tf.minimum(max_value_t, tf.exp( -(1./inverse_temperature_t) * (current_energy - old_total_energy_t)))
+        p_accept = tf.minimum(max_value_t, tf.exp( inverse_temperature_t* (old_total_energy_t- current_energy)))
 
         def accept_reject_block():
             return tf.cond(
