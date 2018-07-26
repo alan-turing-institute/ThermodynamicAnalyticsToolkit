@@ -1,0 +1,163 @@
+[[tati.structure]]
+Structure
+~~~~~~~~~
+
+Understanding the structure of TATi's directories and python modules/files
+is essential when contributing.
+
+[[tati.structure.general]]
+Directories
+^^^^^^^^^^^
+
+Let us explain each folder in turn:
+
+- doc
++
+Contains documentation such as the userguide and also configuration files for
+link:http://www.stack.nl/~dimitri/doxygen/[doxygen] to produce the reference documentation.
+
+- examples
++
+This folder is for IPython/Jupyter notebooks on tutorials or short examples on
+using TATi.
+
+- src
++
+Contains the source tree of TATi, i.e. all python modules that are installed
+are located in this folder.
+
+- tests
++
+Contains all tests, i.e. everything needed to execute `make check`.
+
+- util
++
+This folder contains helper python scripts that are not general enough to be
+placed into the +src+ folder but still serve a purpose close to TATi's nature.
+
+There are probably several other folders: +autom4te.cache+, +build-aux+, and
++m4+. These belong to the autoconf build system are explained in
+<<tati.buildsystem>>.
+
+In the following we look more closely at each folder. Each of them is connected
+to a different toolchain as well.
+
+[[tati.structure.documentation]]
+Documentation
+^^^^^^^^^^^^^
+
+TATi's _userguide and programmer's guide_ in +doc/userguide+ consist of simple
+text files that use a special "markdown" notation in the
+link:http://www.methods.co.nz/asciidoc/[asciidoc] format.
+See the userguide there for a full reference and plenty of examples.
+
+All _example scripts_ are full python scripts that are tested in the folder
++tests/userguide+. They reside in subfolders +cmdline+, +python+, and
++simulation+ for the command-line interface, for the general python interface
+and for the `simulation` interface. This is to make sure that all examples
+are always up-to-date and working.
+
+All _images_ in the guides reside in the subfolder +pictures+ and typically
+consist of *png* files. If they have been created using link:www.texample.net/tikz/examples/[tikz]
+or link:http://pgfplots.sourceforge.net[pgfplots], then the source +.tex+
+files have been placed in there as well.
+
+The program packages `asciidoc` and `dblatex` are used to convert the text
+files first fto html and xml and the latter is finally converted one more time
+to a pdf file. Instructions are found +doc/userguide/Makefile.am+.
+
+Moreover, TATi's _reference documentation_ is automatically created from the
+source files located in folder +src+ using link:http://www.stack.nl/~dimitri/doxygen/[doxygen].
+It pulls in additional files that explain the source code in general from
++src/documentation+. The configuration files for doxygen are located in
++doc/Doxyfile+.
+
+[[tati.structure.examples]]
+Examples
+^^^^^^^^
+
+Examples as Jupyter notebooks reside in the +examples+ folder. They are
+currently still untested, i.e. there are not checked to still comply with
+the current API of TATi.
+
+In principle it is possible to extract the pure python code from notebooks,
+see this link:https://stackoverflow.com/a/30776383/1967646[stackoverflow question].
+However, a few issues are difficult to overcome:
+
+- comments in cells cannot be extracted without jupyter.
+- jupyter notebooks lack proper syspath in general.
+- plot commands (`plt.show()`, `ax.scatter`) are difficult to prevent in this
+  non-interactive environment.
+
+To this end, they remain still untested until these can be resolved.
+
+[[tati.structure.modules]]
+Python modules
+^^^^^^^^^^^^^^
+
+The folder +src+ contains two folders: +TATi+ and +documentation+.
+
+The latter simply contains additional link:http://www.stack.nl/~dimitri/doxygen/[doxygen]
+files to explain general parts and concepts of the source code.
+
+The folder +TATi+ consists of all python modules for the `TATi` module. The
+structure in the source tree is exactly the same as it is installed, i.e.
+a module `TATi.models.model` can be found in the folder +TATi/models/model.py+.
+
+The folder itself contains several subfolders which we briefly enumerate and
+explain.
+
+- datasets
++
+This contains generators for toy example datasets.
+
+- diffusion_maps
++
+Here, we have code for performing diffusion map analysis. Similar functionality
+also exists in the package `pydiffmap`, see
+ifdef::basebackend-docbook[ Analysis section in the quickstart part of the userguide. ]
+ifdef::basebackend-html[ <<quickstart.simulation.analysis>>. ]
+
+- exploration
++
+In exploration we code for obtained several sampling and training trajectories
+and analysing them. To this end, there is a "queue" implementation there and
+each part (e.g., sampling trajectory) is encoded as a "job". To allow for
+parallel runs, there is also an extension where each job is run as an
+independent "process" if it relies in tensorflow.
+
+- models
++
+Models contains the general python interface class +model.py+ and helper
+classes to construct the actual "model", i.e. the input pipeline in subfolder
++input+ and the neural network.
+
+- runtime
++
+This folder contains a helper class to measure the runtime of events and is
+used in the command-line tools.
+
+- samplers
++
+Here, all sampler implementations are gathered. They all derive from
++walkerensembleoptimizer.py+ which contains functionality to have multiple
+copies of the neural network, one for each walker.
+
+- tools
++
+The tools folder contains the python script that form the toolkit part of
+TATi. They are small command-line programs that accept arguments using the
+`argparse` package and each perform a very specific task, e.g., executing
+obtaining a single sampling trajectory.
+
+Moreover, the folder +TATi+ itself contains a few special files. There is
++common.py+ which is a general module where small helper functions are placed
+that have not found a place anywhere else, i.e. in any proper class.
+
+There is +TrajectoryAnalyser.py+ which contains functionality for analysing
+trajectories.
+
+Last but not least, there is +version.py+ which contains helper functions to
+give the name version and build hash of TATi. Similarly, `TATi.__version__` is
+contained in  +__init__.py+ which is produced from requesting the current
+version from the git repository using `git describe`.

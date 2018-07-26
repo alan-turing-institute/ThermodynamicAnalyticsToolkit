@@ -1,0 +1,313 @@
+[[tati.buildsystem]]
+Build system
+~~~~~~~~~~~~
+
+The build systems used the link:https://www.gnu.org/software/automake/manual/html_node/Autotools-Introduction.html[*autootols*]
+suite for dependency generation, testing and packaging.
+It is the standard build system for all link:link:https://www.gnu.org/software[GNU software]
+and has a very long history.
+
+It based on the scripting language _m4_ that is a bit outdated from a modern
+viewpoint.
+
+Note that there are other build systems such as link:https://cmake.org[cmake].
+However, the principal author of TATi at its creation felt that autotools has
+the superior test system and TATi would be solidly based in the UNIX world
+and less in Windows environments that are scarcely found in scientific
+working environments. Cmake needs to make some compromises to fully support
+the Windows platform, while autotools basically admits the full set of GNU
+utilities which makes testing especially powerful.
+
+[[tati.buildsystem.general]]
+General concept
+^^^^^^^^^^^^^^^
+
+The build system has the following responsibilities:
+
+- installation into a target folder (`make install`)
+- packaging of releases as so-called tarballs (`make dist`)
+- testing of the software package (`make check`)
+- creation of guides and API documentation (`make doc`)
+
+As you notice, the central tool is (GNU) `make`. The central concept of make
+are rules. Each rule revolves around a _target_, _dependencies_ for the target
+and a prescription how to use the dependencies to produce the target. All in
+all this creates a dependency graph through which make automatically recreates
+targets even when "distant" dependencies have changed.
+
+The autotools suite is then mainly responsible for creating a set of
++Makefile+s containing all necessary targets that tell make how to
+build/test/deploy the package.
+
+NOTE: Automake focuses on creating packages from C/C++ code. It can be easily
+extended to be useful for other languages, too. This has been done for Python.
+However, C needs to be compiled which Python as an interpreted language does
+not. Therefore, there are some steps that seem superfluous for Python.
+
+[[tati.buildsystem.general.automake]]
+Automake
+++++++++
+
+Writing +Makefile+ s typically can be quite cryptic. It becomes much simpler by
+using `automake`. In automake one defines sets of specific variables in a file
+'Makefile.am' from which it then creates a fully fletched +Makefile+.
+
+Let us alook at an example, namely +src/TATi/runtime/Makefile.am+.
+
+----
+include::../../src/TATi/runtime/Makefile.am[]
+----
+
+You notice that we simply define two variables, *TATI_runtime_PYTHON* and
+*TATI_runtimedir*. The first tells automake that it deals with files written
+in the python language as the variables are suffixed with *PYTHON*. The
+naming *TATI_runtime* is arbitrary but we want to reflect the module structure
+as this module would be imported by `import TATI.runtime`.
+The variable ending in *..dir* tells automake the installation folder.
+
+Automake automatically notes that the files listed in the first variabe also
+need to go into the tarball when doing a release.
+
+All +Makefile.am+s are written by simply defining specific variables. Most of
+the problems revolve around finding the correct name.
+
+[[tati.buildsystem.general.autoconf]]
+Autoconf
+++++++++
+
+Not all Unix systems are alike. And even like systems such as Linux-based
+variants tend to differ among each other, e.g., in the way the handle packages.
+
+To this end, autoconf is a tool for setting up variables such as *$(PYTHON)*
+to contain the path to the python interpreter. Autoconf takes files with
+suffix +.in+ and replaces these variables by their contents.
+
+Let us take a look at +src/TATi/tools/Makefile.am+.
+
+----
+do_substitution = sed -e 's,[@]pythondir[@],$(pythondir),g' \
+        -e 's,[@]PACKAGE[@],$(PACKAGE),g' \
+        -e 's,[@]PYTHON[@],$(PYTHON),g' \
+        -e 's,[@]VERSION[@],$(VERSION),g'
+----
+
+There you see that we define a _macro_ (i.e. a variable being a a function)
+that will use the command-line program `sed` to replace the placeholder
+*@PYTHON@* by *$(PYTHON)* which in turn is replaced by the python interpreter
+that autoconf found.
+
+Autoconf parses the file +configure.ac+ in the package's root folder and
+creates a script called +configure+.
+
+This script contains a bunch of tests that define all these variables. Their
+contents can be inspected in +build64/config.log+ if +build64+ is the folder
+for the out-of-source build, see
+link:userguide.html#introduction.installation.procedure[Installation procedure].
+
+These tests are instantiated by small functions written in the *m4* language
+that can typically be found in a folder installed alongside with autoconf or
+on the web.
+
+Let us take a look at +configure.ac+ and the part where we check for the
+python interpreter.
+
+----
+AM_PATH_PYTHON([2.5])
+----
+
+This calls the macro *AM_PATH_PYTHON* to look for a python interpreter in
+various folders encoded in the macro that is at least version *2.5*.
+This macro is contained in the autoconf installation.
+
+The macro can be overridden by the environment variable *PYTHON* which is
+why
+
+[source, bash]
+----
+configure -C PYTHON=/usr/bin/python3
+----
+
+works. Note that these variables should go _after_ configure as they are
+cached (*-C*). Caching speeds up configure quite a lot.
+
+One macro is not contained, the one looking for *doxygen*, see
++m4/ac_doxygen.m4+. These need to be placed in the *m4* folder.
+
+[[tati.buildsystem.general.autotest]]
+Autotest
+++++++++
+
+When executing `make check`, then the autotest part of the autotools suite
+is used. It is not a tool by itself but again a set of macros written in m4
+which implement the test driver.
+
+We just would like to gather a few tricks here:
+
+- use `make -j4 check` to execute tests in parallel
+- you can execute tests individually: Look for the line above the tests
+header. This is line is pre- and postfixed by lines looking like this
++
+----
+## --------------------------------------------------------------- ##
+----
++
+The line contains a call to `testsuite` along with *$nrjobs*, followed
+by defining the variable *AUTOTEST_PATH*. Copy that line and replace *$nrjobs*
+by the following arguments: `-d -k sampler -j4`. This will execute all
+tests matching the keyword *sampler* (see *AT_KEYWORD* in the test case
+files) on four processes and leave all output (*-d*).
+
+You can inspect the output of all failed tests by looking at the file
++testsuite.dir/01/testsuite.log+ if *01* is the number of your test as
+printed by the `make check` or `testsuite` run. In that folder also all
+temporary files can be found.
+
+[[tati.buildsystem.general.others]]
+Other tools
++++++++++++
+
+There are more tools like `aclocal` that need not be of interest here.
+
+[[tati.buildsystem.adding]]
+Adding new files
+^^^^^^^^^^^^^^^^
+
+Clashes with the build system will occur when trying to add a new file.
+
+In this section we go through the few standard cases one by one.
+
+[[tati.buildsystem.adding.source]]
+Source file
++++++++++++
+
+You should know about the link:#tati.structure[Directory structure] by now.
+Therefore you know where to put your file in the source tree.
+
+However, you also have to tell automake where it belongs.
+
+Look at the +Makefile.am+ that should already by present in the folder. IN
+there, there is a variable ending in *.._PYTHON*. Add it to the list and it
+will get installed.
+
+If you have added a new folder with a file in it, then a few things need to
+be done:
+
+- create the init file in the folder: `touch __init__.py`
+- create the +Makefile.am+, see <<tati.buildsystem.general.automake>> for an example
+- add the folder to the *SUBDIRS* of the +Makefile.am+ in the folder below.
+  Otherwise, make will not enter this directory.
+
+[[tati.buildsystem.adding.tool]]
+Tool
+++++
+
+Tools residing in the folder *tools* have the special ending *.in* because they
+still need some variables replaced. Typically, it is *@PYTHON@* and
+*@pythondir@* required when `tati` is installed at a non-default location.
+
+These files need to be added in +configure.ac+. Look close to the bottom for
+statements *AC_CONFIG_FILES* that list the tools (without the *.in suffix).
+The statement causes them to be marked as executable.
+Furthermore, add the target statement in the +Makefile.am+ in +src/TATi/tools+
+in the same way as for the tools already present.
+
+In case you need to test the new tool, then you have to define a wrapper
+script. They are located in +tests+ and have the same name as the tool itself.
+Simply look at one of those for an example and adapt the names.
+
+[[tati.buildsystem.adding.test]]
+Test file
++++++++++
+
+In +tests+ there is the following distinction between the various tests:
+
+- integration
++
+These tests combine several tools or parts of TATi. For example they might
+sample a trajectory and feed it to the `LossFunctionSampler`. This ensures that
+the tools understand the file formats among one another.
+
+- regression
++
+The regression tests either check for encountered bugs and make sure that
+these do not occur again. Or they check specific capabilities of TATI, e.g.,
+they make sure that every sampler behaves the same by checking its output
+against a stored one. This is to ensure that changes in the code do not change
+the behavior of the package.
+
+- simulation
++
+Here, we test specific parts of the `simulation` module with examples that will
+not go in the userguide.
+
+- userguide
++
+All examples given in the userguide are tested in here one by one.
+
+- tensorflow
++
+Here, we check for certain tensorflow functionality or rather dysfunctiontality,
+meaning that certain behavior of tensorflow is non-intuitive. These tests
+whether the behavior changes with future tensorflow versions which would allow
+to remove certain boilerplate code in overcoming the unexpected.
+
+Each test cases resides in a unique file +testsuite-....at* where the directory
+structure also reflects in the name, e.g., +testsuite-userguide-simulation-complex.at+,
+
+These test cases are included in a tree-like structure up till the topmost
++testsuite.at+ through `m4_include()` statements, see for example
++tests/userguide/testsuite.at+.
+
+A general introduction to this _autotest_ part of autotools can be found
+link:https://www.gnu.org/software/autoconf/manual/autoconf-2.68/html_node/Using-Autotest.html[here].
+Therefore, we do not want to cover its details here.
+
+Basically, the test cases consist of shell commands that wrapped into
+`AT_CHECK()` statements that take an expected return code (0 - success, else -
+failure) and whether to capture stdout and stderr (e.g., *[stdout]*) or to
+ignre them (*[ignore]*).
+
+Typically, we use `grep` to make sure certain output was printed. We use
+`diff` to compare files and the link:#tati.buildsystem.adding.tool[tool]
+`NumericalDiff` for comparing files allowing for specific numerical variations.
+Moreover, `sed` can be used to reformat output and `awk` to extract certain
+elements based on delimiters (e.g., *-F","* for comma-based spitting).
+
+When adding a new test case, make sure to do the following:
+
+- write a new test case file
+- properly include the new *testsuite-...at* file in the upper level testsuite
+  file
+- add the file to the +Makefile.am+, look for *TESTSCRIPTS*.
+- check that your tests is executed, see <<tati.buildsystem.general.autotest>>
+
+[[tati.buildsystem.adding.documentation]]
+Documentation
++++++++++++++
+
+The documentation is contained +doc/userguide+. See all files ending *.txt* in
+there.
+
+When adding new files make sure they are properly included in other asciidoc
+files. If it is a new root file, add it to the *all:* target in +Makefile.am*.
+
+In any case, add it to the variable *DEPENDENCIES* in +Makefile.am*.
+
+If your new piece of documentation also has an example code piece, then put
+the code into a distinct file and use the `include::..[]` statement of asciidoc.
+Add the filename to the variable to the variable *PYTHON_EXAMPLES* in
++Makefile.am*.
+
+Then, you need to create a test case. Look at one of the already present
+test cases in +tests/userguide+. These make use of a `run` script that invokes
+python with the correct *PYTHONPATH* such that the module `tati` can be found
+even when installed on non-default locations.
+
+[[tati.buildsystem.adding.other]]
+Other files
++++++++++++
+
+If the added file is none of the above but it should still go into the release
+tarball, then add it to the *EXTRA_DIST* variable or add a statement such as
+`EXTRA_DIST = foo.bar` to the folder's +Makefile.am+ if your file is called
+*foo.bar*.

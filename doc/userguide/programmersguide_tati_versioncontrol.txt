@@ -1,0 +1,88 @@
+[[tati.versioncontrol]]
+Version control
+~~~~~~~~~~~~~~~
+
+TATi's source code is maintained with link:https://git.org[git] as its
+version control system. The "central" repository is located at
+link:https://github.com/alan-turing-institute/ThermodynamicAnalyticsToolkit[GitHub].
+
+Git records changes to the source code in _commits_. Each commit forms a node
+in a graph. A commit is uniquely identified by its _hash_ (a 7-digit hex code).
+
+Development should usually commence in a distinct _branch_ that can be easily
+created by `git checkout -b DevBranch` with any name in place for *DevBranch*.
+The top of a branch is referred to as head and is the most current commit to
+this branch.
+
+IMPORTANT: The branch `master` should only be modified by the package
+maintainer and is basically only advanced onto the next release branch, see
+below.
+
+[[tati.versioncontrol.release_policy]]
+Release policy
+^^^^^^^^^^^^^^
+
+Releases should be frequent and not too large.
+
+To this end, a branch `Candidate_vVERSION` is checked out from the current
+`master` branch where *VERSION* is the upcoming version number, e.g., 0.9.
+All development branches that are fit for release are merged using `git
+merge --no-ff DevBranch` (if *DevBranch* is the branch's name) such that
+the original branch name is encoded in the merge commit message.
+
+Conflicts have to be resolved in the merge. Note that the
+link:#tati.versioncontrol.test_policy[test policy] also and especially applies
+to this candidate branch.
+
+At the very end, we need to test whether `make dist` produces a usable tarball,
+i.e. whether unpacking, `configure`, `make && make install && make check` runs
+flawlessly.
+
+Finally, the version number *VERSION* is placed into the *AC_INIT* statement in
++configure.ac+ and this should always be done in a single commit not containing
+any other changes. This last commit is tagged using `git tag -a vVERSION` and
+the tag message should follow the example below.
+
+----
+Version VERSION contains the following branches:
+HASH  Candidate_vVERSION
+HASH1 BranchName1
+HASH2 BranchName2
+----
+
+We put a list of all merged branches including the hash value of their
+respective head. This way even when branches are deleted but have been
+merged into *master*, then they can still be tracked.
+
+Subsequently, all development branches are deleted from the central repository
+using `git branch -D DevBranch` (again assuming the branch's name to be
+*DevBranch*).
+
+[[tati.versioncontrol.test_policy]]
+Test policy
+^^^^^^^^^^^
+
+Using the version control system we retain a strict test policy in the
+following way: *For every commit `make && make install && make check` needs to
+run flawlessly.*
+
+This ensures that the userguide compiles and TATi's code complies with the
+result expected in every test.
+
+If this should not be possible *within development branches*, then test cases
+can be marked as _expected to fail (XFAIL)_ *temporarily* by adding the
+statement
+
+----
+AT_XFAIL_IF($BIN_TRUE)
+----
+
+just after the *AT_KEYWORDS* statement. By the very latest these issues must
+be resolved till the next release.
+
+It is generally advised to modify commits such that adhere to the above test
+policy. The commit history can be partially rewritten using `git rebase`.
+
+As an extreme measure, i.e. when too many commits would be affected, the tests
+ can be deactivated *temporarily* by removing the respective test folder from
+ the *SUBDIRS* statements in +tests/Makefile.am+.

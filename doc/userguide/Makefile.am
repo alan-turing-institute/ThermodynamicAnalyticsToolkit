@@ -41,6 +41,15 @@ DEPENDENCIES = \
 	bibliography.txt \
 	glossary.txt \
 	introduction.txt \
+	programmersguide.txt \
+	programmersguide_computational_graph.txt \
+    programmersguide_debugging_tips.txt \
+	programmersguide_extensions_samplers.txt \
+	programmersguide_neural_networks.txt \
+	programmersguide_tati_buildsystem.txt \
+	programmersguide_tati_structure.txt \
+	programmersguide_tati_versioncontrol.txt \
+	programmersguide_tensorflow.txt \
 	quickstart.txt \
 	reference.txt \
 	tensorflow_flaws.txt \
@@ -61,12 +70,21 @@ thermodynamicanalyticstoolkit.xml: $(srcdir)/userguide.txt $(DEPENDENCIES) $(src
 	$(ASCIIDOC) -b docbook -aimagesdir=$(srcdir) -arevdate=$(revdate) -aversion-label=@PACKAGE@ -arevnumber=$(version) -o $@ $<
 
 thermodynamicanalyticstoolkit.html: $(srcdir)/userguide.txt $(DEPENDENCIES) $(srcdir)/.git-version
-	$(ASCIIDOC) -b html5 -a toc2 -a numbered -aimagesdir=$(srcdir) -arevdate=$(revdate) -aversion-label=@PACKAGE@ -arevnumber=$(version) -o $@ $<
-	
+	$(ASCIIDOC) -b html5 -a toc2 -a icons -a latexmath -a numbered -aimagesdir=$(srcdir) -arevdate=$(revdate) -aversion-label=@PACKAGE@ -arevnumber=$(version) -o $@ $<
+
 thermodynamicanalyticstoolkit.pdf: thermodynamicanalyticstoolkit.xml
 	$(DBLATEX) --param=doc.lot.show=figure,table $< $@
 
-all: thermodynamicanalyticstoolkit.pdf thermodynamicanalyticstoolkit.html
+programmersguide.xml: $(srcdir)/programmersguide.txt $(DEPENDENCIES) $(srcdir)/.git-version
+	$(ASCIIDOC) -b docbook -a icons -aimagesdir=$(srcdir) -arevdate=$(revdate) -aversion-label=@PACKAGE@ -arevnumber=$(version) -o $@ $<
+
+programmersguide.html: $(srcdir)/programmersguide.txt $(DEPENDENCIES) $(srcdir)/.git-version
+	$(ASCIIDOC) -b html5 -a icons -a latexmath -a toc2 -a numbered -aimagesdir=$(srcdir) -arevdate=$(revdate) -aversion-label=@PACKAGE@ -arevnumber=$(version) -o $@ $<
+
+programmersguide.pdf: programmersguide.xml
+	$(DBLATEX) --param=doc.lot.show=figure,table $< $@
+
+all: thermodynamicanalyticstoolkit.pdf thermodynamicanalyticstoolkit.html programmersguide.html programmersguide.pdf
 
 FORCE:
 
@@ -84,4 +102,3 @@ EXTRA_DIST += \
 
 $(srcdir)/version.txt: $(srcdir)/.git-version
 	cat $(srcdir)/.git-version >$@
-

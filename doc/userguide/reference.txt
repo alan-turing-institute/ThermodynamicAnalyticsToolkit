@@ -675,15 +675,39 @@ error as the file will contain too few values.
 Samplers
 ~~~~~~~~
 
-Samplers are at the core of all exploration. In this section we will
-give a few words on advice on the various samplers implemented in this
-package.
+Samplers are discretizations of a given dynamical system, set by an ODE or
+SDE. In our case, it is mostly Langevin dynamics. Given that the  sampler
+is ergodic we can replace integrals over the whole domain by integrals along
+sufficiently long trajectories.
 
-Naturally, not all of them are equivalent. Some are more robust with
-respect to the choice of the step sizes than others. In general, we
-recommend <<BAOAB>> at the moment as it is the most accurate with second
-order convergence for average values over the step width size and even
-fourth order in the high-friction limit.
+Certain asymptotical properties are inherently connected to the respective
+dynamics, for example, the average kinetic energy. It can evaluated as average
+by integrating along the trajecories. However, as it is not possible to
+integrate the continuous dynamics directly, we rely on the respective
+discretizen, the sampler, which naturally introduces an error.
+
+This discretization error depends on the chosen _finite step width_ by which
+the trajectories are produced. It shows as a finite error to the
+asymptotical value regardless of the length of the trajectory. Choosing a
+smaller step width will produce an error.
+
+This can be observed for the average kinetic energy by looking at a small
+example network and dataset and producing sufficiently long trajectories.
+If one plots the difference against the known asymptotical value (namely
+latexmath:[\frac{N^\text{dof}}{2} k_B T] with temperature *T*, and degrees of
+freedom latexmath:[N^\text{dof}]) over different step widths in double
+logarithmic fashion, one obtains straight lines whose slope depends on the
+discretization order.
+
+Different samplers have different discretization orders and the order also
+depends on the observed quantity.
+
+This makes picking the right sampler a critical choice: From a statistical point
+of view the most accurate sampler is best, i.e. the one having the highest
+discretization order. However, as all of them have roughly the same
+computational cost, it is generally recommended to pick BAOAB which has second
+order convergence and even fourth order in the high-friction limit, see
+<<Leimkuhler2012>> for details.
 
 NOTE: At the beginning of each the following subsections we give the name of the respective sampler in order to activate it using the `sampler` keyword, see <<quickstart.python.sampling>> and <<quickstart.cmdline.sampling>>.
 
@@ -694,7 +718,7 @@ Stochastic Gradient Langevin Dynamics
 `sampler`: +StochasticGradientLangevinDynamics+
 
 The Stochastic Gradient Langevin Dynamics (SGLD) was proposed by
-Welling2011 based on the <<SGD>>[Stochastic Gradient Descent], which is a
+<<Welling2011>> based on the <<SGD>>[Stochastic Gradient Descent], which is a
 variant of the <<GD>>[Gradient Descent] using only a subset of the dataset
 for computing gradients. The central idea behind SGLD was to add an
 additional noise term whose magnitude then controls the noise induced by
@@ -759,7 +783,7 @@ BAOAB derives from the basic building blocks A (position update), B
 is split up. Each step is solved in a separate step. Hence, we perform a
 B step, then an A step, ... and so on. This scheme has second-order
 accuracy and superb overall accuracy with respect to positions. See
-Leimkuhler2012 for more details.
+<<Leimkuhler2012>> for more details.
 
 [NOTE]
 ====
@@ -774,7 +798,7 @@ Hamiltonian Monte Carlo
 
 HMC is based on Hamiltonian dynamics instead of Langevin Dynamics. Noise
 only enters when, after the evaluation of an acceptance criterion, the
-momenta are redrawn randomly. It has first been proposed by Duane1987.
+momenta are redrawn randomly. It has first been proposed by <<Duane1987>>.
 
 [[reference.samplers.walkerensemble]]
 Ensemble of Walkers
@@ -784,7 +808,7 @@ Ensemble of Walkers uses a collection of walkers that exchange gradient
 and parameter information in each step in order to calculate a
 preconditioning matrix. This preconditioning allows to explore elongated
 minimum basins faster than independent walkers would do alone, see
-Matthews2018.
+<<Matthews2018>>.
 
 This is activated by setting the `number_walkers` to a value larger than
 1. Note that `covariance_blending` controls the magnitude of the
