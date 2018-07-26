@@ -3,6 +3,7 @@ SUBDIRS = \
     diffusion_maps \
     exploration \
     models \
+    models/accumulators \
     models/input \
     options \
     parameters \
