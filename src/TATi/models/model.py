@@ -887,7 +887,9 @@ class model:
                 for walker_index in range(self.FLAGS.number_walkers):
                     # pick next evaluation step with a little random variation
                     if current_step > HMC_steps[walker_index]:
-                        HMC_steps[walker_index] += max(1,
+                        # add one extra step (1+..) to allow at least one time integration step
+                        # before another evaluation step
+                        HMC_steps[walker_index] += 1+max(1,
                                          round((0.9 + np.random.uniform(low=0., high=0.2)) \
                                                * self.FLAGS.hamiltonian_dynamics_time / self.FLAGS.step_width))
                         logging.debug("Next evaluation of HMC criterion at step " + str(HMC_steps))
