@@ -931,6 +931,26 @@ class model:
                               % (walker_index, current_step, loss_eval[walker_index], total_eval[walker_index],
                                  kin_eval[walker_index]))
 
+    def _prepare_HMC_nodes(self):
+        HMC_eval_nodes = []
+        HMC_set_nodes = []
+        if self.FLAGS.sampler == "HamiltonianMonteCarlo":
+            HMC_eval_nodes = [[self.nn[i].get("loss") for i in range(self.FLAGS.number_walkers)]] \
+                            +[self.static_vars[key] for key in ["old_kinetic", "total_energy"]]
+
+            HMC_set_nodes.extend([self.assigner["old_loss"],
+                                  self.assigner["old_kinetic"]])
+            HMC_set_all_nodes = []
+            HMC_set_all_nodes.extend([self.assigner["total_energy"]] + HMC_set_nodes)
+
+            # zero rejection rate before sampling start
+            check_accepted, check_rejected = self.sess.run([
+                self.zero_assigner["accepted"], self.zero_assigner["rejected"]])
+            for walker_index in range(self.FLAGS.number_walkers):
+                assert(check_accepted[walker_index] == 0)
+                assert(check_rejected[walker_index] == 0)
+        return HMC_eval_nodes, HMC_set_nodes
+
     def _sample_Metropolis(self, return_run_info=False, return_trajectories=False, return_averages=False):
 
         self.init_files("sample")
@@ -975,22 +995,7 @@ class model:
             feed_dict.update(self._create_default_feed_dict_with_constants(walker_index))
 
         # create extra nodes for HMC
-        if self.FLAGS.sampler == "HamiltonianMonteCarlo":
-            HMC_eval_nodes = [[self.nn[i].get("loss") for i in range(self.FLAGS.number_walkers)]] \
-                            +[self.static_vars[key] for key in ["old_kinetic", "total_energy"]]
-
-            HMC_set_nodes = []
-            HMC_set_nodes.extend([self.assigner["old_loss"],
-                                  self.assigner["old_kinetic"]])
-            HMC_set_all_nodes = []
-            HMC_set_all_nodes.extend([self.assigner["total_energy"]] + HMC_set_nodes)
-
-            # zero rejection rate before sampling start
-            check_accepted, check_rejected = self.sess.run([
-                self.zero_assigner["accepted"], self.zero_assigner["rejected"]])
-            for walker_index in range(self.FLAGS.number_walkers):
-                assert(check_accepted[walker_index] == 0)
-                assert(check_rejected[walker_index] == 0)
+        HMC_eval_nodes, HMC_set_nodes = self._prepare_HMC_nodes()
 
         # check that sampler's parameters are actually used
         self._print_sampler_parameters(feed_dict)
@@ -1023,7 +1028,10 @@ class model:
             })
 
             # set HMC specific nodes in feed_dict
-            self._set_HMC_next_eval_step(current_step, HMC_placeholder_nodes, HMC_steps, feed_dict)
+            next_eval_step = self._set_HMC_next_eval_step(current_step, HMC_placeholder_nodes, HMC_steps, feed_dict)
+            run_info.inform_next_eval_step(next_eval_step)
+            trajectory.inform_next_eval_step(next_eval_step)
+            averages.inform_next_eval_step(next_eval_step)
 
             # set global variable used in HMC sampler for criterion to initial loss
             self._set_HMC_eval_variables(current_step, HMC_current_set_nodes, HMC_eval_nodes, HMC_set_nodes, feed_dict)

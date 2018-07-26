@@ -12,6 +12,7 @@ class TrajectoryAccumulator(Accumulator):
 
     def __init__(self, return_trajectories, sampler, config_map, writer,
                  header, steps, number_walkers):
+        super(TrajectoryAccumulator, self).__init__()
         self.trajectory = None
         self._return_trajectories = return_trajectories
         self._sampler = sampler
@@ -26,22 +27,25 @@ class TrajectoryAccumulator(Accumulator):
                     np.zeros((steps, no_params)),
                     columns=header))
 
+    def _accumulate_nth_step_line(self, current_step, walker_index, written_row, values):
+        trajectory_line = [walker_index, values.global_step[walker_index]] \
+                          + ['{:{width}.{precision}e}'.format(values.loss[walker_index], width=self.output_width,
+                                                              precision=self.output_precision)]
+        if len(values.weights[walker_index]) > 0:
+            flat_array = neuralnet_parameters.flatten_list_of_arrays(values.weights[walker_index])
+            trajectory_line += [
+                '{:{width}.{precision}e}'.format(item, width=self.output_width, precision=self.output_precision) \
+                for item in flat_array[:]]
+        if len(values.biases[walker_index]) > 0:
+            flat_array = neuralnet_parameters.flatten_list_of_arrays(values.biases[walker_index])
+            trajectory_line += [
+                '{:{width}.{precision}e}'.format(item, width=self.output_width, precision=self.output_precision) \
+                for item in flat_array[:]]
+        return trajectory_line
+
     def accumulate_nth_step(self, current_step, walker_index, written_row, values):
         if self._config_map["do_write_trajectory_file"] or self._return_trajectories:
-            trajectory_line = [walker_index, values.global_step[walker_index]] \
-                              + ['{:{width}.{precision}e}'.format(values.loss[walker_index], width=self.output_width,
-                                                                  precision=self.output_precision)]
-            if len(values.weights[walker_index]) > 0:
-                flat_array = neuralnet_parameters.flatten_list_of_arrays(values.weights[walker_index])
-                trajectory_line += [
-                    '{:{width}.{precision}e}'.format(item, width=self.output_width, precision=self.output_precision) \
-                    for item in flat_array[:]]
-            if len(values.biases[walker_index]) > 0:
-                flat_array = neuralnet_parameters.flatten_list_of_arrays(values.biases[walker_index])
-                trajectory_line += [
-                    '{:{width}.{precision}e}'.format(item, width=self.output_width, precision=self.output_precision) \
-                    for item in flat_array[:]]
-
+            trajectory_line = self._accumulate_nth_step_line(current_step, walker_index, written_row, values)
             if self._config_map["do_write_trajectory_file"]:
                 self._trajectory_writer.writerow(trajectory_line)
             if self._return_trajectories:

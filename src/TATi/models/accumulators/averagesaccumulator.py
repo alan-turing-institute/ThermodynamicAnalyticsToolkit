@@ -12,6 +12,7 @@ class AveragesAccumulator(Accumulator):
     def __init__(self, return_averages, sampler, config_map, writer,
                  header, steps, number_walkers,
                  inverse_temperature, burn_in_steps):
+        super(AveragesAccumulator, self).__init__()
         self.accumulated_kinetic_energy = [0.]*number_walkers
         self.accumulated_loss_nominator = [0.]*number_walkers
         self.accumulated_loss_denominator = [0.]*number_walkers
@@ -43,42 +44,47 @@ class AveragesAccumulator(Accumulator):
         if self._sampler != "StochasticGradientLangevinDynamics":
             self.accumulated_kinetic_energy[walker_index] += values.kinetic_energy[walker_index]
 
+    def _accumulate_nth_step_line(self, current_step, walker_index, written_row, values):
+        if self.accumulated_loss_denominator[walker_index] > 0:
+            average_loss = self.accumulated_loss_nominator[walker_index] / self.accumulated_loss_denominator[
+                walker_index]
+        else:
+            average_loss = 0.
+
+        if current_step >= self._burn_in_steps:
+            divisor = float(current_step + 1. - self._burn_in_steps)
+            average_kinetic_energy = self.accumulated_kinetic_energy[walker_index] / divisor
+            average_virials = abs(0.5 * self.accumulated_virials[walker_index]) / divisor
+        else:
+            average_kinetic_energy = 0.
+            average_virials = 0.
+
+        averages_line = [walker_index, values.global_step[walker_index], current_step] \
+                        + ['{:{width}.{precision}e}'.format(values.loss[walker_index], width=self.output_width,
+                                                            precision=self.output_precision)] \
+                        + ['{:{width}.{precision}e}'.format(average_loss, width=self.output_width,
+                                                            precision=self.output_precision)]
+
+        if self._sampler == "StochasticGradientLangevinDynamics":
+            averages_line += ['{:{width}.{precision}e}'.format(average_virials, width=self.output_width,
+                                                               precision=self.output_precision)]
+        else:
+            averages_line += ['{:{width}.{precision}e}'.format(x, width=self.output_width,
+                                                               precision=self.output_precision)
+                              for x in [average_kinetic_energy, average_virials]]
+        if self._sampler == "HamiltonianMonteCarlo":
+            if (values.rejected[walker_index] + values.accepted[walker_index]) > 0:
+                average_rejection_rate = values.rejected[walker_index] / (
+                        values.rejected[walker_index] + values.accepted[walker_index])
+            else:
+                average_rejection_rate = 0
+            averages_line += ['{:{width}.{precision}e}'.format(average_rejection_rate, width=self.output_width,
+                                                               precision=self.output_precision)]
+        return averages_line
+
     def accumulate_nth_step(self, current_step, walker_index, written_row, values):
         if self._config_map["do_write_averages_file"] or self._return_averages:
-            if self.accumulated_loss_denominator[walker_index] > 0:
-                average_loss = self.accumulated_loss_nominator[walker_index] / self.accumulated_loss_denominator[walker_index]
-            else:
-                average_loss = 0.
-            if current_step >= self._burn_in_steps:
-                divisor = float(current_step + 1. - self._burn_in_steps)
-                average_kinetic_energy = self.accumulated_kinetic_energy[walker_index] / divisor
-                average_virials = abs(0.5 * self.accumulated_virials[walker_index]) / divisor
-            else:
-                average_kinetic_energy = 0.
-                average_virials = 0.
-
-            averages_line = [walker_index, values.global_step[walker_index], current_step] \
-                            + ['{:{width}.{precision}e}'.format(values.loss[walker_index], width=self.output_width,
-                                                                precision=self.output_precision)] \
-                            + ['{:{width}.{precision}e}'.format(average_loss, width=self.output_width,
-                                                                precision=self.output_precision)]
-
-            if self._sampler == "StochasticGradientLangevinDynamics":
-                averages_line += ['{:{width}.{precision}e}'.format(average_virials, width=self.output_width,
-                                                                   precision=self.output_precision)]
-            else:
-                averages_line += ['{:{width}.{precision}e}'.format(x, width=self.output_width,
-                                                                   precision=self.output_precision)
-                                  for x in [average_kinetic_energy, average_virials]]
-            if self._sampler == "HamiltonianMonteCarlo":
-                if (values.rejected[walker_index] + values.accepted[walker_index]) > 0:
-                    average_rejection_rate = values.rejected[walker_index] / (
-                            values.rejected[walker_index] + values.accepted[walker_index])
-                else:
-                    average_rejection_rate = 0
-                averages_line += ['{:{width}.{precision}e}'.format(average_rejection_rate, width=self.output_width,
-                                                                   precision=self.output_precision)]
-
+            averages_line = self._accumulate_nth_step_line(current_step, walker_index, written_row, values)
             if self._config_map["do_write_averages_file"]:
                 self._averages_writer.writerow(averages_line)
             if self._return_averages:

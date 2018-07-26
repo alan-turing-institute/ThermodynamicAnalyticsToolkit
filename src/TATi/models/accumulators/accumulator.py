@@ -6,7 +6,7 @@ class Accumulator(object):
     output_precision = 8
 
     def __init__(self):
-        pass
+        self._next_eval_step = None
 
     def accumulate_each_step(self, current_step):
         """ Accumulate values each step internally.
@@ -21,3 +21,6 @@ class Accumulator(object):
         :param current_step: current step with values
         """
         raise AttributeError("Not implemented, you need to derive properly from this class.")
+
+    def inform_next_eval_step(self, next_eval_step):
+        self._next_eval_step = next_eval_step
