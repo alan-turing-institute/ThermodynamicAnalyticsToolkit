@@ -41,8 +41,6 @@ include::quickstart.txt[]
 
 include::reference.txt[]
 
-include::tensorflow_flaws.txt[]
-
 :numbered!:
 
 Acknowledgements
