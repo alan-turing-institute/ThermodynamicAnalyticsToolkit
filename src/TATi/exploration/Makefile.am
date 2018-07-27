@@ -1,6 +1,8 @@
+nodist_TATI_exploration_PYTHON = \
+    $(builddir)/get_executables.py
+
 TATI_exploration_PYTHON = \
     explorer.py \
-    $(builddir)/get_executables.py \
     trajectorydata.py \
     trajectorydatacontainer.py \
     trajectoryjob.py \

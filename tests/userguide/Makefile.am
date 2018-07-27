@@ -71,7 +71,10 @@ EXTRA_DIST = \
 	testsuite.at \
 	$(TESTSUITE) \
 	atlocal.in \
+	cmdline \
 	package.m4 \
+	python \
+	simulation \
 	$(TESTSCRIPTS)
 
 max_jobs = 4

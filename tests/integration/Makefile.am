@@ -21,7 +21,9 @@ EXTRA_DIST = \
 	package.m4 \
 	$(TESTSCRIPTS) \
 	Equilibration \
+	InputSpaceSampling_Minima \
 	InputSpaceSampling_Trajectory \
+	LossFunctionSampling_Minima \
 	LossFunctionSampling_Trajectory
 
 max_jobs = 4

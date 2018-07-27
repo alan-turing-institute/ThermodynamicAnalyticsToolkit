@@ -122,6 +122,7 @@ EXTRA_DIST = \
 	atlocal.in \
 	package.m4 \
 	$(TESTSCRIPTS) \
+	DataDrivenExplorer \
 	DataDrivenSampler \
 	DataOptimizer \
 	DatasetParser \

@@ -41,9 +41,11 @@ PYTHON_EXAMPLES = \
 	$(srcdir)/simulation/evaluate_hessians.py \
 	$(srcdir)/simulation/evaluate_loss.py \
 	$(srcdir)/simulation/evaluate_predict.py \
+	$(srcdir)/simulation/fit.py \
 	$(srcdir)/simulation/initializing_momenta.py \
 	$(srcdir)/simulation/requesting_parameters.py \
 	$(srcdir)/simulation/requesting_momenta.py \
+	$(srcdir)/simulation/sample.py \
 	$(srcdir)/simulation/setting_momenta.py \
 	$(srcdir)/simulation/setting_momenta_walkers.py \
 	$(srcdir)/simulation/setting_parameters.py \
@@ -74,7 +76,9 @@ DEPENDENCIES = \
 	reference_examples_harmonic_oscillator.txt \
 	reference_implementing_sampler.txt \
 	reference_simulation.txt \
+	roadmap.txt \
 	tensorflow_flaws.txt \
+	userguide.txt \
 	$(PYTHON_EXAMPLES)
 
 EXTRA_DIST = \

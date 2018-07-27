@@ -1,12 +1,6 @@
-[[reference_simulation_harmonic_oscillator]]
-Examples
---------
-We show how to set up some basic models, which can be a useful tool
-to study and test methods.
-
-[[reference_simulation_harmonic_oscillator.harmonic_oscillator]]
+[[reference.examples.harmonic_oscillator]]
 Harmonic oscillator
-~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^
 
 It can be sometimes useful to use TATi to simulate a simple harmonic oscillator.
 This model can be obtained by training the neural network with one parameter
@@ -40,18 +34,7 @@ link:#reference_simulation_harmonic_oscillator.harmonic_oscillator[Gaussian dist
 
 NOTE: The figure was obtained with setting `max_steps` to 10000.
 
-[reference_simulation_harmonic_oscillator.harmonic_oscillator[density]]
+[[reference.examples.harmonic_oscillator.density]]
 .Gaussian distribution: Histogram of the trajectories obtained by simulating 1D harmonic oscillator with BAOAB sampler.
 image::pictures/density_harmonic_oscillator.png[alt="density harmonic oscillator",{basebackend@docbook:scaledwidth="40%":width=400}]
 
-[reference_simulation_harmonic_oscillator.blobs]]
-Blobs
-~~~~~
-
-TODO
-
-[reference_simulation_harmonic_oscillator.mnist]]
-MNIST
-~~~~~
-
-TODO
