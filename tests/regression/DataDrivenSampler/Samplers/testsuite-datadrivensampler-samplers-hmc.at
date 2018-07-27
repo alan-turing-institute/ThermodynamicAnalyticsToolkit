@@ -19,7 +19,7 @@
 
 AT_SETUP([Samplers - HMC])
 AT_KEYWORDS([samplers tatisampler hmc])
-AT_SKIP_IF([$BIN_TRUE])
+AT_XFAIL_IF([$BIN_TRUE])
 
 # dataset prepared as follows:
 # TATiDatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_files dataset-twoclusters.csv
@@ -53,7 +53,7 @@ AT_CLEANUP
 
 AT_SETUP([Samplers - HMC with hidden nodes])
 AT_KEYWORDS([samplers tatisampler hmc hidden])
-AT_SKIP_IF([$BIN_TRUE])
+AT_XFAIL_IF([$BIN_TRUE])
 
 # dataset prepared as follows:
 # TATiDatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_files dataset-twoclusters.csv
