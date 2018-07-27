@@ -296,6 +296,13 @@ where
 latexmath:[\beta] is the inverse temperature coefficient, latexmath:[\Delta t] is the (discretization)
 step width and latexmath:[\theta] is the parameter vector and latexmath:[U(\theta)] the energy or loss function.
 
+.Table of parameters for SGLD
+[width="80%",cols="3,^2",options="header"]
+|=========================================================
+|Option name |Description
+| `step_width` | time integration step width latexmath:[\delta t]
+|=========================================================
+
 [NOTE]
 ====
 *SGLD* is very much like *SGD* and *GD* in terms that the `step_width` needs
@@ -313,6 +320,19 @@ This is an extension of Stochastic Gradient Descent proposed by
 approximate gradients through a suitable thermostat. However, the
 discretisation used here is not based on the (first-order)
 Euler-Maruyama as <<SGLD>> but on <<GLA>> 2nd order.
+
+.Table of parameters for CCAdL
+[width="80%",cols="3,^2",options="header"]
+|=========================================================
+|Option name |Description
+| `friction_constant` | friction constant latexmath:[\gamma] that controls
+how much momentum is replaced by random noise each step
+| `inverse_temperature` | inverse temperature factor scaling the noise,
+latexmath:[\beta]
+| `sigma`  | controlling the thermostat
+| `sigmaA` | controlling the thermostat's adaptivity
+| `step_width` | time integration step width latexmath:[\delta t]
+|=========================================================
 
 [NOTE]
 ====
@@ -346,6 +366,17 @@ where latexmath:[\alpha_{\Delta t}=exp(-\gamma \Delta t)] and latexmath:[G\sim N
 
 The first order GLA is BAO.
 
+.Table of parameters for GLA1 and GLA2
+[width="80%",cols="3,^2",options="header"]
+|=========================================================
+|Option name |Description
+| `friction_constant` | friction constant latexmath:[\gamma] that controls
+how much momentum is replaced by random noise each step
+| `inverse_temperature` | inverse temperature factor scaling the noise,
+latexmath:[\beta]
+| `step_width` | time integration step width latexmath:[\delta t]
+|=========================================================
+
 [NOTE]
 ====
 All GLA samplers have two more parameters: `inverse_temperature` (usually denoted as latexmath:[\beta]) and `friction_constant` (usually denoted as latexmath:[\gamma]). Inverse
@@ -355,6 +386,13 @@ random noise, i.e. the random walker character of the trajectory.
 
 Good values for beta depend on the loss manifold and its barriers and
 need to be find by try&error at the moment.
+
+As a rough guide, latexmath:[\gamma=10] is a good start for the friction
+constant. Moreover, when choosing such a friction constant, with
+latexmath:[\beta=1000] sampling will remain in the starting minimum basin,
+while latexmath:[\beta=1] exists basins very soon. Note that large noise can
+be hidden by a too small friction constant, i.e. they both depend on each
+other.
 ====
 
 [[reference.samplers.baoab]]
@@ -384,11 +422,16 @@ latexmath:[B: p^{n+1/2} = p^n -\nabla U(q^n)\frac{\Delta t}{2}]
 
 where latexmath:[\alpha_{\Delta t}=exp(-\gamma \Delta t)] and latexmath:[G\sim N (0, 1)].
 
-
-[NOTE]
-====
-BAOAB has the same two additional parameters as given in the <<GLA>>s.
-====
+.Table of parameters for BAOAB
+[width="80%",cols="3,^2",options="header"]
+|=========================================================
+|Option name |Description
+| `friction_constant` | friction constant latexmath:[\gamma] that controls
+how much momentum is replaced by random noise each step
+| `inverse_temperature` | inverse temperature factor scaling the noise,
+latexmath:[\beta]
+| `step_width` | time integration step width latexmath:[\delta t]
+|=========================================================
 
 [[reference.samplers.hmc]]
 Hamiltonian Monte Carlo
@@ -405,6 +448,28 @@ legs (`hamiltonian_dynamics_time` larger than 1) that the walker will
 progress much further than in the case of Langevin Dynamics. However,
 this comes at the price of extra computational work in terms of rejected
 legs. See also <<Neal2011>> for a very readable introduction.
+
+.Table of parameters for HMC
+[width="80%",cols="3,^2",options="header"]
+|=========================================================
+|Option name |Description
+| `hamiltonian_dynamics_time` | Time used for integrating Hamiltonian
+dynamics. This is relative to `step_width`. For example, if `step_width` is
+*0.05* and this chose as *0.05* as well, it will evaluate every other step,
+i.e. perform only a single time integration step before evaluating the
+acceptance criterion. If you want to evaluate every *n* steps, then use
+latexmath:[n \cdot \Delta t]
+| `inverse_temperature` | inverse temperature factor scaling the initially
+randomly drawn momenta,
+latexmath:[\beta]
+| `step_width` | time integration step width latexmath:[\delta t]
+|=========================================================
+
+IMPORTANT: The exact amount of Hamiltonian dynamics time integration steps
+is slightly varied (uniformly randomly scaled in [0.9,1.1]) such that not all
+walkers evaluate at the same step and are correlated thereby.
+
+NOTE:
 
 [[reference.samplers.walkerensemble]]
 Ensemble of Walkers
