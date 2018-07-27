@@ -1,3 +1,17 @@
+v0.9
+====
+
+- added simulation module, an easy-to-use python interface to loss manifold
+  sampling for neural networks.
+- large rewrite of userguide, now in asciidoc.
+- added programmer's guide
+- added roadmap.
+- option types are checked in python interface.
+- tensorflow up to 1.8 supported.
+- improved input pipeline (and thereby overall) performance.
+- several smaller fixes.
+- HMC is removed temporarily till being fully validated.
+
 v0.8
 ====
 
