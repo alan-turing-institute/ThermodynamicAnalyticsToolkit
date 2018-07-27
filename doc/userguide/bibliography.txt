@@ -27,6 +27,10 @@ Ensemble preconditioning for Markov chain Monte Carlo simulation.
 Statistics and Computing, 28(2), 277–290.
 http://doi.org/10.1007/s11222-017-9730-1
 
+- [[Neal2011]] Neal, R. M. (2011). 
+MCMC Using Hamiltonian Dynamics. 
+In Handbook of Markov Chain Monte Carlo (pp. 113–162).
+
 - [[Shang2015]] Shang, X., Zhu, Z., Leimkuhler, B., & Storkey, A. J. (2015).
 Covariance-Controlled Adaptive Langevin Thermostat for Large-Scale Bayesian Sampling.
 In C. Cortes and N. D. Lawrence and D. D. Lee and M. Sugiyama and R. Garnett (Ed.),

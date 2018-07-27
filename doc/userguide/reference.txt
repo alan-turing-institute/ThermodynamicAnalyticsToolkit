@@ -33,6 +33,8 @@ loss function determines the best set of parameters for a given task.
 
 - Loss
 +
+The default is 'mean_squared'.
+
 The loss function determines for a given (labeled) dataset what set of
 neural network's parameters are best. Note that there are losses that do
 not require labels though. Different losses result in different set of
@@ -66,6 +68,14 @@ velocity Verlet/leapfrog, that are employed to propagate both particle
 position (i.e. the parameter value) and its momentum through time. Note
 that momentum and velocity are actually equivalent as usually the mass
 is set to unity.
++
+The kinetic energy is computed as sum over kinetic energies of each parameter.
+
+- Virials
++
+Virials are defined as one half of the sum over the scalar product of
+gradients with parameters, see https://en.wikipedia.org/wiki/Virial_theorem.
+
 
 - Optimizers
 +
@@ -275,6 +285,15 @@ for computing gradients. The central idea behind SGLD was to add an
 additional noise term whose magnitude then controls the noise induced by
 the approximate gradients.
 
+Implements a Stochastic Gradient Langevin Dynamics Sampler
+  in the form of a TensorFlow Optimizer, overriding tensorflow.python.training.Optimizer.
+
+The step update is:
+latexmath:[\theta^{n+1} = \theta^{n} - \beta \nabla  U(\theta) \Delta t + \sqrt{\Delta t} G^n],
+where
+latexmath:[\beta] is the inverse temperature coefficient, latexmath:[\Delta t] is the (discretization)
+step width and latexmath:[\theta] is the parameter vector and latexmath:[U(\theta)] the energy or loss function.
+
 [NOTE]
 ====
 *SGLD* is very much like *SGD* and *GD* in terms that the `step_width` needs
@@ -308,19 +327,32 @@ Geometric Langevin Algorithms
 
 GLA results from a first-order splitting between the Hamiltonian and the
 Ornstein-Uhlenbeck parts, see <<Leimkuhler2015>>[section 2.2.3, Leimkuhler 2015] and also
-<<Leimkuhler2012>>. GLA2 provides second order accuracy at basically no extra
-cost over GLA1.
+<<Leimkuhler2012>>. If the Hamiltonian part is discretized with a scheme of second order as in *GLA2*,
+it provides second order accuracy at basically no extra
+cost.
+
+The update step of the parameters for second order GLA is BABO:
+
+latexmath:[B: p^{n+1/2} = p^n -\nabla U(q^n)\frac{\Delta t}{2}]
+
+latexmath:[A: q^{n+1} =q^n+M^{-1}p^{n+1/2}\Delta t]
+
+latexmath:[B: \tilde{p}^{n+1} = p^{n+1/2} -\nabla U(q^{n+1})\frac{\Delta t}{2}]
+
+latexmath:[O: p^{n+1} = \alpha_{\Delta t}\tilde{p}^{n+1}+ \sqrt{\frac{1-\alpha_{\Delta t}^2}{\beta}M}G^n]
+where latexmath:[\alpha_{\Delta t}=exp(-\gamma \Delta t)] and latexmath:[G\sim N (0, 1)].
+
+The first order GLA is BAO.
 
 [NOTE]
 ====
-All GLA samplers have two more parameters: `inverse_temperature` (also
-known as beta) and `friction_constant` (also known as gamma). Inverse
+All GLA samplers have two more parameters: `inverse_temperature` (usually denoted as latexmath:[\beta]) and `friction_constant` (usually denoted as latexmath:[\gamma]). Inverse
 temperature controls the average momentum of each parameter while the
 friction constant decides over how much of the momentum is replaced by
 random noise, i.e. the random walker character of the trajectory.
 
 Good values for beta depend on the loss manifold and its barriers and
-need to be find by try&error and the moment.
+need to be find by try&error at the moment.
 ====
 
 [[reference.samplers.baoab]]
@@ -336,6 +368,21 @@ B step, then an A step, ... and so on. This scheme has second-order
 accuracy and superb overall accuracy with respect to positions. See
 <<Leimkuhler2012>> for more details.
 
+The update step of the parameters is:
+
+latexmath:[B: p^{n+1/2} = p^n -\nabla U(q^n)\frac{\Delta t}{2}]
+
+latexmath:[A: q^{n+1} =q^n+M^{-1}p^{n+1/2}\frac{\Delta t}{2}]
+
+latexmath:[O: p^{n+1} = \alpha_{\Delta t}\tilde{p}^{n+1}+ \sqrt{\frac{1-\alpha_{\Delta t}^2}{\beta}M}G^n]
+
+latexmath:[A: q^{n+1} =q^n+M^{-1}p^{n+1/2}\frac{\Delta t}{2}]
+
+latexmath:[B: p^{n+1/2} = p^n -\nabla U(q^n)\frac{\Delta t}{2}]
+
+where latexmath:[\alpha_{\Delta t}=exp(-\gamma \Delta t)] and latexmath:[G\sim N (0, 1)].
+
+
 [NOTE]
 ====
 BAOAB has the same two additional parameters as given in the <<GLA>>s.
@@ -350,6 +397,12 @@ Hamiltonian Monte Carlo
 HMC is based on Hamiltonian dynamics instead of Langevin Dynamics. Noise
 only enters when, after the evaluation of an acceptance criterion, the
 momenta are redrawn randomly. It has first been proposed by <<Duane1987>>.
+The Metropolisation ensures that the sampled distribution is unbiased.
+One virtue of HMC is that when using longer Verlet time integration
+legs (`hamiltonian_dynamics_time` larger than 1) that the walker will
+progress much further than in the case of Langevin Dynamics. However,
+this comes at the price of extra computational work in terms of rejected
+legs. See also <<Neal2011>> for a very readable introduction.
 
 [[reference.samplers.walkerensemble]]
 Ensemble of Walkers
