@@ -274,6 +274,7 @@ class NeuralNetwork(object):
                 sampler = GeometricLangevinAlgorithmSecondOrderSampler(covariance_blending,
                                                                        step_width, inverse_temperature, friction_constant, seed=seed)
             elif sampling_method == "HamiltonianMonteCarlo":
+                raise NotImplementedError("HamiltonianMonteCarlo implementation has not been properly tested yet.")
                 if seed is not None:
                     np.random.seed(seed)
                 accept_seed = np.random.uniform(low=0,high=67108864)

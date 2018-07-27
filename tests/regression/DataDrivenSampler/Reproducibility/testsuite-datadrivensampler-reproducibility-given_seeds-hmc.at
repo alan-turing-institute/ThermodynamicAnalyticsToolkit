@@ -19,6 +19,7 @@
 
 AT_SETUP([Sampler Reproducibility HMC - same and different seed])
 AT_KEYWORDS([reproducibility seed twoclusters tatisampler hmc])
+AT_SKIP_IF([$BIN_TRUE])
 
 # dataset prepared as follows:
 # TATiDatasetWriter --data_type 2 --dimension 10 --seed 426 --noise 0. --train_test_ratio 0 --test_data_files dataset-twoclusters.csv
