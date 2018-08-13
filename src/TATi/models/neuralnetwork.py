@@ -132,7 +132,8 @@ class NeuralNetwork(object):
                                        layer_dimensions, keep_prob, hidden_activation,
                                        trainables_collection=trainables_collection,
                                        seed=seed)
-            y = self.add_output_layer(last_hidden_layer, layer_dimensions[-1],
+            # cannot use layer_dimensions[-1] as last entry may be a zero which is skipped
+            y = self.add_output_layer(last_hidden_layer, int(last_hidden_layer.get_shape()[-1]),
                                       output_dimension, output_activation,
                                       trainables_collection=trainables_collection,
                                       seed=output_seed)
@@ -446,7 +447,8 @@ class NeuralNetwork(object):
         :param input_layer: reference to the input layer
         :param input_dimension: number of nodes in `input_layer`
         :param keep_prob: reference to the placeholder with the *keep probability* for the dropped layer
-        :param layer_dimensions: list of ints giving the number of nodes of each hidden layer
+        :param layer_dimensions: list of ints giving the number of nodes of each hidden layer,
+                entries with dim 0 are skipped entirely
         :param activation: activation function of the hidden layers
         :param trainables_collection: specific collection to gather all weights of this layer
         :param seed: random number see to use for weights (seed is increased by one per layer)
@@ -456,6 +458,8 @@ class NeuralNetwork(object):
         last_layer = input_layer
         out_dimension = input_dimension
         for i in range(len(layer_dimensions)):
+            if layer_dimensions[i] == 0:
+                continue
             if seed is not None:
                 current_seed = seed+i
             number = str(i + 1)
