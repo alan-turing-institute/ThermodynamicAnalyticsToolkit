@@ -1,5 +1,4 @@
-from hmac import new
-
+import logging
 import numpy as np
 
 
@@ -26,7 +25,7 @@ class NetworkParameterAdapter(object):
         :param new_dimensions: list of input, list of hidden, and output dimensions
         :return: new numpy array of parameters
         """
-        print(old_parameters.shape)
+        print(len(old_parameters))
 
         if len(old_dimensions) > len(new_dimensions):
             raise ValueError("We cannot remove layers from the network and maintain parameters.")
@@ -37,18 +36,18 @@ class NetworkParameterAdapter(object):
         # convert each weight layer
         for i in range(1, len(old_dimensions)):
             index_end = index_start + old_dimensions[i-1]*old_dimensions[i]
-            print("Resizing layer (%d, %d) to (%d, %d)" % (
+            logging.info("Resizing weight matrix (%d, %d) to (%d, %d)" % (
                     old_dimensions[i - 1], old_dimensions[i],
                     new_dimensions[i - 1], new_dimensions[i]
             ))
-            old_layer_weights = old_parameters[index_start:index_end]
+            old_layer_weights = np.array(old_parameters[index_start:index_end])
             layer_weights = \
                 NetworkParameterAdapter._convert_single_layer_weights(
                     old_layer_weights,
                     [old_dimensions[i-1], old_dimensions[i]],
                     [new_dimensions[i-1], new_dimensions[i]])
             new_params.append(layer_weights)
-            index_start += index_end
+            index_start = index_end
 
         # add more weight layers if necessary
         for i in range(len(old_dimensions), len(new_dimensions)):
@@ -58,13 +57,18 @@ class NetworkParameterAdapter(object):
 
         # convert each bias layer
         for i in range(1, len(old_dimensions)):
-            old_layer_biases = old_parameters[index_start:index_end]
+            index_end = index_start + old_dimensions[i]
+            logging.info("Resizing bias vector (%d) to (%d)" % (
+                    old_dimensions[i],
+                    new_dimensions[i]
+            ))
+            old_layer_biases = np.array(old_parameters[index_start:index_end])
             layer_biases = \
                 NetworkParameterAdapter._convert_single_layer_biases(
                     old_layer_biases,
                     [new_dimensions[i-1], new_dimensions[i]])
             new_params.append(layer_biases)
-            index_start += index_end
+            index_start = index_end
 
         # add more bias layers if necessary
         for i in range(len(old_dimensions), len(new_dimensions)):
@@ -115,8 +119,7 @@ class NetworkParameterAdapter(object):
         # print("Reshaped")
         # print(layer_biases)
         new_layer_biases = np.ones(new_dims[1]) * NetworkParameterAdapter.perturbation_scale
-        min_dims = min(layer_biases.shape[0], layer_biases.shape[0])
-        new_layer_biases[:min_dims] = layer_biases
+        new_layer_biases[:layer_biases.shape[0]] = layer_biases
         # print("Padded")
         # print(new_layer_biases)
         ###new_layer_biases.shape = (new_dims[1])

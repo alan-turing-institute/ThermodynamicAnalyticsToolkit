@@ -160,6 +160,11 @@ class Simulation(object):
         :param args: positional arguments
         :param **kwargs: keyword arguments
         """
+        # in any case store old dimensions
+        old_dimensions = [self._nn.FLAGS.input_dimension] + \
+                         self._nn.FLAGS.hidden_dimension + \
+                         [self._nn.FLAGS.output_dimension]
+
         # set the new option values
         self._options.set_options(**kwargs)
 
@@ -171,27 +176,42 @@ class Simulation(object):
         affected_parts = list(affected_parts)
         logging.info("Parts affected by change of options are "+str(affected_parts)+".")
 
-        if "network" in affected_parts:
-            raise ValueError("Changing the network is not yet supported.")
+        #if "network" in affected_parts:
+        #    raise ValueError("Changing the network is not yet supported.")
 
-        if "network" in affected_parts and self._lazy_nn_construction:
-            # Save network parameters
-            values = self.parameters
-            old_dimensions = [self._nn.FLAGS.input_dimension,
-                              self._nn.FLAGS.hidden_dimension, self._nn.FLAGS.output_dimension]
-            # reset the network and tensorflow's default graph
-            self._nn = model(self._options)
-        if "input" in affected_parts:
+        def reset_input(input_pipeline):
+            """ Helper function to recreate the input pipeline
+
+            :param input_pipeline: (old) input pipeline with features and labels for in-memory case
+            """
             if self._options._option_map["in_memory_pipeline"]:
-                features = self._nn.input_pipeline.features
-                labels = self._nn.input_pipeline.labels
+                features = input_pipeline.features
+                labels = input_pipeline.labels
                 self._nn.provide_data(features, labels)
             else:
                 self._nn.init_input_pipeline()
+
+        if "network" in affected_parts and not self._lazy_nn_construction:
+            # Save network parameters
+            values = self.parameters
+            old_input_pipeline = self._nn.input_pipeline
+            # reset the network and tensorflow's default graph
+            self._nn = model(self._options)
+            self._cache = EvaluationCache(self._nn)
+            self._parameters = Parameters(self._nn, ["weights", "biases"])
+            self._momenta = Parameters(self._nn, ["momenta_weights", "momenta_biases"])
+            # at the moment we have to recreate the input, too, (possibly using
+            # the old in-memory dataset) as certain placeholders are lost when
+            # we reset the default graph
+            reset_input(old_input_pipeline)
+
+        if "input" in affected_parts:
+            reset_input(self._nn.input_pipeline)
         if "network" in affected_parts:
             # reconstruct the network
             was_lazy = self._lazy_nn_construction
             self._construct_nn()
+            print(self.num_parameters())
             if not was_lazy:
                 try:
                     self._reassign_parameters(values, old_dimensions)
@@ -206,10 +226,10 @@ class Simulation(object):
         :param values: old weights and biases
         :param dimensions: dimensions of old network
         """
-        new_values = NetworkParameterAdapter(values, dimensions,
-                                [self.options.input_dimension]+ \
-                                    self.options.hidden_dimensions+ \
-                                [self.options.input_dimension])
+        new_values = NetworkParameterAdapter.convert(values, dimensions,
+                                [self._options.input_dimension]+ \
+                                    self._options.hidden_dimension+ \
+                                [self._options.output_dimension])
         self._nn.assign_neural_network_parameters(new_values)
 
     def _evaluate_cache(self, key, walker_index=None):

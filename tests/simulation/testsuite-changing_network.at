@@ -19,7 +19,6 @@
 
 AT_SETUP([Simulation - changing network])
 AT_KEYWORDS([simulation changing network])
-AT_XFAIL_IF([$BIN_TRUE])
 
 AT_CHECK([cp -f \
     ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/pre/dataset-twoclusters.csv \
@@ -28,6 +27,10 @@ AT_CHECK([cp -f \
 AT_CHECK([../../../run \
 	${abs_top_srcdir}/tests/simulation/pre/changing_network.py\
 ], 0, [stdout], [stderr])
+# loss before network change
+AT_CHECK(grep "Loss: 0.7419" stdout, 0, [ignore], [ignore])
+# loss after network change
+AT_CHECK(grep "Loss: 0.7418" stdout, 0, [ignore], [ignore])
 
 AT_CLEANUP
 
