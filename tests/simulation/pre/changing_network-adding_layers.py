@@ -16,12 +16,8 @@ np.random.seed(426)
 print("Loss: "+str(nn.loss()))
 print("Parameters: "+str(nn.parameters))
 
-# check that parameters and loss are indeed the same (i.e. no mini batches)
-print("Loss: "+str(nn.loss()))
-print("Parameters: "+str(nn.parameters))
-
 # increase hidden layer nodes
-nn.set_options(hidden_dimension=[3])
+nn.set_options(hidden_dimension=[3,2])
 
 # print loss with network with hidden layers
 print("Loss: "+str(nn.loss()))

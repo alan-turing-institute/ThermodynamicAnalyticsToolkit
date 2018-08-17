@@ -11,6 +11,9 @@ class NetworkParameterAdapter(object):
 
     This class helps in adapting a parameter vector obtained from a network
     of one size to the parameter vector of a network with a different size.
+
+    Note that this is only useful when either enlarging a hidden layer or when
+    adding more hidden layers with linear activation functions.
     """
 
     perturbation_scale = 1e-2
@@ -31,54 +34,74 @@ class NetworkParameterAdapter(object):
             raise ValueError("We cannot remove layers from the network and maintain parameters.")
 
         new_params = []
-        index_start = 0
 
-        # convert each weight layer
-        for i in range(1, len(old_dimensions)):
-            index_end = index_start + old_dimensions[i-1]*old_dimensions[i]
+        def resize_weight_matrix(index_begin, old_dim_index, new_dim_index):
+            index_end = index_begin + old_dimensions[old_dim_index - 1] * old_dimensions[old_dim_index]
             logging.info("Resizing weight matrix (%d, %d) to (%d, %d)" % (
-                    old_dimensions[i - 1], old_dimensions[i],
-                    new_dimensions[i - 1], new_dimensions[i]
+                old_dimensions[old_dim_index - 1], old_dimensions[old_dim_index],
+                new_dimensions[new_dim_index - 1], new_dimensions[new_dim_index]
             ))
-            old_layer_weights = np.array(old_parameters[index_start:index_end])
+            old_layer_weights = np.array(old_parameters[index_begin:index_end])
             layer_weights = \
                 NetworkParameterAdapter._convert_single_layer_weights(
                     old_layer_weights,
-                    [old_dimensions[i-1], old_dimensions[i]],
-                    [new_dimensions[i-1], new_dimensions[i]])
+                    [old_dimensions[old_dim_index - 1], old_dimensions[old_dim_index]],
+                    [new_dimensions[new_dim_index - 1], new_dimensions[new_dim_index]])
             new_params.append(layer_weights)
-            index_start = index_end
+            return index_end
+
+        def resize_bias_vector(index_begin, old_dim_index, new_dim_index):
+            index_end = index_begin + old_dimensions[old_dim_index]
+            logging.info("Resizing bias vector (%d) to (%d)" % (
+                    old_dimensions[old_dim_index],
+                    new_dimensions[new_dim_index]
+            ))
+            old_layer_biases = np.array(old_parameters[index_begin:index_end])
+            layer_biases = \
+                NetworkParameterAdapter._convert_single_layer_biases(
+                    old_layer_biases,
+                    [new_dimensions[new_dim_index - 1], new_dimensions[new_dim_index]])
+            new_params.append(layer_biases)
+            return index_end
+
+        index_start = 0
+
+        # convert each hidden weight layer
+        for i in range(1, len(old_dimensions)-1):
+            index_start = resize_weight_matrix(index_start, i, i)
 
         # add more weight layers if necessary
-        for i in range(len(old_dimensions), len(new_dimensions)):
+        for i in range(len(old_dimensions)-1, len(new_dimensions)-1):
+            logging.info("Adding new weight matrix (%d, %d)" %(
+                new_dimensions[i - 1], new_dimensions[i]
+            ))
             layer_weights = NetworkParameterAdapter._add_diagonal_layer_weights(
                 [new_dimensions[i - 1], new_dimensions[i]])
             new_params.append(layer_weights)
 
-        # convert each bias layer
-        for i in range(1, len(old_dimensions)):
-            index_end = index_start + old_dimensions[i]
-            logging.info("Resizing bias vector (%d) to (%d)" % (
-                    old_dimensions[i],
-                    new_dimensions[i]
-            ))
-            old_layer_biases = np.array(old_parameters[index_start:index_end])
-            layer_biases = \
-                NetworkParameterAdapter._convert_single_layer_biases(
-                    old_layer_biases,
-                    [new_dimensions[i-1], new_dimensions[i]])
-            new_params.append(layer_biases)
-            index_start = index_end
+        # convert output weight layer
+        index_start = resize_weight_matrix(index_start,
+            len(old_dimensions)-1, len(new_dimensions)-1)
 
-        # add more bias layers if necessary
-        for i in range(len(old_dimensions), len(new_dimensions)):
+        # convert each hidden bias vector
+        for i in range(1, len(old_dimensions)-1):
+            index_start = resize_bias_vector(index_start, i, i)
+
+        # add more bias vector if necessary
+        for i in range(len(old_dimensions)-1, len(new_dimensions)-1):
+            logging.info("Adding new bias vector (%d)" %(
+                new_dimensions[i]
+            ))
             layer_biases = NetworkParameterAdapter._add_diagonal_layer_biases(
                 [new_dimensions[i - 1], new_dimensions[i]])
             new_params.append(layer_biases)
 
+        # convert output bias vector
+        index_start = resize_bias_vector(index_start,
+                                         len(old_dimensions)-1, len(new_dimensions)-1)
+
         new_parameters = np.concatenate(new_params)
-        print(new_parameters.shape)
-        
+
         return new_parameters
 
     @staticmethod
@@ -140,6 +163,7 @@ class NetworkParameterAdapter(object):
         # set ones on diagonal
         for i in range(min_dim):
             layer_weights[i][i] = 1.
+        layer_weights.shape = (dims[0] * dims[1])
         return layer_weights
 
     @staticmethod

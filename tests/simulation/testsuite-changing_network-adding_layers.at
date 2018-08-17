@@ -15,17 +15,22 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-### all tests  on the simulation module
+### test on changing the network
 
-AT_INIT([Simulation tests])
-#AT_TESTED(gawk)
+AT_SETUP([Simulation - adding network layers])
+AT_KEYWORDS([simulation changing network layers])
 
-# Use colored output with new-enough Autotest.
-m4_ifdef([AT_COLOR_TESTS], [AT_COLOR_TESTS])
+AT_CHECK([cp -f \
+    ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/pre/dataset-twoclusters.csv \
+    .
+], 0, [ignore], [ignore])
+AT_CHECK([../../../run \
+	${abs_top_srcdir}/tests/simulation/pre/changing_network-adding_layers.py\
+], 0, [stdout], [stderr])
+# loss before network change
+AT_CHECK(grep "Loss: 0.7419" stdout, 0, [ignore], [ignore])
+# loss after network change
+AT_CHECK(grep "Loss: 0.7449" stdout, 0, [ignore], [ignore])
 
-# various small test scripts
-m4_include(testsuite-accessing_dataset.at)
-m4_include(testsuite-changing_network.at)
-m4_include(testsuite-changing_network-adding_layers.at)
-m4_include(testsuite-multiple_walkers.at)
-m4_include(testsuite-parameters_access.at)
+AT_CLEANUP
+
