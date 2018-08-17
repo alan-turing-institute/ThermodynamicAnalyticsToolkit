@@ -3,7 +3,7 @@ import numpy as np
 
 
 class NetworkParameterAdapter(object):
-    """ Adapts parameters obtained from one network size to another.
+    """ Functor that adapts parameters obtained from one network size to another.
 
     Parameters of a neural network can be obtained as a single numpy vector.
     When one changes the network dimensions, this vector is no longer valid
@@ -16,19 +16,28 @@ class NetworkParameterAdapter(object):
     adding more hidden layers with linear activation functions.
     """
 
-    perturbation_scale = 1e-2
+    def __init__(self, perturbation_scale = 1e-2):
+        """ Cstor of the class that sets the perturbation scale
 
-    @staticmethod
-    def convert(old_parameters, old_dimensions, new_dimensions):
+        Note:
+            Weights are initialized randomly drawn from [0,1] times the scale,
+            while biases are set to 0.1 times the scale.
+
+        :param perturbation_scale: scale of the newly added components
+        """
+        super(NetworkParameterAdapter, self).__init__()
+        self.perturbation_scale = perturbation_scale
+
+    def __call__(self, old_parameters, old_dimensions, new_dimensions):
         """ Converts `old_parameters` conforming to the sizes defined in
         `old_dimensions` to `new_dimensions`.
 
         :param old_parameters: numpy array of parameters
-        :param old_dimensions: list of input, list of hidden, and output dimensions
-        :param new_dimensions: list of input, list of hidden, and output dimensions
+        :param old_dimensions: list of input, hidden, and output dimensions
+        :param new_dimensions: list of input, hidden, and output dimensions
         :return: new numpy array of parameters
         """
-        print(len(old_parameters))
+        #print(len(old_parameters))
 
         if len(old_dimensions) > len(new_dimensions):
             raise ValueError("We cannot remove layers from the network and maintain parameters.")
@@ -43,7 +52,7 @@ class NetworkParameterAdapter(object):
             ))
             old_layer_weights = np.array(old_parameters[index_begin:index_end])
             layer_weights = \
-                NetworkParameterAdapter._convert_single_layer_weights(
+                self._convert_single_layer_weights(
                     old_layer_weights,
                     [old_dimensions[old_dim_index - 1], old_dimensions[old_dim_index]],
                     [new_dimensions[new_dim_index - 1], new_dimensions[new_dim_index]])
@@ -58,7 +67,7 @@ class NetworkParameterAdapter(object):
             ))
             old_layer_biases = np.array(old_parameters[index_begin:index_end])
             layer_biases = \
-                NetworkParameterAdapter._convert_single_layer_biases(
+                self._convert_single_layer_biases(
                     old_layer_biases,
                     [new_dimensions[new_dim_index - 1], new_dimensions[new_dim_index]])
             new_params.append(layer_biases)
@@ -75,7 +84,7 @@ class NetworkParameterAdapter(object):
             logging.info("Adding new weight matrix (%d, %d)" %(
                 new_dimensions[i - 1], new_dimensions[i]
             ))
-            layer_weights = NetworkParameterAdapter._add_diagonal_layer_weights(
+            layer_weights = self._add_diagonal_layer_weights(
                 [new_dimensions[i - 1], new_dimensions[i]])
             new_params.append(layer_weights)
 
@@ -92,7 +101,7 @@ class NetworkParameterAdapter(object):
             logging.info("Adding new bias vector (%d)" %(
                 new_dimensions[i]
             ))
-            layer_biases = NetworkParameterAdapter._add_diagonal_layer_biases(
+            layer_biases = self._add_diagonal_layer_biases(
                 [new_dimensions[i - 1], new_dimensions[i]])
             new_params.append(layer_biases)
 
@@ -104,8 +113,7 @@ class NetworkParameterAdapter(object):
 
         return new_parameters
 
-    @staticmethod
-    def _convert_single_layer_weights(layer_weights, old_dims, new_dims):
+    def _convert_single_layer_weights(self, layer_weights, old_dims, new_dims):
         """ This converts a single set of weights from one layer having `old_dims`
         into `new_dims`
 
@@ -118,7 +126,7 @@ class NetworkParameterAdapter(object):
         layer_weights.shape = (old_dims[0], old_dims[1])
         # print("Reshaped")
         # print(layer_weights)
-        new_layer_weights = np.random.rand(new_dims[0], new_dims[1]) * NetworkParameterAdapter.perturbation_scale
+        new_layer_weights = np.random.rand(new_dims[0], new_dims[1]) * self.perturbation_scale
         min_dims = [min(layer_weights.shape[i],new_layer_weights.shape[i]) for i in range(2)]
         new_layer_weights[:min_dims[0], :min_dims[1]] = layer_weights
         # print("Padded")
@@ -128,8 +136,7 @@ class NetworkParameterAdapter(object):
         # print(new_layer_weights)
         return new_layer_weights
 
-    @staticmethod
-    def _convert_single_layer_biases(layer_biases, new_dims):
+    def _convert_single_layer_biases(self, layer_biases, new_dims):
         """ This converts a single set of biases from one layer having `old_dims`
         into `new_dims`
 
@@ -141,7 +148,7 @@ class NetworkParameterAdapter(object):
         ###layer_biases.shape = (old_dims[1])
         # print("Reshaped")
         # print(layer_biases)
-        new_layer_biases = np.ones(new_dims[1]) * NetworkParameterAdapter.perturbation_scale
+        new_layer_biases = np.ones(new_dims[1]) * self.perturbation_scale
         new_layer_biases[:layer_biases.shape[0]] = layer_biases
         # print("Padded")
         # print(new_layer_biases)
@@ -150,15 +157,14 @@ class NetworkParameterAdapter(object):
         # print(new_layer_biases)
         return new_layer_biases
 
-    @staticmethod
-    def _add_diagonal_layer_weights(dims):
+    def _add_diagonal_layer_weights(self, dims):
         """ This adds a new layer with ones on the diagonal and small values unequal to
         zero everywhere else, i.e. a pass-thru layer.
 
         :param dims: list of input and output dimension of new network
         :return: numpy array with new weight matrix
         """
-        layer_weights = np.random.rand(dims[0], dims[1]) * NetworkParameterAdapter.perturbation_scale
+        layer_weights = np.random.rand(dims[0], dims[1]) * self.perturbation_scale
         min_dim = min(dims[0], dims[1])
         # set ones on diagonal
         for i in range(min_dim):
@@ -166,12 +172,11 @@ class NetworkParameterAdapter(object):
         layer_weights.shape = (dims[0] * dims[1])
         return layer_weights
 
-    @staticmethod
-    def _add_diagonal_layer_biases(dims):
+    def _add_diagonal_layer_biases(self, dims):
         """ This adds a new vector biases all small unequal to zero values
 
         :param dims: list of input and output dimension of new network
         :return: numpy array with new bias parameters
         """
-        return np.ones(dims[1]) * NetworkParameterAdapter.perturbation_scale
+        return np.ones(dims[1]) * self.perturbation_scale
 

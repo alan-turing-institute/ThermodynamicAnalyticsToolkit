@@ -127,6 +127,9 @@ class Simulation(object):
         self._parameters = Parameters(self._nn, ["weights", "biases"])
         self._momenta = Parameters(self._nn, ["momenta_weights", "momenta_biases"])
 
+        # scale for new components when enlarging the network
+        self.perturbation_scale = 1e-2
+
     @staticmethod
     def help(key=None):
         """ Prints help for each option or all option names if key is None
@@ -226,7 +229,8 @@ class Simulation(object):
         :param values: old weights and biases
         :param dimensions: dimensions of old network
         """
-        new_values = NetworkParameterAdapter.convert(values, dimensions,
+        converter = NetworkParameterAdapter(perturbation_scale=self.perturbation_scale)
+        new_values = converter(values, dimensions,
                                 [self._options.input_dimension]+ \
                                     self._options.hidden_dimension+ \
                                 [self._options.output_dimension])
