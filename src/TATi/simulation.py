@@ -164,7 +164,8 @@ class Simulation(object):
         :param **kwargs: keyword arguments
         """
         # in any case store old dimensions
-        old_dimensions = [self._nn.FLAGS.input_dimension] + \
+        input_dimension = int(self._nn.x.get_shape()[-1])
+        old_dimensions = [input_dimension] + \
                          self._nn.FLAGS.hidden_dimension + \
                          [self._nn.FLAGS.output_dimension]
 
@@ -230,8 +231,9 @@ class Simulation(object):
         :param dimensions: dimensions of old network
         """
         converter = NetworkParameterAdapter(perturbation_scale=self.perturbation_scale)
+        input_dimension = int(self._nn.x.get_shape()[-1])
         new_values = converter(values, dimensions,
-                                [self._options.input_dimension]+ \
+                                [input_dimension]+ \
                                     self._options.hidden_dimension+ \
                                 [self._options.output_dimension])
         self._nn.assign_neural_network_parameters(new_values)
