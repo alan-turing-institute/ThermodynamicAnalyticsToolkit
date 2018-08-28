@@ -1237,7 +1237,7 @@ class model:
                 pass
         # special case because key and attribute's name differ
         try:
-            param_dict["next_eval_step"] = self.FLAGS.hamiltonian_dynamics_time
+            param_dict["next_eval_step"] = 0
         except AttributeError:
             pass
 
