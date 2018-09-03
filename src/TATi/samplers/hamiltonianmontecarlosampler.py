@@ -84,6 +84,19 @@ class HamiltonianMonteCarloSampler(StochasticGradientLangevinDynamicsSampler):
         uniform_random_t = tf.random_uniform(shape=[], minval=0., maxval=1., dtype=dds_basetype, seed=self._accept_seed)
         return step_width_t, inverse_temperature_t, current_step_t, next_eval_step_t, random_noise_t, uniform_random_t
 
+    def set_prior(self, prior):
+        """ Override method from base class to rais exception when used.
+
+        NOTE:
+            Priors would enforce to use their energy in the acceptance
+            evaluation, too. This is currently not implemented.
+
+        :param prior: dict with keys factor, lower_boundary and upper_boundary that
+                specifies a wall-repelling force to ensure a prior on the parameters
+        """
+        if "lower_boundary" in prior or "upper_boundary" in prior:
+            raise NotImplementedError("HMC does not support priors in its current state")
+
     def _apply_dense(self, grads_and_vars, var):
         """ Adds nodes to TensorFlow's computational graph in the case of densely
         occupied tensors to perform the actual sampling.
