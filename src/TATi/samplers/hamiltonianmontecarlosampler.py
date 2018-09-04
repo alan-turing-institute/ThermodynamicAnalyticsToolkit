@@ -101,7 +101,7 @@ class HamiltonianMonteCarloSampler(StochasticGradientLangevinDynamicsSampler):
         """ Adds nodes to TensorFlow's computational graph in the case of densely
         occupied tensors to perform the actual sampling.
 
-        We perform a leap-frog step on a hamiltonian (loss+kinetic energy)
+        We perform a modified Euler step on a hamiltonian (loss+kinetic energy)
         and at step number next_eval_step we check the acceptance criterion,
         either resetting back to the initial parameters or resetting the
         initial parameters to the current ones.
