@@ -1,0 +1,432 @@
+[[reference.samplers]]
+Samplers
+~~~~~~~~
+
+Samplers are discretizations of a given dynamical system, set by an ODE or
+SDE. In our case, it is mostly Langevin dynamics. Given that the  sampler
+is ergodic we can replace integrals over the whole domain by integrals along
+sufficiently long trajectories.
+
+Certain asymptotical properties are inherently connected to the respective
+dynamics, for example, the average kinetic energy. It can be evaluated as
+an average by integrating along the trajecories. However, as it is not possible
+to integrate the continuous dynamics directly, we rely on the respective
+discretization, the sampler, which naturally introduces an error.
+
+This discretization error depends on the chosen _finite step width_ by which
+the trajectories are produced. It shows as a finite error to the
+asymptotical value regardless of the length of the trajectory. Choosing a
+smaller step width will produce a smaller error.
+
+This can be observed for the average kinetic energy by looking at a small
+example network and dataset and producing sufficiently long trajectories.
+If one plots the difference against the known asymptotical value (namely
+latexmath:[\frac{N^\text{dof}}{2} k_B T] with temperature *T*, and degrees of
+freedom latexmath:[N^\text{dof}]) over different step widths in double
+logarithmic fashion, one obtains straight lines whose slope depends on the
+discretization order.
+
+Different samplers have different discretization orders and the order also
+depends on the observed quantity.
+
+This makes picking the right sampler a critical choice: From a statistical point
+of view the most accurate sampler is best, i.e. the one having the highest
+discretization order. Also, as all of them have roughly the same
+computational cost, it is generally recommended to pick BAOAB which has second
+order convergence and even fourth order in the high-friction limit, see
+<<Leimkuhler2012>> for details.
+
+NOTE: At the beginning of each the following subsections we give the name of
+the respective sampler in order to activate it using the *sampler* keyword,
+see <<quickstart.simulation.sampling>> and <<quickstart.cmdline.sampling>>.
+
+[[reference.samplers.sgld]]
+Stochastic Gradient Langevin Dynamics
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+*sampler*: +StochasticGradientLangevinDynamics+
+
+The Stochastic Gradient Langevin Dynamics (SGLD) was proposed by
+<<Welling2011>> based on the <<SGD>>[Stochastic Gradient Descent], which is a
+variant of the <<GD>>[Gradient Descent] using only a subset of the dataset
+for computing gradients. The central idea behind SGLD was to add an
+additional noise term whose magnitude then controls the noise induced by
+the approximate gradients.
+
+Implements a Stochastic Gradient Langevin Dynamics Sampler
+  in the form of a TensorFlow Optimizer, overriding tensorflow.python.training.Optimizer.
+
+The step update is:
+latexmath:[\theta^{n+1} = \theta^{n} - \beta \nabla  U(\theta) \Delta t + \sqrt{\Delta t} G^n],
+where
+latexmath:[\beta] is the inverse temperature coefficient, latexmath:[\Delta t] is the (discretization)
+step width and latexmath:[\theta] is the parameter vector and latexmath:[U(\theta)] the energy or loss function.
+
+.Table of parameters for SGLD
+[width="80%",cols="3,^2",options="header"]
+|=========================================================
+|Option name |Description
+| `step_width` | time integration step width latexmath:[\delta t]
+|=========================================================
+
+[NOTE]
+====
+*SGLD* is very much like *SGD* and *GD* in terms that the `step_width` needs
+to be small enough with respect to the gradient sizes of your problem.
+====
+
+[[reference.samplers.ccadl]]
+Covariance Controlled Adaptive Langevin
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+*sampler*: +CovarianceControlledAdaptiveLangevin+
+
+This is an extension of Stochastic Gradient Descent proposed by
+<<Shang2015>>. The key idea is to dissipate the extra heat caused by the
+approximate gradients through a suitable thermostat. However, the
+discretisation used here is not based on the (first-order)
+Euler-Maruyama as <<SGLD>> but on <<GLA>> 2nd order.
+
+.Table of parameters for CCAdL
+[width="80%",cols="3,^2",options="header"]
+|=========================================================
+|Option name |Description
+| `friction_constant` | friction constant latexmath:[\gamma] that controls
+how much momentum is replaced by random noise each step
+| `inverse_temperature` | inverse temperature factor scaling the noise,
+latexmath:[\beta]
+| `sigma`  | controlling the thermostat
+| `sigmaA` | controlling the thermostat's adaptivity
+| `step_width` | time integration step width latexmath:[\delta t]
+|=========================================================
+
+[NOTE]
+====
+`sigma` and `sigmaA` are two additional parameters that control the action
+of the thermostat. Moreover, we require the same parameters as for <<GLA>> 2nd
+order.
+====
+
+[[reference.samplers.gla]]
+Geometric Langevin Algorithms
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+*sampler*: +Geometric Langevin Algorithms_1stOrder+, +Geometric Langevin Algorithms_2ndOrder+
+
+GLA results from a first-order splitting between the Hamiltonian and the
+Ornstein-Uhlenbeck parts, see <<Leimkuhler2015>>[section 2.2.3, Leimkuhler 2015] and also
+<<Leimkuhler2012>>. If the Hamiltonian part is discretized with a scheme of second order as in *GLA2*,
+it provides second order accuracy at basically no extra
+cost.
+
+The update step of the parameters for second order GLA is BABO:
+
+latexmath:[B: p^{n+1/2} = p^n -\nabla U(q^n)\frac{\Delta t}{2}]
+
+latexmath:[A: q^{n+1} =q^n+M^{-1}p^{n+1/2}\Delta t]
+
+latexmath:[B: \tilde{p}^{n+1} = p^{n+1/2} -\nabla U(q^{n+1})\frac{\Delta t}{2}]
+
+latexmath:[O: p^{n+1} = \alpha_{\Delta t}\tilde{p}^{n+1}+ \sqrt{\frac{1-\alpha_{\Delta t}^2}{\beta}M}G^n]
+where latexmath:[\alpha_{\Delta t}=exp(-\gamma \Delta t)] and latexmath:[G\sim N (0, 1)].
+
+The first order GLA is BAO.
+
+.Table of parameters for GLA1 and GLA2
+[width="80%",cols="3,^2",options="header"]
+|=========================================================
+|Option name |Description
+| `friction_constant` | friction constant latexmath:[\gamma] that controls
+how much momentum is replaced by random noise each step
+| `inverse_temperature` | inverse temperature factor scaling the noise,
+latexmath:[\beta]
+| `step_width` | time integration step width latexmath:[\delta t]
+|=========================================================
+
+[NOTE]
+====
+All GLA samplers have two more parameters: `inverse_temperature` (usually denoted as latexmath:[\beta]) and `friction_constant` (usually denoted as latexmath:[\gamma]). Inverse
+temperature controls the average momentum of each parameter while the
+friction constant decides over how much of the momentum is replaced by
+random noise, i.e. the random walker character of the trajectory.
+
+Good values for beta depend on the loss manifold and its barriers and
+need to be find by try&error at the moment.
+
+As a rough guide, latexmath:[\gamma=10] is a good start for the friction
+constant. Moreover, when choosing such a friction constant, with
+latexmath:[\beta=1000] sampling will remain in the starting minimum basin,
+while latexmath:[\beta=1] exists basins very soon. Note that large noise can
+be hidden by a too small friction constant, i.e. they both depend on each
+other.
+====
+
+[[reference.samplers.gla.implementation]]
+Implementation notes
+++++++++++++++++++++
+
+The first order GLA with its BAO sequence of steps is implemented in a
+straight-forward fashion. GLA2 with its BABO sequence is more difficult as we
+would need to calculate the updated gradients for the second "B" step.
+Tensorflow, however, by its code design, only allows gradient (and loss)
+evaluation at the very beginning of the sequence.
+
+To overcome this, we shuffle the steps in a cyclic fashion to become BOBA.
+This can be seen as delaying some steps at iteration latexmath:[n] and
+performing them at iteration latexmath:[n+1]. Here, we delay the action of
+the "BO" part to the next step.
+
+When doing this, we have to take extra care to still calculate all energies
+at the correct time: the only "A" step is the last and loss evaluation is at
+the right moment. Moreover, both "B" steps now use the same gradient and we
+do not need to recalculate. The only minor difficulty is that the kinetic
+energy must be evaluated after the "O" step. This is no problem as the
+kinetic energy is not computed by Tensorflow and therefore we are not
+constrained.
+
+NOTE: This cyclic permutation still changes the very first step that is
+however typically started from a random position. Hence, this has not effect.
+
+[[reference.samplers.baoab]]
+BAOAB
+^^^^^
+
+*sampler*: +BAOAB+
+
+BAOAB derives from the basic building blocks A (position update), B
+(momentum update), and O (noise update) into which the Langevin system
+is split up. Each step is solved in a separate step. Hence, we perform a
+B step, then an A step, ... and so on. This scheme has second-order
+accuracy and superb overall accuracy with respect to positions. See
+<<Leimkuhler2012>> for more details.
+
+The update step of the parameters is:
+
+latexmath:[B: p^{n+1/2} = p^n -\nabla U(q^n)\frac{\Delta t}{2}]
+
+latexmath:[A: q^{n+1} =q^n+M^{-1}p^{n+1/2}\frac{\Delta t}{2}]
+
+latexmath:[O: p^{n+1} = \alpha_{\Delta t}\tilde{p}^{n+1}+ \sqrt{\frac{1-\alpha_{\Delta t}^2}{\beta}M}G^n]
+
+latexmath:[A: q^{n+1} =q^n+M^{-1}p^{n+1/2}\frac{\Delta t}{2}]
+
+latexmath:[B: p^{n+1/2} = p^n -\nabla U(q^n)\frac{\Delta t}{2}]
+
+where latexmath:[\alpha_{\Delta t}=exp(-\gamma \Delta t)] and latexmath:[G\sim N (0, 1)].
+
+.Table of parameters for BAOAB
+[width="80%",cols="3,^2",options="header"]
+|=========================================================
+|Option name |Description
+| `friction_constant` | friction constant latexmath:[\gamma] that controls
+how much momentum is replaced by random noise each step
+| `inverse_temperature` | inverse temperature factor scaling the noise,
+latexmath:[\beta]
+| `step_width` | time integration step width latexmath:[\delta t]
+|=========================================================
+
+[[reference.samplers.baoab.implementation]]
+Implementation notes
+++++++++++++++++++++
+
+With BAOAB we face similar difficulties as with second order GLA: we would need
+to recalculate gradients for the second "B" step. Again, we solve this by
+cyclic permutation of the steps to become BBAOA. In other words, we delay
+the action of the very last "B" step to iteration latexmath:[n+1].
+
+Now, gradient calculation is at the very beginning and both "B" steps use the
+same gradient. Loss calculation is still after the second "A" step. The only
+minor difficulty is again calculating the kinetic energy: this needs to occur
+in between the two "B" steps. Naturally, this is now also delayed to the next
+step. However, as the loss is always computed prior to updating the state
+they still match.
+
+
+[[reference.samplers.hmc]]
+Hamiltonian Monte Carlo
+^^^^^^^^^^^^^^^^^^^^^^^
+
+*sampler*: +HamiltonianMonteCarlo+
+
+HMC is based on Hamiltonian dynamics instead of Langevin Dynamics. Noise
+only enters when, after the evaluation of an _acceptance criterion_, the
+momenta are redrawn randomly. It has first been proposed by <<Duane1987>>.
+
+This Metropolisation ensures that too large step widths will not negatively
+affect the sampled distribution. In contrast to the sampling through
+Langevin Dynamics there is no bias with respect to the step width. However,
+a large step width will cause a higher rejection rate.
+
+One further virtue of HMC is that when using longer Verlet time integration
+legs (`hamiltonian_dynamics_time` larger than `step_width`) that the walker
+will progress much further than in the case of Langevin Dynamics. This is
+because it only uses the gradient and is not performing partly a Browniam
+motion by the injected noise.
+
+However, longer legs again typically cause higher rejection rates. Therefore,
+they come at the price of extra computational work in terms of possibly
+rejected legs. There are specific rejection rates that are optimal.
+Typically they range between 35% (latexmath:[L\gg 1]) and 43% (latexmath:[L=1]).
+See  link:#Neal2011[Neal, 2011, section 5.2] for details and in general 
+<<Neal2011>>  for a very readable, general introduction to HMC in the context
+of Markov  Chain Monte Carlo methods.
+
+.Table of parameters for HMC
+[width="80%",cols="3,^2",options="header"]
+|=========================================================
+|Option name |Description
+| `hamiltonian_dynamics_time` | Time used for integrating Hamiltonian
+dynamics. This is relative to `step_width`. For example, if `step_width` is
+*0.05* and this is chosen as *0.05* as well, it will evaluate every other step,
+i.e. perform only a single time integration step before evaluating the
+acceptance criterion. If you want to evaluate every *n* steps, then use
+latexmath:[n \cdot \Delta t]
+| `inverse_temperature` | inverse temperature factor scaling the initially
+randomly drawn momenta,
+latexmath:[\beta]
+| `step_width` | time integration step width latexmath:[\delta t]
+|=========================================================
+
+IMPORTANT: The exact amount of Hamiltonian dynamics time integration steps
+is slightly varied (uniformly randomly varied by a factor in [0.9,1.1]) such
+that not all walkers evaluate at the same step and are correlated thereby.
+This also avoids issues with periodicities in the dataset, see
+link:#Neal2011[ Neal, 2011, end of section 3.2, 3.3, and section 4.2 on trajectory length ].
+
+[[reference.samplers.hmc.implementation]]
+Implementation notes
+++++++++++++++++++++
+
+Tensorflow's code base causes some restrictions on the possible implementation
+of the samplers as we have already seen.
+
+This is even more severe for the Hamiltonian Monte Carlo as it branches a lot
+and does not perform the same computations in every iteration as do the
+samplers based on Langevin Dynamics.
+
+Therefore, we will briefly discuss some of the pecularities. Moreover, we
+explain in detail the values in each column of the three output files or
+data frames: run info, trajectory, averages.
+
+<<Neal2011>> gives the following steps for the HMC:
+
+. New values for the momentum latexmath:[p_n] variables are randomly drawn from
+their Gaussian distribution. The positions latexmath:[q_n] do not change.
+. A Metropolis update is performed, using Hamiltonian dynamics to propose a new
+state latexmath:[(q_{n+1},p_{n+1})].
+.. Start with an initial state latexmath:[(q_{n,0},p_{n,0}) := (q_n,p_n)]
+.. Simulate Hamiltonian Dynamics for latexmath:[L] steps using Leapfrog (or some
+other volume preserving/reversible method): latexmath:[(q_{n,L},p_{n,L})]
+.. Momentum is negated at the leg's end: latexmath:[(q_{n,L},-p_{n,L})]
+.. Accept the proposed state with probability
+latexmath:[min(1,exp(-U(q_{n,L})+U(q_n)-T(-p_{n,L})+T(p_n)))]
+... Accept: Set latexmath:[(q_{n+1},p_{n+1}) := (q_{n,L},-p_{n,L})]
+... Reject: Set latexmath:[(q_{n+1},p_{n+1}) := (q_{n},p_{n})]
+
+NOTE: The negation of momentum is not needed in practice but makes the proposal
+symmetric.
+
+WARNING: We do not use Leapfrog but the simpler _modified Euler method_ which
+is still volume preserving. Leapfrog would again entail cyclic permutation
+(similar to link:#reference.samplers.gla.implementation[GLA2]) and shifting "B"
+steps into the evaluation step which makes it impossible to have the correct
+kinetic energy for the criterion evaluation. Hence, in terms of integration
+accuracy HMC is only equivalent to first order GLA.
+
+As we see, we need to distinguish between either acceptance evaluation or
+time integration. Moreover, we need to branch on whether we accept or reject
+the proposed state. Finally, on rejection the initial state is actually
+repeated (also in the output and averaging, see
+link:#Neal2011[ Neal, 2011, section 3.2, paragraph "two steps" ]).
+
+This means that one sampling step will perform (exclusively) either an
+evaluation or a single integration step. The sampling function is given the
+current step and the next evaluation step. When both are equal, we do not
+perform an integration (latexmath:[q] does not change) but redraw momenta and
+evaluate the criterion (this may change latexmath:[q], restoring it to its
+old value). For more details on how to implement branching with Tensorflow,
+we refer to the link:#extensions.samplers.branching[programmer's guide].
+
+On top of that we have the Tensorflow constraint that the loss and gradient
+evaluation occurs always at the very beginning of the sampling step. This
+means we need to restore the loss, gradients, virials and other energies
+when the proposed state is rejected. Also, the loss always lags behind one
+step, i.e. we see latexmath:[L(q_{n-1})] and latexmath:[T(p_n)]. Note that
+this does not affect the criterion evaluation as this is an extra step and
+the loss is updated in time.
+
+Finally, in the output files or data frames only the final state is seen. We
+do not output any of the intermediate states latexmath:[(q_{n,i}, p_{n,i})]
+during integration.
+
+As a last remark, the very first step is always an evaluation step where we
+always accept. Ths is to properly initialize certain internal variables.
+
+[TIP]
+If you want to inspect very closely what is going on in each step, use
+verbosity level of 2 by either using `-vv` for the command-line interface
+or setting `params.verbose = 2` in the simulation/python interface and follow
+the "DEBUG" output in the terminal.
+
+Let us then look at the contents of the files/data frames, where we skip
+some columns that are not affected (such as 'id', ...). Note that the state
+seen in those files is always the state _after_ full evaluation of the
+acceptance criterion and redrawing of momenta, i.e. just before step "2." in
+the algorithm given in <<Neal2011>>.
+
+. Run info
+.. 'step': shows the evaluation steps only, e.g., 1 (n=1), 7 (n=2), 13 (n=3) for
+L=5.
+.. 'loss': shows latexmath:[L(q_n)], i.e. the loss of the current state, either
+accepted or rejected.
+.. 'total_energy': shows the total energy latexmath:[L(q_{n-1,L})+T(-p_{n-1,L})] of
+the proposed state used for the acceptance evaluation. Note that this is _not_
+the sum of 'loss' and 'kinetic_energy'.
+.. 'old_total_energy': shows the total energy latexmath:[L(q_{n-1,0})+T(-p_{n-1,0})]
+of the initial state used for the acceptance evaluation.
+.. 'kinetic_energy': shows the kinetic energy _after_ momenta have been redrawn,
+latexmath:[T(p_n)].
+.. 'scaled_momentum': shows the scaled momenta _after_ momenta have been redrawn.
+.. 'scaled_gradient': shows the gradients scaled by the step width for the
+current state latexmath:[q_n], either accepted or rejected.
+.. 'virial': shows the virial energy for the current state latexmath:[q_n]
+.. 'average_rejection_rate': shows the number of rejected states over the sum of
+accepeted and rejected states.
+. Trajectory
+.. 'step': see run info.
+.. 'loss': see run info.
+.. 'weight?': one weight parameter of the current state latexmath:[q_n], either
+accepted or rejected.
+.. 'bias?': equivalently, one bias parameter of the current state
+latexmath:[q_n].
+. Averages
+.. 'step': see run info.
+.. 'loss': see run info.
+.. 'ensemble_average_loss': evaluates
+latexmath:[\frac{ \sum_n L(q_n) exp(-1/T \cdot L(q_n)) }{ \sum_n exp(-1/T \cdot L(q_n)) }]
+over the states latexmath:[q_n].
+.. 'average_kinetic_energy': evaluates latexmath:[\frac 1 N \sum^N_{n=1} T(p_n)].
+.. 'average_virials': evaluates
+latexmath:[\frac 1 N \sum^N_{n=1} \frac 1 2 | q_n \cdot p_n  |].
+.. 'average_rejection_rate': see run info.
+
+
+[[reference.samplers.walkerensemble]]
+Ensemble of Walkers
+^^^^^^^^^^^^^^^^^^^
+
+Ensemble of Walkers uses a collection of walkers that exchange gradient
+and parameter information in each step in order to calculate a
+preconditioning matrix. This preconditioning allows to explore elongated
+minimum basins faster than independent walkers would do alone, see
+<<Matthews2018>>.
+
+This is activated by setting the `number_walkers` to a value larger than
+1. Note that `covariance_blending` controls the magnitude of the
+covariance matrix approximation and `collapse_after_steps` controls
+after how many steps the walkers are restarted at the parameter
+configuration of the first walker to ensure that the harmonic
+approximation still holds.
+
+This works for all of the aforementioned samplers as simply the gradient
+of each walker is rescaled.

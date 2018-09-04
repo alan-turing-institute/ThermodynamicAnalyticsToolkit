@@ -75,6 +75,7 @@ DEPENDENCIES = \
 	reference_examples.txt \
 	reference_examples_harmonic_oscillator.txt \
 	reference_implementing_sampler.txt \
+	reference_samplers.txt \
 	reference_simulation.txt \
 	roadmap.txt \
 	tensorflow_flaws.txt \
