@@ -37,6 +37,7 @@ m4_include([DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-ccad
 m4_include([DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-gla_1st.at])
 m4_include([DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-gla_2nd.at])
 m4_include([DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-hmc_1st.at])
+m4_include([DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-hmc_2nd.at])
 m4_include([DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-sgld.at])
 
 # tests on various options

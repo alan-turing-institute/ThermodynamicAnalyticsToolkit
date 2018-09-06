@@ -52,6 +52,7 @@ TESTSCRIPTS += \
 	$(srcdir)/DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-gla_1st.at \
 	$(srcdir)/DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-gla_2nd.at \
 	$(srcdir)/DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-hmc_1st.at \
+	$(srcdir)/DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-hmc_2nd.at \
 	$(srcdir)/DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-sgld.at \
 	$(srcdir)/DataDrivenSampler/SavingRestoring/testsuite-datadrivensampler-saving_restoring.at \
 	$(srcdir)/DataDrivenSampler/Trajectories/testsuite-datadrivensampler-trajectories.at \
