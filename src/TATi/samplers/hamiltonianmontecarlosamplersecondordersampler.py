@@ -69,18 +69,87 @@ class HamiltonianMonteCarloSamplerSecondOrderSampler(HamiltonianMonteCarloSample
                 tf.less(current_step_t, next_eval_step_t)),
             momentum_step_block, momentum_id_block)
 
-        # TODO: calculate kinetic energy
+        # calculate kinetic energy and momentum after first "B" step
+        momentum_sq = tf.reduce_sum(tf.multiply(momentum_first_step_block_t, momentum_first_step_block_t))
+        momentum_global_t = HamiltonianMonteCarloSamplerFirstOrderSampler._add_momentum_contribution(momentum_sq)
+        kinetic_energy_t = HamiltonianMonteCarloSamplerFirstOrderSampler._add_kinetic_energy_contribution(momentum_sq)
 
         def moment_reinit_block():
             with tf.control_dependencies([momentum.assign(scaled_noise)]):
                 return tf.identity(momentum)
 
-        with tf.control_dependencies([momentum_first_step_block_t]):
-            momentum_criterion_block_t = tf.cond(
-                tf.equal(current_step_t, next_eval_step_t),
-                moment_reinit_block, momentum_step_block)
+        # make sure that first momentum step (and kinetic energy) is done before second step
+        def momentum_criterion_block():
+            with tf.control_dependencies([momentum_global_t, kinetic_energy_t]):
+                return tf.cond(
+                    tf.equal(current_step_t, next_eval_step_t),
+                    moment_reinit_block, momentum_step_block)
 
-        return momentum_criterion_block_t
+        # skip second "B" step on the extra step (as both "BA" is skipped)
+        # before criterion evaluation but still make sure that kinetic
+        # energy and so on is computed
+        with tf.control_dependencies([momentum_global_t, kinetic_energy_t]):
+            momentum_second_step_block_t = tf.cond(
+                tf.equal(current_step_t, next_eval_step_t - 1),
+                momentum_id_block, momentum_criterion_block)
+
+        return momentum_second_step_block_t
+
+    def _create_criterion_integration_block(self, var,
+                                            virial_global_t,
+                                            scaled_momentum, current_energy,
+                                            p_accept, uniform_random_t,
+                                            current_step_t, next_eval_step_t):
+        initial_parameters = self.get_slot(var, "initial_parameters")
+        old_total_energy_t = self._get_old_total_energy()
+        accepted_t, rejected_t = self._get_accepted_rejected()
+
+        # see https://stackoverflow.com/questions/37063952/confused-by-the-behavior-of-tf-cond
+        # In other words, each branch inside a tf.cond is evaluated. All "side effects"
+        # need to be hidden away inside tf.control_dependencies.
+        # I.E. DONT PLACE INSIDE NODES (confusing indeed)
+        def accept_block():
+            with tf.control_dependencies([scaled_momentum, virial_global_t]):
+                with tf.control_dependencies([
+                        old_total_energy_t.assign(current_energy),
+                        initial_parameters.assign(var),
+                        accepted_t.assign_add(1)]):
+                    return tf.identity(old_total_energy_t)
+
+        # DONT use nodes in the control_dependencies, always functions!
+        def reject_block():
+            with tf.control_dependencies([scaled_momentum, virial_global_t]):
+                with tf.control_dependencies([
+                        var.assign(initial_parameters),
+                        rejected_t.assign_add(1)]):
+                    return tf.identity(old_total_energy_t)
+
+        def accept_reject_block():
+            return tf.cond(tf.greater(p_accept, uniform_random_t),
+                accept_block, reject_block)
+
+        # DONT use nodes in the control_dependencies, always functions!
+        def step_block():
+            with tf.control_dependencies([virial_global_t]):
+                with tf.control_dependencies([state_ops.assign_add(var, scaled_momentum)]):
+                    return tf.identity(old_total_energy_t)
+
+        def id_block():
+            with tf.control_dependencies([virial_global_t]):
+                return tf.identity(old_total_energy_t)
+
+        # skip "A" step in extra step before criterion evaluation
+        def step_or_id_block():
+           return tf.cond(
+                tf.equal(current_step_t, next_eval_step_t - 1),
+               id_block, step_block)
+
+        # make sure virial and gradients are evaluated before we update variables
+        criterion_block_t = tf.cond(
+            tf.equal(current_step_t, next_eval_step_t),
+            accept_reject_block, step_or_id_block)
+
+        return criterion_block_t
 
     def _apply_dense(self, grads_and_vars, var):
         """ Adds nodes to TensorFlow's computational graph in the case of densely
@@ -124,9 +193,6 @@ class HamiltonianMonteCarloSamplerSecondOrderSampler(HamiltonianMonteCarloSample
         momentum_criterion_block_t = self._get_momentum_criterion_block(var,
             scaled_gradient, scaled_noise, current_step_t, next_eval_step_t, hd_steps_t)
 
-        momentum_sq = tf.reduce_sum(tf.multiply(momentum_criterion_block_t, momentum_criterion_block_t))
-        momentum_global_t = self._add_momentum_contribution(momentum_sq)
-        kinetic_energy_t = self._add_kinetic_energy_contribution(momentum_sq)
         current_energy = self._get_current_total_energy()
 
         # prior force act directly on var
@@ -146,8 +212,7 @@ class HamiltonianMonteCarloSamplerSecondOrderSampler(HamiltonianMonteCarloSample
 
         # note: these are evaluated in any order, use control_dependencies if required
         return control_flow_ops.group(*([momentum_criterion_block_t, criterion_block_t,
-                                        virial_global_t, gradient_global_t,
-                                        momentum_global_t, kinetic_energy_t]))
+                                        virial_global_t, gradient_global_t]))
 
     def _apply_sparse(self, grad, var):
         """ Adds nodes to TensorFlow's computational graph in the case of sparsely
