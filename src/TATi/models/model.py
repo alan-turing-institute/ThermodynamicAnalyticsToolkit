@@ -660,7 +660,7 @@ class model:
                                         "BAOAB",
                                         "CovarianceControlledAdaptiveLangevinThermostat"]:
                 header += ['ensemble_average_loss', 'average_kinetic_energy', 'average_virials']
-            elif self.FLAGS.sampler == "HamiltonianMonteCarlo_1stOrder":
+            elif "HamiltonianMonteCarlo" in self.FLAGS.sampler:
                 header += ['ensemble_average_loss', 'average_kinetic_energy', 'average_virials', 'average_rejection_rate']
         return header
 
@@ -676,7 +676,7 @@ class model:
                                     "CovarianceControlledAdaptiveLangevinThermostat"]:
             header += ['total_energy', 'kinetic_energy', 'scaled_momentum',
                       'scaled_gradient', 'virial', 'scaled_noise']
-        elif self.FLAGS.sampler == "HamiltonianMonteCarlo_1stOrder":
+        elif "HamiltonianMonteCarlo" in self.FLAGS.sampler:
             header += ['total_energy', 'old_total_energy', 'kinetic_energy', 'scaled_momentum',
                       'scaled_gradient', 'virial', 'average_rejection_rate']
         return header
@@ -755,7 +755,7 @@ class model:
         :return: either thrice None or lists (per walker) of pandas dataframes
                 depending on whether either parameter has evaluated to True
         """
-        if self.FLAGS.sampler == "HamiltonianMonteCarlo_1stOrder":
+        if "HamiltonianMonteCarlo" in self.FLAGS.sampler:
             return self._sample_Metropolis(return_run_info, return_trajectories, return_averages)
         else:
             return self._sample_LangevinDynamics(return_run_info, return_trajectories, return_averages)
@@ -791,11 +791,13 @@ class model:
                     ["friction_constant", "inverse_temperature", "step_width"]), feed_dict=feed_dict)
                 logging.info("LD Sampler parameters, walker #%d: gamma = %lg, beta = %lg, delta t = %lg" %
                       (walker_index, gamma, beta, deltat))
-            elif self.FLAGS.sampler == "HamiltonianMonteCarlo_1stOrder":
+            elif "HamiltonianMonteCarlo" in self.FLAGS.sampler:
                 current_step, num_mc_steps, deltat = self.sess.run(self.nn[walker_index].get_list_of_nodes(
                     ["current_step", "next_eval_step", "step_width"]), feed_dict=feed_dict)
                 logging.info("MC Sampler parameters, walker #%d: current_step = %lg, num_mc_steps = %lg, delta t = %lg" %
                       (walker_index, current_step, num_mc_steps, deltat))
+            else:
+                raise NotImplementedError("The sampler method %s is unknown" % (self.FLAGS.sampler))
 
     def _prepare_summaries(self):
         summary_writer = None
@@ -815,6 +817,7 @@ class model:
                                   "GeometricLangevinAlgorithm_1stOrder",
                                   "GeometricLangevinAlgorithm_2ndOrder",
                                   "HamiltonianMonteCarlo_1stOrder",
+                                  "HamiltonianMonteCarlo_2ndOrder",
                                   "BAOAB",
                                   "CovarianceControlledAdaptiveLangevinThermostat"]:
             check_kinetic, check_momenta, check_gradients, check_virials, check_noise = \
@@ -894,7 +897,7 @@ class model:
             self.sess.run(assigns, feed_dict=collapse_feed_dict)
 
     def _set_HMC_next_eval_step(self, current_step, HMC_placeholder_nodes, HMC_steps, feed_dict):
-        if self.FLAGS.sampler == "HamiltonianMonteCarlo_1stOrder":
+        if "HamiltonianMonteCarlo" in self.FLAGS.sampler:
             for walker_index in range(self.FLAGS.number_walkers):
                 # pick next evaluation step with a little random variation
                 if current_step > HMC_steps[walker_index]:
@@ -916,7 +919,7 @@ class model:
         return HMC_steps, feed_dict
 
     def _set_HMC_eval_variables(self, current_step, HMC_steps, values):
-        if self.FLAGS.sampler == "HamiltonianMonteCarlo_1stOrder":
+        if "HamiltonianMonteCarlo" in self.FLAGS.sampler:
             # set current kinetic as it is accumulated outside of tensorflow
             kin_eval = self.sess.run(self.static_vars["kinetic_energy"])
             set_dict = {}
@@ -951,7 +954,7 @@ class model:
                     logging.debug("New total energies are "+str(total_eval))
 
     def _prepare_HMC_nodes(self):
-        if self.FLAGS.sampler == "HamiltonianMonteCarlo_1stOrder":
+        if "HamiltonianMonteCarlo" in self.FLAGS.sampler:
             # zero rejection rate before sampling start
             check_accepted, check_rejected = self.sess.run([
                 self.zero_assigner["accepted"], self.zero_assigner["rejected"]])
@@ -1079,20 +1082,24 @@ class model:
             # get updated state variables
             accumulated_values.evaluate(self.sess, self.FLAGS.sampler, self.static_vars)
 
-            def print_energies(loss_subtext):
+            def print_energies():
                 if self.FLAGS.verbose > 1:
                     for walker_index in range(self.FLAGS.number_walkers):
-                        logging.debug("walker #%d, #%d: L(x_{%s})=%lg, total is %lg, T(p_n)=%lg, sum is %lg" \
-                                      % (walker_index, current_step, loss_subtext,
-                                         # to emphasize updated loss
-                                         accumulated_values.loss[walker_index],
-                                         accumulated_values.old_total_energy[walker_index],
-                                         accumulated_values.kinetic_energy[walker_index],
-                                         accumulated_values.loss[walker_index] + accumulated_values.kinetic_energy[
-                                             walker_index]))
+                        loss_subtext = "n" if accumulated_values.rejected[walker_index] != last_rejected[walker_index] else "n-1"
+                        kinetic_subtext = "n-1" if "HamiltonianMonteCarlo_2ndOrder" in self.FLAGS.sampler \
+                                and current_step != HMC_old_steps[walker_index] else "n"
+                        logging.debug("walker #%d, #%d: L(x_{%s})=%lg, total is %lg, T(p_{%s})=%lg, sum is %lg" \
+                                  % (walker_index, current_step, loss_subtext,
+                                     # to emphasize updated loss
+                                     accumulated_values.loss[walker_index],
+                                     accumulated_values.old_total_energy[walker_index],
+                                     kinetic_subtext, # for HMC_2nd
+                                     accumulated_values.kinetic_energy[walker_index],
+                                     accumulated_values.loss[walker_index] + accumulated_values.kinetic_energy[
+                                         walker_index]))
 
             # give output on debug mode
-            print_energies("n-1")
+            print_energies()
 
             # if last step was rejection, re-evaluate loss and weights as state changed
             if accumulated_values.rejected != last_rejected:
@@ -1103,7 +1110,7 @@ class model:
                 accumulated_values.weights, accumulated_values.biases = \
                     self._get_parameters(return_trajectories, all_weights, all_biases)
                 logging.info("Last state REJECTed.")
-                print_energies("n")
+                print_energies()
 
             # reset gradients and virials to initial state's if rejected
             for walker_index in range(self.FLAGS.number_walkers):

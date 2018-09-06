@@ -31,6 +31,7 @@ class AccumulatedValues(object):
                                   "GeometricLangevinAlgorithm_1stOrder",
                                   "GeometricLangevinAlgorithm_2ndOrder",
                                   "HamiltonianMonteCarlo_1stOrder",
+                                  "HamiltonianMonteCarlo_2ndOrder",
                                   "BAOAB",
                                   "CovarianceControlledAdaptiveLangevinThermostat"]:
             if sampler == "StochasticGradientLangevinDynamics":
@@ -39,7 +40,7 @@ class AccumulatedValues(object):
                         static_vars["gradients"],
                         static_vars["virials"],
                         static_vars["noise"]])
-            elif sampler == "HamiltonianMonteCarlo_1stOrder":
+            elif "HamiltonianMonteCarlo" in sampler:
                 # when HMC accepts, it overwrites `old_total_energy` with the updated value
                 # hence, we cannot see the old value in output any more. Therefore, we
                 # always keep the last value as backup.
