@@ -27,17 +27,17 @@ m4_include([DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reprod
 m4_include([DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-given_seeds-ccadl.at])
 m4_include([DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-given_seeds-gla1.at])
 m4_include([DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-given_seeds-gla2.at])
-m4_include([DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-given_seeds-hmc.at])
+m4_include([DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-given_seeds-hmc_1st.at])
 m4_include([DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-given_seeds-sgld.at])
 m4_include([DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-no_seeds.at])
 
 # tests on various samplers
-m4_include([DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-sgld.at])
-m4_include([DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-gla_1st.at])
-m4_include([DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-hmc.at])
-m4_include([DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-gla_2nd.at])
 m4_include([DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-baoab.at])
 m4_include([DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-ccadl.at])
+m4_include([DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-gla_1st.at])
+m4_include([DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-gla_2nd.at])
+m4_include([DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-hmc_1st.at])
+m4_include([DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-sgld.at])
 
 # tests on various options
 m4_include([DataDrivenSampler/Options/testsuite-datadrivensampler-options-batch_size.at])

@@ -660,7 +660,7 @@ class model:
                                         "BAOAB",
                                         "CovarianceControlledAdaptiveLangevinThermostat"]:
                 header += ['ensemble_average_loss', 'average_kinetic_energy', 'average_virials']
-            elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
+            elif self.FLAGS.sampler == "HamiltonianMonteCarlo_1stOrder":
                 header += ['ensemble_average_loss', 'average_kinetic_energy', 'average_virials', 'average_rejection_rate']
         return header
 
@@ -676,7 +676,7 @@ class model:
                                     "CovarianceControlledAdaptiveLangevinThermostat"]:
             header += ['total_energy', 'kinetic_energy', 'scaled_momentum',
                       'scaled_gradient', 'virial', 'scaled_noise']
-        elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
+        elif self.FLAGS.sampler == "HamiltonianMonteCarlo_1stOrder":
             header += ['total_energy', 'old_total_energy', 'kinetic_energy', 'scaled_momentum',
                       'scaled_gradient', 'virial', 'average_rejection_rate']
         return header
@@ -755,7 +755,7 @@ class model:
         :return: either thrice None or lists (per walker) of pandas dataframes
                 depending on whether either parameter has evaluated to True
         """
-        if self.FLAGS.sampler == "HamiltonianMonteCarlo":
+        if self.FLAGS.sampler == "HamiltonianMonteCarlo_1stOrder":
             return self._sample_Metropolis(return_run_info, return_trajectories, return_averages)
         else:
             return self._sample_LangevinDynamics(return_run_info, return_trajectories, return_averages)
@@ -791,7 +791,7 @@ class model:
                     ["friction_constant", "inverse_temperature", "step_width"]), feed_dict=feed_dict)
                 logging.info("LD Sampler parameters, walker #%d: gamma = %lg, beta = %lg, delta t = %lg" %
                       (walker_index, gamma, beta, deltat))
-            elif self.FLAGS.sampler == "HamiltonianMonteCarlo":
+            elif self.FLAGS.sampler == "HamiltonianMonteCarlo_1stOrder":
                 current_step, num_mc_steps, deltat = self.sess.run(self.nn[walker_index].get_list_of_nodes(
                     ["current_step", "next_eval_step", "step_width"]), feed_dict=feed_dict)
                 logging.info("MC Sampler parameters, walker #%d: current_step = %lg, num_mc_steps = %lg, delta t = %lg" %
@@ -814,7 +814,7 @@ class model:
         if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics",
                                   "GeometricLangevinAlgorithm_1stOrder",
                                   "GeometricLangevinAlgorithm_2ndOrder",
-                                  "HamiltonianMonteCarlo",
+                                  "HamiltonianMonteCarlo_1stOrder",
                                   "BAOAB",
                                   "CovarianceControlledAdaptiveLangevinThermostat"]:
             check_kinetic, check_momenta, check_gradients, check_virials, check_noise = \
@@ -894,7 +894,7 @@ class model:
             self.sess.run(assigns, feed_dict=collapse_feed_dict)
 
     def _set_HMC_next_eval_step(self, current_step, HMC_placeholder_nodes, HMC_steps, feed_dict):
-        if self.FLAGS.sampler == "HamiltonianMonteCarlo":
+        if self.FLAGS.sampler == "HamiltonianMonteCarlo_1stOrder":
             for walker_index in range(self.FLAGS.number_walkers):
                 # pick next evaluation step with a little random variation
                 if current_step > HMC_steps[walker_index]:
@@ -916,7 +916,7 @@ class model:
         return HMC_steps, feed_dict
 
     def _set_HMC_eval_variables(self, current_step, HMC_steps, values):
-        if self.FLAGS.sampler == "HamiltonianMonteCarlo":
+        if self.FLAGS.sampler == "HamiltonianMonteCarlo_1stOrder":
             # set current kinetic as it is accumulated outside of tensorflow
             kin_eval = self.sess.run(self.static_vars["kinetic_energy"])
             set_dict = {}
@@ -951,7 +951,7 @@ class model:
                     logging.debug("New total energies are "+str(total_eval))
 
     def _prepare_HMC_nodes(self):
-        if self.FLAGS.sampler == "HamiltonianMonteCarlo":
+        if self.FLAGS.sampler == "HamiltonianMonteCarlo_1stOrder":
             # zero rejection rate before sampling start
             check_accepted, check_rejected = self.sess.run([
                 self.zero_assigner["accepted"], self.zero_assigner["rejected"]])

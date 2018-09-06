@@ -10,7 +10,7 @@ from TATi.samplers.covariancecontrolledadaptivelangevinthermostatsampler \
 from TATi.samplers.baoabsampler import BAOABSampler
 from TATi.samplers.geometriclangevinalgorithmfirstordersampler import GeometricLangevinAlgorithmFirstOrderSampler
 from TATi.samplers.geometriclangevinalgorithmsecondordersampler import GeometricLangevinAlgorithmSecondOrderSampler
-from TATi.samplers.hamiltonianmontecarlosampler import HamiltonianMonteCarloSampler
+from TATi.samplers.hamiltonianmontecarlosamplerfirstordersampler import HamiltonianMonteCarloSamplerFirstOrderSampler
 from TATi.samplers.gradientdescent import GradientDescent
 from TATi.samplers.stochasticgradientlangevindynamicssampler import StochasticGradientLangevinDynamicsSampler
 
@@ -273,12 +273,13 @@ class NeuralNetwork(object):
             elif sampling_method == "GeometricLangevinAlgorithm_2ndOrder":
                 sampler = GeometricLangevinAlgorithmSecondOrderSampler(covariance_blending,
                                                                        step_width, inverse_temperature, friction_constant, seed=seed)
-            elif sampling_method == "HamiltonianMonteCarlo":
+            elif sampling_method == "HamiltonianMonteCarlo_1stOrder":
                 if seed is not None:
                     np.random.seed(seed)
                 accept_seed = np.random.uniform(low=0,high=67108864)
-                sampler = HamiltonianMonteCarloSampler(covariance_blending,
-                                                       step_width, inverse_temperature, loss, current_step, next_eval_step, accept_seed=accept_seed, seed=seed)
+                sampler = HamiltonianMonteCarloSamplerFirstOrderSampler(
+                    covariance_blending, step_width, inverse_temperature, loss,
+                    current_step, next_eval_step, accept_seed=accept_seed, seed=seed)
             elif sampling_method == "BAOAB":
                 sampler = BAOABSampler(covariance_blending,
                                        step_width, inverse_temperature, friction_constant, seed=seed)

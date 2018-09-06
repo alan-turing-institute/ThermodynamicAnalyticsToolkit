@@ -39,7 +39,7 @@ class RuninfoAccumulator(Accumulator):
                                                           precision=self.output_precision)
                          for x in [sqrt(values.gradients[walker_index]), abs(0.5 * values.virials[walker_index]),
                                    sqrt(values.noise[walker_index])]]
-        elif self._sampler == "HamiltonianMonteCarlo":
+        elif self._sampler == "HamiltonianMonteCarlo_1stOrder":
             if (values.rejected[walker_index] + values.accepted[walker_index]) > 0:
                 rejection_rate = values.rejected[walker_index] / (
                         values.rejected[walker_index] + values.accepted[walker_index])
@@ -75,7 +75,7 @@ class RuninfoAccumulator(Accumulator):
                 if self._sampler in ["StochasticGradientLangevinDynamics",
                                      "GeometricLangevinAlgorithm_1stOrder",
                                      "GeometricLangevinAlgorithm_2ndOrder",
-                                     "HamiltonianMonteCarlo",
+                                     "HamiltonianMonteCarlo_1stOrder",
                                      "BAOAB",
                                      "CovarianceControlledAdaptiveLangevinThermostat"]:
                     run_line = self._accumulate_nth_step_line(current_step, walker_index, values)

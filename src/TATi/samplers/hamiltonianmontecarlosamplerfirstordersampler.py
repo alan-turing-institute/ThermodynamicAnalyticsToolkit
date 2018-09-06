@@ -10,12 +10,12 @@ from TATi.models.basetype import dds_basetype
 from TATi.samplers.stochasticgradientlangevindynamicssampler import StochasticGradientLangevinDynamicsSampler
 
 
-class HamiltonianMonteCarloSampler(StochasticGradientLangevinDynamicsSampler):
+class HamiltonianMonteCarloSamplerFirstOrderSampler(StochasticGradientLangevinDynamicsSampler):
     """ Implements a Hamiltonian Monte Carlo Sampler
     in the form of a TensorFlow Optimizer, overriding tensorflow.python.training.Optimizer.
 
     """
-    def __init__(self, ensemble_precondition, step_width, inverse_temperature, loss, current_step, next_eval_step, accept_seed, seed=None, use_locking=False, name='HamiltonianMonteCarlo'):
+    def __init__(self, ensemble_precondition, step_width, inverse_temperature, loss, current_step, next_eval_step, accept_seed, seed=None, use_locking=False, name='HamiltonianMonteCarlo_1stOrder'):
         """ Init function for this class.
 
         :param ensemble_precondition: whether to precondition the gradient using
@@ -29,7 +29,7 @@ class HamiltonianMonteCarloSampler(StochasticGradientLangevinDynamicsSampler):
         :param use_locking: whether to lock in the context of multi-threaded operations
         :param name: internal name of optimizer
         """
-        super(HamiltonianMonteCarloSampler, self).__init__(ensemble_precondition,
+        super(HamiltonianMonteCarloSamplerFirstOrderSampler, self).__init__(ensemble_precondition,
                                                            step_width, inverse_temperature,
                                                            seed, use_locking, name)
         self._accept_seed = accept_seed
@@ -41,7 +41,7 @@ class HamiltonianMonteCarloSampler(StochasticGradientLangevinDynamicsSampler):
         """ Converts step width into a tensor, if given as a floating-point
         number.
         """
-        super(HamiltonianMonteCarloSampler, self)._prepare()
+        super(HamiltonianMonteCarloSamplerFirstOrderSampler, self)._prepare()
         self._current_step_t = ops.convert_to_tensor(self._current_step, name="current_step")
         self._next_eval_step_t = ops.convert_to_tensor(self._next_eval_step, name="next_eval_step")
 
@@ -77,7 +77,7 @@ class HamiltonianMonteCarloSampler(StochasticGradientLangevinDynamicsSampler):
         :return: step_width, inverse_temperature, and noise tensors
         """
         step_width_t, inverse_temperature_t, random_noise_t = \
-            super(HamiltonianMonteCarloSampler, self)._prepare_dense(grad, var)
+            super(HamiltonianMonteCarloSamplerFirstOrderSampler, self)._prepare_dense(grad, var)
         current_step_t = math_ops.cast(self._current_step_t, tf.int64)
         next_eval_step_t = math_ops.cast(self._next_eval_step_t, tf.int64)
 

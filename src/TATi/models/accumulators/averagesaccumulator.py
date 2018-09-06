@@ -75,7 +75,7 @@ class AveragesAccumulator(Accumulator):
             averages_line += ['{:{width}.{precision}e}'.format(x, width=self.output_width,
                                                                precision=self.output_precision)
                               for x in [average_kinetic_energy, average_virials]]
-        if self._sampler == "HamiltonianMonteCarlo":
+        if self._sampler == "HamiltonianMonteCarlo_1stOrder":
             if (values.rejected[walker_index] + values.accepted[walker_index]) > 0:
                 average_rejection_rate = values.rejected[walker_index] / (
                         values.rejected[walker_index] + values.accepted[walker_index])

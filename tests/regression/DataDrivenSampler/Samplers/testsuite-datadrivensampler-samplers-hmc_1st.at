@@ -17,8 +17,8 @@
 #
 ### test on different samplers
 
-AT_SETUP([Samplers - HMC, always accept])
-AT_KEYWORDS([samplers tatisampler hmc accept])
+AT_SETUP([Samplers - HMC 1st order, always accept])
+AT_KEYWORDS([samplers tatisampler hmc 1st accept])
 
 # dataset prepared as follows:
 # TATiDatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_files dataset-twoclusters.csv
@@ -33,7 +33,7 @@ AT_CHECK([../../../TATiSampler \
 	--max_steps 100 \
 	--hamiltonian_dynamics_time 0.05 \
 	--step_width 1e-2 \
-	--sampler HamiltonianMonteCarlo\
+	--sampler HamiltonianMonteCarlo_1stOrder \
 	--seed 426 \
 	--trajectory_file trajectory-HMC.csv
 ], 0, [stdout], [stderr])
@@ -42,21 +42,21 @@ AT_CHECK([../../../TATiSampler \
 AT_CHECK([../../../NumericalDiff \
     --general_threshold 1e-7 absolute \
     --column_drop time_per_nth_step id -- \
-    run-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-HMC-accept.csv], 0, [ignore], [ignore])
+    run-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-HMC_1st-accept.csv], 0, [ignore], [ignore])
 AT_CHECK([../../../NumericalDiff \
     --general_threshold 1e-7 absolute \
     --column_drop id -- \
-    trajectory-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-HMC-accept.csv], 0, [ignore], [ignore])
+    trajectory-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-HMC_1st-accept.csv], 0, [ignore], [ignore])
 AT_CHECK([../../../NumericalDiff \
     --general_threshold 1e-7 absolute \
     --column_drop id -- \
-    averages-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/averages-HMC-accept.csv], 0, [ignore], [ignore])
+    averages-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/averages-HMC_1st-accept.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
 
 
-AT_SETUP([Samplers - HMC, initial rejects])
-AT_KEYWORDS([samplers tatisampler hmc reject])
+AT_SETUP([Samplers - HMC 1st order, initial rejects])
+AT_KEYWORDS([samplers tatisampler hmc 1st reject])
 # getting proper rejections in this simple "two clusters" example is not really easy.
 # Somehow time integration with very large step width causes values to be typically good,
 # I believe, because then the initially different values have roughly the same magnitude.
@@ -78,7 +78,7 @@ AT_CHECK([../../../TATiSampler \
 	--max_steps 100 \
 	--hamiltonian_dynamics_time 2. \
 	--step_width 4e-1 \
-	--sampler HamiltonianMonteCarlo\
+	--sampler HamiltonianMonteCarlo_1stOrder \
 	--seed 426 \
 	--trajectory_file trajectory-HMC.csv
 ], 0, [stdout], [stderr])
@@ -87,20 +87,20 @@ AT_CHECK([../../../TATiSampler \
 AT_CHECK([../../../NumericalDiff \
     --general_threshold 1e-7 absolute \
     --column_drop time_per_nth_step id -- \
-    run-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-HMC-reject.csv], 0, [ignore], [ignore])
+    run-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-HMC_1st-reject.csv], 0, [ignore], [ignore])
 AT_CHECK([../../../NumericalDiff \
     --general_threshold 1e-7 absolute \
     --column_drop id -- \
-    trajectory-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-HMC-reject.csv], 0, [ignore], [ignore])
+    trajectory-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-HMC_1st-reject.csv], 0, [ignore], [ignore])
 AT_CHECK([../../../NumericalDiff \
     --general_threshold 1e-7 absolute \
     --column_drop id -- \
-    averages-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/averages-HMC-reject.csv], 0, [ignore], [ignore])
+    averages-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/averages-HMC_1st-reject.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
 
-AT_SETUP([Samplers - HMC, always accept, single step])
-AT_KEYWORDS([samplers tatisampler hmc accept singlestep])
+AT_SETUP([Samplers - HMC 1st order, always accept, single step])
+AT_KEYWORDS([samplers tatisampler hmc 1st accept singlestep])
 
 # dataset prepared as follows:
 # TATiDatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_files dataset-twoclusters.csv
@@ -115,7 +115,7 @@ AT_CHECK([../../../TATiSampler \
 	--max_steps 100 \
 	--hamiltonian_dynamics_time 1e-2 \
 	--step_width 1e-2 \
-	--sampler HamiltonianMonteCarlo\
+	--sampler HamiltonianMonteCarlo_1stOrder \
 	--seed 426 \
 	--trajectory_file trajectory-HMC.csv
 ], 0, [stdout], [stderr])
@@ -124,21 +124,21 @@ AT_CHECK([../../../TATiSampler \
 AT_CHECK([../../../NumericalDiff \
     --general_threshold 1e-7 absolute \
     --column_drop time_per_nth_step id -- \
-    run-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-HMC-accept-singlestep.csv], 0, [ignore], [ignore])
+    run-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-HMC_1st-accept-singlestep.csv], 0, [ignore], [ignore])
 AT_CHECK([../../../NumericalDiff \
     --general_threshold 1e-7 absolute \
     --column_drop id -- \
-    trajectory-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-HMC-accept-singlestep.csv], 0, [ignore], [ignore])
+    trajectory-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-HMC_1st-accept-singlestep.csv], 0, [ignore], [ignore])
 AT_CHECK([../../../NumericalDiff \
     --general_threshold 1e-7 absolute \
     --column_drop id -- \
-    averages-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/averages-HMC-accept-singlestep.csv], 0, [ignore], [ignore])
+    averages-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/averages-HMC_1st-accept-singlestep.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
 
 
-AT_SETUP([Samplers - HMC, initial rejects, single step])
-AT_KEYWORDS([samplers tatisampler hmc reject singlestep])
+AT_SETUP([Samplers - HMC 1st order, initial rejects, single step])
+AT_KEYWORDS([samplers tatisampler hmc 1st reject singlestep])
 
 # dataset prepared as follows:
 # TATiDatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_files dataset-twoclusters.csv
@@ -153,7 +153,7 @@ AT_CHECK([../../../TATiSampler \
 	--max_steps 100 \
 	--hamiltonian_dynamics_time 4e-1 \
 	--step_width 4e-1 \
-	--sampler HamiltonianMonteCarlo\
+	--sampler HamiltonianMonteCarlo_1stOrder \
 	--seed 426 \
 	--trajectory_file trajectory-HMC.csv
 ], 0, [stdout], [stderr])
@@ -162,21 +162,21 @@ AT_CHECK([../../../TATiSampler \
 AT_CHECK([../../../NumericalDiff \
     --general_threshold 1e-7 absolute \
     --column_drop time_per_nth_step id -- \
-    run-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-HMC-reject-singlestep.csv], 0, [ignore], [ignore])
+    run-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-HMC_1st-reject-singlestep.csv], 0, [ignore], [ignore])
 AT_CHECK([../../../NumericalDiff \
     --general_threshold 1e-7 absolute \
     --column_drop id -- \
-    trajectory-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-HMC-reject-singlestep.csv], 0, [ignore], [ignore])
+    trajectory-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-HMC_1st-reject-singlestep.csv], 0, [ignore], [ignore])
 AT_CHECK([../../../NumericalDiff \
     --general_threshold 1e-7 absolute \
     --column_drop id -- \
-    averages-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/averages-HMC-reject-singlestep.csv], 0, [ignore], [ignore])
+    averages-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/averages-HMC_1st-reject-singlestep.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
 
 
-AT_SETUP([Samplers - HMC with hidden nodes])
-AT_KEYWORDS([samplers tatisampler hmc hidden])
+AT_SETUP([Samplers - HMC 1st order with hidden nodes])
+AT_KEYWORDS([samplers tatisampler hmc 1st hidden])
 
 # dataset prepared as follows:
 # TATiDatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_files dataset-twoclusters.csv
@@ -191,7 +191,7 @@ AT_CHECK([../../../TATiSampler \
 	--max_steps 100 \
 	--hamiltonian_dynamics_time 0.05 \
 	--step_width 1e-2 \
-	--sampler HamiltonianMonteCarlo\
+	--sampler HamiltonianMonteCarlo_1stOrder \
 	--seed 426 \
 	--trajectory_file trajectory-HMC-hidden.csv
 ], 0, [stdout], [stderr])
@@ -200,11 +200,11 @@ AT_CHECK([../../../TATiSampler \
 AT_CHECK([../../../NumericalDiff \
     --general_threshold 3e-7 absolute \
     --column_drop time_per_nth_step id -- \
-    run-HMC-hidden.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-HMC-hidden.csv], 0, [ignore], [ignore])
+    run-HMC-hidden.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-HMC_1st-hidden.csv], 0, [ignore], [ignore])
 AT_CHECK([../../../NumericalDiff \
     --general_threshold 3e-7 absolute \
     --column_drop id -- \
-    trajectory-HMC-hidden.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-HMC-hidden.csv], 0, [ignore], [ignore])
+    trajectory-HMC-hidden.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-HMC_1st-hidden.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
 
