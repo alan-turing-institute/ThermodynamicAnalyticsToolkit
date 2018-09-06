@@ -44,6 +44,43 @@ class HamiltonianMonteCarloSamplerSecondOrderSampler(HamiltonianMonteCarloSample
         super(HamiltonianMonteCarloSamplerSecondOrderSampler, self)._prepare()
         self._hd_steps_t = ops.convert_to_tensor(self._hd_steps, name="hd_steps")
 
+    def _get_momentum_criterion_block(self, var,
+                                      scaled_gradient, scaled_noise,
+                                      current_step_t, next_eval_step_t, hd_steps_t):
+        momentum = self.get_slot(var, "momentum")
+
+        def momentum_id_block():
+            return tf.identity(momentum)
+
+        # update momentum
+        def momentum_step_block():
+            with tf.control_dependencies([
+                state_ops.assign_sub(momentum, scaled_gradient)]):
+                return tf.identity(momentum)
+
+        # L=5, step 0 was a criterion evaluation:
+        # 1 (BA), 2 (BBA), 3 (BBA), 4 (BBA), 5 (BBA), 6(B), 7 criterion
+
+        # in the very first step we have to skip the first "B" step:
+        # e.g., for L=5, we execute at steps 2,3,4,5,6, and skip at 1,7
+        momentum_first_step_block_t = tf.cond(
+            tf.logical_and(
+                tf.greater_equal(current_step_t, next_eval_step_t - (hd_steps_t)),
+                tf.less(current_step_t, next_eval_step_t)),
+            momentum_step_block, momentum_id_block)
+
+        # TODO: calculate kinetic energy
+
+        def moment_reinit_block():
+            with tf.control_dependencies([momentum.assign(scaled_noise)]):
+                return tf.identity(momentum)
+
+        with tf.control_dependencies([momentum_first_step_block_t]):
+            momentum_criterion_block_t = tf.cond(
+                tf.equal(current_step_t, next_eval_step_t),
+                moment_reinit_block, momentum_step_block)
+
+        return momentum_criterion_block_t
 
     def _apply_dense(self, grads_and_vars, var):
         """ Adds nodes to TensorFlow's computational graph in the case of densely
@@ -76,19 +113,16 @@ class HamiltonianMonteCarloSamplerSecondOrderSampler(HamiltonianMonteCarloSample
             self._prepare_dense(grad, var)
         hd_steps_t =  math_ops.cast(self._hd_steps_t, tf.int64)
 
-        momentum = self.get_slot(var, "momentum")
-        initial_parameters = self.get_slot(var, "initial_parameters")
-
-        # \nabla V (q^n ) \Delta t
-        scaled_gradient = step_width_t * grad
+        # 1/2 * \nabla V (q^n ) \Delta t
+        scaled_gradient = .5 * step_width_t * grad
 
         gradient_global_t = self._add_gradient_contribution(scaled_gradient)
         virial_global_t = self._add_virial_contribution(grad, var)
 
         # update momentum: B, BB or redraw momenta
         scaled_noise = tf.sqrt(1./inverse_temperature_t)*random_noise_t
-        momentum_criterion_block_t = self._get_momentum_criterion_block(
-            scaled_noise, momentum, scaled_gradient, current_step_t, next_eval_step_t)
+        momentum_criterion_block_t = self._get_momentum_criterion_block(var,
+            scaled_gradient, scaled_noise, current_step_t, next_eval_step_t, hd_steps_t)
 
         momentum_sq = tf.reduce_sum(tf.multiply(momentum_criterion_block_t, momentum_criterion_block_t))
         momentum_global_t = self._add_momentum_contribution(momentum_sq)
@@ -104,9 +138,8 @@ class HamiltonianMonteCarloSamplerSecondOrderSampler(HamiltonianMonteCarloSample
         # update variables: A, skip or evaluate criterion (accept/reject)
         scaled_momentum = step_width_t * momentum_criterion_block_t
         p_accept = self._create_p_accept(inverse_temperature_t, current_energy)
-        criterion_block_t = self._create_criterion_integration_block(
+        criterion_block_t = self._create_criterion_integration_block(var,
             virial_global_t, scaled_momentum, current_energy,
-            initial_parameters, var,
             p_accept, uniform_random_t,
             current_step_t, next_eval_step_t
         )
