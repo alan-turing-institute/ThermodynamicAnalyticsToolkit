@@ -249,6 +249,10 @@ class NeuralNetwork(object):
             tf.summary.scalar('next_eval_step', next_eval_step)
             self.placeholder_nodes['next_eval_step'] = next_eval_step
 
+            hd_steps = tf.placeholder(tf.int64, name="hamiltonian_dynamics_steps")
+            tf.summary.scalar('hamiltonian_dynamics_steps', hd_steps)
+            self.placeholder_nodes['hamiltonian_dynamics_steps'] = hd_steps
+
             current_step = tf.placeholder(tf.int64, name="current_step")
             tf.summary.scalar('current_step', current_step)
             self.placeholder_nodes['current_step'] = current_step
@@ -284,8 +288,9 @@ class NeuralNetwork(object):
                         current_step, next_eval_step, accept_seed=accept_seed, seed=seed)
                 elif sampling_method == "HamiltonianMonteCarlo_2ndOrder":
                     sampler = HamiltonianMonteCarloSamplerSecondOrderSampler(
-                        covariance_blending, step_width, inverse_temperature, loss,
-                        current_step, next_eval_step, accept_seed=accept_seed, seed=seed)
+                        covariance_blending, step_width, inverse_temperature,
+                        loss, current_step, next_eval_step, hd_steps,
+                        accept_seed=accept_seed, seed=seed)
                 else:
                     raise NotImplementedError("The HMC sampler %s is unknown" % (sampling_method))
             elif sampling_method == "BAOAB":

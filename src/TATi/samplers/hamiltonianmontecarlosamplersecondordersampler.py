@@ -14,7 +14,10 @@ class HamiltonianMonteCarloSamplerSecondOrderSampler(HamiltonianMonteCarloSample
     in the form of a TensorFlow Optimizer, overriding tensorflow.python.training.Optimizer.
 
     """
-    def __init__(self, ensemble_precondition, step_width, inverse_temperature, loss, current_step, next_eval_step, accept_seed, seed=None, use_locking=False, name='HamiltonianMonteCarlo_2ndOrder'):
+    def __init__(self,
+                 ensemble_precondition, step_width, inverse_temperature,
+                 loss, current_step, next_eval_step, hd_steps, accept_seed,
+                 seed=None, use_locking=False, name='HamiltonianMonteCarlo_2ndOrder'):
         """ Init function for this class.
 
         :param ensemble_precondition: whether to precondition the gradient using
@@ -32,6 +35,15 @@ class HamiltonianMonteCarloSamplerSecondOrderSampler(HamiltonianMonteCarloSample
             ensemble_precondition, step_width, inverse_temperature,
             loss, current_step, next_eval_step, accept_seed,
             seed, use_locking, name)
+        self._hd_steps = hd_steps
+
+    def _prepare(self):
+        """ Converts step width into a tensor, if given as a floating-point
+        number.
+        """
+        super(HamiltonianMonteCarloSamplerSecondOrderSampler, self)._prepare()
+        self._hd_steps_t = ops.convert_to_tensor(self._hd_steps, name="hd_steps")
+
 
     def _apply_dense(self, grads_and_vars, var):
         """ Adds nodes to TensorFlow's computational graph in the case of densely
@@ -62,6 +74,8 @@ class HamiltonianMonteCarloSamplerSecondOrderSampler(HamiltonianMonteCarloSample
         grad = self._pick_grad(grads_and_vars, var)
         step_width_t, inverse_temperature_t, current_step_t, next_eval_step_t, random_noise_t, uniform_random_t = \
             self._prepare_dense(grad, var)
+        hd_steps_t =  math_ops.cast(self._hd_steps_t, tf.int64)
+
         momentum = self.get_slot(var, "momentum")
         initial_parameters = self.get_slot(var, "initial_parameters")
 

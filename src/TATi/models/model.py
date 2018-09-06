@@ -792,10 +792,10 @@ class model:
                 logging.info("LD Sampler parameters, walker #%d: gamma = %lg, beta = %lg, delta t = %lg" %
                       (walker_index, gamma, beta, deltat))
             elif "HamiltonianMonteCarlo" in self.FLAGS.sampler:
-                current_step, num_mc_steps, deltat = self.sess.run(self.nn[walker_index].get_list_of_nodes(
-                    ["current_step", "next_eval_step", "step_width"]), feed_dict=feed_dict)
-                logging.info("MC Sampler parameters, walker #%d: current_step = %lg, num_mc_steps = %lg, delta t = %lg" %
-                      (walker_index, current_step, num_mc_steps, deltat))
+                current_step, num_mc_steps, hd_steps, deltat = self.sess.run(self.nn[walker_index].get_list_of_nodes(
+                    ["current_step", "next_eval_step", "hamiltonian_dynamics_steps", "step_width"]), feed_dict=feed_dict)
+                logging.info("MC Sampler parameters, walker #%d: current_step = %lg, num_mc_steps = %lg, HD_steps = %lg, delta t = %lg" %
+                      (walker_index, current_step, num_mc_steps, hd_steps, deltat))
             else:
                 raise NotImplementedError("The sampler method %s is unknown" % (self.FLAGS.sampler))
 
@@ -896,19 +896,30 @@ class model:
             # evaluate and assign all at once
             self.sess.run(assigns, feed_dict=collapse_feed_dict)
 
-    def _set_HMC_next_eval_step(self, current_step, HMC_placeholder_nodes, HMC_steps, feed_dict):
+    def _set_HMC_next_eval_step(self, current_step, HMC_placeholder_nodes, HD_steps, HMC_steps, feed_dict):
         if "HamiltonianMonteCarlo" in self.FLAGS.sampler:
             for walker_index in range(self.FLAGS.number_walkers):
                 # pick next evaluation step with a little random variation
                 if current_step > HMC_steps[walker_index]:
                     # add one extra step (1+..) to allow at least one time integration step
                     # before another evaluation step
-                    HMC_steps[walker_index] += 1 + max(1,
-                                                       round((0.9 + np.random.uniform(low=0., high=0.2)) \
-                                                             * self.FLAGS.hamiltonian_dynamics_time / self.FLAGS.step_width))
+                    HD_steps[walker_index] = \
+                        max(1, round((0.9 + np.random.uniform(low=0., high=0.2)) \
+                                     * self.FLAGS.hamiltonian_dynamics_time / self.FLAGS.step_width))
+                    if self.FLAGS.sampler == "HamiltonianMonteCarlo_1stOrder":
+                        # one extra step for the criterion evaluation
+                        HMC_steps[walker_index] += 1 + HD_steps[walker_index]
+                    elif self.FLAGS.sampler == "HamiltonianMonteCarlo_2ndOrder":
+                        # with Leapfrog integration we need an additional step
+                        # for the last "B" step due to cyclic permutation of
+                        # BAB to BBA.
+                        HMC_steps[walker_index] += 2 + HD_steps[walker_index]
+                    else:
+                        raise NotImplementedError("The HMC sampler method %S is unknown" % (self.FLAGS.sampler))
                     logging.debug("Next evaluation of HMC criterion at step " + str(HMC_steps))
                     feed_dict.update({
-                        HMC_placeholder_nodes[walker_index]["next_eval_step"]: HMC_steps[walker_index]
+                        HMC_placeholder_nodes[walker_index]["next_eval_step"]: HMC_steps[walker_index],
+                        HMC_placeholder_nodes[walker_index]["hamiltonian_dynamics_steps"]: HD_steps[walker_index]
                     })
                 feed_dict.update({
                     HMC_placeholder_nodes[walker_index]["current_step"]: current_step
@@ -916,7 +927,7 @@ class model:
         else:
             for walker_index in range(self.FLAGS.number_walkers):
                 HMC_steps[walker_index] = current_step
-        return HMC_steps, feed_dict
+        return HD_steps, HMC_steps, feed_dict
 
     def _set_HMC_eval_variables(self, current_step, HMC_steps, values):
         if "HamiltonianMonteCarlo" in self.FLAGS.sampler:
@@ -967,7 +978,7 @@ class model:
         self.init_files("sample")
 
         HMC_placeholder_nodes = [self.nn[walker_index].get_dict_of_nodes(
-            ["current_step", "next_eval_step"])
+            ["current_step", "next_eval_step", "hamiltonian_dynamics_steps"])
             for walker_index in range(self.FLAGS.number_walkers)]
 
         test_nodes = self._get_test_nodes()
@@ -1022,8 +1033,9 @@ class model:
         logging.info_intervals = max(1, int(self.FLAGS.max_steps / 100))
         self.last_time = time.process_time()
         self.elapsed_time = 0.
-        HMC_steps = [0]*self.FLAGS.number_walkers
-        HMC_old_steps = [0]*self.FLAGS.number_walkers
+        HD_steps = [0]*self.FLAGS.number_walkers        # number of hamiltonian dynamics steps
+        HMC_steps = [0]*self.FLAGS.number_walkers       # next step where to evaluate criterion
+        HMC_old_steps = [0]*self.FLAGS.number_walkers   # last step where criterion was evaluated
         if tqdm_present and self.FLAGS.progress:
             step_range = tqdm(range(self.FLAGS.max_steps))
         else:
@@ -1066,7 +1078,8 @@ class model:
             # needs to be after `_set_HMC_eval_variables()`
             # needs to be before `_perform_sampling_step()`
             HMC_old_steps[:] = HMC_steps
-            HMC_steps, feed_dict = self._set_HMC_next_eval_step(current_step, HMC_placeholder_nodes, HMC_steps, feed_dict)
+            HD_steps, HMC_steps, feed_dict = self._set_HMC_next_eval_step(
+                current_step, HMC_placeholder_nodes, HD_steps, HMC_steps, feed_dict)
 
             # get the weights and biases as otherwise the loss won't match
             # tf first computes loss, then gradient, then performs variable update
@@ -1301,6 +1314,7 @@ class model:
         # special case because key and attribute's name differ
         try:
             param_dict["next_eval_step"] = 0
+            param_dict["hamiltonian_dynamics_steps"] = 0
         except AttributeError:
             pass
 
