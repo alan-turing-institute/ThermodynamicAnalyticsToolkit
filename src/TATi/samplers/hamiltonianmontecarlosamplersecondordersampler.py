@@ -69,31 +69,37 @@ class HamiltonianMonteCarloSamplerSecondOrderSampler(HamiltonianMonteCarloSample
                 tf.less(current_step_t, next_eval_step_t)),
             momentum_step_block, momentum_id_block)
 
-        # calculate kinetic energy and momentum after first "B" step
-        momentum_sq = tf.reduce_sum(tf.multiply(momentum_first_step_block_t, momentum_first_step_block_t))
-        momentum_global_t = HamiltonianMonteCarloSamplerFirstOrderSampler._add_momentum_contribution(momentum_sq)
-        kinetic_energy_t = HamiltonianMonteCarloSamplerFirstOrderSampler._add_kinetic_energy_contribution(momentum_sq)
+        def integrated_momentum():
+            return tf.reduce_sum(tf.multiply(momentum_first_step_block_t, momentum_first_step_block_t))
 
         def moment_reinit_block():
             with tf.control_dependencies([momentum.assign(scaled_noise)]):
                 return tf.identity(momentum)
 
-        # make sure that first momentum step (and kinetic energy) is done before second step
         def momentum_criterion_block():
-            with tf.control_dependencies([momentum_global_t, kinetic_energy_t]):
+            with tf.control_dependencies([momentum_first_step_block_t]):
                 return tf.cond(
                     tf.equal(current_step_t, next_eval_step_t),
                     moment_reinit_block, momentum_step_block)
 
         # skip second "B" step on the extra step (as both "BA" is skipped)
-        # before criterion evaluation but still make sure that kinetic
-        # energy and so on is computed
-        with tf.control_dependencies([momentum_global_t, kinetic_energy_t]):
-            momentum_second_step_block_t = tf.cond(
-                tf.equal(current_step_t, next_eval_step_t - 1),
-                momentum_id_block, momentum_criterion_block)
+        # before criterion evaluation
+        momentum_second_step_block_t = tf.cond(
+            tf.equal(current_step_t, next_eval_step_t - 1),
+            momentum_id_block, momentum_criterion_block)
 
-        return momentum_second_step_block_t
+        def redrawn_momentum():
+            return tf.reduce_sum(tf.multiply(momentum_second_step_block_t, momentum_second_step_block_t))
+
+        # calculate kinetic energy and momentum after first "B" step or on redrawn momenta
+        momentum_sq = tf.cond(
+            tf.equal(current_step_t, next_eval_step_t),
+            redrawn_momentum, integrated_momentum)
+
+        momentum_global_t = HamiltonianMonteCarloSamplerFirstOrderSampler._add_momentum_contribution(momentum_sq)
+        kinetic_energy_t = HamiltonianMonteCarloSamplerFirstOrderSampler._add_kinetic_energy_contribution(momentum_sq)
+
+        return momentum_second_step_block_t, momentum_global_t, kinetic_energy_t
 
     def _create_criterion_integration_block(self, var,
                                             virial_global_t,
@@ -190,8 +196,10 @@ class HamiltonianMonteCarloSamplerSecondOrderSampler(HamiltonianMonteCarloSample
 
         # update momentum: B, BB or redraw momenta
         scaled_noise = tf.sqrt(1./inverse_temperature_t)*random_noise_t
-        momentum_criterion_block_t = self._get_momentum_criterion_block(var,
-            scaled_gradient, scaled_noise, current_step_t, next_eval_step_t, hd_steps_t)
+        momentum_criterion_block_t, momentum_global_t, kinetic_energy_t = \
+            self._get_momentum_criterion_block(var,
+                                               scaled_gradient, scaled_noise,
+                                               current_step_t, next_eval_step_t, hd_steps_t)
 
         current_energy = self._get_current_total_energy()
 
@@ -212,7 +220,8 @@ class HamiltonianMonteCarloSamplerSecondOrderSampler(HamiltonianMonteCarloSample
 
         # note: these are evaluated in any order, use control_dependencies if required
         return control_flow_ops.group(*([momentum_criterion_block_t, criterion_block_t,
-                                        virial_global_t, gradient_global_t]))
+                                         virial_global_t, gradient_global_t,
+                                         momentum_global_t, kinetic_energy_t]))
 
     def _apply_sparse(self, grad, var):
         """ Adds nodes to TensorFlow's computational graph in the case of sparsely
