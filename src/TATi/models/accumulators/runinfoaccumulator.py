@@ -10,8 +10,8 @@ class RuninfoAccumulator(Accumulator):
     """
 
     def __init__(self, return_run_info, sampler, config_map, writer,
-                 header, steps, number_walkers):
-        super(RuninfoAccumulator, self).__init__()
+                 header, steps, every_nth, number_walkers):
+        super(RuninfoAccumulator, self).__init__(every_nth)
         self.run_info = None
         self._return_run_info = return_run_info
         self._sampler = sampler
@@ -26,7 +26,7 @@ class RuninfoAccumulator(Accumulator):
                     np.zeros((steps, no_params)),
                     columns=header))
 
-    def _accumulate_nth_step_line(self, current_step, walker_index, written_row, values):
+    def _accumulate_nth_step_line(self, current_step, walker_index, values):
         run_line = [walker_index, values.global_step[walker_index], current_step] \
                    + ['{:1.3f}'.format(values.accuracy[walker_index])] \
                    + ['{:{width}.{precision}e}'.format(values.loss[walker_index], width=self.output_width,
@@ -45,10 +45,10 @@ class RuninfoAccumulator(Accumulator):
                         values.rejected[walker_index] + values.accepted[walker_index])
             else:
                 rejection_rate = 0
-            run_line += ['{:{width}.{precision}e}'.format(values.loss[walker_index] + values.kinetic_energy[walker_index],
+            run_line += ['{:{width}.{precision}e}'.format(values.total_energy[walker_index],
                                                           width=self.output_width,
                                                           precision=self.output_precision)] \
-                        + ['{:{width}.{precision}e}'.format(values.old_total_energy[walker_index],
+                        + ['{:{width}.{precision}e}'.format(values.last_old_total_energy[walker_index],
                                                             width=self.output_width,
                                                             precision=self.output_precision)] \
                         + ['{:{width}.{precision}e}'.format(x, width=self.output_width,
@@ -68,23 +68,19 @@ class RuninfoAccumulator(Accumulator):
                                      sqrt(values.noise[walker_index])]]
         return run_line
 
-
-    def accumulate_nth_step(self, current_step, walker_index, written_row, values):
-        run_line = []
-        if self._sampler in ["StochasticGradientLangevinDynamics",
-                             "GeometricLangevinAlgorithm_1stOrder",
-                             "GeometricLangevinAlgorithm_2ndOrder",
-                             "HamiltonianMonteCarlo",
-                             "BAOAB",
-                             "CovarianceControlledAdaptiveLangevinThermostat"]:
-            run_line = self._accumulate_nth_step_line(current_step, walker_index, written_row, values)
-        self._buffer.append(run_line)
-
-        if self._next_eval_step is None or (current_step == self._next_eval_step[walker_index]):
-            if values.rejected == self._last_rejected:
-                for run_line in self._buffer:
-                    if self._config_map["do_write_run_file"]:
-                        self._run_writer.writerow(run_line)
-                    if self._return_run_info:
-                        self.run_info[walker_index].loc[written_row] = run_line
-            self._buffer[:] = []
+    def accumulate_nth_step(self, current_step, walker_index, values):
+        if super(RuninfoAccumulator, self).accumulate_nth_step(current_step, walker_index):
+            if self._config_map["do_write_run_file"] or self._return_run_info:
+                run_line = []
+                if self._sampler in ["StochasticGradientLangevinDynamics",
+                                     "GeometricLangevinAlgorithm_1stOrder",
+                                     "GeometricLangevinAlgorithm_2ndOrder",
+                                     "HamiltonianMonteCarlo",
+                                     "BAOAB",
+                                     "CovarianceControlledAdaptiveLangevinThermostat"]:
+                    run_line = self._accumulate_nth_step_line(current_step, walker_index, values)
+                if self._config_map["do_write_run_file"] and self._run_writer is not None:
+                    self._run_writer.writerow(run_line)
+                if self._return_run_info:
+                    self.run_info[walker_index].loc[self.written_row] = run_line
+                self.written_row +=1

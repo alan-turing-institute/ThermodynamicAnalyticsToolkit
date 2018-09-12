@@ -15,13 +15,14 @@ class HamiltonianMonteCarloSampler(StochasticGradientLangevinDynamicsSampler):
     in the form of a TensorFlow Optimizer, overriding tensorflow.python.training.Optimizer.
 
     """
-    def __init__(self, ensemble_precondition, step_width, inverse_temperature, current_step, next_eval_step, accept_seed, seed=None, use_locking=False, name='HamiltonianMonteCarlo'):
+    def __init__(self, ensemble_precondition, step_width, inverse_temperature, loss, current_step, next_eval_step, accept_seed, seed=None, use_locking=False, name='HamiltonianMonteCarlo'):
         """ Init function for this class.
 
         :param ensemble_precondition: whether to precondition the gradient using
                 all the other walkers or not
         :param step_width: step width for gradient
         :param inverse_temperature: scale for noise
+        :param loss: loss value of the current state for evaluating acceptance
         :param current_step: current step
         :param next_eval_step: step number at which accept/reject is evaluated next
         :param seed: seed value of the random number generator for generating reproducible runs
@@ -34,6 +35,7 @@ class HamiltonianMonteCarloSampler(StochasticGradientLangevinDynamicsSampler):
         self._accept_seed = accept_seed
         self._current_step = current_step
         self._next_eval_step = next_eval_step
+        self._current_loss = loss
 
     def _prepare(self):
         """ Converts step width into a tensor, if given as a floating-point
@@ -105,7 +107,7 @@ class HamiltonianMonteCarloSampler(StochasticGradientLangevinDynamicsSampler):
         scaled_gradient = step_width_t * grad
 
         with tf.variable_scope("accumulate", reuse=True):
-            old_total_energy_t = tf.get_variable("total_energy", dtype=dds_basetype)
+            old_total_energy_t = tf.get_variable("old_total_energy", dtype=dds_basetype)
 
         with tf.variable_scope("accumulate", reuse=True):
             gradient_global = tf.get_variable("gradients", dtype=dds_basetype)
@@ -132,21 +134,18 @@ class HamiltonianMonteCarloSampler(StochasticGradientLangevinDynamicsSampler):
             tf.equal(current_step_t, next_eval_step_t),
             moment_reinit_block, momentum_step_block)
 
+        momentum_sq = tf.reduce_sum(tf.multiply(momentum_criterion_block_t, momentum_criterion_block_t))
         with tf.variable_scope("accumulate", reuse=True):
             momentum_global = tf.get_variable("momenta", dtype=dds_basetype)
-            momentum_global_t = tf.assign_add(
-                momentum_global,
-                tf.reduce_sum(tf.multiply(momentum_criterion_block_t, momentum_criterion_block_t)))
+            momentum_global_t = tf.assign_add(momentum_global, momentum_sq)
 
-        momentum_sq = 0.5 * tf.reduce_sum(tf.multiply(momentum_criterion_block_t, momentum_criterion_block_t))
         with tf.variable_scope("accumulate", reuse=True):
             kinetic_energy = tf.get_variable("kinetic_energy", dtype=dds_basetype)
-            kinetic_energy_t = tf.assign_add(kinetic_energy, momentum_sq)
+            kinetic_energy_t = tf.assign_add(kinetic_energy, 0.5 * momentum_sq)
 
         with tf.variable_scope("accumulate", reuse=True):
-            loss = tf.get_variable("old_loss", dtype=dds_basetype)
-            kinetic_energy = tf.get_variable("old_kinetic", dtype=dds_basetype)
-            current_energy = loss + kinetic_energy
+            kinetic_energy = tf.get_variable("current_kinetic", dtype=dds_basetype)
+            current_energy = self._current_loss + kinetic_energy
 
         with tf.variable_scope("accumulate", reuse=True):
             accepted_t = tf.get_variable("accepted", dtype=tf.int64)
@@ -184,8 +183,7 @@ class HamiltonianMonteCarloSampler(StochasticGradientLangevinDynamicsSampler):
         p_accept = tf.minimum(max_value_t, tf.exp( inverse_temperature_t* (old_total_energy_t- current_energy)))
 
         def accept_reject_block():
-            return tf.cond(
-                tf.greater(p_accept, uniform_random_t),
+            return tf.cond(tf.greater(p_accept, uniform_random_t),
                 accept_block, reject_block)
 
         # prior force act directly on var

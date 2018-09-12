@@ -10,9 +10,9 @@ class AveragesAccumulator(Accumulator):
     """
 
     def __init__(self, return_averages, sampler, config_map, writer,
-                 header, steps, number_walkers,
+                 header, steps, every_nth, number_walkers,
                  inverse_temperature, burn_in_steps):
-        super(AveragesAccumulator, self).__init__()
+        super(AveragesAccumulator, self).__init__(every_nth)
         self.accumulated_kinetic_energy = [0.]*number_walkers
         self.accumulated_loss_nominator = [0.]*number_walkers
         self.accumulated_loss_denominator = [0.]*number_walkers
@@ -27,6 +27,8 @@ class AveragesAccumulator(Accumulator):
         self._burn_in_steps = burn_in_steps
         self._inverse_temperature = inverse_temperature
 
+        self.accumulated_steps = 0
+
         if self._return_averages:
             self.averages = []
             no_params = len(header)
@@ -36,6 +38,7 @@ class AveragesAccumulator(Accumulator):
                     columns=header))
 
     def accumulate_each_step(self, current_step, walker_index, values):
+        self.accumulated_steps += 1
         self.accumulated_loss_nominator[walker_index] += values.loss[walker_index] * exp(
             - self._inverse_temperature * values.loss[walker_index])
         self.accumulated_loss_denominator[walker_index] += exp(
@@ -44,7 +47,7 @@ class AveragesAccumulator(Accumulator):
         if self._sampler != "StochasticGradientLangevinDynamics":
             self.accumulated_kinetic_energy[walker_index] += values.kinetic_energy[walker_index]
 
-    def _accumulate_nth_step_line(self, current_step, walker_index, written_row, values):
+    def _accumulate_nth_step_line(self, current_step, walker_index, values):
         if self.accumulated_loss_denominator[walker_index] > 0:
             average_loss = self.accumulated_loss_nominator[walker_index] / self.accumulated_loss_denominator[
                 walker_index]
@@ -52,7 +55,7 @@ class AveragesAccumulator(Accumulator):
             average_loss = 0.
 
         if current_step >= self._burn_in_steps:
-            divisor = float(current_step + 1. - self._burn_in_steps)
+            divisor = float(self.accumulated_steps)
             average_kinetic_energy = self.accumulated_kinetic_energy[walker_index] / divisor
             average_virials = abs(0.5 * self.accumulated_virials[walker_index]) / divisor
         else:
@@ -82,16 +85,12 @@ class AveragesAccumulator(Accumulator):
                                                                precision=self.output_precision)]
         return averages_line
 
-    def accumulate_nth_step(self, current_step, walker_index, written_row, values):
-        if self._config_map["do_write_averages_file"] or self._return_averages:
-            averages_line = self._accumulate_nth_step_line(current_step, walker_index, written_row, values)
-            self._buffer.append(averages_line)
-
-        if self._next_eval_step is None or (current_step == self._next_eval_step[walker_index]):
-            if values.rejected == self._last_rejected:
-                for averages_line in self._buffer:
-                    if self._config_map["do_write_averages_file"]:
-                        self._averages_writer.writerow(averages_line)
-                    if self._return_averages:
-                        self.averages[walker_index].loc[written_row] = averages_line
-            self._buffer[:] = []
+    def accumulate_nth_step(self, current_step, walker_index, values):
+        if super(AveragesAccumulator, self).accumulate_nth_step(current_step, walker_index):
+            if self._config_map["do_write_averages_file"] or self._return_averages:
+                averages_line = self._accumulate_nth_step_line(current_step, walker_index, values)
+                if self._config_map["do_write_averages_file"] and self._averages_writer is not None:
+                    self._averages_writer.writerow(averages_line)
+                if self._return_averages:
+                    self.averages[walker_index].loc[self.written_row] = averages_line
+                self.written_row +=1

@@ -278,7 +278,7 @@ class NeuralNetwork(object):
                     np.random.seed(seed)
                 accept_seed = np.random.uniform(low=0,high=67108864)
                 sampler = HamiltonianMonteCarloSampler(covariance_blending,
-                                                       step_width, inverse_temperature, current_step, next_eval_step, accept_seed=accept_seed, seed=seed)
+                                                       step_width, inverse_temperature, loss, current_step, next_eval_step, accept_seed=accept_seed, seed=seed)
             elif sampling_method == "BAOAB":
                 sampler = BAOABSampler(covariance_blending,
                                        step_width, inverse_temperature, friction_constant, seed=seed)

@@ -249,8 +249,8 @@ class model:
         """ Creates some global resource variables to hold statistical quantities
         during sampling.
         """
-        static_vars_float = ["old_loss", "old_kinetic", "kinetic_energy", "total_energy", "momenta", \
-                             "gradients", "virials", "noise"]
+        static_vars_float = ["current_kinetic", "kinetic_energy", \
+                             "old_total_energy", "momenta", "gradients", "virials", "noise"]
         static_vars_int64 = ["accepted", "rejected"]
         for i in range(self.FLAGS.number_walkers):
             with tf.variable_scope("var_walker"+str(i+1), reuse=self.resources_created):
@@ -437,7 +437,7 @@ class model:
 
         # create global variables, one for every walker in its replicated graph
         self.create_resource_variables()
-        self.static_vars, self.zero_assigner, self.assigner = \
+        self.static_vars, self.zero_assigner, self.assigner, self.placeholders = \
             self._create_static_variable_dict(self.FLAGS.number_walkers)
 
         # set number of degrees of freedom
@@ -708,14 +708,16 @@ class model:
 
         :param number_replicated_graphs: number of replicated graphs to instantiate for
         :return: dict with static_var lists (one per walker), equivalent dict
-                for zero assigners, dict with assigners (required for HMC)
+                for zero assigners, dict with assigners (required for HMC), and dict
+                with placeholders for assigners (required for HMC)
         """
-        static_vars_float = ["old_loss", "old_kinetic", "kinetic_energy", "total_energy", "momenta", \
-                             "gradients", "virials", "noise"]
+        static_vars_float = ["current_kinetic", "kinetic_energy", \
+                             "old_total_energy", "momenta", "gradients", "virials", "noise"]
         static_vars_int64 = ["accepted", "rejected"]
         static_var_dict = {}
         zero_assigner_dict = {}
         assigner_dict = {}
+        placeholder_dict = {}
         for i in range(number_replicated_graphs):
             with tf.variable_scope("var_walker" + str(i + 1), reuse=True):
                 with tf.variable_scope("accumulate", reuse=True):
@@ -730,15 +732,13 @@ class model:
                         zero_assigner = static_var.assign(0)
                         model._dict_append(zero_assigner_dict, key, zero_assigner)
 
-                    assigner_loss = static_var_dict["old_loss"][i].assign(self.nn[i].get("loss"))
-                    model._dict_append(assigner_dict, "old_loss", assigner_loss)
-                    assigner_kinetic = static_var_dict["old_kinetic"][i].assign(static_var_dict["kinetic_energy"][i])
-                    model._dict_append(assigner_dict, "old_kinetic", assigner_kinetic)
-                    assigner_total = static_var_dict["total_energy"][i].assign(
-                        tf.add(self.nn[i].get("loss"), static_var_dict["kinetic_energy"][i]))
-                    model._dict_append(assigner_dict, "total_energy", assigner_total)
+                    for key in ["current_kinetic", "old_total_energy"]:
+                        placeholder = tf.placeholder(dds_basetype, name=key)
+                        model._dict_append(placeholder_dict, key, placeholder)
+                        assigner = static_var_dict[key][i].assign(placeholder)
+                        model._dict_append(assigner_dict, key, assigner)
 
-        return static_var_dict, zero_assigner_dict, assigner_dict
+        return static_var_dict, zero_assigner_dict, assigner_dict, placeholder_dict
 
 
 
@@ -841,14 +841,16 @@ class model:
 
     def _perform_sampling_step(self, test_nodes, feed_dict):
         summary = None
+        results = self.sess.run(test_nodes, feed_dict=feed_dict)
         if self.FLAGS.summaries_path is not None:
-            summary, _, acc, global_step, loss_eval = \
-                self.sess.run(test_nodes, feed_dict=feed_dict)
-        else:
-            _, acc, global_step, loss_eval = \
-                self.sess.run(test_nodes, feed_dict=feed_dict)
+            summary, acc, global_step, loss_eval = \
+                results[0], results[2], results[3], results[4]
 
-        return summary, _, acc, global_step, loss_eval
+        else:
+            acc, global_step, loss_eval = \
+                results[1], results[2], results[3]
+
+        return summary, acc, global_step, loss_eval
 
     def _get_elapsed_time_per_nth_step(self, current_step):
         current_time = time.process_time()
@@ -913,35 +915,46 @@ class model:
                 HMC_steps[walker_index] = current_step
         return HMC_steps, feed_dict
 
-    def _set_HMC_eval_variables(self, current_step, HMC_current_set_nodes, HMC_eval_nodes, HMC_set_nodes, feed_dict):
+    def _set_HMC_eval_variables(self, current_step, HMC_steps, HMC_eval_nodes, values):
         if self.FLAGS.sampler == "HamiltonianMonteCarlo":
-            loss_eval, kin_eval, total_eval = self.sess.run(HMC_eval_nodes, feed_dict=feed_dict)
+            # set current kinetic as it is accumulated outside of tensorflow
+            kin_eval = self.sess.run(self.static_vars["kinetic_energy"])
+            set_dict = {}
             for walker_index in range(self.FLAGS.number_walkers):
-                logging.debug("walker #%d, #%d: loss is %lg, total is %lg, kinetic is %lg" \
-                              % (walker_index, current_step, loss_eval[walker_index], total_eval[walker_index],
-                                 kin_eval[walker_index]))
-            HMC_current_set_nodes[:] = HMC_set_nodes
+                set_dict[ self.placeholders["current_kinetic"][walker_index] ] = \
+                    kin_eval[walker_index]
+            self.sess.run(self.assigner["current_kinetic"], feed_dict=set_dict)
+
+            # possibly reset some old energy values for acceptance criterion if
+            # an acceptance evaluation has just occured
+            #
+            # Note that we always evaluate the criterion in step 0 and make sure that
+            # the we always accept (by having old total and current energy coincide)
+            # such that a valid old parameter set is stored to which we may restore
+            # if the next evaluation rejects.
+            do_evaluate = False
             for walker_index in range(self.FLAGS.number_walkers):
-                if abs(total_eval[walker_index]) < 1e-10:
-                    HMC_current_set_nodes.extend([self.assigner["total_energy"][walker_index]])
-            self.sess.run(HMC_current_set_nodes, feed_dict=feed_dict)
-            loss_eval, kin_eval, total_eval = self.sess.run(HMC_eval_nodes, feed_dict=feed_dict)
-            for walker_index in range(self.FLAGS.number_walkers):
-                logging.debug("walker #%d, #%d: loss is %lg, total is %lg, kinetic is %lg" \
-                              % (walker_index, current_step, loss_eval[walker_index], total_eval[walker_index],
-                                 kin_eval[walker_index]))
+                if current_step > HMC_steps[walker_index] or current_step == 0:
+                    # at least one walker requires a loss calculation
+                    do_evaluate = True
+            if do_evaluate or self.FLAGS.verbose > 1:
+                HMC_set_total_energy = []
+                energy_placeholders = {}
+                for walker_index in range(self.FLAGS.number_walkers):
+                    if current_step > HMC_steps[walker_index] or current_step == 0:
+                        HMC_set_total_energy.extend([self.assigner["old_total_energy"][walker_index]])
+                        energy_placeholders[self.placeholders["old_total_energy"][walker_index]] = \
+                            values.loss[walker_index]+values.kinetic_energy[walker_index]
+                        logging.debug("Resetting total energy for walker #"+str(walker_index))
+                if len(HMC_set_total_energy) > 0:
+                    total_eval = self.sess.run(HMC_set_total_energy, feed_dict=energy_placeholders)
+                    logging.debug("New total energies are "+str(total_eval))
 
     def _prepare_HMC_nodes(self):
         HMC_eval_nodes = []
-        HMC_set_nodes = []
         if self.FLAGS.sampler == "HamiltonianMonteCarlo":
             HMC_eval_nodes = [[self.nn[i].get("loss") for i in range(self.FLAGS.number_walkers)]] \
-                            +[self.static_vars[key] for key in ["old_kinetic", "total_energy"]]
-
-            HMC_set_nodes.extend([self.assigner["old_loss"],
-                                  self.assigner["old_kinetic"]])
-            HMC_set_all_nodes = []
-            HMC_set_all_nodes.extend([self.assigner["total_energy"]] + HMC_set_nodes)
+                            +[self.static_vars[key] for key in ["kinetic_energy", "old_total_energy"]]
 
             # zero rejection rate before sampling start
             check_accepted, check_rejected = self.sess.run([
@@ -949,7 +962,7 @@ class model:
             for walker_index in range(self.FLAGS.number_walkers):
                 assert(check_accepted[walker_index] == 0)
                 assert(check_rejected[walker_index] == 0)
-        return HMC_eval_nodes, HMC_set_nodes
+        return HMC_eval_nodes
 
     def _sample_Metropolis(self, return_run_info=False, return_trajectories=False, return_averages=False):
 
@@ -968,6 +981,7 @@ class model:
                                        self.averages_writer,
                                        header=self.get_averages_header(setup="sample"),
                                        steps=total_eval_steps,
+                                       every_nth=self.FLAGS.every_nth,
                                        inverse_temperature=self.FLAGS.inverse_temperature,
                                        burn_in_steps=self.FLAGS.burn_in_steps,
                                        number_walkers=self.FLAGS.number_walkers)
@@ -976,6 +990,7 @@ class model:
                                       self.run_writer,
                                       header=self.get_sample_header(),
                                       steps=total_eval_steps,
+                                      every_nth=self.FLAGS.every_nth,
                                       number_walkers=self.FLAGS.number_walkers)
         trajectory = TrajectoryAccumulator(return_trajectories, self.FLAGS.sampler,
                                            self.config_map,
@@ -984,6 +999,7 @@ class model:
                                                self.weights[0].get_total_dof(),
                                                self.biases[0].get_total_dof()),
                                            steps=total_eval_steps,
+                                           every_nth=self.FLAGS.every_nth,
                                            number_walkers=self.FLAGS.number_walkers)
         accumulated_values = AccumulatedValues()
 
@@ -995,7 +1011,7 @@ class model:
             feed_dict.update(self._create_default_feed_dict_with_constants(walker_index))
 
         # create extra nodes for HMC
-        HMC_eval_nodes, HMC_set_nodes = self._prepare_HMC_nodes()
+        HMC_eval_nodes = self._prepare_HMC_nodes()
 
         # check that sampler's parameters are actually used
         self._print_sampler_parameters(feed_dict)
@@ -1009,13 +1025,18 @@ class model:
         self.last_time = time.process_time()
         self.elapsed_time = 0.
         HMC_steps = [0]*self.FLAGS.number_walkers
-        HMC_current_set_nodes = []
+        HMC_old_steps = [0]*self.FLAGS.number_walkers
         if tqdm_present and self.FLAGS.progress:
             step_range = tqdm(range(self.FLAGS.max_steps))
         else:
             step_range = range(self.FLAGS.max_steps)
-        written_row = 0
 
+        # backup gradients and virials of each initial state to avoid recalculation
+        initial_state_gradients = None
+        initial_state_virials = None
+        initial_state_momenta = None
+
+        last_rejected = self.sess.run(self.static_vars["rejected"])   # temporary to see whether last evaluation was a rejection
         for current_step in step_range:
             # get next batch of data
             features, labels = self.input_pipeline.next_batch(self.sess)
@@ -1027,17 +1048,27 @@ class model:
                 self.true_labels: labels
             })
 
-            # set HMC specific nodes in feed_dict
-            HMC_steps, feed_dict = self._set_HMC_next_eval_step(current_step, HMC_placeholder_nodes, HMC_steps, feed_dict)
+            # get energies for acceptance evaluation in very first step
+            if current_step == 0:
+                accumulated_values.loss, accumulated_values.kinetic_energy = \
+                    self.sess.run([test_nodes[3], self.static_vars["kinetic_energy"]], feed_dict=feed_dict)
+
+            # set global variable used in HMC sampler for criterion to initial loss
+            self._set_HMC_eval_variables(current_step, HMC_steps, HMC_eval_nodes, accumulated_values)
+
+            # zero kinetic energy and other variables
+            self._zero_state_variables()
+
+            # tell accumulators about next evaluation step (delayed by one)
             run_info.inform_next_eval_step(HMC_steps, accumulated_values.rejected)
             trajectory.inform_next_eval_step(HMC_steps, accumulated_values.rejected)
             averages.inform_next_eval_step(HMC_steps, accumulated_values.rejected)
 
-            # set global variable used in HMC sampler for criterion to initial loss
-            self._set_HMC_eval_variables(current_step, HMC_current_set_nodes, HMC_eval_nodes, HMC_set_nodes, feed_dict)
-
-            # zero kinetic energy and other variables
-            self._zero_state_variables()
+            # set next criterion evaluation step
+            # needs to be after `_set_HMC_eval_variables()`
+            # needs to be before `_perform_sampling_step()`
+            HMC_old_steps[:] = HMC_steps
+            HMC_steps, feed_dict = self._set_HMC_next_eval_step(current_step, HMC_placeholder_nodes, HMC_steps, feed_dict)
 
             # get the weights and biases as otherwise the loss won't match
             # tf first computes loss, then gradient, then performs variable update
@@ -1047,34 +1078,66 @@ class model:
                     self._get_parameters(return_trajectories, all_weights, all_biases)
 
             # perform the sampling step
-            summary, _, accumulated_values.accuracy, accumulated_values.global_step, accumulated_values.loss = \
+            summary, accumulated_values.accuracy, accumulated_values.global_step, accumulated_values.loss = \
                 self._perform_sampling_step(test_nodes, feed_dict)
 
             # get updated state variables
             accumulated_values.evaluate(self.sess, self.FLAGS.sampler, self.static_vars)
 
+            def print_energies(loss_subtext):
+                if self.FLAGS.verbose > 1:
+                    for walker_index in range(self.FLAGS.number_walkers):
+                        logging.debug("walker #%d, #%d: L(x_{%s})=%lg, total is %lg, T(p_n)=%lg, sum is %lg" \
+                                      % (walker_index, current_step, loss_subtext,
+                                         # to emphasize updated loss
+                                         accumulated_values.loss[walker_index],
+                                         accumulated_values.old_total_energy[walker_index],
+                                         accumulated_values.kinetic_energy[walker_index],
+                                         accumulated_values.loss[walker_index] + accumulated_values.kinetic_energy[
+                                             walker_index]))
+
+            # give output on debug mode
+            print_energies("n-1")
+
+            # if last step was rejection, re-evaluate loss and weights as state changed
+            if accumulated_values.rejected != last_rejected:
+                # recalculate loss and get kinetic energy
+                accumulated_values.loss, accumulated_values.kinetic_energy = \
+                    self.sess.run([test_nodes[3], self.static_vars["kinetic_energy"]], feed_dict=feed_dict)
+                # get restored weights and biases
+                accumulated_values.weights, accumulated_values.biases = \
+                    self._get_parameters(return_trajectories, all_weights, all_biases)
+                logging.info("Last state REJECTed.")
+                print_energies("n")
+
+            # reset gradients and virials to initial state's if rejected
+            for walker_index in range(self.FLAGS.number_walkers):
+                if current_step == HMC_old_steps[walker_index]:
+                    # restore gradients and virials
+                    if accumulated_values.rejected[walker_index] != last_rejected[walker_index]:
+                        accumulated_values.gradients[walker_index] = initial_state_gradients
+                        accumulated_values.virials[walker_index] = initial_state_virials
+                        accumulated_values.momenta[walker_index] = initial_state_momenta
+                    else:
+                        initial_state_gradients = accumulated_values.gradients[walker_index]
+                        initial_state_virials = accumulated_values.virials[walker_index]
+                        initial_state_momenta = accumulated_values.momenta[walker_index]
+                    # accumulate averages and other information
+                    if current_step >= self.FLAGS.burn_in_steps:
+                        averages.accumulate_each_step(current_step, walker_index, accumulated_values)
+
             # write summaries for tensorboard
             self._write_summaries(summary_writer, summary, current_step)
 
-            # accumulate averages
-            if current_step >= self.FLAGS.burn_in_steps:
-                for walker_index in range(self.FLAGS.number_walkers):
-                    averages.accumulate_each_step(current_step, walker_index, accumulated_values)
+            accumulated_values.time_elapsed_per_nth_step = self._get_elapsed_time_per_nth_step(current_step)
 
-            if current_step % self.FLAGS.every_nth == 0:
-                accumulated_values.time_elapsed_per_nth_step = self._get_elapsed_time_per_nth_step(current_step)
+            for walker_index in range(self.FLAGS.number_walkers):
+                run_info.accumulate_nth_step(current_step, walker_index, accumulated_values)
+                trajectory.accumulate_nth_step(current_step, walker_index, accumulated_values)
+                averages.accumulate_nth_step(current_step, walker_index, accumulated_values)
 
-                if self.FLAGS.sampler == "HamiltonianMonteCarlo":
-                    accumulated_values.accepted, accumulated_values.rejected = self.sess.run([
-                        self.static_vars["accepted"], self.static_vars["rejected"]])
-
-                for walker_index in range(self.FLAGS.number_walkers):
-                    run_info.accumulate_nth_step(current_step, walker_index, written_row, accumulated_values)
-                    trajectory.accumulate_nth_step(current_step, walker_index, written_row, accumulated_values)
-                    averages.accumulate_nth_step(current_step, walker_index, written_row, accumulated_values)
-
-            if current_step % self.FLAGS.every_nth == 0:
-                written_row+=1
+            # update temporary rejected
+            last_rejected = accumulated_values.rejected
 
             #if (i % logging.info_intervals) == 0:
                 #logging.debug('Accuracy at step %s (%s): %s' % (i, global_step, acc))
@@ -1105,6 +1168,7 @@ class model:
                                        self.averages_writer,
                                        header=self.get_averages_header(setup="sample"),
                                        steps=total_eval_steps,
+                                       every_nth=self.FLAGS.every_nth,
                                        inverse_temperature=self.FLAGS.inverse_temperature,
                                        burn_in_steps=self.FLAGS.burn_in_steps,
                                        number_walkers=self.FLAGS.number_walkers)
@@ -1113,6 +1177,7 @@ class model:
                                       self.run_writer,
                                       header=self.get_sample_header(),
                                       steps=total_eval_steps,
+                                      every_nth=self.FLAGS.every_nth,
                                       number_walkers=self.FLAGS.number_walkers)
         trajectory = TrajectoryAccumulator(return_trajectories, self.FLAGS.sampler,
                                            self.config_map,
@@ -1121,6 +1186,7 @@ class model:
                                                self.weights[0].get_total_dof(),
                                                self.biases[0].get_total_dof()),
                                            steps=total_eval_steps,
+                                           every_nth=self.FLAGS.every_nth,
                                            number_walkers=self.FLAGS.number_walkers)
         accumulated_values = AccumulatedValues()
 
@@ -1146,7 +1212,6 @@ class model:
             step_range = tqdm(range(self.FLAGS.max_steps))
         else:
             step_range = range(self.FLAGS.max_steps)
-        written_row = 0
 
         for current_step in step_range:
             # get next batch of data
@@ -1170,7 +1235,7 @@ class model:
                     self._get_parameters(return_trajectories, all_weights, all_biases)
 
             # perform the sampling step
-            summary, _, accumulated_values.accuracy, accumulated_values.global_step, accumulated_values.loss = \
+            summary, accumulated_values.accuracy, accumulated_values.global_step, accumulated_values.loss = \
                 self._perform_sampling_step(test_nodes, feed_dict)
 
             # get updated state variables
@@ -1184,16 +1249,12 @@ class model:
                 for walker_index in range(self.FLAGS.number_walkers):
                     averages.accumulate_each_step(current_step, walker_index, accumulated_values)
 
-            if current_step % self.FLAGS.every_nth == 0:
-                accumulated_values.time_elapsed_per_nth_step = self._get_elapsed_time_per_nth_step(current_step)
+            accumulated_values.time_elapsed_per_nth_step = self._get_elapsed_time_per_nth_step(current_step)
 
-                for walker_index in range(self.FLAGS.number_walkers):
-                    run_info.accumulate_nth_step(current_step, walker_index, written_row, accumulated_values)
-                    trajectory.accumulate_nth_step(current_step, walker_index, written_row, accumulated_values)
-                    averages.accumulate_nth_step(current_step, walker_index, written_row, accumulated_values)
-
-            if current_step % self.FLAGS.every_nth == 0:
-                written_row+=1
+            for walker_index in range(self.FLAGS.number_walkers):
+                run_info.accumulate_nth_step(current_step, walker_index, accumulated_values)
+                trajectory.accumulate_nth_step(current_step, walker_index, accumulated_values)
+                averages.accumulate_nth_step(current_step, walker_index, accumulated_values)
 
             #if (i % logging.info_intervals) == 0:
                 #logging.debug('Accuracy at step %s (%s): %s' % (i, global_step, acc))

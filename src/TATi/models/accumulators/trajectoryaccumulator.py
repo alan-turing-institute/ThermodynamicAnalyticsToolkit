@@ -11,8 +11,8 @@ class TrajectoryAccumulator(Accumulator):
     """
 
     def __init__(self, return_trajectories, sampler, config_map, writer,
-                 header, steps, number_walkers):
-        super(TrajectoryAccumulator, self).__init__()
+                 header, steps, every_nth, number_walkers):
+        super(TrajectoryAccumulator, self).__init__(every_nth)
         self.trajectory = None
         self._return_trajectories = return_trajectories
         self._sampler = sampler
@@ -27,7 +27,7 @@ class TrajectoryAccumulator(Accumulator):
                     np.zeros((steps, no_params)),
                     columns=header))
 
-    def _accumulate_nth_step_line(self, current_step, walker_index, written_row, values):
+    def _accumulate_nth_step_line(self, current_step, walker_index, values):
         trajectory_line = [walker_index, values.global_step[walker_index]] \
                           + ['{:{width}.{precision}e}'.format(values.loss[walker_index], width=self.output_width,
                                                               precision=self.output_precision)]
@@ -43,16 +43,12 @@ class TrajectoryAccumulator(Accumulator):
                 for item in flat_array[:]]
         return trajectory_line
 
-    def accumulate_nth_step(self, current_step, walker_index, written_row, values):
-        if self._config_map["do_write_trajectory_file"] or self._return_trajectories:
-            trajectory_line = self._accumulate_nth_step_line(current_step, walker_index, written_row, values)
-            self._buffer.append(trajectory_line)
-
-        if self._next_eval_step is None or (current_step == self._next_eval_step[walker_index]):
-            if values.rejected == self._last_rejected:
-                for trajectory_line in self._buffer:
-                    if self._config_map["do_write_trajectory_file"]:
-                        self._trajectory_writer.writerow(trajectory_line)
-                    if self._return_trajectories:
-                        self.trajectory[walker_index].loc[written_row] = trajectory_line
-            self._buffer[:] = []
+    def accumulate_nth_step(self, current_step, walker_index, values):
+        if super(TrajectoryAccumulator, self).accumulate_nth_step(current_step, walker_index):
+            if self._config_map["do_write_trajectory_file"] or self._return_trajectories:
+                trajectory_line = self._accumulate_nth_step_line(current_step, walker_index, values)
+                if self._config_map["do_write_trajectory_file"] and self._trajectory_writer is not None:
+                    self._trajectory_writer.writerow(trajectory_line)
+                if self._return_trajectories:
+                    self.trajectory[walker_index].loc[self.written_row] = trajectory_line
+                self.written_row +=1
