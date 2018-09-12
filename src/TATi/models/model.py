@@ -915,7 +915,7 @@ class model:
                 HMC_steps[walker_index] = current_step
         return HMC_steps, feed_dict
 
-    def _set_HMC_eval_variables(self, current_step, HMC_steps, HMC_eval_nodes, values):
+    def _set_HMC_eval_variables(self, current_step, HMC_steps, values):
         if self.FLAGS.sampler == "HamiltonianMonteCarlo":
             # set current kinetic as it is accumulated outside of tensorflow
             kin_eval = self.sess.run(self.static_vars["kinetic_energy"])
@@ -951,18 +951,13 @@ class model:
                     logging.debug("New total energies are "+str(total_eval))
 
     def _prepare_HMC_nodes(self):
-        HMC_eval_nodes = []
         if self.FLAGS.sampler == "HamiltonianMonteCarlo":
-            HMC_eval_nodes = [[self.nn[i].get("loss") for i in range(self.FLAGS.number_walkers)]] \
-                            +[self.static_vars[key] for key in ["kinetic_energy", "old_total_energy"]]
-
             # zero rejection rate before sampling start
             check_accepted, check_rejected = self.sess.run([
                 self.zero_assigner["accepted"], self.zero_assigner["rejected"]])
             for walker_index in range(self.FLAGS.number_walkers):
                 assert(check_accepted[walker_index] == 0)
                 assert(check_rejected[walker_index] == 0)
-        return HMC_eval_nodes
 
     def _sample_Metropolis(self, return_run_info=False, return_trajectories=False, return_averages=False):
 
@@ -1010,8 +1005,8 @@ class model:
         for walker_index in range(self.FLAGS.number_walkers):
             feed_dict.update(self._create_default_feed_dict_with_constants(walker_index))
 
-        # create extra nodes for HMC
-        HMC_eval_nodes = self._prepare_HMC_nodes()
+        # zero extra nodes for HMC
+        self._prepare_HMC_nodes()
 
         # check that sampler's parameters are actually used
         self._print_sampler_parameters(feed_dict)
@@ -1054,7 +1049,7 @@ class model:
                     self.sess.run([test_nodes[3], self.static_vars["kinetic_energy"]], feed_dict=feed_dict)
 
             # set global variable used in HMC sampler for criterion to initial loss
-            self._set_HMC_eval_variables(current_step, HMC_steps, HMC_eval_nodes, accumulated_values)
+            self._set_HMC_eval_variables(current_step, HMC_steps, accumulated_values)
 
             # zero kinetic energy and other variables
             self._zero_state_variables()
