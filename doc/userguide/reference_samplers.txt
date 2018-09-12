@@ -305,11 +305,12 @@ latexmath:[\beta]
 | `step_width` | time integration step width latexmath:[\delta t]
 |=========================================================
 
-IMPORTANT: The exact amount of Hamiltonian dynamics time integration steps
-is slightly varied (uniformly randomly varied by a factor in [0.9,1.1]) such
-that not all walkers evaluate at the same step and are correlated thereby.
-This also avoids issues with periodicities in the dataset, see
-link:#Neal2011[ Neal, 2011, end of section 3.2, 3.3, and section 4.2 on trajectory length ]
+IMPORTANT: Both the exact amount of Hamiltonian dynamics time integration
+steps and the step width are slightly varied (uniformly randomly varied by
+a factor in [0.9,1.1] for integration time and in [0.7,1.3] for the step
+width) such that not all walkers evaluate at the same step and are
+correlated thereby. This also avoids issues with periodicities in the dataset,
+see link:#Neal2011[ Neal, 2011, end of section 3.2, 3.3, and section 4.2 on trajectory length ]
 and also a good illustration in link:#MacKenzie1989[MacKenzie, 1989].
 
 [[reference.samplers.hmc.implementation]]

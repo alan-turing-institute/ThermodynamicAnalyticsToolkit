@@ -903,10 +903,11 @@ class model:
             # evaluate and assign all at once
             self.sess.run(assigns, feed_dict=collapse_feed_dict)
 
-    def _set_HMC_placeholders(self, HMC_placeholder_nodes, current_step, HD_steps, HMC_steps, feed_dict):
+    def _set_HMC_placeholders(self, HMC_placeholder_nodes, current_step, step_widths, HD_steps, HMC_steps, feed_dict):
         if "HamiltonianMonteCarlo" in self.FLAGS.sampler:
             for walker_index in range(self.FLAGS.number_walkers):
                 feed_dict.update({
+                    HMC_placeholder_nodes[walker_index]["step_width"]: step_widths[walker_index],
                     HMC_placeholder_nodes[walker_index]["next_eval_step"]: HMC_steps[walker_index],
                     HMC_placeholder_nodes[walker_index]["hamiltonian_dynamics_steps"]: HD_steps[walker_index]
                 })
@@ -915,10 +916,16 @@ class model:
                 })
         return feed_dict
 
-    def _set_HMC_next_eval_step(self, current_step, HD_steps, HMC_steps):
+    def _set_HMC_next_eval_step(self, current_step, step_widths, HD_steps, HMC_steps):
         if "HamiltonianMonteCarlo" in self.FLAGS.sampler:
             for walker_index in range(self.FLAGS.number_walkers):
                 if current_step > HMC_steps[walker_index]:
+                    # pick next evaluation step with a little random variation
+                    step_widths[walker_index] = \
+                        np.random.uniform(low=0.7, high=1.3) * self.FLAGS.step_width
+                    logging.debug("Next step width of #"+str(walker_index) \
+                                  +" is " + str(step_widths[walker_index]))
+
                     # pick next evaluation step with a little random variation
                     HD_steps[walker_index] = \
                         max(1, round((0.9 + np.random.uniform(low=0., high=0.2)) \
@@ -989,7 +996,7 @@ class model:
         self.init_files("sample")
 
         HMC_placeholder_nodes = [self.nn[walker_index].get_dict_of_nodes(
-            ["current_step", "next_eval_step", "hamiltonian_dynamics_steps"])
+            ["current_step", "next_eval_step", "step_width", "hamiltonian_dynamics_steps"])
             for walker_index in range(self.FLAGS.number_walkers)]
 
         test_nodes = self._get_test_nodes()
@@ -1047,8 +1054,10 @@ class model:
         HD_steps = [-2]*self.FLAGS.number_walkers        # number of hamiltonian dynamics steps
         HMC_steps = [0]*self.FLAGS.number_walkers       # next step where to evaluate criterion
         HMC_old_steps = [0]*self.FLAGS.number_walkers   # last step where criterion was evaluated
+        # we need to randomly vary the step widths to avoid (quasi-)periodicities
+        step_widths = [self.FLAGS.step_width]*self.FLAGS.number_walkers
         self._set_HMC_placeholders(HMC_placeholder_nodes,
-                                   1, HD_steps, HMC_steps, feed_dict)
+                                   1, step_widths, HD_steps, HMC_steps, feed_dict)
         if tqdm_present and self.FLAGS.progress:
             step_range = tqdm(range(self.FLAGS.max_steps))
         else:
@@ -1091,9 +1100,11 @@ class model:
             # needs to be after `_set_HMC_eval_variables()`
             # needs to be before `_perform_sampling_step()`
             HMC_old_steps[:] = HMC_steps
-            HD_steps, HMC_steps = self._set_HMC_next_eval_step(current_step, HD_steps, HMC_steps)
+            HD_steps, HMC_steps = self._set_HMC_next_eval_step(
+                current_step, step_widths, HD_steps, HMC_steps)
             feed_dict = self._set_HMC_placeholders(HMC_placeholder_nodes,
-                                                   current_step, HD_steps, HMC_steps, feed_dict)
+                                                   current_step, step_widths,
+                                                   HD_steps, HMC_steps, feed_dict)
 
             # get the weights and biases as otherwise the loss won't match
             # tf first computes loss, then gradient, then performs variable update
