@@ -479,6 +479,13 @@ class model:
                         walker_seed = self.FLAGS.seed + i
                     else:
                         walker_seed = self.FLAGS.seed
+
+                    # raise exception if HMC is used with multiple walkers
+                    if "HamiltonianMonteCarlo" in self.FLAGS.sampler \
+                        and self.FLAGS.number_walkers > 1:
+                        raise NotImplementedError(
+                            "HamiltonianMonteCarlo implementation has not been properly tested with multiple walkers.")
+
                     self.sampler.append(self.nn[i]._prepare_sampler(
                         self.loss[i], sampling_method=self.FLAGS.sampler,
                         seed=walker_seed, prior=prior,
