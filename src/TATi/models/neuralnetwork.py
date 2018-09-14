@@ -281,7 +281,7 @@ class NeuralNetwork(object):
             elif "HamiltonianMonteCarlo" in sampling_method:
                 if seed is not None:
                     np.random.seed(seed)
-                accept_seed = np.random.uniform(low=0,high=67108864)
+                accept_seed = int(np.random.uniform(low=0,high=67108864))
                 if sampling_method  == "HamiltonianMonteCarlo_1stOrder":
                     sampler = HamiltonianMonteCarloSamplerFirstOrderSampler(
                         covariance_blending, step_width, inverse_temperature, loss,
