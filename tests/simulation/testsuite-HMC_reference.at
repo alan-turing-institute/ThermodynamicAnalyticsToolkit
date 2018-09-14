@@ -1,0 +1,62 @@
+#
+#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    Copyright (C) 2018 The University of Edinburgh
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### test on HMC_2ndOrder against a reference implementation in TATi
+
+AT_SETUP([Simulation - HMC_2nd vs. reference implementation])
+AT_KEYWORDS([simulation hmc reference])
+
+AT_CHECK([cp -f \
+    ${abs_top_srcdir}/tests/simulation/pre/dataset_harmonicoscillator.csv \
+    .
+], 0, [ignore], [ignore])
+AT_CHECK([../../../run \
+	${abs_top_srcdir}/tests/simulation/pre/HMC_reference.py \
+    --batch_data_files dataset_harmonicoscillator.csv \
+    --hamiltonian_dynamics_steps 5 \
+    --input_dimension 1 \
+    --inverse_temperature 1 \
+    --loss "mean_squared" \
+    --max_steps 50 \
+    --output_dimension 1 \
+    --seed 426 \
+    --step_width 0.01 \
+    --trajectory_file trajectory-reference.csv], 0, [stdout], [stderr])
+
+AT_CHECK([../../../TATiSampler \
+    --batch_data_files dataset_harmonicoscillator.csv \
+    --fix_parameters "output/biases/Variable:0=0." \
+    --hamiltonian_dynamics_time 0.05 \
+    --input_dimension 1 \
+    --inverse_temperature 1. \
+    --loss "mean_squared" \
+    --max_steps 351 \
+    --output_dimension 1 \
+    --output_activation "linear" \
+    --sampler "HamiltonianMonteCarlo_2ndOrder" \
+    --seed 426 \
+    --step_width 0.01 \
+    --trajectory_file trajectory-HMC_2nd.csv \
+    -vv], 0, [stdout], [stderr])
+
+AT_CHECK([../../../NumericalDiff \
+    --column_drop step -- \
+    trajectory-reference.csv trajectory-HMC_2nd.csv], 0, [ignore], [ignore])
+
+
+AT_CLEANUP
+
