@@ -77,16 +77,16 @@ class HamiltonianMonteCarloSamplerSecondOrderSampler(HamiltonianMonteCarloSample
                 return tf.identity(momentum)
 
         def momentum_criterion_block():
-            with tf.control_dependencies([momentum_first_step_block_t]):
                 return tf.cond(
                     tf.equal(current_step_t, next_eval_step_t),
                     moment_reinit_block, momentum_step_block)
 
         # skip second "B" step on the extra step (as both "BA" is skipped)
         # before criterion evaluation
-        momentum_second_step_block_t = tf.cond(
-            tf.equal(current_step_t, next_eval_step_t - 1),
-            momentum_id_block, momentum_criterion_block)
+        with tf.control_dependencies([momentum_first_step_block_t]):
+            momentum_second_step_block_t = tf.cond(
+                tf.equal(current_step_t, next_eval_step_t - 1),
+                momentum_id_block, momentum_criterion_block)
 
         def redrawn_momentum():
             return tf.reduce_sum(tf.multiply(momentum_second_step_block_t, momentum_second_step_block_t))
@@ -115,7 +115,7 @@ class HamiltonianMonteCarloSamplerSecondOrderSampler(HamiltonianMonteCarloSample
         # need to be hidden away inside tf.control_dependencies.
         # I.E. DONT PLACE INSIDE NODES (confusing indeed)
         def accept_block():
-            with tf.control_dependencies([scaled_momentum, virial_global_t]):
+            with tf.control_dependencies([virial_global_t]):
                 with tf.control_dependencies([
                         old_total_energy_t.assign(current_energy),
                         initial_parameters.assign(var),
@@ -124,7 +124,7 @@ class HamiltonianMonteCarloSamplerSecondOrderSampler(HamiltonianMonteCarloSample
 
         # DONT use nodes in the control_dependencies, always functions!
         def reject_block():
-            with tf.control_dependencies([scaled_momentum, virial_global_t]):
+            with tf.control_dependencies([virial_global_t]):
                 with tf.control_dependencies([
                         var.assign(initial_parameters),
                         rejected_t.assign_add(1)]):
