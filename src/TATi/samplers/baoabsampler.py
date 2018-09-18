@@ -225,6 +225,9 @@ class BAOABSampler(GeometricLangevinAlgorithmFirstOrderSampler):
         with tf.variable_scope("accumulate", reuse=True):
             momentum_global = tf.get_variable("momenta", dtype=dds_basetype)
             momentum_global_t = tf.assign_add(momentum_global, tf.reduce_sum(tf.multiply(momentum_half_step_t, momentum_half_step_t)))
+            # inertia
+            inertia_global = tf.get_variable("inertia", dtype=dds_basetype)
+            inertia_global_t = tf.assign_add(inertia_global, tf.reduce_sum(tf.multiply(momentum_half_step_t, var)))
 
         # half_pn = B(pn, gn, h/2)
         momentum_full_step_t = \
@@ -264,7 +267,7 @@ class BAOABSampler(GeometricLangevinAlgorithmFirstOrderSampler):
         prior_force = step_width_t * (ub_repell + lb_repell)
 
         # make sure virial is evaluated before we update variables
-        with tf.control_dependencies([virial_global_t]):
+        with tf.control_dependencies([virial_global_t, inertia_global_t]):
             # assign parameters
             var_update = \
                 state_ops.assign(var, position_full_step_t - prior_force)
@@ -275,6 +278,6 @@ class BAOABSampler(GeometricLangevinAlgorithmFirstOrderSampler):
             momentum_t = momentum.assign(momentum_noise_step_t)
 
         # note: these are evaluated in any order, use control_dependencies if required
-        return control_flow_ops.group(*[gradient_global_t, virial_global_t, kinetic_energy_t,
+        return control_flow_ops.group(*[gradient_global_t, inertia_global_t, virial_global_t, kinetic_energy_t,
                                         noise_global_t, momentum_global_t,
                                         var_update, momentum_t])

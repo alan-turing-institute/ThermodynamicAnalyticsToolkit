@@ -70,7 +70,7 @@ class HamiltonianMonteCarloSamplerSecondOrderSampler(HamiltonianMonteCarloSample
             momentum_step_block, momentum_id_block)
 
         def integrated_momentum():
-            return tf.reduce_sum(tf.multiply(momentum_first_step_block_t, momentum_first_step_block_t))
+            return tf.identity(momentum_first_step_block_t)
 
         def moment_reinit_block():
             with tf.control_dependencies([momentum.assign(scaled_noise)]):
@@ -89,17 +89,19 @@ class HamiltonianMonteCarloSamplerSecondOrderSampler(HamiltonianMonteCarloSample
                 momentum_id_block, momentum_criterion_block)
 
         def redrawn_momentum():
-            return tf.reduce_sum(tf.multiply(momentum_second_step_block_t, momentum_second_step_block_t))
+            return tf.identity(momentum_second_step_block_t)
 
         # calculate kinetic energy and momentum after first "B" step or on redrawn momenta
-        momentum_sq = tf.cond(
+        momentum_kinetic_energy_t = tf.cond(
             tf.equal(current_step_t, next_eval_step_t),
             redrawn_momentum, integrated_momentum)
+        momentum_sq = tf.reduce_sum(tf.multiply(momentum_kinetic_energy_t,momentum_kinetic_energy_t))
 
         momentum_global_t = HamiltonianMonteCarloSamplerFirstOrderSampler._add_momentum_contribution(momentum_sq)
+        inertia_global_t = HamiltonianMonteCarloSamplerFirstOrderSampler._add_inertia_contribution(momentum_kinetic_energy_t, var)
         kinetic_energy_t = HamiltonianMonteCarloSamplerFirstOrderSampler._add_kinetic_energy_contribution(momentum_sq)
 
-        return momentum_second_step_block_t, momentum_global_t, kinetic_energy_t
+        return momentum_second_step_block_t, momentum_global_t, inertia_global_t, kinetic_energy_t
 
     def _create_criterion_integration_block(self, var,
                                             virial_global_t,
@@ -196,7 +198,7 @@ class HamiltonianMonteCarloSamplerSecondOrderSampler(HamiltonianMonteCarloSample
 
         # update momentum: B, BB or redraw momenta
         scaled_noise = tf.sqrt(1./inverse_temperature_t)*random_noise_t
-        momentum_criterion_block_t, momentum_global_t, kinetic_energy_t = \
+        momentum_criterion_block_t, momentum_global_t, inertia_global_t, kinetic_energy_t = \
             self._get_momentum_criterion_block(var,
                                                scaled_gradient, scaled_noise,
                                                current_step_t, next_eval_step_t, hd_steps_t)
@@ -220,7 +222,7 @@ class HamiltonianMonteCarloSamplerSecondOrderSampler(HamiltonianMonteCarloSample
 
         # note: these are evaluated in any order, use control_dependencies if required
         return control_flow_ops.group(*([momentum_criterion_block_t, criterion_block_t,
-                                         virial_global_t, gradient_global_t,
+                                         virial_global_t, inertia_global_t, gradient_global_t,
                                          momentum_global_t, kinetic_energy_t]))
 
     def _apply_sparse(self, grad, var):

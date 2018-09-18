@@ -17,6 +17,8 @@ class AveragesAccumulator(Accumulator):
         self.accumulated_loss_nominator = [0.]*number_walkers
         self.accumulated_loss_denominator = [0.]*number_walkers
         self.accumulated_virials = [0.]*number_walkers
+        self.accumulated_inertia = [0.]*number_walkers
+        self.last_inertia = [0.]*number_walkers
         self.averages = None
         self._return_averages = return_averages
         self._config_map = config_map
@@ -46,6 +48,10 @@ class AveragesAccumulator(Accumulator):
             self.accumulated_virials[walker_index] += values.virials[walker_index]
             if self._method != "StochasticGradientLangevinDynamics" and self._method != "GradientDescent":
                 self.accumulated_kinetic_energy[walker_index] += values.kinetic_energy[walker_index]
+                if self.accumulated_steps > 1:
+                    inertia_secant = (values.inertia[walker_index] - self.last_inertia[walker_index])
+                    self.accumulated_inertia[walker_index] += inertia_secant
+                self.last_inertia[walker_index] = values.inertia[walker_index]
 
     def _accumulate_nth_step_line(self, current_step, walker_index, values):
         if self.accumulated_loss_denominator[walker_index] > 0:
@@ -58,9 +64,14 @@ class AveragesAccumulator(Accumulator):
         if divisor > 0.:
             average_kinetic_energy = self.accumulated_kinetic_energy[walker_index] / divisor
             average_virials = abs(0.5 * self.accumulated_virials[walker_index]) / divisor
+            if (divisor-1.) > 0.:
+                average_inertia = self.accumulated_inertia[walker_index] / (divisor-1.)
+            else:
+                average_inertia = 0.
         else:
             average_kinetic_energy = 0.
             average_virials = 0.
+            average_inertia = 0.
 
         averages_line = [walker_index, values.global_step[walker_index], current_step] \
                         + ['{:{width}.{precision}e}'.format(values.loss[walker_index], width=self.output_width,
@@ -75,7 +86,7 @@ class AveragesAccumulator(Accumulator):
         else:
             averages_line += ['{:{width}.{precision}e}'.format(x, width=self.output_width,
                                                                precision=self.output_precision)
-                              for x in [average_kinetic_energy, average_virials]]
+                              for x in [average_kinetic_energy, average_virials, average_inertia]]
         if "HamiltonianMonteCarlo" in self._method:
             if (values.rejected[walker_index] + values.accepted[walker_index]) > 0:
                 average_rejection_rate = values.rejected[walker_index] / (

@@ -100,6 +100,11 @@ class CovarianceControlledAdaptiveLangevinThermostat(GeometricLangevinAlgorithmS
         # p = step.B(p, f, 0.5 * self.dt)
         momentum_final_step_t = momentum - 0.5 * scaled_gradient
 
+        with tf.variable_scope("accumulate", reuse=True):
+            # inertia
+            inertia_global = tf.get_variable("inertia", dtype=dds_basetype)
+            inertia_global_t = tf.assign_add(inertia_global, tf.reduce_sum(tf.multiply(momentum_final_step_t, var)))
+
         # 1/2 * p^{n}^t * p^{n}
         momentum_sq = 0.5 * tf.reduce_sum(tf.multiply(momentum_final_step_t, momentum_final_step_t))
 
@@ -123,7 +128,7 @@ class CovarianceControlledAdaptiveLangevinThermostat(GeometricLangevinAlgorithmS
             var.shape)
 
         #x = step.A(x, p, 0.5 * self.dt, 1.)
-        with tf.control_dependencies([virial_global_t]):
+        with tf.control_dependencies([virial_global_t, inertia_global_t]):
             var_update_half_step_t = state_ops.assign_add(
                 var, 0.5 * step_width_t * preconditioned_momentum_half_step_plus_noise_t)
 
@@ -198,7 +203,7 @@ class CovarianceControlledAdaptiveLangevinThermostat(GeometricLangevinAlgorithmS
                 noise_global_t = noise_global.assign_add(tf.reduce_sum(total_noise))
 
         # NOTE: adhere to ordering of node evaluation here!
-        return control_flow_ops.group(*[virial_global_t, gradient_global_t,
+        return control_flow_ops.group(*[virial_global_t, inertia_global_t, gradient_global_t,
                                         momentum_final_step_t, momentum_global_t,
                                         kinetic_energy_t, momentum_half_step_plus_noise_t,
                                         var_update_half_step_t, gammaAdapt_half_step_t,

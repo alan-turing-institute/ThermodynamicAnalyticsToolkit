@@ -17,6 +17,7 @@ class AccumulatedValues(object):
         self.noise = None
         self.kinetic_energy = None
         self.momenta = None
+        self.inertia = None
 
         # only for HMC
         self.total_energy = []
@@ -58,12 +59,13 @@ class AccumulatedValues(object):
                     self.old_kinetic_energy = [0.] * len(self.kinetic_energy)
 
                 self.accepted, self.rejected, self.old_total_energy, \
-                    self.kinetic_energy, self.momenta, self.gradients, self.virials = \
+                    self.kinetic_energy, self.inertia, self.momenta, self.gradients, self.virials = \
                     sess.run([
                         static_vars["accepted"],
                         static_vars["rejected"],
                         static_vars["old_total_energy"],
                         static_vars["kinetic_energy"],
+                        static_vars["inertia"],
                         static_vars["momenta"],
                         static_vars["gradients"],
                         static_vars["virials"]])
@@ -79,9 +81,10 @@ class AccumulatedValues(object):
                 for walker_index in range(len(self.loss)):
                     self.total_energy[walker_index] += self.old_kinetic_energy[walker_index]
             else:
-                self.kinetic_energy, self.momenta, self.gradients, self.virials, self.noise = \
+                self.kinetic_energy, self.inertia, self.momenta, self.gradients, self.virials, self.noise = \
                     sess.run([
                         static_vars["kinetic_energy"],
+                        static_vars["inertia"],
                         static_vars["momenta"],
                         static_vars["gradients"],
                         static_vars["virials"],

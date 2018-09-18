@@ -49,7 +49,7 @@ AT_CHECK([../../../NumericalDiff \
     trajectory-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-HMC_2nd-accept.csv], 0, [ignore], [ignore])
 AT_CHECK([../../../NumericalDiff \
     --general_threshold 1e-7 absolute \
-    --column_drop id -- \
+    --column_drop id average_inertia -- \
     averages-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/averages-HMC_2nd-accept.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
@@ -92,7 +92,7 @@ AT_CHECK([../../../NumericalDiff \
     trajectory-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-HMC_2nd-reject.csv], 0, [ignore], [ignore])
 AT_CHECK([../../../NumericalDiff \
     --general_threshold 1e-7 absolute \
-    --column_drop id -- \
+    --column_drop id average_inertia -- \
     averages-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/averages-HMC_2nd-reject.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
@@ -129,7 +129,7 @@ AT_CHECK([../../../NumericalDiff \
     trajectory-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-HMC_2nd-accept-singlestep.csv], 0, [ignore], [ignore])
 AT_CHECK([../../../NumericalDiff \
     --general_threshold 1e-7 absolute \
-    --column_drop id -- \
+    --column_drop id average_inertia -- \
     averages-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/averages-HMC_2nd-accept-singlestep.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
@@ -169,7 +169,7 @@ AT_CHECK([../../../NumericalDiff \
     trajectory-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-HMC_2nd-reject-singlestep.csv], 0, [ignore], [ignore])
 AT_CHECK([../../../NumericalDiff \
     --general_threshold 1e-7 absolute \
-    --column_drop id -- \
+    --column_drop id average_inertia -- \
     averages-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/averages-HMC_2nd-reject-singlestep.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
@@ -208,7 +208,7 @@ AT_CHECK([../../../NumericalDiff \
     trajectory-HMC-hidden.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-HMC_2nd-hidden.csv], 0, [ignore], [ignore])
 AT_CHECK([../../../NumericalDiff \
     --general_threshold 1e-7 absolute \
-    --column_drop id -- \
+    --column_drop id average_inertia -- \
     averages-HMC-hidden.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/averages-HMC_2nd-hidden.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP

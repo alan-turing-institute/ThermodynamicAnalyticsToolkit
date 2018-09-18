@@ -116,6 +116,16 @@ class HamiltonianMonteCarloSamplerFirstOrderSampler(StochasticGradientLangevinDy
         return virial_global_t
 
     @staticmethod
+    def _add_inertia_contribution(momentum_half_step_t, var):
+        with tf.variable_scope("accumulate", reuse=True):
+            # inertia
+            inertia_global = tf.get_variable("inertia", dtype=dds_basetype)
+            inertia_global_t = tf.assign_add(
+                inertia_global,
+                tf.reduce_sum(tf.multiply(momentum_half_step_t, var)))
+        return inertia_global_t
+
+    @staticmethod
     def _add_momentum_contribution(momentum_sq):
         with tf.variable_scope("accumulate", reuse=True):
             momentum_global = tf.get_variable("momenta", dtype=dds_basetype)
@@ -248,6 +258,7 @@ class HamiltonianMonteCarloSamplerFirstOrderSampler(StochasticGradientLangevinDy
         momentum_criterion_block_t = self._get_momentum_criterion_block(var,
             scaled_gradient, scaled_noise, current_step_t, next_eval_step_t)
 
+        inertia_global_t = self._add_inertia_contribution(momentum_criterion_block_t, var)
         momentum_sq = tf.reduce_sum(tf.multiply(momentum_criterion_block_t, momentum_criterion_block_t))
         momentum_global_t = self._add_momentum_contribution(momentum_sq)
         kinetic_energy_t = self._add_kinetic_energy_contribution(momentum_sq)
@@ -278,7 +289,7 @@ class HamiltonianMonteCarloSamplerFirstOrderSampler(StochasticGradientLangevinDy
 
         # note: these are evaluated in any order, use control_dependencies if required
         return control_flow_ops.group(*([momentum_criterion_block_t, criterion_block_t,
-                                        virial_global_t, gradient_global_t,
+                                        virial_global_t, inertia_global_t, gradient_global_t,
                                         momentum_global_t, kinetic_energy_t]))
 
     def _apply_sparse(self, grad, var):

@@ -39,6 +39,7 @@ AT_CHECK([../../../TATiSampler \
 # and compare
 AT_CHECK([../../../NumericalDiff \
     --general_threshold 1e-7 absolute \
+    --column_drop average_inertia \
     -- averages-twoclusters.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Averages/post/averages-twoclusters.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP

@@ -254,7 +254,7 @@ class model:
         during sampling.
         """
         static_vars_float = ["current_kinetic", "kinetic_energy", \
-                             "old_total_energy", "momenta", "gradients", "virials", "noise"]
+                             "old_total_energy", "inertia", "momenta", "gradients", "virials", "noise"]
         static_vars_int64 = ["accepted", "rejected"]
         for i in range(self.FLAGS.number_walkers):
             with tf.variable_scope("var_walker"+str(i+1), reuse=self.resources_created):
@@ -788,9 +788,9 @@ class model:
                                         "GeometricLangevinAlgorithm_2ndOrder",
                                         "BAOAB",
                                         "CovarianceControlledAdaptiveLangevinThermostat"]:
-                header += ['ensemble_average_loss', 'average_kinetic_energy', 'average_virials']
+                header += ['ensemble_average_loss', 'average_kinetic_energy', 'average_virials', 'average_inertia']
             elif "HamiltonianMonteCarlo" in self.FLAGS.sampler:
-                header += ['ensemble_average_loss', 'average_kinetic_energy', 'average_virials', 'average_rejection_rate']
+                header += ['ensemble_average_loss', 'average_kinetic_energy', 'average_virials', 'average_inertia', 'average_rejection_rate']
         return header
 
     def get_sample_header(self):
@@ -841,7 +841,7 @@ class model:
                 with placeholders for assigners (required for HMC)
         """
         static_vars_float = ["current_kinetic", "kinetic_energy", \
-                             "old_total_energy", "momenta", "gradients", "virials", "noise"]
+                             "old_total_energy", "inertia", "momenta", "gradients", "virials", "noise"]
         static_vars_int64 = ["accepted", "rejected"]
         static_var_dict = {}
         zero_assigner_dict = {}
@@ -974,15 +974,17 @@ class model:
                       "HamiltonianMonteCarlo_2ndOrder",
                       "BAOAB",
                       "CovarianceControlledAdaptiveLangevinThermostat"]:
-            check_kinetic, check_momenta, check_gradients, check_virials, check_noise = \
+            check_kinetic, check_inertia, check_momenta, check_gradients, check_virials, check_noise = \
                 self.sess.run([
                     self.zero_assigner["kinetic_energy"],
+                    self.zero_assigner["inertia"],
                     self.zero_assigner["momenta"],
                     self.zero_assigner["gradients"],
                     self.zero_assigner["virials"],
                     self.zero_assigner["noise"]])
             for walker_index in range(self.FLAGS.number_walkers):
                 assert (abs(check_kinetic[walker_index]) < 1e-10)
+                assert (abs(check_inertia[walker_index]) < 1e-10)
                 assert (abs(check_momenta[walker_index]) < 1e-10)
                 assert (abs(check_gradients[walker_index]) < 1e-10)
                 assert (abs(check_virials[walker_index]) < 1e-10)
@@ -1227,6 +1229,7 @@ class model:
         # backup gradients and virials of each initial state to avoid recalculation
         initial_state_gradients = None
         initial_state_virials = None
+        initial_state_inertia = None
         initial_state_momenta = None
 
         last_rejected = self.sess.run(self.static_vars["rejected"])   # temporary to see whether last evaluation was a rejection
@@ -1327,10 +1330,12 @@ class model:
                     if accumulated_values.rejected[walker_index] != last_rejected[walker_index]:
                         accumulated_values.gradients[walker_index] = initial_state_gradients
                         accumulated_values.virials[walker_index] = initial_state_virials
+                        accumulated_values.inertia[walker_index] = initial_state_inertia
                         accumulated_values.momenta[walker_index] = initial_state_momenta
                     else:
                         initial_state_gradients = accumulated_values.gradients[walker_index]
                         initial_state_virials = accumulated_values.virials[walker_index]
+                        initial_state_inertia = accumulated_values.inertia[walker_index]
                         initial_state_momenta = accumulated_values.momenta[walker_index]
                     # accumulate averages and other information
                     if current_step >= self.FLAGS.burn_in_steps:

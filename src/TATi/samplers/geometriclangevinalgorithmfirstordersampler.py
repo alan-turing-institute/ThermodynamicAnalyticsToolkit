@@ -98,10 +98,6 @@ class GeometricLangevinAlgorithmFirstOrderSampler(StochasticGradientLangevinDyna
         preconditioned_momentum_full_step_t = tf.reshape(
             tf.matmul(tf.expand_dims(tf.reshape(momentum_full_step_t, [-1]), 0), precondition_matrix),
             var.shape)
-        # make sure virial is evaluated before we update variables
-        with tf.control_dependencies([virial_global_t]):
-            # q=^{n+1} = q^n + M^{-1} p_{n+1} ∆t
-            var_update = state_ops.assign_add(var, step_width_t * preconditioned_momentum_full_step_t - prior_force)
 
         alpha_t = tf.exp(-friction_constant_t * step_width_t)
 
@@ -113,14 +109,22 @@ class GeometricLangevinAlgorithmFirstOrderSampler(StochasticGradientLangevinDyna
 
         # p^{n+1} = \alpha_{\Delta t} p^{n+1} + \sqrt{ \frac{1-\alpha^2_{\Delta t}}{\beta} M } G^n
         with tf.control_dependencies([kinetic_energy_t]):
-            momentum_t = momentum.assign(alpha_t * momentum_full_step_t + scaled_noise)
+            momentum_t = momentum.assign(alpha_t * preconditioned_momentum_full_step_t + scaled_noise)
         with tf.variable_scope("accumulate", reuse=True):
             momentum_global = tf.get_variable("momenta", dtype=dds_basetype)
             momentum_global_t = tf.assign_add(momentum_global, tf.reduce_sum(tf.multiply(momentum_t, momentum_t)))
+            # inertia
+            inertia_global = tf.get_variable("inertia", dtype=dds_basetype)
+            inertia_global_t = tf.assign_add(inertia_global, tf.reduce_sum(tf.multiply(momentum_t, var)))
+
+        # make sure virial is evaluated before we update variables
+        with tf.control_dependencies([virial_global_t]):
+            # q=^{n+1} = q^n + M^{-1} p_{n+1} ∆t
+            var_update = state_ops.assign_add(var, step_width_t * preconditioned_momentum_full_step_t - prior_force)
 
         # note: these are evaluated in any order, use control_dependencies if required
-        return control_flow_ops.group(*[gradient_global_t, virial_global_t, kinetic_energy_t,
-                                        var_update,
+        return control_flow_ops.group(*[gradient_global_t, virial_global_t, inertia_global_t,
+                                        kinetic_energy_t, var_update,
                                         noise_global_t, momentum_t, momentum_global_t,
                                         ])
 
