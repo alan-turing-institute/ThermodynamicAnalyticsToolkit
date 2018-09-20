@@ -572,12 +572,23 @@ class model:
                 assert( self.weights[i].get_total_dof() == self.get_total_weight_dof() )
             if setup is not None and "sample" in setup:
                 for i in range(self.FLAGS.number_walkers):
-                    momenta_weights = [self.sampler[i].get_slot(v, "momentum")
-                                       for v in split_weights[i]]
+                    momenta_weights = []
+                    for v in split_weights[i]:
+                        skip_var = False
+                        for key in self.fixed_variables.keys():
+                            if key in v.name:
+                                for var in self.fixed_variables[key]:
+                                    if v.name == var.name:
+                                        skip_var = True
+                                        break
+                        if not skip_var:
+                            momenta_weights.append(self.sampler[i].get_slot(v, "momentum"))
+                    #logging.debug("Momenta weights: "+str(momenta_weights))
                     if len(momenta_weights) > 0 and momenta_weights[0] is not None:
                         self.momenta_weights.append(neuralnet_parameters(momenta_weights))
                     else:
                         self.momenta_weights.append(None)
+
         if len(self.biases) == 0:
             assert( len(self.momenta_biases) == 0 )
             assert( len(split_biases) == self.FLAGS.number_walkers )
@@ -586,8 +597,18 @@ class model:
                 assert (self.biases[i].get_total_dof() == self.get_total_bias_dof())
             if setup is not None and "sample" in setup:
                 for i in range(self.FLAGS.number_walkers):
-                    momenta_biases = [self.sampler[i].get_slot(v, "momentum")
-                                      for v in split_biases[i]]
+                    momenta_biases = []
+                    for v in split_biases[i]:
+                        skip_var = False
+                        for key in self.fixed_variables.keys():
+                            if key in v.name:
+                                for var in self.fixed_variables[key]:
+                                    if v.name == var.name:
+                                        skip_var = True
+                                        break
+                        if not skip_var:
+                            momenta_biases.append(self.sampler[i].get_slot(v, "momentum"))
+                    #logging.debug("Momenta biases: "+str(momenta_biases))
                     if len(momenta_biases) > 0 and momenta_biases[0] is not None:
                         self.momenta_biases.append(neuralnet_parameters(momenta_biases))
                     else:
