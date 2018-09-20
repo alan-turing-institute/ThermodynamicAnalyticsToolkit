@@ -542,7 +542,7 @@ class model:
             assert( len(split_weights) == self.FLAGS.number_walkers )
             for i in range(self.FLAGS.number_walkers):
                 self.weights.append(neuralnet_parameters(split_weights[i]))
-            assert( self.weights[i].get_total_dof() == self.get_total_weight_dof() )
+                assert( self.weights[i].get_total_dof() == self.get_total_weight_dof() )
             if setup is not None and "sample" in setup:
                 for i in range(self.FLAGS.number_walkers):
                     momenta_weights = [self.sampler[i].get_slot(v, "momentum")
@@ -556,7 +556,7 @@ class model:
             assert( len(split_biases) == self.FLAGS.number_walkers )
             for i in range(self.FLAGS.number_walkers):
                 self.biases.append(neuralnet_parameters(split_biases[i]))
-            assert (self.biases[i].get_total_dof() == self.get_total_bias_dof())
+                assert (self.biases[i].get_total_dof() == self.get_total_bias_dof())
             if setup is not None and "sample" in setup:
                 for i in range(self.FLAGS.number_walkers):
                     momenta_biases = [self.sampler[i].get_slot(v, "momentum")
