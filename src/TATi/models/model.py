@@ -504,22 +504,23 @@ class model:
                             grads_and_vars, i, global_step=global_step,
                             name=self.sampler[i].get_name())
                     self.nn[i].summary_nodes['sample_step'] = train_step
+
+            if "train" in setup or "sample" in setup:
+                if self.step_placeholder is None:
+                    self.step_placeholder = []
+                    for i in range(self.FLAGS.number_walkers):
+                        with tf.name_scope("walker"+str(i+1)):
+                            self.step_placeholder.append(tf.placeholder(shape=(), dtype=tf.int32))
+                if self.global_step_assign_t is None:
+                    self.global_step_assign_t = []
+                    for i in range(self.FLAGS.number_walkers):
+                        with tf.name_scope("walker"+str(i+1)):
+                            self.global_step_assign_t.append(tf.assign(self.nn[i].summary_nodes['global_step'], self.step_placeholder[i]))
+                else:
+                    logging.debug("Not adding step placeholder or global step.")
+
         else:
             logging.info("Not adding sample or train method.")
-
-        if setup == "train" or setup == "sample":
-            if self.step_placeholder is None:
-                self.step_placeholder = []
-                for i in range(self.FLAGS.number_walkers):
-                    with tf.name_scope("walker"+str(i+1)):
-                        self.step_placeholder.append(tf.placeholder(shape=(), dtype=tf.int32))
-            if self.global_step_assign_t is None:
-                self.global_step_assign_t = []
-                for i in range(self.FLAGS.number_walkers):
-                    with tf.name_scope("walker"+str(i+1)):
-                        self.global_step_assign_t.append(tf.assign(self.nn[i].summary_nodes['global_step'], self.step_placeholder[i]))
-            else:
-                logging.debug("Not adding step placeholder or global step.")
 
         # setup model saving/recovering
         if self.saver is None:
