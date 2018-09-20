@@ -344,6 +344,8 @@ class model:
                 if self.FLAGS.do_hessians:
                     self.hessians = []
             self.true_labels = NeuralNetwork.add_true_labels(self.output_dimension)
+
+            # construct network per walker
             for i in range(self.FLAGS.number_walkers):
                 with tf.name_scope('walker'+str(i+1)):
                     self.trainables.append('trainables_walker'+str(i+1))
@@ -371,22 +373,31 @@ class model:
                         self.nn[-1].placeholder_nodes["y_"],
                         self.output_type)
 
-                    if self.FLAGS.fix_parameters is not None:
-                        names, values = self.split_parameters_as_names_values(self.FLAGS.fix_parameters)
-                        fixed_variables.append(self.fix_parameters(names))
-                        logging.info("Excluded the following degrees of freedom: " + str(fixed_variables[-1]))
-                        # exclude fixed degrees also from trainables_per_walker sets
+            # fix parameters
+            if self.FLAGS.fix_parameters is not None:
+                names, values = self.split_parameters_as_names_values(self.FLAGS.fix_parameters)
+                fixed_variables = self.fix_parameters(names)
+                logging.info("Excluded the following degrees of freedom: " + str(fixed_variables))
+                logging.debug("Fixed vars are: " + str(self.fixed_variables))
+
+                # additionally exclude fixed degrees from trainables_per_walker sets
+                for i in range(self.FLAGS.number_walkers):
+                    name_scope = 'walker' + str(i + 1)
+                    with tf.name_scope(name_scope):
                         trainables = tf.get_collection_ref(self.trainables[i])
-                        for var in fixed_variables[-1]:
-                            removed_vars = model._fix_parameter_in_collection(trainables, var)
+                        for var in fixed_variables:
+                            removed_vars = model._fix_parameter_in_collection(trainables, var, name_scope+"'s trainables")
                             # make sure we remove one per walker
                             if len(removed_vars) != 1:
                                 raise ValueError(
                                     "Cannot find " + var + " in walker " + str(i) + "." +
                                     " Have you checked the spelling, e.g., output/biases/Variable:0?")
-                            logging.debug("Remaining trainable variables in walker " + str(i + 1)
-                                          + ": " + str(tf.get_collection_ref(self.trainables[i])))
+                        logging.debug("Remaining trainable variables in walker " + str(i + 1)
+                                      + ": " + str(tf.get_collection_ref(self.trainables[i])))
 
+            # construct (vectorized) gradient nodes and hessians
+            for i in range(self.FLAGS.number_walkers):
+                with tf.name_scope('walker' + str(i + 1)):
                     if self.FLAGS.do_hessians or add_vectorized_gradients:
                         # create node for gradient and hessian computation only if specifically
                         # requested as the creation along is costly (apart from the expensive part
@@ -394,7 +405,7 @@ class model:
                         # startup quite a bit even when hessians are not evaluated.
                         #print("GRADIENTS")
                         vectorized_gradients = []
-                        trainables = tf.get_collection_ref(self.trainables[-1])
+                        trainables = tf.get_collection_ref(self.trainables[i])
                         for tensor in trainables:
                             grad = tf.gradients(self.loss, tensor)
                             #print(grad)
@@ -426,8 +437,8 @@ class model:
 
                 if self.FLAGS.fix_parameters is not None:
                     names, values = self.split_parameters_as_names_values(self.FLAGS.fix_parameters)
-                    fixed_variables.append(self.fix_parameters(names))
-                    logging.info("Excluded the following degrees of freedom: " + str(fixed_variables[-1]))
+                    fixed_variables.extend(self.fix_parameters(names))
+                    logging.info("Excluded the following degrees of freedom: " + str(fixed_variables))
 
         logging.debug("Remaining global trainable variables: " + str(variables.trainable_variables()))
 
@@ -569,14 +580,17 @@ class model:
         if self.FLAGS.fix_parameters is not None:
             all_values = []
             all_variables = []
-            for k in range(self.FLAGS.number_walkers):
-                for i in range(len(fixed_variables[k])):
-                    var_name = fixed_variables[k][i]
-                    if var_name in self.fixed_variables.keys():
-                        all_variables.extend(self.fixed_variables[var_name])
-                        all_values.extend([values[i]]*len(self.fixed_variables[var_name]))
-                    else:
-                        logging.warning("Could not assign "+var_name+" a value as it was not found before.")
+            for i in range(len(fixed_variables)):
+                var_name = fixed_variables[i]
+                # skip None entries
+                if var_name is None:
+                    continue
+                logging.debug("Trying to assign the fixed variable "+str(var_name))
+                if var_name in self.fixed_variables.keys():
+                    all_variables.extend(self.fixed_variables[var_name])
+                    all_values.extend([values[i]]*len(self.fixed_variables[var_name]))
+                else:
+                    logging.warning("Could not assign "+var_name+" a value as it was not found before.")
             fix_parameter_assigns = self.create_assign_parameters(all_variables, all_values)
 
         ### Now the session object is created, graph must be done here!
@@ -1569,23 +1583,18 @@ class model:
             logging.debug("Looking for variable %s to fix." % (name))
             # look for tensor in already fixed variables
             variable_list = None
-            for k in self.fixed_variables.keys():
-                logging.debug("Comparing against fixed variable "+str(k))
-                if k == name:
-                    variable_list = self.fixed_variables[k]
-                    break
-            # if not found, fix it. Otherwise, simply add
-            if variable_list is None:
-                retvariable_list = self._fix_parameter(name)
-                logging.debug("Updated fixed parameters by: "+str(retvariable_list))
-                if retvariable_list is not None:
+            retvariable_list = self._fix_parameter(name)
+            logging.debug("Updated fixed parameters by: "+str(retvariable_list))
+            if retvariable_list is not None:
+                for retvariable in retvariable_list:
                     if name in self.fixed_variables.keys():
-                        self.fixed_variables[name].extend(retvariable_list)
+                        self.fixed_variables[name].append(retvariable)
                     else:
-                        self.fixed_variables[name] = retvariable_list
+                        self.fixed_variables[name] = [retvariable]
+                if name in self.fixed_variables.keys():
                     retlist.append(name)
-            else:
-                retlist.append(name)
+                else:
+                    retlist.append(None)
         return retlist
 
     def assign_current_step(self, step, walker_index=0):
