@@ -1524,14 +1524,16 @@ class model:
         trainable_collection = tf.get_collection_ref(tf.GraphKeys.TRAINABLE_VARIABLES)
         if "weight" in _name:
             other_collection = tf.get_collection_ref(tf.GraphKeys.WEIGHTS)
+            other_collection_name = "weights"
         elif "bias" in _name:
             other_collection = tf.get_collection_ref(tf.GraphKeys.BIASES)
+            other_collection_name = "biases"
         else:
             logging.warning("Unknown parameter category for "+str(_name) \
                             +"), removing only from trainables.")
 
-        trainable_variable = model._fix_parameter_in_collection(trainable_collection, _name)
-        variable = model._fix_parameter_in_collection(other_collection, _name)
+        trainable_variable = model._fix_parameter_in_collection(trainable_collection, _name, "trainables")
+        variable = model._fix_parameter_in_collection(other_collection, _name, other_collection_name)
 
         #print(tf.get_collection_ref(tf.GraphKeys.TRAINABLE_VARIABLES))
         #if "weight" in _name:
