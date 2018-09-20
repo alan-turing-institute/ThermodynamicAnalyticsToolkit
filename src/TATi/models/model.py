@@ -507,7 +507,7 @@ class model:
         else:
             logging.info("Not adding sample or train method.")
 
-        if setup == "train" or setup == "sample":
+        if "train" in setup or "sample" in setup:
             if self.step_placeholder is None:
                 self.step_placeholder = []
                 for i in range(self.FLAGS.number_walkers):
