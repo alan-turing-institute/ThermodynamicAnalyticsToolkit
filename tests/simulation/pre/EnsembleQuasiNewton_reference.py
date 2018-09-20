@@ -138,6 +138,7 @@ def baoab_update_step(nn, momenta, old_gradients, step_width, beta, gamma, walke
     :param step_width: step width for sampling step
     :param beta: inverse temperature
     :param gamma: friction constant
+    :param walker_index: index of walker to update
     :return: updated gradients and momenta
     """
 
