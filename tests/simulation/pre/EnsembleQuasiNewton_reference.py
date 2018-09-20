@@ -19,6 +19,8 @@ parser.add_argument('--hidden_activation', type=str, default="relu",
     help='Activation function to use for hidden layer: tanh, relu, linear')
 parser.add_argument('--hidden_dimension', type=int, nargs='+', default=[],
     help='Dimension of each hidden layer, e.g. 8 8 for two hidden layers each with 8 nodes fully connected')
+parser.add_argument("--input_columns", nargs='+', default="", \
+    help="Input columns to use")
 parser.add_argument("--input_dimension", type=int, default=784, \
     help="Input dimension of dataset, number of features")
 parser.add_argument("--inverse_temperature", type=float, default=None, \
@@ -78,6 +80,7 @@ nn = tati(
     hidden_activation=params.hidden_activation,
     hidden_dimension=params.hidden_dimension,
     in_memory_pipeline=True,
+    input_columns=params.input_columns,
     input_dimension=params.input_dimension,
     loss=params.loss,
     max_steps=params.max_steps,
