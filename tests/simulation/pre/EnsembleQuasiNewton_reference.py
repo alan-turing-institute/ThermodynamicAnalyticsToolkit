@@ -11,6 +11,9 @@ parser.add_argument("--batch_data_files", type=str, default=None, \
     help="Input dataset file")
 parser.add_argument("--batch_size", type=int, default=None, \
     help="Size of each dataset batch")
+parser.add_argument('--collapse_after_steps', type=int, default=10,
+    help='Number of steps after which to regularly collapse all dependent walkers to restart from a single position '
+         'again, maintaining harmonic approximation for ensemble preconditioning. 0 will never collapse.')
 parser.add_argument("--fix_parameters", type=str, default="",
     help="List of parameters to fix (and assign), e.g., output/biases/Variable:0=0.")
 parser.add_argument("--friction_constant", type=float, default=None, \
@@ -164,18 +167,28 @@ def baoab_update_step(nn, momenta, old_gradients, step_width, beta, gamma, walke
 momenta = [np.zeros((nn.num_parameters())) for i in range(params.number_walkers)]
 old_gradients = [np.zeros((nn.num_parameters())) for i in range(params.number_walkers)]
 
-print("Step #" + str(0) + ": " + str(nn.loss()) + " at " \
+step=0
+print("Step #" + str(step) + ": " + str(nn.loss()) + " at " \
       + str(nn.parameters) + ", gradients " + str(old_gradients))
 
-for i in range(10):
-    for walker_index in range(params.number_walkers):
-        old_gradients[walker_index], momenta[walker_index] = baoab_update_step(
-            nn, momenta[walker_index], old_gradients[walker_index], step_width=params.step_width,
-            beta=params.inverse_temperature, gamma=params.friction_constant, walker_index=walker_index)
-    print("Step #"+str(i+1)+": "+str(nn.loss())+" at " \
-        +str(nn.parameters)+", gradients "+str(old_gradients))
+for leg in range(1): # int(params.max_steps/params.collapse_after_steps)
 
-    write_trajectory_step(i+1)
+    for i in range(params.collapse_after_steps):
+        step += 1
+        for walker_index in range(params.number_walkers):
+            # TODO: calculate covariance matrix for walker_index (i.e. parameters of all other walkers)
+
+            old_gradients[walker_index], momenta[walker_index] = baoab_update_step(
+                nn, momenta[walker_index], old_gradients[walker_index], step_width=params.step_width,
+                beta=params.inverse_temperature, gamma=params.friction_constant, walker_index=walker_index)
+        print("Step #"+str(step)+": "+str(nn.loss())+" at " \
+            +str(nn.parameters)+", gradients "+str(old_gradients))
+
+        write_trajectory_step(step)
+
+    # collapse all walkers to position of first
+    for walker_index in range(1, params.number_walkers):
+        nn.parameters[walker_index] = nn.parameters[0]
 
 tf.close()
 
