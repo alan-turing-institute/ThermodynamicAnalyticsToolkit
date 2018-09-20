@@ -238,7 +238,7 @@ class WalkerEnsembleOptimizer(Optimizer):
         #print("picked_var: "+str(picked_var))
         #print("flat_othervars: "+str(flat_othervars))
         if len(flat_othervars) != 0:
-            _, cov = self._apply_covariance(flat_othervars, var)
+            _, cov = self._get_covariance(flat_othervars, var)
             # \sqrt{ 1_D + \eta cov(flat_othervars)}, see [Matthews, Weare, Leimkuhler, 2016]
             unity = tf.matrix_band_part(tf.ones_like(cov, dtype=dds_basetype), 0, 0)
             matrix = unity + self.covariance_blending * cov
@@ -308,7 +308,7 @@ class WalkerEnsembleOptimizer(Optimizer):
                         othervars.append(tf.reshape(v, [-1]))
         return var, othervars
 
-    def _apply_covariance(self, flat_othervars, var):
+    def _get_covariance(self, flat_othervars, var):
         """ Returns node for the covariance between the variables of all other
         walkers plus the identity.
 
