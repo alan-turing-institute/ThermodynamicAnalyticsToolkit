@@ -29,12 +29,16 @@ parser.add_argument("--loss", type=str, default=None, \
     help="loss function to use")
 parser.add_argument("--max_steps", type=int, default=None, \
     help="Maximum number of steps")
+parser.add_argument("--number_walkers", type=int, default=1, \
+    help="Number of parallel walker to use")
 parser.add_argument("--output_dimension", type=int, default=10, \
     help="Output dimension of dataset, number of labels")
 parser.add_argument("--output_file", type=str, default=None, \
     help="Output CSV file")
-parser.add_argument("--parameter_file", type=str, default=None, \
+parser.add_argument("--parse_parameters_file", type=str, default=None, \
     help="Parse starting parameters from this file")
+parser.add_argument("--parse_steps", type=int, nargs='+', default=[], \
+    help="step to use from parsed parameter file")
 parser.add_argument("--seed", type=int, default=None, \
     help="Seed for random starting configuration")
 parser.add_argument("--step_width", type=float, default=None, \
@@ -84,9 +88,12 @@ nn = tati(
     input_dimension=params.input_dimension,
     loss=params.loss,
     max_steps=params.max_steps,
+    number_walkers=params.number_walkers,
     optimizer="GradientDescent",
     output_activation="linear",
     output_dimension=params.output_dimension,
+    parse_parameters_file=params.parse_parameters_file,
+    parse_steps=params.parse_steps,
     seed=params.seed,
     step_width=params.step_width,
     verbose=2,
@@ -103,16 +110,18 @@ if params.trajectory_file is not None:
 
 def write_trajectory_step(step):
     if params.trajectory_file is not None:
-        trajectory_line = [str(0), str(step)] \
-          + ['{:{width}.{precision}e}'.format(nn.loss(), width=output_width,
-              precision=output_precision)] \
-          + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
-             for item in nn.parameters]
-        tf.write(",".join(trajectory_line)+"\n")
+        for walker_index in range(params.number_walkers):
+            trajectory_line = [str(walker_index), str(step)] \
+              + ['{:{width}.{precision}e}'.format(nn.loss()[walker_index], width=output_width,
+                  precision=output_precision)] \
+              + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
+                 for item in nn.parameters[walker_index]]
+            tf.write(",".join(trajectory_line)+"\n")
 
 np.random.seed(426)
 
-def baoab_update_step(nn, momenta, old_gradients, step_width, beta, gamma):
+
+def baoab_update_step(nn, momenta, old_gradients, step_width, beta, gamma, walker_index=0):
     """ Implementation of BAOAB update step using TATi's simulation interface.
 
     Note:
@@ -133,7 +142,7 @@ def baoab_update_step(nn, momenta, old_gradients, step_width, beta, gamma):
     momenta -= .5*step_width * old_gradients
 
     # 2. A: x_{n+\tfrac 1 2} = x_n + \lambda p_{n+\tfrac 1 2}
-    nn.parameters = nn.parameters + .5*step_width * momenta
+    nn.parameters[walker_index] = nn.parameters[walker_index] + .5*step_width * momenta
 
     # 3. O: \widehat{p}_{n+1} = \alpha p_{n+\tfrac 1 2} + \sqrt{\frac{1-\alpha^2}{\beta}} \cdot \eta_n
     alpha = math.exp(-gamma*step_width)
@@ -141,24 +150,29 @@ def baoab_update_step(nn, momenta, old_gradients, step_width, beta, gamma):
               math.sqrt((1.-math.pow(alpha,2.))/beta) * np.random.standard_normal(momenta.shape)
 
     # \nabla_x L(x_{n+\tfrac 1 2})
-    gradients = nn.gradients()
+    gradients = nn.gradients()[walker_index]
 
     # 4. A: x_{n+1} = x_{n+\tfrac 1 2} + \lambda \widehat{p}_{n+\tfrac 1 2}
-    nn.parameters = nn.parameters + .5*step_width * momenta
+    nn.parameters[walker_index] = nn.parameters[walker_index] + .5*step_width * momenta
 
     # 3. p_{n+1} = \widehat{p}_{n+\tfrac 1 2} - \tfrac {\lambda}{2} \nabla_x L(x_{n+1})
     momenta -= .5*step_width * gradients
 
     return gradients, momenta
 
-momenta = np.zeros((nn.num_parameters()))
-old_gradients = np.zeros((nn.num_parameters()))
 
-for i in range(100):
-    old_gradients, momenta = baoab_update_step(
-        nn, momenta, old_gradients, step_width=params.step_width,
-        beta=params.inverse_temperature, gamma=params.friction_constant)
-    print("Step #"+str(i)+": "+str(nn.loss())+" at " \
+momenta = [np.zeros((nn.num_parameters())) for i in range(params.number_walkers)]
+old_gradients = [np.zeros((nn.num_parameters())) for i in range(params.number_walkers)]
+
+print("Step #" + str(0) + ": " + str(nn.loss()) + " at " \
+      + str(nn.parameters) + ", gradients " + str(old_gradients))
+
+for i in range(10):
+    for walker_index in range(params.number_walkers):
+        old_gradients[walker_index], momenta[walker_index] = baoab_update_step(
+            nn, momenta[walker_index], old_gradients[walker_index], step_width=params.step_width,
+            beta=params.inverse_temperature, gamma=params.friction_constant, walker_index=walker_index)
+    print("Step #"+str(i+1)+": "+str(nn.loss())+" at " \
         +str(nn.parameters)+", gradients "+str(old_gradients))
 
     write_trajectory_step(i+1)
