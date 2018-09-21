@@ -14,6 +14,11 @@ parser.add_argument("--batch_size", type=int, default=None, \
 parser.add_argument('--collapse_after_steps', type=int, default=10,
     help='Number of steps after which to regularly collapse all dependent walkers to restart from a single position '
          'again, maintaining harmonic approximation for ensemble preconditioning. 0 will never collapse.')
+parser.add_argument('--covariance_blending', type=float, default=0.,
+    help='Blending between unpreconditioned gradient (0.) and preconditioning through covariance matrix from other '
+         'dependent walkers')
+parser.add_argument('--every_nth', type=int, default=1,
+    help='Store only every nth trajectory (and run) point to files, e.g. 10')
 parser.add_argument("--fix_parameters", type=str, default="",
     help="List of parameters to fix (and assign), e.g., output/biases/Variable:0=0.")
 parser.add_argument("--friction_constant", type=float, default=None, \
@@ -111,16 +116,23 @@ if params.trajectory_file is not None:
         nn._nn.biases[0].get_total_dof())
     tf.write(",".join(header)+"\n")
 
-def write_trajectory_step(step):
-    if params.trajectory_file is not None:
-        for walker_index in range(params.number_walkers):
-            trajectory_line = [str(walker_index), str(step)] \
-              + ['{:{width}.{precision}e}'.format(nn.loss()[walker_index], width=output_width,
-                  precision=output_precision)] \
-              + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
-                 for item in nn.parameters[walker_index]]
-            tf.write(",".join(trajectory_line)+"\n")
 
+def print_step(step):
+    print("Step #" + str(step) + ": " + str(nn.loss()) + " at " \
+        + str(nn.parameters) + ", gradients " + str(old_gradients))
+
+
+def write_trajectory_step(step):
+    if (step % params.every_nth) == 0:
+        if params.trajectory_file is not None:
+            for walker_index in range(params.number_walkers):
+                trajectory_line = [str(walker_index), str(step)] \
+                  + ['{:{width}.{precision}e}'.format(nn.loss()[walker_index], width=output_width,
+                      precision=output_precision)] \
+                  + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
+                     for item in nn.parameters[walker_index]]
+                tf.write(",".join(trajectory_line)+"\n")
+        #print_step(step)
 
 
 def baoab_update_step(nn, momenta, old_gradients, preconditioner, step_width, beta, gamma, walker_index=0):
@@ -176,33 +188,82 @@ def baoab_update_step(nn, momenta, old_gradients, preconditioner, step_width, be
     return gradients, momenta
 
 
+def calculate_mean(walker_index):
+    means = np.zeros((nn.num_parameters()))
+    for other_walker_index in range(nn.num_walkers()):
+        #print(other_walker_index)
+        if walker_index == other_walker_index:
+            continue
+        #print(nn.parameters)
+        means += nn.parameters[other_walker_index]
+        #print(means)
+        #print(nn.parameters[other_walker_index])
+    means *= 1./(float(nn.num_walkers()) - 1.)
+    return means
+
+
+# ones on diagonal, 1/(dim-1) everywhere else
+normalization = np.ones((nn.num_parameters(),nn.num_parameters())) \
+    - np.identity(nn.num_parameters())
+normalization *= 1./(float(nn.num_walkers()) - 1.)
+normalization += np.identity(nn.num_parameters())
+
+
+def calculate_covariance(walker_index):
+    means = calculate_mean(walker_index=walker_index)
+    #print("Means for walker #"+str(walker_index)+": "+str(means))
+    covariance = np.zeros((nn.num_parameters(),nn.num_parameters()))
+    for other_walker_index in range(nn.num_walkers()):
+        #print(other_walker_index)
+        if walker_index == other_walker_index:
+            continue
+        #print(nn.parameters[other_walker_index])
+        difference = nn.parameters[other_walker_index] - means
+        #print(difference)
+        covariance += np.outer(difference, difference)
+        #print(covariance)
+    covariance *= normalization
+    #print("Covariance for walker #" + str(walker_index) + ": " \
+    #      + str(covariance))
+    return covariance
+
+
 momenta = [np.zeros((nn.num_parameters())) for i in range(params.number_walkers)]
 old_gradients = [np.zeros((nn.num_parameters())) for i in range(params.number_walkers)]
+preconditioner = [np.identity((nn.num_parameters())) for i in range(params.number_walkers)]
 
 step=0
-print("Step #" + str(step) + ": " + str(nn.loss()) + " at " \
-      + str(nn.parameters) + ", gradients " + str(old_gradients))
+write_trajectory_step(step)
 
-for leg in range(1): # int(params.max_steps/params.collapse_after_steps)
-
+for leg in range(int(params.max_steps/params.collapse_after_steps)):
     for i in range(params.collapse_after_steps):
         step += 1
-        for walker_index in range(params.number_walkers):
-            # TODO: calculate covariance matrix for walker_index (i.e. parameters of all other walkers)
-
-            preconditioner = np.identity((nn.num_parameters()))
+        for walker_index in range(nn.num_walkers()):
+            # perform sampling step with preconditioning
             old_gradients[walker_index], momenta[walker_index] = baoab_update_step(
                 nn, momenta[walker_index], old_gradients[walker_index],
-                preconditioner=preconditioner,
+                preconditioner=preconditioner[walker_index],
                 step_width=params.step_width,
                 beta=params.inverse_temperature, gamma=params.friction_constant, walker_index=walker_index)
-        print("Step #"+str(step)+": "+str(nn.loss())+" at " \
-            +str(nn.parameters)+", gradients "+str(old_gradients))
 
         write_trajectory_step(step)
 
+    # calculate covariance matrix for walker_index (i.e. parameters of all other walkers)
+    for walker_index in range(nn.num_walkers()):
+        #print("walker_index "+str(walker_index))
+        preconditioner[walker_index] = \
+            params.covariance_blending * calculate_covariance(walker_index=walker_index)
+        preconditioner[walker_index] += np.identity(nn.num_parameters())
+        #print(preconditioner[walker_index])
+        preconditioner[walker_index] = np.linalg.cholesky(preconditioner[walker_index])
+        #print("Preconditioner for walker #"+str(walker_index)+": "\
+        #      +str(preconditioner[walker_index]))
+
+        #print("TEST: "+str( \
+        #    np.dot(preconditioner[walker_index], preconditioner[walker_index].T.conj())))
+
     # collapse all walkers to position of first
-    for walker_index in range(1, params.number_walkers):
+    for walker_index in range(1, nn.num_walkers()):
         nn.parameters[walker_index] = nn.parameters[0]
 
 tf.close()
