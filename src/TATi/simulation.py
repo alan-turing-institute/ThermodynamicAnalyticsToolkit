@@ -127,6 +127,8 @@ class Simulation(object):
         self._parameters = Parameters(self._nn, ["weights", "biases"])
         self._momenta = Parameters(self._nn, ["momenta_weights", "momenta_biases"])
 
+        self.non_simplified_access = False
+
     @staticmethod
     def help(key=None):
         """ Prints help for each option or all option names if key is None
@@ -274,7 +276,7 @@ class Simulation(object):
         :return: parameters
         """
         self._check_nn()
-        if len(self._parameters) == 1:
+        if not self.non_simplified_access and len(self._parameters) == 1:
             return self._parameters[0]
         else:
             return self._parameters
@@ -301,7 +303,10 @@ class Simulation(object):
         """
         self._check_nn()
         try:
-            return self._momenta
+            if not self.non_simplified_access and len(self._momenta) == 1:
+                return self._momenta[0]
+            else:
+                return self._momenta
         except ValueError:
             logging.error("%s does not have momenta." % (self._options.sampler))
             return None
