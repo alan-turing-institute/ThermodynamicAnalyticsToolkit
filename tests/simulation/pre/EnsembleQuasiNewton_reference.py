@@ -27,7 +27,7 @@ parser.add_argument('--hidden_activation', type=str, default="relu",
     help='Activation function to use for hidden layer: tanh, relu, linear')
 parser.add_argument('--hidden_dimension', type=int, nargs='+', default=[],
     help='Dimension of each hidden layer, e.g. 8 8 for two hidden layers each with 8 nodes fully connected')
-parser.add_argument("--input_columns", nargs='+', default="", \
+parser.add_argument("--input_columns", type=str, nargs='+', default=[], \
     help="Input columns to use")
 parser.add_argument("--input_dimension", type=int, default=784, \
     help="Input dimension of dataset, number of features")
@@ -79,6 +79,8 @@ else:
     print("Unknown input format")
     sys.exit(255)
 
+print("Parameters: "+str(params))
+
 # fix seed
 np.random.seed(params.seed)
 
@@ -106,6 +108,7 @@ nn = tati(
     step_width=params.step_width,
     verbose=2,
 )
+nn.non_simplified_access = True # allow access to parameters using [0] for one walker
 
 if params.trajectory_file is not None:
     tf = open(params.trajectory_file, "w")
@@ -127,7 +130,7 @@ def write_trajectory_step(step):
         if params.trajectory_file is not None:
             for walker_index in range(params.number_walkers):
                 trajectory_line = [str(walker_index), str(step)] \
-                  + ['{:{width}.{precision}e}'.format(nn.loss()[walker_index], width=output_width,
+                  + ['{:{width}.{precision}e}'.format(nn.loss(walker_index), width=output_width,
                       precision=output_precision)] \
                   + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
                      for item in nn.parameters[walker_index]]
@@ -180,7 +183,7 @@ def baoab_update_step(nn, momenta, old_gradients, preconditioner, step_width, be
     A(step_width, momenta)
 
     # \nabla_x L(x_{n+\tfrac 1 2})
-    gradients = nn.gradients()[walker_index]
+    gradients = nn.gradients(walker_index)
 
     # 5. p_{n+1} = \widehat{p}_{n+\tfrac 1 2} - \tfrac {\lambda}{2} \nabla_x L(x_{n+1})
     B(step_width, gradients)
@@ -198,14 +201,16 @@ def calculate_mean(walker_index):
         means += nn.parameters[other_walker_index]
         #print(means)
         #print(nn.parameters[other_walker_index])
-    means *= 1./(float(nn.num_walkers()) - 1.)
+    if nn.num_walkers() > 1:
+        means *= 1./(float(nn.num_walkers()) - 1.)
     return means
 
 
 # ones on diagonal, 1/(dim-1) everywhere else
 normalization = np.ones((nn.num_parameters(),nn.num_parameters())) \
     - np.identity(nn.num_parameters())
-normalization *= 1./(float(nn.num_walkers()) - 1.)
+if nn.num_walkers() > 1:
+    normalization *= 1./(float(nn.num_walkers()) - 1.)
 normalization += np.identity(nn.num_parameters())
 
 
@@ -263,8 +268,9 @@ for leg in range(int(params.max_steps/params.collapse_after_steps)):
         #    np.dot(preconditioner[walker_index], preconditioner[walker_index].T.conj())))
 
     # collapse all walkers to position of first
-    for walker_index in range(1, nn.num_walkers()):
-        nn.parameters[walker_index] = nn.parameters[0]
+    #for walker_index in range(1, nn.num_walkers()):
+    #    nn.parameters[walker_index] = nn.parameters[0]
 
-tf.close()
+if params.trajectory_file is not None:
+        tf.close()
 
