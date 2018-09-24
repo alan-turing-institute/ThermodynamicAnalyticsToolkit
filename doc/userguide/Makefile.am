@@ -103,7 +103,11 @@ revdate = $(shell date +%Y-%m-%d)
 	$(ASCIIDOC) -b html5 -a toc2 -a latexmath -a numbered -aimagesdir=$(srcdir) -arevdate=$(revdate) -aversion-label=@PACKAGE@ -arevnumber=$(version) -o $@ $<
 
 %.pdf: %.xml
-	$(DBLATEX) --param=doc.lot.show=figure,table $< $@
+	$(DBLATEX) --param=doc.lot.show=figure,table --param=paper.type=a4paper $< $@
+
+# currently not used. Useful for converting to latex output
+%.tex: %.xml
+	$(DBLATEX) --param=doc.lot.show=figure,table --param=paper.type=a4paper -t tex $< $@
 
 all: programmersguide.pdf programmersguide.html \
 	userguide.pdf userguide.html \
