@@ -137,7 +137,6 @@ def write_trajectory_step(step):
                 tf.write(",".join(trajectory_line)+"\n")
         print_step(step)
 
-np.random.seed(426)
 
 
 def baoab_update_step(nn, momenta, old_gradients, preconditioner, step_width, beta, gamma, walker_index=0):
