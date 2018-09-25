@@ -1361,7 +1361,8 @@ class model:
                 summary_writer.add_run_metadata(run_metadata, 'step%d' % current_step)
                 summary_writer.add_summary(summary, current_step)
 
-            if current_step % self.FLAGS.every_nth == 0:
+            # we always write last step
+            if (current_step % self.FLAGS.every_nth == 0) or (current_step == (self.FLAGS.max_steps-1)):
                 current_time = time.process_time()
                 time_elapsed_per_nth_step = current_time - last_time
                 # neglect first step as initialization perturbs average
