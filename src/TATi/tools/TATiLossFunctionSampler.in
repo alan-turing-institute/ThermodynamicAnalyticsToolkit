@@ -68,7 +68,7 @@ def countStringInCollection(_string, _collection, _sess):
     for var in _collection:
         if _string in var.name:
             size = _sess.run(tf.size(var))
-            print("Comparing "+_string+" with "+var.name+" of size "+str(size))
+            #print("Comparing "+_string+" with "+var.name+" of size "+str(size))
             count += size
     return count
 
@@ -163,8 +163,8 @@ def main(_):
 
         loss_eval, acc_eval = sess.run([loss, acc], feed_dict=feed_dict)
 
-        print("Loss and accuraccy at the given parameters w("+str(weights_eval)+" b("
-              +str(biases_eval)+") is "+str(loss_eval[0])+" and "+str(acc_eval[0]))
+        #print("Loss and accuraccy at the given parameters w("+str(weights_eval)+" b("
+        #      +str(biases_eval)+") is "+str(loss_eval[0])+" and "+str(acc_eval[0]))
 
         if options.csv_file is not None:
             print_row = [current_step] \
@@ -214,8 +214,8 @@ def main(_):
                 weights_len_grid.append(1)
         assert( len(weights_linspace) == weights_vals.size )
         assert( len(weights_len_grid) == weights_vals.size )
-        print(weights_linspace)
-        print(weights_len_grid)
+        #print(weights_linspace)
+        #print(weights_len_grid)
 
         biases_linspace = []
         biases_len_grid = []
@@ -239,8 +239,8 @@ def main(_):
                 biases_len_grid.append(1)
         assert( len(biases_linspace) == biases_vals.size )
         assert( len(biases_len_grid) == biases_vals.size )
-        print(biases_linspace)
-        print(biases_len_grid)
+        #print(biases_linspace)
+        #print(biases_len_grid)
 
 	### functions to iterate over weights and biases
 
@@ -287,10 +287,10 @@ def main(_):
             evaluate_loss(weights_eval, biases_eval)
 
             for i in range(weights_eval.size):
-                print("Comparing "+str(weights_eval[i])+" against "+str(weights_vals[i]))
+                #print("Comparing "+str(weights_eval[i])+" against "+str(weights_vals[i]))
                 assert( math.fabs(weights_eval[i] - weights_vals[i]) < 1e-6 )
             for i in range(biases_eval.size):
-                print("Comparing "+str(biases_eval[i])+" against "+str(biases_vals[i]))
+                #print("Comparing "+str(biases_eval[i])+" against "+str(biases_vals[i]))
                 assert( math.fabs(biases_eval[i] - biases_vals[i]) < 1e-6 )
 
 
