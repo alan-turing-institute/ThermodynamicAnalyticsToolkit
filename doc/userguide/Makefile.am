@@ -109,9 +109,17 @@ revdate = $(shell date +%Y-%m-%d)
 %.tex: %.xml
 	$(DBLATEX) --param=doc.lot.show=figure,table --param=paper.type=a4paper -t tex $< $@
 
-all: programmersguide.pdf programmersguide.html \
+DOC_TARGETS = \
+	programmersguide.pdf programmersguide.html \
 	userguide.pdf userguide.html \
     roadmap.pdf roadmap.html
+
+all: ${DOC_TARGETS}
+
+EXTRA_DIST += ${DOC_TARGETS}
+
+pdfdir = $(prefix)/share/doc/@PACKAGE@
+dist_pdf_DATA =${DOC_TARGETS}
 
 FORCE:
 
