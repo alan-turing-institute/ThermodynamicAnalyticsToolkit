@@ -135,8 +135,7 @@ def write_trajectory_step(step):
                   + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
                      for item in nn.parameters[walker_index]]
                 tf.write(",".join(trajectory_line)+"\n")
-        print_step(step)
-
+        #print_step(step)
 
 
 def baoab_update_step(nn, momenta, old_gradients, preconditioner, step_width, beta, gamma, walker_index=0):
