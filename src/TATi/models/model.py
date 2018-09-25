@@ -1658,6 +1658,8 @@ class model:
             logging.info("Evaluating walker #"+str(walker_index) \
                          +" at weights " + str(weights_eval[0:10]) \
                          + ", biases " + str(biases_eval[0:10]))
+            assert( np.allclose(weights_eval, weights_vals, atol=1e-7) )
+            assert( np.allclose(biases_eval, biases_vals, atol=1e-7) )
             return weights_eval, biases_eval
         return None
 
@@ -1671,30 +1673,28 @@ class model:
         :param do_check: whether to evaluate (and print) set parameters
         :return evaluated weights and bias on do_check or None otherwise
         """
-        # parse csv file
-        parameters = {}
-        for keyname in df_parameters.columns:
-            if (keyname[1] >= "0" and keyname[1] <= "9"):
-                if ("w" == keyname[0]):
-                    fullname = "weight"
-                elif "b" == keyname[0]:
-                    fullname = "bias"
-                else:
-                    # not a parameter column
-                    continue
-                fullname += keyname[1:]
-                parameters[fullname] = df_parameters.loc[rownr, [keyname]].values[0]
-            else:
-                if ("weight" in keyname) or ("bias" in keyname):
-                    parameters[keyname] = df_parameters.loc[rownr, [keyname]].values[0]
-        logging.debug("Read row "+str(rownr)+":"+str([parameters[key] for key in ["weight0", "weight1", "weight2"] if key in parameters.keys()]) \
-                      +"..."+str([parameters[key] for key in ["bias0", "bias1", "bias2"] if key in parameters.keys()]))
-
         # create internal array to store parameters
         weights_vals = self.weights[walker_index].create_flat_vector()
         biases_vals = self.biases[walker_index].create_flat_vector()
-        weights_vals[:weights_vals.size] = [parameters[key] for key in sorted(parameters.keys()) if "w" in key]
-        biases_vals[:biases_vals.size] = [parameters[key] for key in sorted(parameters.keys()) if "b" in key]
+
+        # parse csv file
+        for keyname in df_parameters.columns:
+            if (keyname[1] >= "0" and keyname[1] <= "9"):
+                if ("w" == keyname[0]):
+                    weights_vals[int(keyname[1:])] = df_parameters.loc[rownr, [keyname]].values[0]
+                elif "b" == keyname[0]:
+                    biases_vals[int(keyname[1:])] = df_parameters.loc[rownr, [keyname]].values[0]
+                else:
+                    # not a parameter column
+                    continue
+            else:
+                if ("weight" in keyname):
+                    weights_vals[int(keyname[6:])] = df_parameters.loc[rownr, [keyname]].values[0]
+                elif ("bias" in keyname):
+                    biases_vals[int(keyname[4:])] = df_parameters.loc[rownr, [keyname]].values[0]
+        logging.debug("Read row (first three weights and biases) "+str(rownr)+":"+str(weights_vals[:5]) \
+                      +"..."+str(biases_vals[:5]))
+
         return self.assign_weights_and_biases(weights_vals, biases_vals, walker_index, do_check)
 
     def assign_weights_and_biases_from_file(self, filename, step, walker_index=0, do_check=False):
