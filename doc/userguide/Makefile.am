@@ -5,6 +5,7 @@ PYTHON_EXAMPLES = \
 	$(srcdir)/cmdline/exploring.sh \
 	$(srcdir)/cmdline/inputspacesampler.sh \
 	$(srcdir)/cmdline/lossfunctionsampler-exclude_parameters.sh \
+	$(srcdir)/cmdline/lossfunctionsampler-exclude_parameters-fixed.sh \
 	$(srcdir)/cmdline/lossfunctionsampler-fix_parameter.sh \
 	$(srcdir)/cmdline/lossfunctionsampler-grid.sh \
 	$(srcdir)/cmdline/lossfunctionsampler-trajectory.sh \
