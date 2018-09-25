@@ -38,9 +38,9 @@ AT_CHECK([../../../TATiOptimizer \
 
 # check lengths
 AT_CHECK([wc -l run-every_nth.csv], 0, [stdout], [stderr])
-AT_CHECK([grep "3 " stdout], 0, [ignore], [ignore])
+AT_CHECK([grep "4 " stdout], 0, [ignore], [ignore])
 AT_CHECK([wc -l trajectory-every_nth.csv], 0, [stdout], [stderr])
-AT_CHECK([grep "3 " stdout], 0, [ignore], [ignore])
+AT_CHECK([grep "4 " stdout], 0, [ignore], [ignore])
 
 AT_CLEANUP
 
