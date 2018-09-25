@@ -307,7 +307,7 @@ class model:
         split_collection = []
         for i in range(number_walkers):
             split_collection.append([])
-            scope_name = 'walker'+str(i+1)
+            scope_name = 'walker'+str(i+1)+'/'
             for var in _collection:
                 if scope_name in var.name:
                     split_collection[-1].append(var)
