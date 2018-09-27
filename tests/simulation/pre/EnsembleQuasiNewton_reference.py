@@ -11,9 +11,11 @@ parser.add_argument("--batch_data_files", type=str, default=None, \
     help="Input dataset file")
 parser.add_argument("--batch_size", type=int, default=None, \
     help="Size of each dataset batch")
-parser.add_argument('--collapse_after_steps', type=int, default=10,
-    help='Number of steps after which to regularly collapse all dependent walkers to restart from a single position '
+parser.add_argument('--collapse_walkers', type=int, default=0,
+    help='Whether to regularly collapse all dependent walkers to restart from a single position '
          'again, maintaining harmonic approximation for ensemble preconditioning. 0 will never collapse.')
+parser.add_argument('--covariance_after_steps', type=int, default=0,
+    help='Number of steps after the covariance matrix is recalculated.')
 parser.add_argument('--covariance_blending', type=float, default=0.,
     help='Blending between unpreconditioned gradient (0.) and preconditioning through covariance matrix from other '
          'dependent walkers')
@@ -240,8 +242,8 @@ preconditioner = [np.identity((nn.num_parameters())) for i in range(params.numbe
 step=0
 write_trajectory_step(step)
 
-for leg in range(int(params.max_steps/params.collapse_after_steps)):
-    for i in range(params.collapse_after_steps):
+for leg in range(int(params.max_steps/params.covariance_after_steps)):
+    for i in range(params.covariance_after_steps):
         step += 1
         for walker_index in range(nn.num_walkers()):
             # perform sampling step with preconditioning
@@ -260,7 +262,12 @@ for leg in range(int(params.max_steps/params.collapse_after_steps)):
             params.covariance_blending * calculate_covariance(walker_index=walker_index)
         preconditioner[walker_index] += np.identity(nn.num_parameters())
         #print(preconditioner[walker_index])
-        preconditioner[walker_index] = np.linalg.cholesky(preconditioner[walker_index])
+        try:
+            preconditioner[walker_index] = np.linalg.cholesky(preconditioner[walker_index])
+        except np.linalg.linalg.LinAlgError:
+            print("Covariance matrix "+str(preconditioner[walker_index]) \
+                  +" was not positive definite.")
+            sys.exit(255)
         #print("Preconditioner for walker #"+str(walker_index)+": "\
         #      +str(preconditioner[walker_index]))
 
@@ -268,8 +275,10 @@ for leg in range(int(params.max_steps/params.collapse_after_steps)):
         #    np.dot(preconditioner[walker_index], preconditioner[walker_index].T.conj())))
 
     # collapse all walkers to position of first
-    #for walker_index in range(1, nn.num_walkers()):
-    #    nn.parameters[walker_index] = nn.parameters[0]
+    if params.collapse_walkers != 0:
+        print("Collapsing walker position onto first walker's.")
+        for walker_index in range(1, nn.num_walkers()):
+            nn.parameters[walker_index] = nn.parameters[0]
 
 if params.trajectory_file is not None:
         tf.close()
