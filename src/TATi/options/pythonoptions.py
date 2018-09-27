@@ -33,8 +33,13 @@ class PythonOptions(Options):
         "batch_size": "The number of samples used to divide sample set into "+ \
                       "batches in one sampleing step.",
         "burn_in_steps": "number of initial steps to drop when computing averages",
-        "collapse_after_steps": "collapse all walkers into a single position "+ \
-                                "again after this many steps",
+        "collapse_walkers": "Whether to regularly collapse all dependent walkers to "+ \
+                            "restart from a single position again, maintaining harmonic"+ \
+                            "approximation for ensemble preconditioning. 0 will not "+ \
+                            "collapse.",
+        "covariance_after_steps": "Number of steps after which to regularly recompute "+ \
+                                  "the covariance matrix. This will require communication "+ \
+                                  "between the walkers. 0 will never compute a covariance matrix.",
         "covariance_blending": "mixing for preconditioning matrix to gradient "+ \
                                "update, identity matrix plus this times the covariance matrix "+
                                "obtained from the other walkers, 0 - will never collapse",
@@ -119,7 +124,8 @@ class PythonOptions(Options):
         "batch_data_file_type": "csv",
         "batch_size": None,
         "burn_in_steps": 0,
-        "collapse_after_steps": 100,
+        "collapse_walkers": False,
+        "covariance_after_steps": 100,
         "covariance_blending": 0.,
         "diffusion_map_method": "vanilla",
         "directions_file": None,
@@ -173,7 +179,8 @@ class PythonOptions(Options):
         "batch_data_file_type": str,
         "batch_size": int,
         "burn_in_steps": int,
-        "collapse_after_steps": int,
+        "collapse_walkers": bool,
+        "covariance_after_steps": int,
         "covariance_blending": float,
         "diffusion_map_method": str,
         "directions_file": str,

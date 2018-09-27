@@ -16,8 +16,7 @@ class GeometricLangevinAlgorithmSecondOrderSampler(GeometricLangevinAlgorithmFir
                  seed=None, use_locking=False, name='GLA_2ndOrder'):
         """ Init function for this class.
 
-        :param ensemble_precondition: whether to precondition the gradient using
-                all the other dependent walkers or not
+        :param ensemble_precondition: array with information to perform ensemble precondition method
         :param step_width: step width for gradient, also affects inject noise
         :param inverse_temperature: scale for gradients
         :param friction_constant: scales the momenta
@@ -45,7 +44,7 @@ class GeometricLangevinAlgorithmSecondOrderSampler(GeometricLangevinAlgorithmFir
         :param var: parameters of the neural network
         :return: a group of operations to be added to the graph
         """
-        grad = self._pick_grad(grads_and_vars, var)
+        precondition_matrix, grad = self._pick_grad(grads_and_vars, var)
         friction_constant_t = math_ops.cast(self._friction_constant_t, var.dtype.base_dtype)
         step_width_t, inverse_temperature_t, random_noise_t = self._prepare_dense(grad, var)
 
@@ -95,10 +94,14 @@ class GeometricLangevinAlgorithmSecondOrderSampler(GeometricLangevinAlgorithmFir
         ub_repell, lb_repell = self._apply_prior(var)
         prior_force = step_width_t * (ub_repell + lb_repell)
 
+        preconditioned_momentum_t = tf.reshape(
+            tf.matmul(tf.expand_dims(tf.reshape(momentum_t, [-1]), 0), precondition_matrix),
+            var.shape)
+
         # make sure virial is evaluated before we update variables
         with tf.control_dependencies([virial_global_t]):
             # q=^{n+1} = q^n + M^{-1} p_{n+1/2} ∆t
-            var_update = state_ops.assign_add(var, step_width_t * momentum_t - prior_force)
+            var_update = state_ops.assign_add(var, step_width_t * preconditioned_momentum_t - prior_force)
 
         # p^{n+1} = \alpha_{\Delta t} p^{n+1} + \sqrt{ \frac{1-\alpha^2_{\Delta t}}{\beta} M } G^n
         with tf.variable_scope("accumulate", reuse=True):

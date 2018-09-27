@@ -18,8 +18,7 @@ class HamiltonianMonteCarloSampler(StochasticGradientLangevinDynamicsSampler):
     def __init__(self, ensemble_precondition, step_width, inverse_temperature, current_step, next_eval_step, accept_seed, seed=None, use_locking=False, name='HamiltonianMonteCarlo'):
         """ Init function for this class.
 
-        :param ensemble_precondition: whether to precondition the gradient using
-                all the other walkers or not
+        :param ensemble_precondition: array with information to perform ensemble precondition method
         :param step_width: step width for gradient
         :param inverse_temperature: scale for noise
         :param current_step: current step
@@ -74,6 +73,7 @@ class HamiltonianMonteCarloSampler(StochasticGradientLangevinDynamicsSampler):
         :param var: parameters of the neural network
         :return: step_width, inverse_temperature, and noise tensors
         """
+        super(HamiltonianMonteCarloSampler, self)._prepare_dense(grad, var)
         step_width_t, inverse_temperature_t, random_noise_t = \
             super(HamiltonianMonteCarloSampler, self)._prepare_dense(grad, var)
         current_step_t = math_ops.cast(self._current_step_t, tf.int64)
@@ -95,7 +95,7 @@ class HamiltonianMonteCarloSampler(StochasticGradientLangevinDynamicsSampler):
         :param var: parameters of the neural network
         :return: a group of operations to be added to the graph
         """
-        grad = self._pick_grad(grads_and_vars, var)
+        precondition_matrix, grad = self._pick_grad(grads_and_vars, var)
         step_width_t, inverse_temperature_t, current_step_t, next_eval_step_t, random_noise_t, uniform_random_t = \
             self._prepare_dense(grad, var)
         momentum = self.get_slot(var, "momentum")
@@ -191,7 +191,10 @@ class HamiltonianMonteCarloSampler(StochasticGradientLangevinDynamicsSampler):
         prior_force = step_width_t * (ub_repell + lb_repell)
 
         # update variables
-        scaled_momentum = step_width_t * momentum_criterion_block_t - prior_force
+        preconditioned_momentum_criterion_block_t = tf.reshape(
+            tf.matmul(tf.expand_dims(tf.reshape(momentum_criterion_block_t, [-1]), 0), precondition_matrix),
+            var.shape)
+        scaled_momentum = step_width_t * preconditioned_momentum_criterion_block_t - prior_force
 
         # DONT use nodes in the control_dependencies, always functions!
         def step_block():

@@ -34,7 +34,8 @@ class Simulation(object):
         "batch_data_file_type": ["input", "network"],
         "batch_size": ["input"],
         "burn_in_steps": [],        # only used in python code
-        "collapse_after_steps": [], # only used in python code
+        "collapse_walkers": [], # only used in python code
+        "covariance_after_steps": [], # only used in python code
         "covariance_blending": ["network"],
         "diffusion_map_method": [], # only used in python code
         "directions_file": [],

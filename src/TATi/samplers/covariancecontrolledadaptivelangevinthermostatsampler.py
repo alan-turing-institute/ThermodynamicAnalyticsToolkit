@@ -18,8 +18,7 @@ class CovarianceControlledAdaptiveLangevinThermostat(GeometricLangevinAlgorithmS
                  seed=None, use_locking=False, name='CovarianceControlledAdaptiveLangevinThermostat'):
         """ Init function for this class.
 
-        :param ensemble_precondition: whether to precondition the gradient using
-                all the other walkers or not
+        :param ensemble_precondition: array with information to perform ensemble precondition method
         :param step_width: step width for gradient, also affects inject noise
         :param inverse_temperature: scale for gradients
         :param friction_constant: scales the momenta
@@ -65,7 +64,7 @@ class CovarianceControlledAdaptiveLangevinThermostat(GeometricLangevinAlgorithmS
         :return: a group of operations to be added to the graph
         """
         # get number of parameters (for this layer)
-        grad = self._pick_grad(grads_and_vars, var)
+        precondition_matrix, grad = self._pick_grad(grads_and_vars, var)
         dim = math_ops.cast(tf.size(var), dds_basetype)
 
         sigma_t = math_ops.cast(self._sigma_t, var.dtype.base_dtype)
@@ -119,9 +118,14 @@ class CovarianceControlledAdaptiveLangevinThermostat(GeometricLangevinAlgorithmS
         momentum_half_step_t = momentum_final_step_t - 0.5 * scaled_gradient
         momentum_half_step_plus_noise_t = momentum_half_step_t + scaled_noise
 
+        preconditioned_momentum_half_step_plus_noise_t = tf.reshape(
+            tf.matmul(tf.expand_dims(tf.reshape(momentum_half_step_plus_noise_t, [-1]), 0), precondition_matrix),
+            var.shape)
+
         #x = step.A(x, p, 0.5 * self.dt, 1.)
         with tf.control_dependencies([virial_global_t]):
-            var_update_half_step_t = state_ops.assign_add(var, 0.5 * step_width_t * momentum_half_step_plus_noise_t)
+            var_update_half_step_t = state_ops.assign_add(
+                var, 0.5 * step_width_t * preconditioned_momentum_half_step_plus_noise_t)
 
         #gammaAdapt = gammaAdapt + (np.dot(p, p) - self.dim * self.T) * 0.5 * self.dt
         with tf.control_dependencies([momentum_half_step_plus_noise_t]):
@@ -173,9 +177,14 @@ class CovarianceControlledAdaptiveLangevinThermostat(GeometricLangevinAlgorithmS
         ub_repell, lb_repell = self._apply_prior(var)
         prior_force = step_width_t * (ub_repell + lb_repell)
 
+        preconditioned_momentum = tf.reshape(
+            tf.matmul(tf.expand_dims(tf.reshape(momentum, [-1]), 0), precondition_matrix),
+            var.shape)
+
         #x = step.A(x, p, 0.5 * self.dt, 1.)
         with tf.control_dependencies([if_block_t]):
-            var_update_full_step_t = state_ops.assign_add(var, 0.5 * step_width_t * momentum - prior_force)
+            var_update_full_step_t = state_ops.assign_add(
+                var, 0.5 * step_width_t * preconditioned_momentum - prior_force)
 
         # we split last B step up into adding noise (such that noise_global_t
         # is complete for this step) and the updated momentum which is done in

@@ -226,9 +226,12 @@ class CommandlineOptions(PythonOptions):
         """ Adding options common to sampler to argparse.
         """
         # please adhere to alphabetical ordering
-        self._add_option('--collapse_after_steps', type=int, default=100,
-                          help='Number of steps after which to regularly collapse all dependent walkers to restart from a single position '
-                                 'again, maintaining harmonic approximation for ensemble preconditioning. 0 will never collapse.')
+        self._add_option('--collapse_walkers', type=str2bool, default=False,
+                          help='Whether to regularly collapse all dependent walkers to restart from a single position '
+                               'again, maintaining harmonic approximation for ensemble preconditioning. 0 will not collapse.')
+        self._add_option('--covariance_after_steps', type=int, default=100,
+                          help='Number of steps after which to regularly recompute the covariance matrix. This will require'
+                               'communication between the walkers. 0 will never compute a covariance matrix.')
         self._add_option('--covariance_blending', type=float, default=0.,
                           help='Blending between unpreconditioned gradient (0.) and preconditioning through covariance matrix from other '
                                  'dependent walkers')

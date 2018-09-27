@@ -888,6 +888,11 @@ class model:
         # check that sampler's parameters are actually used
         for walker_index in range(self.FLAGS.number_walkers):
             logging.info("Dependent walker #"+str(walker_index))
+            if self.FLAGS.covariance_blending != 0.:
+                eta, cov_steps =  self.sess.run(self.nn[walker_index].get_list_of_nodes(
+                    ["covariance_blending", "covariance_after_steps"]), feed_dict=feed_dict)
+                logging.info("EQN parameters, walker #%d: eta = %lg, cov at steps = %d" %
+                             (walker_index, eta, cov_steps))
             if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics",
                                       "GeometricLangevinAlgorithm_1stOrder",
                                       "GeometricLangevinAlgorithm_2ndOrder",
@@ -947,8 +952,8 @@ class model:
             })
 
             # set HMC specific nodes in feed_dict
-            if self.FLAGS.sampler == "HamiltonianMonteCarlo":
-                for walker_index in range(self.FLAGS.number_walkers):
+            for walker_index in range(self.FLAGS.number_walkers):
+                if self.FLAGS.sampler == "HamiltonianMonteCarlo":
                     # pick next evaluation step with a little random variation
                     if current_step > HMC_steps[walker_index]:
                         HMC_steps[walker_index] += max(1,
@@ -958,9 +963,9 @@ class model:
                         feed_dict.update({
                             placeholder_nodes[walker_index]["next_eval_step"]: HMC_steps[walker_index]
                         })
-                    feed_dict.update({
-                        placeholder_nodes[walker_index]["current_step"]: current_step
-                    })
+                feed_dict.update({
+                    placeholder_nodes[walker_index]["current_step"]: current_step
+                })
 
             # set global variable used in HMC sampler for criterion to initial loss
             if self.FLAGS.sampler == "HamiltonianMonteCarlo":
@@ -1190,8 +1195,12 @@ class model:
                 #logging.debug('Accuracy at step %s (%s): %s' % (i, global_step, acc))
                 #logging.debug('Loss at step %s: %s' % (i, loss_eval))
 
-            if (self.FLAGS.number_walkers > 1) and (self.FLAGS.collapse_after_steps != 0) and \
-                    (current_step % self.FLAGS.collapse_after_steps == 0):
+            # collapse walkers' positions onto first walker if desired and after having
+            # recomputed the covariance matrix
+            if (self.FLAGS.number_walkers > 1) and (self.FLAGS.collapse_walkers) and \
+                    (current_step % self.FLAGS.covariance_after_steps == 0) and \
+                    (current_step != 0):
+                print("COLLAPSING "+str(self.FLAGS.collapse_walkers))
                 # get walker 0's position
                 weights_eval, biases_eval = self.sess.run([
                     self.weights[0].parameters, self.biases[0].parameters])
@@ -1245,7 +1254,8 @@ class model:
 
         # add sampler options only when they are present in parameter struct
         param_dict = {}
-        for key in ["covariance_blending", "friction_constant", "inverse_temperature",
+        for key in ["covariance_blending", "covariance_after_steps",
+                    "friction_constant", "inverse_temperature",
                     "learning_rate", "sigma", "sigmaA", "step_width"]:
             try:
                 param_dict[key] = getattr(self.FLAGS, key)
