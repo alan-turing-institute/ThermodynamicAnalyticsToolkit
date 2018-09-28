@@ -105,6 +105,8 @@ class CommandlineOptions(PythonOptions):
             kwargs.update({ "type": []})
         else:
             assert(0)
+        if kwargs["type"] == bool:
+            kwargs.update({ "type": str2bool})
         kwargs.update({ "help": self._description_map[option_name]})
         try:
             self.parser.add_argument(*args, **kwargs)
