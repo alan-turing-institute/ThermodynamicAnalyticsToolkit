@@ -313,13 +313,13 @@ class WalkerEnsembleOptimizer(Optimizer):
 
             # matrix-vector multiplication is however a bit more complicated, see
             # https://stackoverflow.com/a/43285258/1967646
-            preconditioned_grad = tf.Print(tf.reshape(
-                tf.matmul(tf.expand_dims(tf.reshape(grad, [-1]), 0), preconditioner),
-                                             grad.get_shape()),
-                [grad], "grad: ")
+            preconditioned_grad = tf.reshape(
+                tf.matmul(precondition_matrix, tf.expand_dims(tf.reshape(grad, [-1]), 1)),
+                grad.get_shape())
+
+            return preconditioner, preconditioned_grad
         else:
-            preconditioned_grad = grad
-        return precondition_matrix, preconditioned_grad
+            return precondition_matrix, grad
 
     def _extract_grads(self, grads_and_vars, var):
         """ Helper function to extract the gradient associated with `var` from
@@ -380,6 +380,7 @@ class WalkerEnsembleOptimizer(Optimizer):
         vars = tf.Print(tf.stack(flat_othervars),
                         [flat_othervars], "flat_othervars", summarize=10)
         number_dim = tf.size(flat_othervars[0])
+        number_walkers = vars.shape[0]
 
         # means are needed for every component. Hence, we save a bit by
         # creating all means beforehand
@@ -426,10 +427,11 @@ class WalkerEnsembleOptimizer(Optimizer):
         # only on cov we can use sliced assignment, cov_copy seems to be some
         # ref object (or other) which does not have this functionality
 
-        dim = math_ops.cast(number_dim, dtype=dds_basetype)
+        dim = math_ops.cast(
+            tf.Print(number_walkers, [number_walkers], "number_walkers: "), dtype=dds_basetype)
 
         def accept_block():
-            return tf.reciprocal(dim - 1.)
+            return tf.reciprocal(dim)
 
         def reject_block():
             return tf.constant(1.)

@@ -228,9 +228,11 @@ class BAOABSampler(GeometricLangevinAlgorithmFirstOrderSampler):
         momentum_full_step_t =  tf.Print(
             momentum_half_step_t - 0.5 * scaled_gradient,
             [var.name, momentum_half_step_t], "B2: ")
-        preconditioned_momentum_full_step_t = tf.reshape(
-            tf.matmul(tf.expand_dims(tf.reshape(momentum_full_step_t, [-1]), 0), precondition_matrix),
-            var.shape)
+        preconditioned_momentum_full_step_t = tf.Print(
+            tf.reshape(
+            tf.matmul(precondition_matrix, tf.expand_dims(tf.reshape(momentum_full_step_t, [-1]), 1)),
+            var.shape),
+            [precondition_matrix], "B2 precond: ")
 
         # half_qn = A(qn, half_pn, h / 2)
         position_half_step_t = tf.Print(
@@ -247,7 +249,7 @@ class BAOABSampler(GeometricLangevinAlgorithmFirstOrderSampler):
                                            tf.reduce_sum(tf.multiply(rescaled_noise, rescaled_noise)))
         momentum_noise_step_t = alpha_t * momentum_full_step_t + scaled_noise
         preconditioned_momentum_noise_step_t = tf.reshape(
-            tf.matmul(tf.expand_dims(tf.reshape(momentum_noise_step_t, [-1]), 0), precondition_matrix),
+            tf.matmul(precondition_matrix, tf.expand_dims(tf.reshape(momentum_noise_step_t, [-1]), 1)),
             var.shape)
 
         # next_qn = A(half_qn, tilde_half_pn, h / 2)
