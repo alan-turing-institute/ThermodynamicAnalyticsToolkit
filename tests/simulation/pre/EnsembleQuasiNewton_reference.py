@@ -85,13 +85,14 @@ print("Parameters: "+str(params))
 
 # fix seed
 np.random.seed(params.seed)
+np.set_printoptions(precision=16)
 
 # setup test pipeline
 nn = tati(
     batch_data_files=[params.batch_data_files],
     batch_data_file_type=batch_data_file_type,
     batch_size=None,
-    every_nth=1,
+    every_nth=100,
     fix_parameters=params.fix_parameters,
     hidden_activation=params.hidden_activation,
     hidden_dimension=params.hidden_dimension,
@@ -110,7 +111,7 @@ nn = tati(
     step_width=params.step_width,
     verbose=2,
 )
-nn.non_simplified_access = True # allow access to parameters using [0] for one walker
+nn.non_simplified_access = True  # allow access to parameters using [0] for one walker
 
 if params.trajectory_file is not None:
     tf = open(params.trajectory_file, "w")
@@ -164,7 +165,7 @@ def baoab_update_step(nn, momenta, new_gradients, preconditioner, step_width, be
 
     def B(step_width, gradients):
         nonlocal momenta
-        momenta -= .5 * step_width * preconditioner.dot(gradients)
+        momenta = momenta - .5 * step_width * preconditioner.dot(gradients)
 
     def A(step_width, momenta):
         nn.parameters[walker_index] = nn.parameters[walker_index] + .5 * step_width * preconditioner.dot(momenta)
@@ -209,7 +210,7 @@ def calculate_mean(walker_index):
 
 
 # ones on diagonal, 1/(dim-1) everywhere else
-normalization = np.ones((nn.num_parameters(),nn.num_parameters())) \
+normalization = np.ones((nn.num_parameters(),nn.num_parameters()), dtype=np.float32) \
     - np.identity(nn.num_parameters())
 if nn.num_walkers() > 1:
     normalization *= 1./(float(nn.num_walkers()) - 1.)
@@ -219,8 +220,8 @@ step=0
 
 def calculate_covariance(walker_index):
     means = calculate_mean(walker_index=walker_index)
-    #print("Means for walker #"+str(walker_index)+": "+str(means))
-    covariance = np.zeros((nn.num_parameters(),nn.num_parameters()))
+    #print("Means for walker #"+str(walker_index)+" at "+str(step)+": "+str(means))
+    covariance = np.zeros((nn.num_parameters(),nn.num_parameters()), dtype=np.float32)
     for other_walker_index in range(nn.num_walkers()):
         #print(other_walker_index)
         if walker_index == other_walker_index:
@@ -231,14 +232,18 @@ def calculate_covariance(walker_index):
         covariance += np.outer(difference, difference)
         #print(covariance)
     covariance *= normalization
-    #print("Covariance for walker #" + str(walker_index) + ": " \
+    #print("Covariance for walker #" + str(walker_index) + " at "+str(step)+": "
     #      + str(covariance))
     return covariance
 
 
-momenta = [np.zeros((nn.num_parameters())) for i in range(params.number_walkers)]
-old_gradients = [np.zeros((nn.num_parameters())) for i in range(params.number_walkers)]
-preconditioner = [np.identity((nn.num_parameters())) for i in range(params.number_walkers)]
+momenta = [np.zeros((nn.num_parameters()), dtype=np.float32) for i in range(params.number_walkers)]
+old_gradients = [np.zeros((nn.num_parameters()), dtype=np.float32) for i in range(params.number_walkers)]
+preconditioner = [np.identity((nn.num_parameters()), dtype=np.float32) for i in range(params.number_walkers)]
+
+#for walker_index in range(nn.num_walkers()):
+#    print("Preconditioner for walker #" + str(walker_index) + " at " + str(step) + ": "
+#          + str(preconditioner[walker_index]))
 
 write_trajectory_step(step)
 
@@ -261,15 +266,15 @@ for leg in range(int(params.max_steps/params.covariance_after_steps)):
         #print("walker_index "+str(walker_index))
         preconditioner[walker_index] = \
             params.covariance_blending * calculate_covariance(walker_index=walker_index)
-        preconditioner[walker_index] += np.identity(nn.num_parameters())
+        preconditioner[walker_index] += np.identity((nn.num_parameters()), dtype=np.float32)
         #print(preconditioner[walker_index])
         try:
             preconditioner[walker_index] = np.linalg.cholesky(preconditioner[walker_index])
         except np.linalg.linalg.LinAlgError:
-            print("Covariance matrix "+str(preconditioner[walker_index]) \
+            print("Covariance matrix "+str(preconditioner[walker_index])
                   +" was not positive definite.")
             sys.exit(255)
-        #print("Preconditioner for walker #"+str(walker_index)+": "\
+        #print("Preconditioner for walker #"+str(walker_index)+" at "+str(step)+": "
         #      +str(preconditioner[walker_index]))
 
         #print("TEST: "+str( \
