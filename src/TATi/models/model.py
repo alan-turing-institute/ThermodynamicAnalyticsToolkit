@@ -59,7 +59,7 @@ class model:
         self.resources_created = None
 
         # mark already fixes variables
-        self.fixed_variables = {}
+        self.fixed_variables = None
 
         # mark neuralnetwork, saver and session objects as to be created
         self.nn = None
@@ -67,6 +67,9 @@ class model:
         self.true_labels = None
         self.saver = None
         self.sess = None
+
+        self.optimizer = None
+        self.sampler = None
 
         # mark placeholder neuralnet_parameters as to be created (over walker)
         self.weights = []
@@ -314,36 +317,17 @@ class model:
                     split_collection[-1].append(var)
         return split_collection
 
-    def init_network(self, filename = None, setup = None,
-                     add_vectorized_gradients = False):
-        """ Initializes the graph, from a stored model if filename is not None.
-
-        :param filename: name of file containing stored model
-        :param setup: "sample", "train" or else to add nodes that trigger a
-                single sampling or training step. Otherwise they are not added.
-                init_network() can be called consecutively with both variants
-                to add either type of node.
-        :param add_vectorized_gradients: add nodes to return gradients in fully
-                vectorized form, i.e. in the same sequence as nn_weights and
-                nn_biases parameters combined, see self.gradients.
-        """
-        # dataset was provided
-        assert( self.input_dimension is not None )
-
+    def init_input_layer(self):
         # create input layer
         if self.xinput is None or self.x is None:
             input_columns = get_list_from_string(self.FLAGS.input_columns)
             self.xinput, self.x = create_input_layer(self.input_dimension, input_columns)
 
-        fixed_variables = []
+    def init_neural_network(self):
         if self.nn is None:
             self.nn = []
             self.loss = []
             self.trainables = []
-            if self.FLAGS.do_hessians or add_vectorized_gradients:
-                self.gradients = []
-                if self.FLAGS.do_hessians:
-                    self.hessians = []
             self.true_labels = NeuralNetwork.add_true_labels(self.output_dimension)
 
             # construct network per walker
@@ -373,7 +357,16 @@ class model:
                         self.nn[-1].placeholder_nodes["y"],
                         self.nn[-1].placeholder_nodes["y_"],
                         self.output_type)
+        else:
+            self.loss = []
+            for i in range(self.FLAGS.number_walkers):
+                self.loss.append(self.nn[i].get_list_of_nodes(["loss"])[0])
 
+    def fix_variables(self):
+        fixed_variables = []
+        values = None
+        if self.fixed_variables is None:
+            self.fixed_variables = {}
             # fix parameters
             if self.FLAGS.fix_parameters is not None:
                 names, values = self.split_parameters_as_names_values(self.FLAGS.fix_parameters)
@@ -395,9 +388,21 @@ class model:
                                     " Have you checked the spelling, e.g., output/biases/Variable:0?")
                         logging.debug("Remaining trainable variables in walker " + str(i + 1)
                                       + ": " + str(tf.get_collection_ref(self.trainables[i])))
+        else:
+            if self.FLAGS.fix_parameters is not None:
+                names, values = self.split_parameters_as_names_values(self.FLAGS.fix_parameters)
+                fixed_variables.extend(self.fix_parameters(names))
+                logging.info("Excluded the following degrees of freedom: " + str(fixed_variables))
+        return fixed_variables, values
 
+
+    def init_vectorized_gradients(self, add_vectorized_gradients):
+        all_vectorized_gradients = []
+        if self.gradients is None:
+            self.gradients = []
             # construct (vectorized) gradient nodes and hessians
             for i in range(self.FLAGS.number_walkers):
+                vectorized_gradients = []
                 with tf.name_scope('walker' + str(i + 1)):
                     if self.FLAGS.do_hessians or add_vectorized_gradients:
                         # create node for gradient and hessian computation only if specifically
@@ -405,49 +410,40 @@ class model:
                         # of evaluating the nodes eventually). This would otherwise slow down
                         # startup quite a bit even when hessians are not evaluated.
                         #print("GRADIENTS")
-                        vectorized_gradients = []
                         trainables = tf.get_collection_ref(self.trainables[i])
                         for tensor in trainables:
                             grad = tf.gradients(self.loss, tensor)
                             #print(grad)
                             vectorized_gradients.append(tf.reshape(grad, [-1]))
                         self.gradients.append(tf.reshape(tf.concat(vectorized_gradients, axis=0), [-1]))
+                all_vectorized_gradients.append(vectorized_gradients)
+        return all_vectorized_gradients
 
-                    if self.FLAGS.do_hessians:
-                        #print("HESSIAN")
-                        total_dofs = 0
-                        hessians = []
-                        for gradient in vectorized_gradients:
-                            dofs = int(np.cumprod(gradient.shape))
-                            total_dofs += dofs
-                            #print(dofs)
-                            # tensorflow cannot compute the gradient of a multi-dimensional mapping
-                            # only of functions (i.e. one-dimensional output). Hence, we have to
-                            # split the gradients into its components and do gradient on each
-                            split_gradient = tf.split(gradient, num_or_size_splits=dofs)
-                            for splitgrad in split_gradient:
-                                for othertensor in trainables:
-                                    grad = tf.gradients(splitgrad, othertensor)
-                                    hessians.append(
-                                        tf.reshape(grad, [-1]))
-                        self.hessians.append(tf.reshape(tf.concat(hessians, axis=0), [total_dofs, total_dofs]))
-        else:
-            self.loss = []
+    def init_hessians(self, all_vectorized_gradients):
+        if self.hessians is None:
+            self.hessians = []
             for i in range(self.FLAGS.number_walkers):
-                self.loss.append(self.nn[i].get_list_of_nodes(["loss"])[0])
+                if self.FLAGS.do_hessians:
+                    #print("HESSIAN")
+                    total_dofs = 0
+                    hessians = []
+                    trainables = tf.get_collection_ref(self.trainables[i])
+                    for gradient in all_vectorized_gradients[i]:
+                        dofs = int(np.cumprod(gradient.shape))
+                        total_dofs += dofs
+                        #print(dofs)
+                        # tensorflow cannot compute the gradient of a multi-dimensional mapping
+                        # only of functions (i.e. one-dimensional output). Hence, we have to
+                        # split the gradients into its components and do gradient on each
+                        split_gradient = tf.split(gradient, num_or_size_splits=dofs)
+                        for splitgrad in split_gradient:
+                            for othertensor in trainables:
+                                grad = tf.gradients(splitgrad, othertensor)
+                                hessians.append(
+                                    tf.reshape(grad, [-1]))
+                    self.hessians.append(tf.reshape(tf.concat(hessians, axis=0), [total_dofs, total_dofs]))
 
-                if self.FLAGS.fix_parameters is not None:
-                    names, values = self.split_parameters_as_names_values(self.FLAGS.fix_parameters)
-                    fixed_variables.extend(self.fix_parameters(names))
-                    logging.info("Excluded the following degrees of freedom: " + str(fixed_variables))
-
-        logging.debug("Remaining global trainable variables: " + str(variables.trainable_variables()))
-
-        # create global variables, one for every walker in its replicated graph
-        self.create_resource_variables()
-        self.static_vars, self.zero_assigner, self.assigner = \
-            self._create_static_variable_dict(self.FLAGS.number_walkers)
-
+    def get_split_weights_and_biases(self):
         # set number of degrees of freedom
         split_weights = self._split_collection_per_walker(
             tf.get_collection_ref(tf.GraphKeys.WEIGHTS), self.FLAGS.number_walkers)
@@ -457,7 +453,9 @@ class model:
             neuralnet_parameters.get_total_dof_from_list(split_weights[0]) \
             + neuralnet_parameters.get_total_dof_from_list(split_biases[0])
         logging.info("Number of dof per walker: "+str(self.number_of_parameters))
+        return split_weights, split_biases
 
+    def init_prior(self):
         # setup priors
         prior = {}
         try:
@@ -471,7 +469,9 @@ class model:
                 prior["upper_boundary"] = self.FLAGS.prior_upper_boundary
         except AttributeError:
             pass
+        return prior
 
+    def init_parse_directions(self):
         # directions span a subspace to project trajectories. This may be
         # used to not store overly many degrees of freedom per step.
         if self.FLAGS.directions_file is not None:
@@ -486,14 +486,22 @@ class model:
         else:
             self.directions = None
 
+    def init_train(self, setup, prior):
         # setup training/sampling
         if setup is not None:
             if "train" in setup:
                 self.optimizer = []
                 for i in range(self.FLAGS.number_walkers):
                     with tf.variable_scope("var_walker" + str(i + 1)):
-                    #with tf.name_scope('gradients_walker'+str(i+1)):
-                        self.optimizer.append(self.nn[i].add_train_method(self.loss[i], optimizer_method=self.FLAGS.optimizer, prior=prior))
+                        self.optimizer.append(self.nn[i].add_train_method(
+                            self.loss[i], optimizer_method=self.FLAGS.optimizer,
+                            prior=prior))
+            else:
+                logging.info("Not adding train method.")
+
+    def init_sample(self, setup, prior):
+        # setup training/sampling
+        if setup is not None:
             if "sample" in setup:
                 self.sampler = []
                 for i in range(self.FLAGS.number_walkers):
@@ -513,14 +521,6 @@ class model:
                         grads_and_vars.append(self.sampler[i].compute_and_check_gradients(
                             self.loss[i], var_list=trainables))
 
-                # combine gradients
-                #for i in range(self.FLAGS.number_walkers):
-                #    print("walker "+str(i))
-                #    var_list = [v for g, v in grads_and_vars[i] if g is not None]
-                #    grad_list = [g for g, v in grads_and_vars[i] if g is not None]
-                #    for j in range(len(grad_list)):
-                #         print(var_list[j])
-
                 # add position update nodes
                 for i in range(self.FLAGS.number_walkers):
                     with tf.variable_scope("var_walker" + str(i + 1)):
@@ -529,7 +529,11 @@ class model:
                             grads_and_vars, i, global_step=global_step,
                             name=self.sampler[i].get_name())
                     self.nn[i].summary_nodes['sample_step'] = train_step
+            else:
+                logging.info("Not adding sample method.")
 
+    def init_step_placeholder(self, setup):
+        if setup is not None:
             if "train" in setup or "sample" in setup:
                 if self.step_placeholder is None:
                     self.step_placeholder = []
@@ -541,12 +545,10 @@ class model:
                     for i in range(self.FLAGS.number_walkers):
                         with tf.name_scope("walker"+str(i+1)):
                             self.global_step_assign_t.append(tf.assign(self.nn[i].summary_nodes['global_step'], self.step_placeholder[i]))
-                else:
-                    logging.debug("Not adding step placeholder or global step.")
+            else:
+                logging.debug("Not adding step placeholder or global step.")
 
-        else:
-            logging.info("Not adding sample or train method.")
-
+    def init_model_save_restore(self):
         # setup model saving/recovering
         if self.saver is None:
             self.saver = tf.train.Saver(tf.get_collection_ref(tf.GraphKeys.WEIGHTS) +
@@ -556,6 +558,8 @@ class model:
         # merge summaries at very end
         self.summary = tf.summary.merge_all()  # Merge all the summaries
 
+
+    def init_session(self):
         if self.sess is None:
             logging.debug("Using %s, %s threads " % (str(self.FLAGS.intra_ops_threads), str(self.FLAGS.inter_ops_threads)))
             self.sess = tf.Session(
@@ -563,6 +567,7 @@ class model:
                     intra_op_parallelism_threads=self.FLAGS.intra_ops_threads,
                     inter_op_parallelism_threads=self.FLAGS.inter_ops_threads))
 
+    def init_weights_access(self, setup, split_weights):
         if len(self.weights) == 0:
             assert(len(self.momenta_weights) == 0 )
             assert( len(split_weights) == self.FLAGS.number_walkers )
@@ -574,12 +579,13 @@ class model:
                     momenta_weights = []
                     for v in split_weights[i]:
                         skip_var = False
-                        for key in self.fixed_variables.keys():
-                            if key in v.name:
-                                for var in self.fixed_variables[key]:
-                                    if v.name == var.name:
-                                        skip_var = True
-                                        break
+                        if self.fixed_variables is not None:
+                            for key in self.fixed_variables.keys():
+                                if key in v.name:
+                                    for var in self.fixed_variables[key]:
+                                        if v.name == var.name:
+                                            skip_var = True
+                                            break
                         if not skip_var:
                             momenta_weights.append(self.sampler[i].get_slot(v, "momentum"))
                     #logging.debug("Momenta weights: "+str(momenta_weights))
@@ -588,6 +594,7 @@ class model:
                     else:
                         self.momenta_weights.append(None)
 
+    def init_biases_access(self, setup, split_biases):
         if len(self.biases) == 0:
             assert( len(self.momenta_biases) == 0 )
             assert( len(split_biases) == self.FLAGS.number_walkers )
@@ -613,6 +620,8 @@ class model:
                     else:
                         self.momenta_biases.append(None)
 
+    def init_assign_fixed_parameters(self, fixed_variables, values):
+        fix_parameter_assigns = None
         if self.FLAGS.fix_parameters is not None:
             all_values = []
             all_variables = []
@@ -628,19 +637,10 @@ class model:
                 else:
                     logging.warning("Could not assign "+var_name+" a value as it was not found before.")
             fix_parameter_assigns = self.create_assign_parameters(all_variables, all_values)
+        return fix_parameter_assigns
 
-        ### Now the session object is created, graph must be done here!
 
-        # initialize constants in graph
-        NeuralNetwork.init_graph(self.sess)
-
-        # initialize dataset
-        #self.input_pipeline.reset(self.sess)
-
-        if self.FLAGS.fix_parameters is not None:
-            logging.debug("Assigning the following values to fixed degrees of freedom: "+str(values))
-            self.sess.run(fix_parameter_assigns)
-
+    def restore_model(self, filename):
         # assign state of model from file if given
         if filename is not None:
             # Tensorflow DOCU says: initializing is not needed when restoring
@@ -651,6 +651,7 @@ class model:
             self.saver.restore(self.sess, restore_path)
             logging.info("Model restored from file: %s" % restore_path)
 
+    def assign_parse_parameter_file(self):
         # assign parameters of NN from step in given file
         if self.FLAGS.parse_parameters_file is not None \
                 and (self.FLAGS.parse_steps is not None and (len(self.FLAGS.parse_steps) > 0)):
@@ -658,6 +659,71 @@ class model:
             for i in range(self.FLAGS.number_walkers):
                 self.assign_weights_and_biases_from_file(self.FLAGS.parse_parameters_file, step,
                                                          walker_index=i, do_check=True)
+
+    def init_network(self, filename=None, setup=None,
+                     add_vectorized_gradients=False):
+        """ Initializes the graph, from a stored model if filename is not None.
+
+        :param filename: name of file containing stored model
+        :param setup: "sample", "train" or else to add nodes that trigger a
+                single sampling or training step. Otherwise they are not added.
+                init_network() can be called consecutively with both variants
+                to add either type of node.
+        :param add_vectorized_gradients: add nodes to return gradients in fully
+                vectorized form, i.e. in the same sequence as nn_weights and
+                nn_biases parameters combined, see self.gradients.
+        """
+        # dataset was provided
+        assert (self.input_dimension is not None)
+
+        self.init_input_layer()
+        self.init_neural_network()
+
+        fixed_variables, values = self.fix_variables()
+        logging.debug("Remaining global trainable variables: " + str(variables.trainable_variables()))
+
+        all_vectorized_gradients = self.init_vectorized_gradients(add_vectorized_gradients)
+        self.init_hessians(all_vectorized_gradients)
+
+        # create global variables, one for every walker in its replicated graph
+        self.create_resource_variables()
+        self.static_vars, self.zero_assigner, self.assigner = \
+            self._create_static_variable_dict(self.FLAGS.number_walkers)
+
+        split_weights, split_biases = self.get_split_weights_and_biases()
+
+        prior = self.init_prior()
+        self.init_train(setup, prior)
+        self.init_sample(setup, prior)
+        self.init_step_placeholder(setup)
+
+        self.init_model_save_restore()
+
+        self.init_weights_access(setup, split_weights)
+        self.init_biases_access(setup, split_biases)
+
+        self.init_parse_directions()
+
+        fix_parameter_assigns = self.init_assign_fixed_parameters(fixed_variables, values)
+
+        self.init_session()
+
+        ### Now the session object is created, graph must be done here!
+
+        # initialize constants in graph
+        NeuralNetwork.init_graph(self.sess)
+
+        # initialize dataset
+        #self.input_pipeline.reset(self.sess)
+
+        # run assigns for fixed parameters
+        if self.FLAGS.fix_parameters is not None:
+            logging.debug("Assigning the following values to fixed degrees of freedom: "+str(values))
+            self.sess.run(fix_parameter_assigns)
+
+        self.restore_model(filename)
+
+        self.assign_parse_parameter_file()
 
     def init_files(self, setup):
         """ Initializes the output files.
