@@ -139,8 +139,11 @@ def write_trajectory_step(step):
                 tf.write(",".join(trajectory_line)+"\n")
         #print_step(step)
 
+random_noise_t = []
+for walker_index in range(params.number_walkers):
+    random_noise_t.append(tensorflow.random_normal(shape=[nn.num_parameters()], mean=0., stddev=1., dtype=tensorflow.float32, seed=params.seed+1+walker_index))
 
-def baoab_update_step(nn, momenta, old_gradients, preconditioner, step_width, beta, gamma, walker_index=0):
+def baoab_update_step(nn, momenta, new_gradients, preconditioner, step_width, beta, gamma, walker_index=0):
     """ Implementation of BAOAB update step using TATi's simulation interface.
 
     Note:
@@ -150,7 +153,7 @@ def baoab_update_step(nn, momenta, old_gradients, preconditioner, step_width, be
 
     :param nn: ref to tati simulation instance
     :param momenta: numpy array of parameters
-    :param old_gradients: gradients evaluated at last step
+    :param new_gradients: gradients evaluated at last step
     :param preconditioner: preconditioner matrix
     :param step_width: step width for sampling step
     :param beta: inverse temperature
@@ -170,10 +173,13 @@ def baoab_update_step(nn, momenta, old_gradients, preconditioner, step_width, be
         nonlocal momenta
         alpha = math.exp(-gamma * step_width)
         momenta = alpha * momenta + \
-                  math.sqrt((1. - math.pow(alpha, 2.)) / beta) * np.random.standard_normal(momenta.shape)
+                  math.sqrt((1. - math.pow(alpha, 2.)) / beta) * nn._nn.sess.run(random_noise_t[walker_index])
+
+    # 5. p_{n+1} = \widehat{p}_{n+\tfrac 1 2} - \tfrac {\lambda}{2} \nabla_x L(x_{n+1})
+    B(step_width, new_gradients)
 
     # 1. B: p_{n+\tfrac 1 2} = p_n - \tfrac {\lambda}{2} \nabla_x L(x_n)
-    B(step_width, old_gradients)
+    B(step_width, new_gradients)
 
     # 2. A: x_{n+\tfrac 1 2} = x_n + \lambda p_{n+\tfrac 1 2}
     A(step_width, momenta)
@@ -184,13 +190,7 @@ def baoab_update_step(nn, momenta, old_gradients, preconditioner, step_width, be
     # 4. A: x_{n+1} = x_{n+\tfrac 1 2} + \lambda \widehat{p}_{n+\tfrac 1 2}
     A(step_width, momenta)
 
-    # \nabla_x L(x_{n+\tfrac 1 2})
-    gradients = nn.gradients(walker_index)
-
-    # 5. p_{n+1} = \widehat{p}_{n+\tfrac 1 2} - \tfrac {\lambda}{2} \nabla_x L(x_{n+1})
-    B(step_width, gradients)
-
-    return gradients, momenta
+    return momenta
 
 
 def calculate_mean(walker_index):
@@ -215,6 +215,7 @@ if nn.num_walkers() > 1:
     normalization *= 1./(float(nn.num_walkers()) - 1.)
 normalization += np.identity(nn.num_parameters())
 
+step=0
 
 def calculate_covariance(walker_index):
     means = calculate_mean(walker_index=walker_index)
@@ -239,16 +240,16 @@ momenta = [np.zeros((nn.num_parameters())) for i in range(params.number_walkers)
 old_gradients = [np.zeros((nn.num_parameters())) for i in range(params.number_walkers)]
 preconditioner = [np.identity((nn.num_parameters())) for i in range(params.number_walkers)]
 
-step=0
 write_trajectory_step(step)
 
 for leg in range(int(params.max_steps/params.covariance_after_steps)):
     for i in range(params.covariance_after_steps):
         step += 1
+        new_gradients = nn.gradients()
         for walker_index in range(nn.num_walkers()):
             # perform sampling step with preconditioning
-            old_gradients[walker_index], momenta[walker_index] = baoab_update_step(
-                nn, momenta[walker_index], old_gradients[walker_index],
+            momenta[walker_index] = baoab_update_step(
+                nn, momenta[walker_index], new_gradients[walker_index],
                 preconditioner=preconditioner[walker_index],
                 step_width=params.step_width,
                 beta=params.inverse_temperature, gamma=params.friction_constant, walker_index=walker_index)
