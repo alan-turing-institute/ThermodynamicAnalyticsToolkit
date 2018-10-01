@@ -504,8 +504,7 @@ class model:
                     self.sampler.append(self.nn[i]._prepare_sampler(
                         self.loss[i], sampling_method=self.FLAGS.sampler,
                         seed=walker_seed, prior=prior,
-                        sigma=self.FLAGS.sigma, sigmaA=self.FLAGS.sigmaA,
-                        covariance_blending=self.FLAGS.covariance_blending))
+                        sigma=self.FLAGS.sigma, sigmaA=self.FLAGS.sigmaA))
                 # create gradients
                 grads_and_vars = []
                 for i in range(self.FLAGS.number_walkers):

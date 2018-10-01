@@ -223,8 +223,7 @@ class NeuralNetwork(object):
         self._finalize_sample_method(loss, sampler, global_step)
 
     def _prepare_sampler(self, loss, sampling_method, seed,
-                         prior, sigma=None, sigmaA=None,
-                         covariance_blending=0.):
+                         prior, sigma=None, sigmaA=None):
         """ Prepares the sampler instance, adding also all placeholder nodes it requires.
 
         :param loss: node for the desired loss function to minimize during training
