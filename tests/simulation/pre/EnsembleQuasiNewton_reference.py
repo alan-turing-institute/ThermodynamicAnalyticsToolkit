@@ -123,22 +123,23 @@ if params.trajectory_file is not None:
     tf.write(",".join(header)+"\n")
 
 
-def print_step(step):
-    print("Step #" + str(step) + ": " + str(nn.loss()) + " at " \
-        + str(nn.parameters) + ", gradients " + str(nn.gradients()))
+def print_step(step, loss_eval, gradients):
+    print("Step #" + str(step) + ": " + str(loss_eval) + " at " \
+        + str(nn.parameters) + ", gradients " + str(gradients))
 
 
-def write_trajectory_step(step):
+def write_trajectory_step(step, gradients):
     if (step % params.every_nth) == 0:
         if params.trajectory_file is not None:
+            loss_eval = nn.loss()
             for walker_index in range(params.number_walkers):
                 trajectory_line = [str(walker_index), str(step)] \
-                  + ['{:{width}.{precision}e}'.format(nn.loss(walker_index), width=output_width,
+                  + ['{:{width}.{precision}e}'.format(loss_eval[walker_index], width=output_width,
                       precision=output_precision)] \
                   + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
                      for item in nn.parameters[walker_index]]
                 tf.write(",".join(trajectory_line)+"\n")
-        #print_step(step)
+        #print_step(step, loss_eval, gradients)
 
 random_noise_t = []
 for walker_index in range(params.number_walkers):
@@ -261,6 +262,7 @@ def update_preconditioner(step):
 
 
 momenta = [np.zeros((nn.num_parameters()), dtype=np.float32) for i in range(params.number_walkers)]
+new_gradients = [np.zeros((nn.num_parameters()), dtype=np.float32) for i in range(params.number_walkers)]
 
 
 def perform_step():
@@ -287,7 +289,7 @@ def collapse_walkers(step):
 
 for step in range(params.max_steps):
     print("Current step is "+str(step))
-    write_trajectory_step(step)
+    write_trajectory_step(step, new_gradients)
     update_preconditioner(step)
     perform_step()
     collapse_walkers(step)
