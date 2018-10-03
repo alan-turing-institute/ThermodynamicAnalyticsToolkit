@@ -109,7 +109,7 @@ nn = tati(
     parse_steps=params.parse_steps,
     seed=params.seed,
     step_width=params.step_width,
-    verbose=2,
+    verbose=1,
 )
 nn.non_simplified_access = True  # allow access to parameters using [0] for one walker
 
@@ -179,18 +179,23 @@ def baoab_update_step(nn, momenta, new_gradients, preconditioner, step_width, be
 
     # 5. p_{n+1} = \widehat{p}_{n+\tfrac 1 2} - \tfrac {\lambda}{2} \nabla_x L(x_{n+1})
     B(step_width, new_gradients)
+    #print("B2, #"+str(walker_index)+": "+str(momenta))
 
     # 1. B: p_{n+\tfrac 1 2} = p_n - \tfrac {\lambda}{2} \nabla_x L(x_n)
     B(step_width, new_gradients)
+    #print("B1, #"+str(walker_index)+": "+str(momenta))
 
     # 2. A: x_{n+\tfrac 1 2} = x_n + \lambda p_{n+\tfrac 1 2}
     A(step_width, momenta)
+    #print("A1, #"+str(walker_index)+": "+str(nn.parameters[walker_index]))
 
     # 3. O: \widehat{p}_{n+1} = \alpha p_{n+\tfrac 1 2} + \sqrt{\frac{1-\alpha^2}{\beta}} \cdot \eta_n
     O(step_width, beta, gamma)
+    #print("O, #"+str(walker_index)+": "+str(momenta))
 
     # 4. A: x_{n+1} = x_{n+\tfrac 1 2} + \lambda \widehat{p}_{n+\tfrac 1 2}
     A(step_width, momenta)
+    #print("A2, #"+str(walker_index)+": "+str(nn.parameters[walker_index]))
 
     return momenta
 
@@ -269,7 +274,7 @@ def perform_step():
     new_gradients = nn.gradients()
     for walker_index in range(nn.num_walkers()):
         # perform sampling step with preconditioning
-        print("grad: " + str(new_gradients[walker_index]))
+        #print("grad: " + str(new_gradients[walker_index]))
         momenta[walker_index] = baoab_update_step(
             nn, momenta[walker_index], new_gradients[walker_index],
             preconditioner=preconditioner[walker_index],
@@ -288,7 +293,7 @@ def collapse_walkers(step):
 
 
 for step in range(params.max_steps):
-    print("Current step is "+str(step))
+    #print("Current step is "+str(step))
     write_trajectory_step(step, new_gradients)
     update_preconditioner(step)
     perform_step()
