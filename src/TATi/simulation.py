@@ -124,7 +124,7 @@ class Simulation(object):
         # construct nn if dataset has been provided
         self._construct_nn()
 
-        self._parameters = Parameters(self._nn, ["weights", "biases"])
+        self._parameters = Parameters(self._nn, ["weights", "biases"], self._cache)
         self._momenta = Parameters(self._nn, ["momenta_weights", "momenta_biases"])
 
     @staticmethod
@@ -291,7 +291,7 @@ class Simulation(object):
         self._check_nn()
         for i in range(len(self._parameters)):
             self._parameters[i] = values
-        self._cache.reset()
+            self._cache.invalidate_cache(i)
 
     @property
     def momenta(self):
