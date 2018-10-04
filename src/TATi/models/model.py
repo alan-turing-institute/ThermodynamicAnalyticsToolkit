@@ -1727,8 +1727,23 @@ class model:
         """
         # parse csv file
         df_parameters = pd.read_csv(filename, sep=',', header=0)
-        if step in df_parameters.loc[:, ['step']].values:
-            rownr = np.where(df_parameters.loc[:, ['step']].values == step)[0]
+        if step in df_parameters.loc[:, 'step'].values:
+            rowlist = np.where((df_parameters.loc[:, 'step'].values == step))[0]
+            if self.FLAGS.number_walkers > 1:
+                # check whether param files contains entries for multiple walkers
+                id_idx = df_parameters.columns.get_loc("id")
+                num_ids = df_parameters.iloc[rowlist,id_idx].max() - \
+                          df_parameters.iloc[rowlist,id_idx].min() +1
+                if num_ids >= self.FLAGS.number_walkers:
+                    rowlist = np.where((df_parameters.iloc[rowlist,id_idx].values == walker_index))
+                else:
+                    logging.info("Not enough values in parse_parameters_file for all walkers, using first for all.")
+            if len(rowlist) > 1:
+                logging.warning("Found multiple matching entries to step "+str(step) \
+                                +" and walker #"+str(walker_index))
+            elif len(rowlist) == 0:
+                raise ValueError("Step "+str(step)+" and walker #"+str(walker_index)+" not found.")
+            rownr = rowlist[0]
             self.assign_current_step(step, walker_index=walker_index)
             return self.assign_weights_and_biases_from_dataframe(
                 df_parameters=df_parameters,
