@@ -314,7 +314,7 @@ class WalkerEnsembleOptimizer(Optimizer):
             # matrix-vector multiplication is however a bit more complicated, see
             # https://stackoverflow.com/a/43285258/1967646
             preconditioned_grad = tf.reshape(
-                tf.matmul(precondition_matrix, tf.expand_dims(tf.reshape(grad, [-1]), 1)),
+                tf.matmul( preconditioner, tf.expand_dims(tf.reshape(grad, [-1]), 1), transpose_a=True),
                 grad.get_shape())
 
             return preconditioner, preconditioned_grad

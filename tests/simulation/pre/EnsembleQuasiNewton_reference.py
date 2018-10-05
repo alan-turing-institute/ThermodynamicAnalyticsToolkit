@@ -166,7 +166,7 @@ def baoab_update_step(nn, momenta, new_gradients, preconditioner, step_width, be
 
     def B(step_width, gradients):
         nonlocal momenta
-        momenta = momenta - .5 * step_width * preconditioner.dot(gradients)
+        momenta = momenta - .5 * step_width * np.dot( np.transpose(preconditioner), gradients)
 
     def A(step_width, momenta):
         nn.parameters[walker_index] = nn.parameters[walker_index] + .5 * step_width * preconditioner.dot(momenta)
