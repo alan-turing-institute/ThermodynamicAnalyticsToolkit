@@ -221,10 +221,10 @@ if nn.num_walkers() > 1:
 else:
     normalization = 1.
 
+#old_means = [calculate_mean(walker_index=walker_index) for walker_index in range(nn.num_walkers())]
 
-def calculate_covariance(step, walker_index):
-    means = calculate_mean(walker_index=walker_index)
-    #print("Means for walker #"+str(walker_index)+" at "+str(step)+": "+str(means))
+def calculate_covariance(step, walker_index, means):
+    print("Means for walker #"+str(walker_index)+" at "+str(step)+": "+str(means))
     covariance = np.zeros((nn.num_parameters(),nn.num_parameters()), dtype=np.float32)
     for other_walker_index in range(nn.num_walkers()):
         #print(other_walker_index)
@@ -240,8 +240,15 @@ def calculate_covariance(step, walker_index):
     #      + str(covariance))
     return covariance
 
+def get_covariance_correction(old_means, means):
+    # correct the old_covariance
+    difference = means - old_means
+    correction = np.outer(difference, difference)
+    return correction
 
 preconditioner = [np.identity((nn.num_parameters()), dtype=np.float32) for i in range(params.number_walkers)]
+
+#old_covariance = [calculate_covariance(0, walker_index=walker_index, means=old_means[walker_index]) for walker_index in range(params.number_walkers)]
 
 def update_preconditioner(step):
     if (step) % params.covariance_after_steps:
@@ -249,8 +256,24 @@ def update_preconditioner(step):
     # calculate covariance matrix for walker_index (i.e. parameters of all other walkers)
     for walker_index in range(nn.num_walkers()):
         #print("walker_index "+str(walker_index))
+        # compute new means and covariance
+        means = calculate_mean(walker_index=walker_index)
+        #averaged_means = .5*(old_means[walker_index] + means)
+        covariance = calculate_covariance(step, walker_index=walker_index, means=means)
+        #covariance_correction = get_covariance_correction(means, averaged_means)
+        #print("Correction for updated walker #" + str(walker_index) + " at "+str(step)+": "
+        #      + str(covariance_correction))
+        #old_covariance_correction = get_covariance_correction(old_means[walker_index], averaged_means)
+        #print("Correction for old walker #" + str(walker_index) + " at "+str(step)+": "
+        #      + str(old_covariance_correction))
+        # use averaged covariance
         preconditioner[walker_index] = \
-            params.covariance_blending * calculate_covariance(step, walker_index=walker_index)
+            params.covariance_blending * covariance
+        #        .5*( old_covariance[walker_index]-old_covariance_correction \
+        #        +covariance-covariance_correction)
+        # store old mean and covariance
+        #old_means[walker_index] = means
+        #old_covariance[walker_index] = covariance
         preconditioner[walker_index] += np.identity((nn.num_parameters()), dtype=np.float32)
         #print(preconditioner[walker_index])
         try:
@@ -259,8 +282,8 @@ def update_preconditioner(step):
             print("Covariance matrix "+str(preconditioner[walker_index])
                   +" was not positive definite.")
             sys.exit(255)
-        #print("Preconditioner for walker #"+str(walker_index)+" at "+str(step)+": "
-        #      +str(preconditioner[walker_index]))
+        print("Preconditioner for walker #"+str(walker_index)+" at "+str(step)+": "
+            +str(preconditioner[walker_index])) #+" with eigenvalues "+str(np.linalg.eig(preconditioner[walker_index])[0]))
 
         #print("TEST: "+str( \
         #    np.dot(preconditioner[walker_index], preconditioner[walker_index].T.conj())))
