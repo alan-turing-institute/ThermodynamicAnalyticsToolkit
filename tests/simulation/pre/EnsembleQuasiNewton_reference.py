@@ -5,6 +5,9 @@ import numpy as np
 import sys
 import tensorflow
 
+# allow for correct testing against TATiSampler
+USE_TENSORFLOW_RANDOM_NUMBERS = True
+
 # get parameters
 parser = argparse.ArgumentParser()
 parser.add_argument("--batch_data_files", type=str, default=None, \
@@ -141,9 +144,12 @@ def write_trajectory_step(step, gradients):
                 tf.write(",".join(trajectory_line)+"\n")
         #print_step(step, loss_eval, gradients)
 
-random_noise_t = []
-for walker_index in range(params.number_walkers):
-    random_noise_t.append(tensorflow.random_normal(shape=[nn.num_parameters()], mean=0., stddev=1., dtype=tensorflow.float32, seed=params.seed+1+walker_index))
+
+if USE_TENSORFLOW_RANDOM_NUMBERS:
+    random_noise_t = []
+    for walker_index in range(params.number_walkers):
+        random_noise_t.append(tensorflow.random_normal(shape=[nn.num_parameters()], mean=0., stddev=1., dtype=tensorflow.float32, seed=params.seed+1+walker_index))
+
 
 def baoab_update_step(nn, momenta, new_gradients, preconditioner, step_width, beta, gamma, walker_index=0):
     """ Implementation of BAOAB update step using TATi's simulation interface.
@@ -174,8 +180,12 @@ def baoab_update_step(nn, momenta, new_gradients, preconditioner, step_width, be
     def O(step_width, beta, gamma):
         nonlocal momenta
         alpha = math.exp(-gamma * step_width)
+        if USE_TENSORFLOW_RANDOM_NUMBERS:
+            noise = nn._nn.sess.run(random_noise_t[walker_index])
+        else:
+            noise = np.random.standard_normal(momenta.shape).astype('float32')
         momenta = alpha * momenta + \
-                  math.sqrt((1. - math.pow(alpha, 2.)) / beta) * nn._nn.sess.run(random_noise_t[walker_index])
+                  math.sqrt((1. - math.pow(alpha, 2.)) / beta) * noise
 
     # 5. p_{n+1} = \widehat{p}_{n+\tfrac 1 2} - \tfrac {\lambda}{2} \nabla_x L(x_{n+1})
     B(step_width, new_gradients)
