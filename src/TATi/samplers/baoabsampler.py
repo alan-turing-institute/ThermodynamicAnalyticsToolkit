@@ -201,7 +201,9 @@ class BAOABSampler(GeometricLangevinAlgorithmFirstOrderSampler):
         # tilde_half_pn = p^{n}
         momentum = self.get_slot(var, "momentum")
 
-        scaled_gradient = step_width_t * grad
+        scaled_gradient = \
+            step_width_t * grad
+            # , [grad, var], "precond_grad, var:")
 
         # next_pn = B(tilde_half_pn, next_gn, h / 2)
         momentum_half_step_t = momentum - 0.5 * scaled_gradient
@@ -225,19 +227,19 @@ class BAOABSampler(GeometricLangevinAlgorithmFirstOrderSampler):
             momentum_global_t = tf.assign_add(momentum_global, tf.reduce_sum(tf.multiply(momentum_half_step_t, momentum_half_step_t)))
 
         # half_pn = B(pn, gn, h/2)
-        momentum_full_step_t =  tf.Print(
-            momentum_half_step_t - 0.5 * scaled_gradient,
-            [var.name, momentum_half_step_t], "B2: ")
-        preconditioned_momentum_full_step_t = tf.Print(
+        momentum_full_step_t = \
+            momentum_half_step_t - 0.5 * scaled_gradient
+            #,[var.name, momentum_half_step_t], "B2: ")
+        preconditioned_momentum_full_step_t = \
             tf.reshape(
             tf.matmul(precondition_matrix, tf.expand_dims(tf.reshape(momentum_full_step_t, [-1]), 1)),
-            var.shape),
-            [precondition_matrix], "B2 precond: ")
+            var.shape)
+            # ,[precondition_matrix], "B2 precond: ")
 
         # half_qn = A(qn, half_pn, h / 2)
-        position_half_step_t = tf.Print(
-            var + 0.5 * step_width_t * preconditioned_momentum_full_step_t,
-            [var.name, preconditioned_momentum_full_step_t], "B1: ")
+        position_half_step_t = \
+            var + 0.5 * step_width_t * preconditioned_momentum_full_step_t
+            #, [var.name, momentum_full_step_t], "B1: ")
 
         #tilde_half_pn = O(half_pn, rn, alpha1, zeta2)
         alpha_t = tf.exp(-friction_constant_t * step_width_t)
@@ -253,9 +255,9 @@ class BAOABSampler(GeometricLangevinAlgorithmFirstOrderSampler):
             var.shape)
 
         # next_qn = A(half_qn, tilde_half_pn, h / 2)
-        position_full_step_t = tf.Print(
-            position_half_step_t + 0.5 * step_width_t * preconditioned_momentum_noise_step_t,
-            [var.name, preconditioned_momentum_noise_step_t, position_half_step_t], "O+A1: ")
+        position_full_step_t = \
+            position_half_step_t + 0.5 * step_width_t * preconditioned_momentum_noise_step_t
+            #, [var.name, momentum_noise_step_t, position_half_step_t], "O+A1: ")
 
         # prior force act directly on var
         ub_repell, lb_repell = self._apply_prior(var)
@@ -264,9 +266,9 @@ class BAOABSampler(GeometricLangevinAlgorithmFirstOrderSampler):
         # make sure virial is evaluated before we update variables
         with tf.control_dependencies([virial_global_t]):
             # assign parameters
-            var_update = tf.Print(
-                state_ops.assign(var, position_full_step_t - prior_force),
-                [var.name, position_full_step_t], "A2: ")
+            var_update = \
+                state_ops.assign(var, position_full_step_t - prior_force)
+                #, [var.name, position_full_step_t], "A2: ")
 
         # assign moment to slot
         with tf.control_dependencies([kinetic_energy_t]):
