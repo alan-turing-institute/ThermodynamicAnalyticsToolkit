@@ -3,7 +3,6 @@ TATiLossFunctionSampler \
   --batch_size 20 \
   --csv_file TATiLossFunctionSampler-output-SGLD.csv \
   --exclude_parameters "w1" \
-  --interval_center_step 1 \
   --interval_weights -5 5 \
   --interval_biases -1 1 \
   --parse_parameters_file centers.csv \

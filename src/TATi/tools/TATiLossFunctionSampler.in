@@ -37,10 +37,6 @@ def parse_parameters():
         help='CSV file name to output sampled values to.')
     options._add_option_cmd('--interval_biases', type=str, nargs='+', default=[],
         help='Min and max value for each bias.')
-    options._add_option_cmd('--interval_center_file', type=str, default=None,
-        help='CSV file with step column and one for each parameter, e.g. w4 and b3.')
-    options._add_option_cmd('--interval_center_step', type=int, default=None,
-        help='Giving the step to use of the interval_center_file, i.e. its row')
     options._add_option_cmd('--exclude_parameters', type=str, nargs='+', default=[],
         help='List of biases, e.g. b0, and weights, e.g. w3, to exclude from sampling.')
     options._add_option_cmd('--inter_ops_threads', type=int, default=1,

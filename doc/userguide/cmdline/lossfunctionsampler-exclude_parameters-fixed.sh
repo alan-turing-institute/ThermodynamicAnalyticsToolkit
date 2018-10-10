@@ -4,7 +4,6 @@ TATiLossFunctionSampler \
   --csv_file TATiLossFunctionSampler-output-SGLD.csv \
   --exclude_parameters "w0" \
   --fix_parameters "output/biases/Variable:0=0" \
-  --interval_center_step 1 \
   --interval_weights -5 5 \
   --interval_biases -1 1 \
   --parse_parameters_file centers.csv \
