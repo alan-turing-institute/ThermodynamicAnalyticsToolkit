@@ -277,7 +277,7 @@ class WalkerEnsembleOptimizer(Optimizer):
         scope_name = "EQN_%s" % (var.name[:var.name.find(":")].replace("/", "_"))
         with tf.variable_scope(scope_name, reuse=False):
             precondition_matrix = tf.Variable(precondition_matrix_initial,
-                                              validate_shape=False, # shape is run-tine initialized
+                                              validate_shape=False,  # shape is run-tine initialized
                                               trainable=False, dtype=dds_basetype,
                                               name="precondition_matrix")
 
@@ -317,7 +317,7 @@ class WalkerEnsembleOptimizer(Optimizer):
                 tf.matmul( preconditioner, tf.expand_dims(tf.reshape(grad, [-1]), 1), transpose_a=True),
                 grad.get_shape())
 
-            return preconditioner, preconditioned_grad
+            return precondition_matrix, preconditioned_grad
         else:
             return precondition_matrix, grad
 
@@ -382,29 +382,12 @@ class WalkerEnsembleOptimizer(Optimizer):
         number_dim = tf.size(flat_othervars[0])
         number_walkers = vars.shape[0]
 
-        # means are needed for every component. Hence, we save a bit by
-        # creating all means beforehand
         scope_name = "EQN_%s" % (var.name[:var.name.find(":")].replace("/", "_"))
-        with tf.variable_scope(scope_name, reuse=True):
-            means = tf.get_variable(initializer=tf.initializers.zeros(dtype=dds_basetype),
-                shape=flat_othervars[0].shape, dtype=dds_basetype,
-                use_resource=True,
-                trainable=False, name="mean")
+        means = self._get_means(flat_othervars, vars, number_dim, scope_name)
 
-        def body_mean(i, mean_copy):
-            with tf.control_dependencies([ tf.Print(
-                    means[i].assign(tf.reduce_mean(vars[:, i], name="reduce_mean"),
-                                    name="assign_mean_component"),
-                    [var.name, i, means[i]], "i, mean: ", summarize=4),
-                    ]):
-                return (tf.add(i, 1), mean_copy)
+        norm_factor = self._get_norm_factor(number_dim, number_walkers)
 
-        i = tf.constant(0)
-        c = lambda i, x: tf.less(i, number_dim)
-        with tf.control_dependencies(flat_othervars):
-            r, mean_eval = tf.while_loop(c, body_mean, (i, means), name="means_loop")
-        means = tf.Print(mean_eval, [mean_eval.name, mean_eval], "mean_eval: ")
-        #print(means)
+        rank1factors = self._get_rank1_factors(flat_othervars, vars, means, number_walkers, scope_name)
 
         with tf.variable_scope(scope_name, reuse=True):
             cov = tf.get_variable(
@@ -414,21 +397,28 @@ class WalkerEnsembleOptimizer(Optimizer):
                 trainable=False, name="covariance_bias")
         #print(cov)
 
-        # pair of indices for the covariance loop
-        Pair = collections.namedtuple('Pair', 'i, j')
+        # make a chained list of assigns, each assigning onto cov
+        cov_assigns = [cov.assign(tf.zeros_like(cov))]
+        for walker_index in range(len(flat_othervars)):
+            if vars[walker_index].name == var.name:
+                continue
+            if LooseVersion(tf.__version__) >= LooseVersion("1.6.0"):
+                cov_assigns.append(cov.assign(cov_assigns[-1]+tf.tensordot(
+                                   rank1factors[walker_index],
+                                   tf.transpose(rank1factors[walker_index]),
+                                   axes=0)))
+            else:
+                cov_assigns.append(cov.assign(cov_assigns[-1]+tf.tensordot(
+                                tf.expand_dims(rank1factors[walker_index], 0),
+                                tf.expand_dims(tf.transpose(rank1factors[walker_index]), 0),
+                                axes=[[0], [0]])))
 
-        # in the following we implement two nested loops to go through every
-        # component of the covariance matrix. The inner loop uses an extra
-        # tf.cond as I don't want to use anymore tf.while. There, the problem is
-        # that the body needs to return exactly the loop_vars. With an additional
-        # inner loop however, there is another loop var and the "structures" do
-        # not match anymore.
+        return vars, norm_factor * cov_assigns[-1] # tf.Print(cov_assigns[-1], [cov.name, cov_assigns[-1]], "cov: ")
 
-        # only on cov we can use sliced assignment, cov_copy seems to be some
-        # ref object (or other) which does not have this functionality
-
-        dim = math_ops.cast(
-            tf.Print(number_walkers, [number_walkers], "number_walkers: "), dtype=dds_basetype)
+    def _get_norm_factor(self, number_dim, number_walkers):
+        dim = math_ops.cast(number_walkers
+                            # tf.Print(number_walkers, [number_walkers], "number_walkers: ")
+                            , dtype=dds_basetype)
 
         def accept_block():
             return tf.reciprocal(dim)
@@ -440,50 +430,54 @@ class WalkerEnsembleOptimizer(Optimizer):
             tf.greater(number_dim, 1),
             accept_block, reject_block),[number_dim], "number_dim: ")
 
-        # note that the assigns modifies directly the node cov which lives
-        # outside the accept() function's scope.
-        def body_cov(p, cov_copy):
-            def accept():
-                # implement the assign as side effect when i,j is still valid:
-                # if we implement it in the scope of body_cov(), then it would
-                # also be applied when (i,j) is not a valid index pair.
+        return norm_factor
 
-                # the return statements of both accept and reject need to have
-                # an identical structure. Therefore, we always return the
-                # # tuple (i,j).
-                with tf.control_dependencies(
-                        [tf.Print(cov[p.i, p.j].assign(
-                                norm_factor * tf.reduce_sum(
-                                    (vars[:, p.i] - means[p.i])
-                                * (vars[:, p.j] - means[p.j]),
-                            name="cov_sum_reduction"),
-                        name="cov_assign_component"),
-                        [p.i, p.j, cov[p.i, p.j]], "cov(i,j): ")]):
-                    #return Pair(tf.Print(tf.identity(p.i, name="id"), [p.i], "i: "),
-                    #            tf.Print(tf.add(p.j, 1, name="j_add"), [p.j], "j: "))
-                    return Pair(tf.identity(p.i, name="id"),
-                                tf.add(p.j, 1, name="j_add"))
+    def _get_means(self, flat_othervars, vars, number_dim, scope_name):
+        # means are needed for every component. Hence, we save a bit by
+        # creating all means beforehand
+        with tf.variable_scope(scope_name, reuse=True):
+            means = tf.get_variable(initializer=tf.initializers.zeros(dtype=dds_basetype),
+                                    shape=flat_othervars[0].shape, dtype=dds_basetype,
+                                    use_resource=True,
+                                    trainable=False, name="mean")
 
-            def reject():
-                # assign is not allowed, hence we use subtract to set to zero
-                #return Pair(tf.Print(tf.add(p.i, 1, name="i_add"), [p.i], "i: "),
-                #            tf.Print(tf.subtract(p.j, p.j, name="j_reset"), [p.j], "j: "))
-                return Pair(tf.add(p.i, 1, name="i_add"),
-                            tf.subtract(p.j, p.j, name="j_reset"))
+        def body_mean(i, mean_copy):
+            with tf.control_dependencies([  # tf.Print(
+                means[i].assign(tf.reduce_mean(vars[:, i], name="reduce_mean"),
+                                name="assign_mean_component"),
+                # [var.name, i, means[i]], "i, mean: ", summarize=4),
+            ]):
+                return (tf.add(i, 1), mean_copy)
 
-            ci = tf.less(p.j, number_dim, name="inner_check")
-            li = tf.cond(ci, accept, reject, name="inner_conditional")
-            return (li, cov_copy)
+        i = tf.constant(0)
+        c = lambda i, x: tf.less(i, number_dim)
+        with tf.control_dependencies(flat_othervars):
+            r, mean_eval = tf.while_loop(c, body_mean, (i, means), name="means_loop")
+        means = tf.Print(mean_eval, [mean_eval.name, mean_eval], "mean_eval: ")
+        # print(means)
+        return means
 
-        p = Pair(tf.constant(0), tf.constant(0))
-        c = lambda p, _: tf.less(p.i, number_dim, name="outer_check")
-        with tf.control_dependencies(flat_othervars+[means]):
-            r, cov = tf.while_loop(c, body_cov, loop_vars=(p, cov), name="cov_loop")
+    def _get_rank1_factors(self, flat_othervars, vars, means, number_walkers, scope_name):
+        with tf.variable_scope(scope_name, reuse=False):
+            rank1factors = tf.get_variable(initializer=tf.initializers.zeros(dtype=dds_basetype),
+                                    shape=tf.TensorShape(number_walkers+1).concatenate(flat_othervars[0].shape), dtype=dds_basetype,
+                                    use_resource=True,
+                                    trainable=False, name="rank1factor")
 
-        # note that cov will trigger the whole loop and also the loop to obtain
-        # the means because of the dependency graph inside tensorflow.
+        def body_factor(i, factor_copy):
+            with tf.control_dependencies([  # tf.Print(
+                rank1factors[i,:].assign(vars[i,:] - means, name="difference"),
+                # [var.name, i, rank1factors[i]], "i, rank1factor: ", summarize=4),
+            ]):
+                return (tf.add(i, 1), factor_copy)
 
-        return vars, cov # tf.Print(cov, [cov.name, cov], "cov: ")
+        i = tf.constant(0)
+        c = lambda i, x: tf.less(i, number_walkers)
+        with tf.control_dependencies(flat_othervars):
+            r, factor_eval = tf.while_loop(c, body_factor, (i, rank1factors), name="factor_loop")
+        factors = tf.Print(factor_eval, [factor_eval.name, factor_eval], "factor_eval: ")
+        # print(means)
+        return factors
 
     def _stack_gradients(self, grads_and_vars, var):
         """ Stacks all (other) gradients together to compute a covariance matrix.
