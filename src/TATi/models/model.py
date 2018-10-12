@@ -892,7 +892,7 @@ class model:
 
         logging.info("Starting to sample")
         logging.info_intervals = max(1, int(self.FLAGS.max_steps / 100))
-        last_time = time.process_time()
+        last_time = time.time()
         elapsed_time = 0.
         HMC_steps = [0]*self.FLAGS.number_walkers
         HMC_current_set_nodes = []
@@ -1032,7 +1032,7 @@ class model:
                     accumulated_virials[walker_index] += virials[walker_index]
 
             if current_step % self.FLAGS.every_nth == 0:
-                current_time = time.process_time()
+                current_time = time.time()
                 time_elapsed_per_nth_step = current_time - last_time
                 if current_step > 1:
                     elapsed_time += time_elapsed_per_nth_step
@@ -1313,7 +1313,7 @@ class model:
             summary_writer = tf.summary.FileWriter(self.FLAGS.summaries_path, self.sess.graph)
 
         logging.info("Starting to train")
-        last_time = time.process_time()
+        last_time = time.time()
         elapsed_time = 0
         if tqdm_present and self.FLAGS.progress:
             step_range = tqdm(range(self.FLAGS.max_steps))
@@ -1366,7 +1366,7 @@ class model:
                 summary_writer.add_summary(summary, current_step)
 
             if current_step % self.FLAGS.every_nth == 0:
-                current_time = time.process_time()
+                current_time = time.time()
                 time_elapsed_per_nth_step = current_time - last_time
                 # neglect first step as initialization perturbs average
                 if current_step > 1:
