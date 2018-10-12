@@ -40,6 +40,8 @@ class PythonOptions(Options):
                                "obtained from the other walkers, 0 - will never collapse",
         "diffusion_map_method": "name of method to use for diffusion map "+ \
                                 "analysis: vanilla, TMDap, pydiffmap",
+        "directions_file": "CSV file name to parse directions spanning subspace to "+ \
+                           "project trajectories onto",
         "do_hessians": "whether to add hessian evaluation nodes to graph, used "+ \
                        "by optimzier and explorer",
         "dropout": "Keep probability for sampleing dropout, e.g. 0.9",
@@ -120,6 +122,7 @@ class PythonOptions(Options):
         "collapse_after_steps": 100,
         "covariance_blending": 0.,
         "diffusion_map_method": "vanilla",
+        "directions_file": None,
         "do_hessians": False,
         "dropout": None,
         "every_nth": 1,
@@ -173,6 +176,7 @@ class PythonOptions(Options):
         "collapse_after_steps": int,
         "covariance_blending": float,
         "diffusion_map_method": str,
+        "directions_file": str,
         "do_hessians": bool,
         "dropout": float,
         "every_nth": int,

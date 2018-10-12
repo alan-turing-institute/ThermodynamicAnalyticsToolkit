@@ -147,6 +147,8 @@ class CommandlineOptions(PythonOptions):
         # please adhere to alphabetical ordering
         self._add_option('--batch_size', type=int, default=None,
                           help='The number of samples used to divide sample set into batches in one training step.')
+        self._add_option('--directions_file', type=str, default=None,
+                          help='CSV file name to parse directions spanning subspace to project trajectories onto.')
         self._add_option('--do_hessians', type=str2bool, default=False,
                           help='Whether to add hessian computation nodes to graph, when present used by optimizer and explorer')
         self._add_option('--dropout', type=float, default=None,

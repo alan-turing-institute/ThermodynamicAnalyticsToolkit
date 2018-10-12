@@ -86,6 +86,7 @@ class model:
         self.averages_writer = None
         self.run_writer = None
         self.trajectory_writer = None
+        self.directions = None
 
     def scan_dataset_dimension(self):
         if len(self.FLAGS.batch_data_files) > 0:
@@ -460,6 +461,20 @@ class model:
         except AttributeError:
             pass
 
+        # directions span a subspace to project trajectories. This may be
+        # used to not store overly many degrees of freedom per step.
+        if self.FLAGS.directions_file is not None:
+            try:
+                # try without header
+                self.directions = np.loadtxt(self.FLAGS.directions_file, delimiter=',', skiprows=0)
+            except ValueError:
+                # if it fails, skip header
+                self.directions = np.loadtxt(self.FLAGS.directions_file, delimiter=',', skiprows=1)
+            if len(self.directions.shape) == 1:
+                self.directions = np.expand_dims(self.directions, axis=0)
+        else:
+            self.directions = None
+
         # setup training/sampling
         if setup is not None:
             if "train" in setup:
@@ -633,9 +648,15 @@ class model:
             pass
         try:
             if self.trajectory_writer is None:
+                if self.directions is not None:
+                    number_weights = self.directions.shape[0]
+                    number_biases = 0
+                else:
+                    number_weights = self.weights[0].get_total_dof()
+                    number_biases = self.biases[0].get_total_dof()
                 self.trajectory_writer = setup_trajectory_file(self.FLAGS.trajectory_file,
-                                                               self.weights[0].get_total_dof(),
-                                                               self.biases[0].get_total_dof(),
+                                                               number_weights,
+                                                               number_biases,
                                                                self.config_map)
         except AttributeError:
             pass
@@ -807,9 +828,15 @@ class model:
         if return_trajectories:
             trajectory = []
             steps = (self.FLAGS.max_steps % self.FLAGS.every_nth) + 1
-            header = get_trajectory_header(
-                self.weights[0].get_total_dof(),
-                self.biases[0].get_total_dof())
+            if self.directions is not None:
+                print(self.directions.shape)
+                header = get_trajectory_header(
+                    self.directions.shape[0],
+                    0)
+            else:
+                header = get_trajectory_header(
+                    self.weights[0].get_total_dof(),
+                    self.biases[0].get_total_dof())
             no_params = len(header)
             for walker_index in range(self.FLAGS.number_walkers):
                 trajectory.append(pd.DataFrame(
@@ -1025,14 +1052,19 @@ class model:
                         trajectory_line = [walker_index, global_step[walker_index]] \
                                           + ['{:{width}.{precision}e}'.format(loss_eval[walker_index], width=output_width,
                                                                               precision=output_precision)]
+                        dofs = []
                         if len(weights_eval[walker_index]) > 0:
-                            flat_array = neuralnet_parameters.flatten_list_of_arrays(weights_eval[walker_index])
-                            trajectory_line += ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision) \
-                                                for item in flat_array[:]]
+                            dofs.append(neuralnet_parameters.flatten_list_of_arrays(weights_eval[walker_index]))
+
                         if len(biases_eval[walker_index]) > 0:
-                            flat_array = neuralnet_parameters.flatten_list_of_arrays(biases_eval[walker_index])
-                            trajectory_line += ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision) \
-                                                for item in flat_array[:]]
+                            dofs.append(neuralnet_parameters.flatten_list_of_arrays(biases_eval[walker_index]))
+
+                        dofs = np.concatenate(dofs)
+                        if self.directions is not None:
+                            dofs = self.directions.dot(dofs)
+
+                        trajectory_line += ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision) \
+                                            for item in dofs[:]]
 
                         if self.config_map["do_write_trajectory_file"]:
                             self.trajectory_writer.writerow(trajectory_line)
@@ -1259,10 +1291,16 @@ class model:
         trajectory = None
         if return_trajectories:
             steps = (self.FLAGS.max_steps % self.FLAGS.every_nth)+1
-            header = get_trajectory_header(
-                self.weights[0].get_total_dof(),
-                self.biases[0].get_total_dof())
-            no_params = self.weights[0].get_total_dof()+self.biases[0].get_total_dof()+3
+            if self.directions is not None:
+                print(self.directions.shape)
+                header = get_trajectory_header(
+                    self.directions.shape[0],
+                    0)
+            else:
+                header = get_trajectory_header(
+                    self.weights[0].get_total_dof(),
+                    self.biases[0].get_total_dof())
+            no_params = len(header)
             trajectory = pd.DataFrame(
                 np.zeros((steps, no_params)),
                 columns=header)
@@ -1374,11 +1412,21 @@ class model:
                 if return_trajectories or self.config_map["do_write_trajectory_file"]:
                     trajectory_line = [0, global_step] \
                                       + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
-                                                                          precision=output_precision)] \
-                                      + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
-                                         for item in weights_eval] \
-                                      + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
-                                         for item in biases_eval]
+                                                                          precision=output_precision)]
+
+                    dofs = []
+                    if len(weights_eval) > 0:
+                        dofs.append(neuralnet_parameters.flatten_list_of_arrays(weights_eval))
+
+                    if len(biases_eval) > 0:
+                        dofs.append(neuralnet_parameters.flatten_list_of_arrays(biases_eval))
+
+                    dofs = np.concatenate(dofs)
+                    if self.directions is not None:
+                        dofs = np.matmul(dofs, self.directions.T)
+
+                    trajectory_line += ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
+                                         for item in dofs]
                     if self.config_map["do_write_trajectory_file"]:
                         self.trajectory_writer.writerow(trajectory_line)
                     if return_trajectories:
