@@ -246,10 +246,11 @@ class WalkerEnsembleOptimizer(Optimizer):
 
         normalizing_factor = tf.cond(tf.greater(max_matrix, 1.),
                                      accept, reject)
-        return tf.Print(
-            tf.sqrt(tf.reciprocal(normalizing_factor)) * \
-                tf.cholesky(normalizing_factor * matrix),
-            [cov], "cov: ", summarize=4)
+        return tf.sqrt(tf.reciprocal(
+            tf.Print(normalizing_factor, [normalizing_factor],
+                     "normalizing factor: "))) * \
+                tf.cholesky(tf.Print(normalizing_factor * matrix,
+                                     [matrix], "matrix: ", summarize=4))
 
     def _pick_grad(self, grads_and_vars, var):
         """ Helper function to extract the gradient associated with `var` from
