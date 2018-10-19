@@ -1087,11 +1087,20 @@ class model:
             #   tf.run([loss_eval, train_step], ...)
             # is not important. Only a subsequent, distinct tf.run() call would produce a different loss_eval.
             if self.FLAGS.summaries_path is not None:
-                summary, _, acc, global_step, loss_eval = \
-                    self.sess.run(test_nodes, feed_dict=feed_dict)
+                    summary, _, acc, global_step, loss_eval = \
+                        self.sess.run(test_nodes, feed_dict=feed_dict)
             else:
-                _, acc, global_step, loss_eval = \
-                    self.sess.run(test_nodes, feed_dict=feed_dict)
+                try:
+                    _, acc, global_step, loss_eval = \
+                        self.sess.run(test_nodes, feed_dict=feed_dict)
+                except tf.errors.InvalidArgumentError as err:
+                    # Cholesky failed, try again with smaller eta
+                    logging.warning(str(err.op)+" FAILED, using tenth of eta.")
+                    old_eta = feed_dict["covariance_blending"]
+                    feed_dict["covariance_blending"] = feed_dict["covariance_blending"]/10.
+                    _, acc, global_step, loss_eval = \
+                        self.sess.run(test_nodes, feed_dict=feed_dict)
+                    feed_dict["covariance_blending"] = old_eta
 
             if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics",
                                       "GeometricLangevinAlgorithm_1stOrder",
