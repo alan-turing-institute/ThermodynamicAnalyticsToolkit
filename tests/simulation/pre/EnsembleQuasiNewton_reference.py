@@ -125,7 +125,7 @@ if params.trajectory_file is not None:
 
 def print_step(step):
     print("Step #" + str(step) + ": " + str(nn.loss()) + " at " \
-        + str(nn.parameters) + ", gradients " + str(old_gradients))
+        + str(nn.parameters) + ", gradients " + str(nn.gradients()))
 
 
 def write_trajectory_step(step):
@@ -195,7 +195,7 @@ def baoab_update_step(nn, momenta, new_gradients, preconditioner, step_width, be
 
 
 def calculate_mean(walker_index):
-    means = np.zeros((nn.num_parameters()))
+    means = np.zeros((nn.num_parameters()), dtype=np.float32)
     for other_walker_index in range(nn.num_walkers()):
         #print(other_walker_index)
         if walker_index == other_walker_index:
@@ -210,15 +210,13 @@ def calculate_mean(walker_index):
 
 
 # ones on diagonal, 1/(dim-1) everywhere else
-normalization = np.ones((nn.num_parameters(),nn.num_parameters()), dtype=np.float32) \
-    - np.identity(nn.num_parameters())
 if nn.num_walkers() > 1:
-    normalization *= 1./(float(nn.num_walkers()) - 1.)
-normalization += np.identity(nn.num_parameters())
+    normalization = 1./(float(nn.num_walkers()) - 1.)
+else:
+    normalization = 1.
 
-step=0
 
-def calculate_covariance(walker_index):
+def calculate_covariance(step, walker_index):
     means = calculate_mean(walker_index=walker_index)
     #print("Means for walker #"+str(walker_index)+" at "+str(step)+": "+str(means))
     covariance = np.zeros((nn.num_parameters(),nn.num_parameters()), dtype=np.float32)
@@ -237,35 +235,16 @@ def calculate_covariance(walker_index):
     return covariance
 
 
-momenta = [np.zeros((nn.num_parameters()), dtype=np.float32) for i in range(params.number_walkers)]
-old_gradients = [np.zeros((nn.num_parameters()), dtype=np.float32) for i in range(params.number_walkers)]
 preconditioner = [np.identity((nn.num_parameters()), dtype=np.float32) for i in range(params.number_walkers)]
 
-#for walker_index in range(nn.num_walkers()):
-#    print("Preconditioner for walker #" + str(walker_index) + " at " + str(step) + ": "
-#          + str(preconditioner[walker_index]))
-
-write_trajectory_step(step)
-
-for leg in range(int(params.max_steps/params.covariance_after_steps)):
-    for i in range(params.covariance_after_steps):
-        step += 1
-        new_gradients = nn.gradients()
-        for walker_index in range(nn.num_walkers()):
-            # perform sampling step with preconditioning
-            momenta[walker_index] = baoab_update_step(
-                nn, momenta[walker_index], new_gradients[walker_index],
-                preconditioner=preconditioner[walker_index],
-                step_width=params.step_width,
-                beta=params.inverse_temperature, gamma=params.friction_constant, walker_index=walker_index)
-
-        write_trajectory_step(step)
-
+def update_preconditioner(step):
+    if (step) % params.covariance_after_steps:
+        return
     # calculate covariance matrix for walker_index (i.e. parameters of all other walkers)
     for walker_index in range(nn.num_walkers()):
         #print("walker_index "+str(walker_index))
         preconditioner[walker_index] = \
-            params.covariance_blending * calculate_covariance(walker_index=walker_index)
+            params.covariance_blending * calculate_covariance(step, walker_index=walker_index)
         preconditioner[walker_index] += np.identity((nn.num_parameters()), dtype=np.float32)
         #print(preconditioner[walker_index])
         try:
@@ -280,11 +259,38 @@ for leg in range(int(params.max_steps/params.covariance_after_steps)):
         #print("TEST: "+str( \
         #    np.dot(preconditioner[walker_index], preconditioner[walker_index].T.conj())))
 
+
+momenta = [np.zeros((nn.num_parameters()), dtype=np.float32) for i in range(params.number_walkers)]
+
+
+def perform_step():
+    new_gradients = nn.gradients()
+    for walker_index in range(nn.num_walkers()):
+        # perform sampling step with preconditioning
+        print("grad: " + str(new_gradients[walker_index]))
+        momenta[walker_index] = baoab_update_step(
+            nn, momenta[walker_index], new_gradients[walker_index],
+            preconditioner=preconditioner[walker_index],
+            step_width=params.step_width,
+            beta=params.inverse_temperature, gamma=params.friction_constant, walker_index=walker_index)
+
+
+def collapse_walkers(step):
+    if (step == 0) or (step % params.covariance_after_steps != 0):
+        return
     # collapse all walkers to position of first
     if params.collapse_walkers != 0:
         print("Collapsing walker position onto first walker's.")
         for walker_index in range(1, nn.num_walkers()):
             nn.parameters[walker_index] = nn.parameters[0]
+
+
+for step in range(params.max_steps):
+    print("Current step is "+str(step))
+    write_trajectory_step(step)
+    update_preconditioner(step)
+    perform_step()
+    collapse_walkers(step)
 
 if params.trajectory_file is not None:
         tf.close()
