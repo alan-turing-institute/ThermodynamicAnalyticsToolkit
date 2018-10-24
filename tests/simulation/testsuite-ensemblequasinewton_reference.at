@@ -1,0 +1,224 @@
+#
+#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    Copyright (C) 2018 The University of Edinburgh
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### test on ensemblequasinewton reference
+
+# NOTE: The two implementations that are being compared here -- one is the
+# EQN_reference based on TATi's simulation interface, the other is the full
+# TATi implementation -- compute exactly the same values, in principle.
+#
+# The only difference arises from a different Cholesky factorization
+# implementation that causes slight deviations on the order of 1e-7
+# precision.
+
+AT_SETUP([Simulation - Ensemble Quasi Newton every step])
+AT_KEYWORDS([simulation ensemblequasinewton])
+
+AT_CHECK([cp -f \
+    ${abs_top_srcdir}/tests/simulation/pre/dataset-anisotropic-gaussian.csv \
+    .
+], 0, [ignore], [ignore])
+AT_CHECK([cp -f \
+    ${abs_top_srcdir}/tests/simulation/pre/params.csv \
+    .
+], 0, [ignore], [ignore])
+AT_CHECK([../../../run \
+	${abs_top_srcdir}/tests/simulation/pre/EnsembleQuasiNewton_reference.py \
+	--batch_data_files dataset-anisotropic-gaussian.csv \
+	--collapse_walkers 0 \
+	--covariance_after_steps 1 \
+	--covariance_blending 1 \
+	--every_nth 1 \
+	--fix_parameters output/biases/Variable:0=0. \
+	--friction_constant 10 \
+	--input_dimension 2 \
+	--inverse_temperature 1e2 \
+	--loss mean_squared \
+	--max_step 50 \
+	--number_walkers 3 \
+	--output_dimension 1 \
+	--parse_parameters_file params.csv \
+	--parse_steps 1000 \
+	--seed 426 \
+	--step_width .1 \
+	--trajectory_file trajectory-EQN_ref.csv
+], 0, [stdout], [stderr])
+
+AT_CHECK([../../../TATiSampler \
+    --batch_data_files dataset-anisotropic-gaussian.csv \
+    --collapse_walkers 0 \
+    --covariance_after_steps 1 \
+    --covariance_blending 1.0 \
+    --every_nth 1 \
+    --fix_parameters output/biases/Variable:0=0. \
+    --friction_constant 10 \
+    --input_dimension 2 \
+    --inverse_temperature 1e2 \
+    --loss mean_squared \
+    --max_step 50 \
+    --number_walkers 3 \
+    --output_dimension 1 \
+    --output_activation linear \
+    --parse_parameters_file params.csv \
+    --parse_steps 1000 \
+    --sampler BAOAB \
+    --seed 426 \
+    --step_width .1 \
+    --trajectory_file trajectory_TATi.csv
+], 0, [stdout], [stderr])
+
+
+# now compare (exclude time_per_nth_step column)
+AT_CHECK([../../../NumericalDiff \
+    --general_threshold 1e-5 absolute \
+    --column_drop step id -- \
+    trajectory-EQN_ref.csv trajectory_TATi.csv], 0, [ignore], [ignore])
+
+AT_CLEANUP
+
+
+AT_SETUP([Simulation - Ensemble Quasi Newton every 10th step])
+AT_KEYWORDS([simulation ensemblequasinewton])
+
+AT_CHECK([cp -f \
+    ${abs_top_srcdir}/tests/simulation/pre/dataset-anisotropic-gaussian.csv \
+    .
+], 0, [ignore], [ignore])
+AT_CHECK([cp -f \
+    ${abs_top_srcdir}/tests/simulation/pre/params.csv \
+    .
+], 0, [ignore], [ignore])
+AT_CHECK([../../../run \
+	${abs_top_srcdir}/tests/simulation/pre/EnsembleQuasiNewton_reference.py \
+	--batch_data_files dataset-anisotropic-gaussian.csv \
+	--collapse_walkers 0 \
+	--covariance_after_steps 10 \
+	--covariance_blending 1 \
+	--every_nth 1 \
+	--fix_parameters output/biases/Variable:0=0. \
+	--friction_constant 10 \
+	--input_dimension 2 \
+	--inverse_temperature 1e2 \
+	--loss mean_squared \
+	--max_step 50 \
+	--number_walkers 3 \
+	--output_dimension 1 \
+	--parse_parameters_file params.csv \
+	--parse_steps 1000 \
+	--seed 426 \
+	--step_width .1 \
+	--trajectory_file trajectory-EQN_ref.csv
+], 0, [stdout], [stderr])
+
+AT_CHECK([../../../TATiSampler \
+    --batch_data_files dataset-anisotropic-gaussian.csv \
+    --collapse_walkers 0 \
+    --covariance_after_steps 10 \
+    --covariance_blending 1.0 \
+    --every_nth 1 \
+    --fix_parameters output/biases/Variable:0=0. \
+    --friction_constant 10 \
+    --input_dimension 2 \
+    --inverse_temperature 1e2 \
+    --loss mean_squared \
+    --max_step 50 \
+    --number_walkers 3 \
+    --output_dimension 1 \
+    --output_activation linear \
+    --parse_parameters_file params.csv \
+    --parse_steps 1000 \
+    --sampler BAOAB \
+    --seed 426 \
+    --step_width .1 \
+    --trajectory_file trajectory_TATi.csv
+], 0, [stdout], [stderr])
+
+
+# now compare (exclude time_per_nth_step column)
+AT_CHECK([../../../NumericalDiff \
+    --general_threshold 2e-6 absolute \
+    --column_drop step id -- \
+    trajectory-EQN_ref.csv trajectory_TATi.csv], 0, [ignore], [ignore])
+
+AT_CLEANUP
+
+
+AT_SETUP([Simulation - Ensemble Quasi Newton every 10th step with collapse])
+AT_KEYWORDS([simulation ensemblequasinewton collapse])
+
+AT_CHECK([cp -f \
+    ${abs_top_srcdir}/tests/simulation/pre/dataset-anisotropic-gaussian.csv \
+    .
+], 0, [ignore], [ignore])
+AT_CHECK([cp -f \
+    ${abs_top_srcdir}/tests/simulation/pre/params.csv \
+    .
+], 0, [ignore], [ignore])
+AT_CHECK([../../../run \
+	${abs_top_srcdir}/tests/simulation/pre/EnsembleQuasiNewton_reference.py \
+	--batch_data_files dataset-anisotropic-gaussian.csv \
+	--collapse_walkers 1 \
+	--covariance_after_steps 10 \
+	--covariance_blending 1 \
+	--every_nth 1 \
+	--fix_parameters output/biases/Variable:0=0. \
+	--friction_constant 10 \
+	--input_dimension 2 \
+	--inverse_temperature 1e2 \
+	--loss mean_squared \
+	--max_step 50 \
+	--number_walkers 3 \
+	--output_dimension 1 \
+	--parse_parameters_file params.csv \
+	--parse_steps 1000 \
+	--seed 426 \
+	--step_width .1 \
+	--trajectory_file trajectory-EQN_ref.csv
+], 0, [stdout], [stderr])
+
+AT_CHECK([../../../TATiSampler \
+    --batch_data_files dataset-anisotropic-gaussian.csv \
+    --collapse_walkers 1 \
+    --covariance_after_steps 10 \
+    --covariance_blending 1.0 \
+    --every_nth 1 \
+    --fix_parameters output/biases/Variable:0=0. \
+    --friction_constant 10 \
+    --input_dimension 2 \
+    --inverse_temperature 1e2 \
+    --loss mean_squared \
+    --max_step 50 \
+    --number_walkers 3 \
+    --output_dimension 1 \
+    --output_activation linear \
+    --parse_parameters_file params.csv \
+    --parse_steps 1000 \
+    --sampler BAOAB \
+    --seed 426 \
+    --step_width .1 \
+    --trajectory_file trajectory_TATi.csv
+], 0, [stdout], [stderr])
+
+
+# now compare (exclude time_per_nth_step column)
+AT_CHECK([../../../NumericalDiff \
+    --general_threshold 4e-6 absolute \
+    --column_drop step id -- \
+    trajectory-EQN_ref.csv trajectory_TATi.csv], 0, [ignore], [ignore])
+
+AT_CLEANUP
+

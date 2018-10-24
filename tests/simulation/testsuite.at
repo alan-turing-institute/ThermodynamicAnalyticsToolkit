@@ -26,5 +26,6 @@ m4_ifdef([AT_COLOR_TESTS], [AT_COLOR_TESTS])
 # various small test scripts
 m4_include(testsuite-accessing_dataset.at)
 m4_include(testsuite-changing_network.at)
+m4_include(testsuite-ensemblequasinewton_reference.at)
 m4_include(testsuite-multiple_walkers.at)
 m4_include(testsuite-parameters_access.at)

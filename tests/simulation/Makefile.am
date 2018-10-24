@@ -11,6 +11,7 @@ TESTSCRIPTS += \
 	$(srcdir)/testsuite.at \
 	$(srcdir)/testsuite-accessing_dataset.at \
 	$(srcdir)/testsuite-changing_network.at \
+	$(srcdir)/testsuite-ensemblequasinewton_reference.at \
     $(srcdir)/testsuite-multiple_walkers.at \
     $(srcdir)/testsuite-parameters_access.at
 
