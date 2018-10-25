@@ -21,8 +21,7 @@ class StochasticGradientLangevinDynamicsSampler(WalkerEnsembleOptimizer):
                  seed=None, use_locking=False, name='SGLD'):
         """ Init function for this class.
 
-        :param ensemble_precondition: whether to precondition the gradient using
-                all the other replica or not
+        :param ensemble_precondition: array with information to perform ensemble precondition method
         :param step_width: step width for gradient, also affects inject noise
         :param inverse_temperature: scale for gradients
         :param seed: seed value of the random number generator for generating reproducible runs
@@ -46,6 +45,7 @@ class StochasticGradientLangevinDynamicsSampler(WalkerEnsembleOptimizer):
         """ Converts step width into a tensor, if given as a floating-point
         number.
         """
+        super(StochasticGradientLangevinDynamicsSampler, self)._prepare()
         self._step_width_t = ops.convert_to_tensor(self._step_width, name="step_width")
         self._inverse_temperature_t = ops.convert_to_tensor(self._inverse_temperature, name="inverse_temperature")
 
@@ -73,6 +73,7 @@ class StochasticGradientLangevinDynamicsSampler(WalkerEnsembleOptimizer):
         else:
             # increment such that we use different seed for each random tensor
             self._seed += 1
+            print("Creating random_noise_t with seed "+str(self._seed))
             random_noise_t = tf.random_normal(grad.get_shape(), mean=0., stddev=1., dtype=dds_basetype, seed=self._seed)
         return step_width_t, inverse_temperature_t, random_noise_t
 
@@ -177,7 +178,7 @@ class StochasticGradientLangevinDynamicsSampler(WalkerEnsembleOptimizer):
         # Pick correct gradient from grad_list
         #print(grad)
         #print(othergrads)
-        grad = self._pick_grad(grads_and_vars, var)
+        _, grad = self._pick_grad(grads_and_vars, var)
         step_width_t, inverse_temperature_t, random_noise_t = self._prepare_dense(grad, var)
         # \nabla V (q^n ) \Delta t
         scaled_gradient = step_width_t * grad

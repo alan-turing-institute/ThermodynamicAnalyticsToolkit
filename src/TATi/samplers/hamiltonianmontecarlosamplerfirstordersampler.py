@@ -18,8 +18,7 @@ class HamiltonianMonteCarloSamplerFirstOrderSampler(StochasticGradientLangevinDy
     def __init__(self, ensemble_precondition, step_width, inverse_temperature, loss, current_step, next_eval_step, accept_seed, seed=None, use_locking=False, name='HamiltonianMonteCarlo_1stOrder'):
         """ Init function for this class.
 
-        :param ensemble_precondition: whether to precondition the gradient using
-                all the other walkers or not
+        :param ensemble_precondition: array with information to perform ensemble precondition method
         :param step_width: step width for gradient
         :param inverse_temperature: scale for noise
         :param loss: loss value of the current state for evaluating acceptance
@@ -235,7 +234,7 @@ class HamiltonianMonteCarloSamplerFirstOrderSampler(StochasticGradientLangevinDy
         :param var: parameters of the neural network
         :return: a group of operations to be added to the graph
         """
-        grad = self._pick_grad(grads_and_vars, var)
+        _, grad = self._pick_grad(grads_and_vars, var)
         step_width_t, inverse_temperature_t, current_step_t, next_eval_step_t, random_noise_t, uniform_random_t = \
             self._prepare_dense(grad, var)
 

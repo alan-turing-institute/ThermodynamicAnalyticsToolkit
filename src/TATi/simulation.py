@@ -34,9 +34,11 @@ class Simulation(object):
         "batch_data_file_type": ["input", "network"],
         "batch_size": ["input"],
         "burn_in_steps": [],        # only used in python code
-        "collapse_after_steps": [], # only used in python code
+        "collapse_walkers": [], # only used in python code
+        "covariance_after_steps": [], # only used in python code
         "covariance_blending": ["network"],
         "diffusion_map_method": [], # only used in python code
+        "directions_file": [],
         "do_hessians": ["network"],
         "dropout": ["network"],
         "every_nth": [],            # only used in python code
@@ -124,8 +126,10 @@ class Simulation(object):
         # construct nn if dataset has been provided
         self._construct_nn()
 
-        self._parameters = Parameters(self._nn, ["weights", "biases"])
+        self._parameters = Parameters(self._nn, ["weights", "biases"], self._cache)
         self._momenta = Parameters(self._nn, ["momenta_weights", "momenta_biases"])
+
+        self.non_simplified_access = False
 
     @staticmethod
     def help(key=None):
@@ -219,7 +223,8 @@ class Simulation(object):
         :param walker_index: index of walker to evaluate or None for all
         :return: value for the given node and walker
         """
-        if walker_index is None and self._nn.FLAGS.number_walkers == 1:
+        if walker_index is None and self._nn.FLAGS.number_walkers == 1 \
+            and not self.non_simplified_access:
             return self._cache.evaluate(key, walker_index)[0]
         else:
             return self._cache.evaluate(key, walker_index)
@@ -274,7 +279,7 @@ class Simulation(object):
         :return: parameters
         """
         self._check_nn()
-        if len(self._parameters) == 1:
+        if not self.non_simplified_access and len(self._parameters) == 1:
             return self._parameters[0]
         else:
             return self._parameters
@@ -291,7 +296,7 @@ class Simulation(object):
         self._check_nn()
         for i in range(len(self._parameters)):
             self._parameters[i] = values
-        self._cache.reset()
+            self._cache.invalidate_cache(i)
 
     @property
     def momenta(self):
@@ -301,10 +306,15 @@ class Simulation(object):
         """
         self._check_nn()
         try:
-            return self._momenta
+            momenta = self._momenta
         except ValueError:
             logging.error("%s does not have momenta." % (self._options.sampler))
             return None
+        if not self.non_simplified_access and len(momenta) == 1:
+            return momenta[0]
+        else:
+            return momenta
+
 
     @momenta.setter
     def momenta(self, values):

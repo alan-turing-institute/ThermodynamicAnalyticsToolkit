@@ -1,3 +1,5 @@
+import logging
+
 class EvaluationCache(object):
     """ This class caches tensorflow evaluation with respect to certain nodes
     that are interesting in the context of the `simulation` interface.
@@ -63,6 +65,16 @@ class EvaluationCache(object):
             self._update_cache()
         return self._features, self._labels
 
+    def invalidate_cache(self, walker_index):
+        """ This voids the cache entry for a particular walker.
+
+        :param walker_index: index of walker
+        """
+        logging.debug("Invalidating cache for #"+str(walker_index))
+        for key in self._node_keys.keys():
+            if len(self._cache[key]) > 0:
+                self._cache[key][walker_index] = None
+
     def reset(self):
         """ This resets the cache to None for all cached variables.
         """
@@ -104,6 +116,7 @@ class EvaluationCache(object):
     def _update_cache(self):
         """ Updates the contents of the cache from the network's values.
         """
+        logging.debug("Updating evaluationcache")
         self._advance_iterator()
         nodes = list(self._node_keys.values())
         values = self._evaluate(nodes)

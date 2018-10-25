@@ -183,7 +183,7 @@ class HamiltonianMonteCarloSamplerSecondOrderSampler(HamiltonianMonteCarloSample
         :param var: parameters of the neural network
         :return: a group of operations to be added to the graph
         """
-        grad = self._pick_grad(grads_and_vars, var)
+        _, grad = self._pick_grad(grads_and_vars, var)
         step_width_t, inverse_temperature_t, current_step_t, next_eval_step_t, random_noise_t, uniform_random_t = \
             self._prepare_dense(grad, var)
         hd_steps_t =  math_ops.cast(self._hd_steps_t, tf.int64)

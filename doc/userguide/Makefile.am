@@ -5,6 +5,7 @@ PYTHON_EXAMPLES = \
 	$(srcdir)/cmdline/exploring.sh \
 	$(srcdir)/cmdline/inputspacesampler.sh \
 	$(srcdir)/cmdline/lossfunctionsampler-exclude_parameters.sh \
+	$(srcdir)/cmdline/lossfunctionsampler-exclude_parameters-fixed.sh \
 	$(srcdir)/cmdline/lossfunctionsampler-fix_parameter.sh \
 	$(srcdir)/cmdline/lossfunctionsampler-grid.sh \
 	$(srcdir)/cmdline/lossfunctionsampler-trajectory.sh \
@@ -103,11 +104,23 @@ revdate = $(shell date +%Y-%m-%d)
 	$(ASCIIDOC) -b html5 -a toc2 -a latexmath -a numbered -aimagesdir=$(srcdir) -arevdate=$(revdate) -aversion-label=@PACKAGE@ -arevnumber=$(version) -o $@ $<
 
 %.pdf: %.xml
-	$(DBLATEX) --param=doc.lot.show=figure,table $< $@
+	$(DBLATEX) --param=doc.lot.show=figure,table --param=paper.type=a4paper $< $@
 
-all: programmersguide.pdf programmersguide.html \
+# currently not used. Useful for converting to latex output
+%.tex: %.xml
+	$(DBLATEX) --param=doc.lot.show=figure,table --param=paper.type=a4paper -t tex $< $@
+
+DOC_TARGETS = \
+	programmersguide.pdf programmersguide.html \
 	userguide.pdf userguide.html \
     roadmap.pdf roadmap.html
+
+all: ${DOC_TARGETS}
+
+EXTRA_DIST += ${DOC_TARGETS}
+
+pdfdir = $(prefix)/share/doc/@PACKAGE@
+dist_pdf_DATA =${DOC_TARGETS}
 
 FORCE:
 

@@ -6,16 +6,18 @@ class Parameters(object):
 
     """
 
-    def __init__(self, nn, param_names):
+    def __init__(self, nn, param_names, _cache=None):
         """
 
         :param nn: ref to model object
         :param param_names: names of parameters to represent inside model, e.g. ["weights", "biases"]
+        :param _cache: the cache is notified of updated parameters on `__setitem`
         """
         self._nn = nn
         if len(param_names) != 2:
             raise ValueError("We need two parameter names, one for weights, one for biases.")
         self._param_names = param_names
+        self._cache = _cache
 
     def __len__(self):
         """ Returns the number of walkers, i.e. the number of parameter sets
@@ -75,6 +77,9 @@ class Parameters(object):
                 self._nn.sess, parameters[weights_dof:])
         except AttributeError:
             raise ValueError("The current sampler does not have momenta.")
+        # tell evaluation cache that parameters have changed
+        if self._cache is not None:
+            self._cache.invalidate_cache(walker_index)
 
     def __repr__(self):
         """ Prints all parameters of all walkers.

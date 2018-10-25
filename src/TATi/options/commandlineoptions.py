@@ -105,6 +105,8 @@ class CommandlineOptions(PythonOptions):
             kwargs.update({ "type": []})
         else:
             assert(0)
+        if kwargs["type"] == bool:
+            kwargs.update({ "type": str2bool})
         kwargs.update({ "help": self._description_map[option_name]})
         try:
             self.parser.add_argument(*args, **kwargs)
@@ -145,6 +147,8 @@ class CommandlineOptions(PythonOptions):
         # please adhere to alphabetical ordering
         self._add_option('--batch_size', type=int, default=None,
                           help='The number of samples used to divide sample set into batches in one training step.')
+        self._add_option('--directions_file', type=str, default=None,
+                          help='CSV file name to parse directions spanning subspace to project trajectories onto.')
         self._add_option('--do_hessians', type=str2bool, default=False,
                           help='Whether to add hessian computation nodes to graph, when present used by optimizer and explorer')
         self._add_option('--dropout', type=float, default=None,
@@ -222,9 +226,12 @@ class CommandlineOptions(PythonOptions):
         """ Adding options common to sampler to argparse.
         """
         # please adhere to alphabetical ordering
-        self._add_option('--collapse_after_steps', type=int, default=100,
-                          help='Number of steps after which to regularly collapse all dependent walkers to restart from a single position '
-                                 'again, maintaining harmonic approximation for ensemble preconditioning. 0 will never collapse.')
+        self._add_option('--collapse_walkers', type=str2bool, default=False,
+                          help='Whether to regularly collapse all dependent walkers to restart from a single position '
+                               'again, maintaining harmonic approximation for ensemble preconditioning. 0 will not collapse.')
+        self._add_option('--covariance_after_steps', type=int, default=100,
+                          help='Number of steps after which to regularly recompute the covariance matrix. This will require'
+                               'communication between the walkers. 0 will never compute a covariance matrix.')
         self._add_option('--covariance_blending', type=float, default=0.,
                           help='Blending between unpreconditioned gradient (0.) and preconditioning through covariance matrix from other '
                                  'dependent walkers')

@@ -38,14 +38,15 @@ class AveragesAccumulator(Accumulator):
                     columns=header))
 
     def accumulate_each_step(self, current_step, walker_index, values):
-        self.accumulated_steps += 1
-        self.accumulated_loss_nominator[walker_index] += values.loss[walker_index] * exp(
-            - self._inverse_temperature * values.loss[walker_index])
-        self.accumulated_loss_denominator[walker_index] += exp(
-            - self._inverse_temperature * values.loss[walker_index])
-        self.accumulated_virials[walker_index] += values.virials[walker_index]
-        if self._sampler != "StochasticGradientLangevinDynamics":
-            self.accumulated_kinetic_energy[walker_index] += values.kinetic_energy[walker_index]
+        if current_step >= self._burn_in_steps:
+            self.accumulated_steps += 1
+            self.accumulated_loss_nominator[walker_index] += values.loss[walker_index] * exp(
+                - self._inverse_temperature * values.loss[walker_index])
+            self.accumulated_loss_denominator[walker_index] += exp(
+                - self._inverse_temperature * values.loss[walker_index])
+            self.accumulated_virials[walker_index] += values.virials[walker_index]
+            if self._sampler != "StochasticGradientLangevinDynamics":
+                self.accumulated_kinetic_energy[walker_index] += values.kinetic_energy[walker_index]
 
     def _accumulate_nth_step_line(self, current_step, walker_index, values):
         if self.accumulated_loss_denominator[walker_index] > 0:
@@ -54,8 +55,8 @@ class AveragesAccumulator(Accumulator):
         else:
             average_loss = 0.
 
-        if current_step >= self._burn_in_steps:
-            divisor = float(self.accumulated_steps)
+        divisor = float(self.accumulated_steps)
+        if divisor > 0.:
             average_kinetic_energy = self.accumulated_kinetic_energy[walker_index] / divisor
             average_virials = abs(0.5 * self.accumulated_virials[walker_index]) / divisor
         else:

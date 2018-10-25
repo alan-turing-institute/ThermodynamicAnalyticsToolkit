@@ -88,17 +88,28 @@ class WalkerEnsembleOptimizer(Optimizer):
     This way the position update may actually rely on the gradients of other
     instances (or any other information) stored in possible walkers.
     """
-    def __init__(self, covariance_blending=0., use_locking=False, name='WalkerEnsembleOptimizer'):
+    def __init__(self, ensemble_precondition, use_locking=False, name='WalkerEnsembleOptimizer'):
         """ Init function for this class.
 
-        :param covariance_blending: mixing for preconditioning matrix to gradient
-                update, identity matrix plus this times the covariance matrix obtained
-                from the other walkers
+        :param ensemble_precondition: array with information to perform ensemble precondition method
+        :param covariance_after_steps: number of steps after which to recalculate covariance
+        :param current_step: placeholder containing the current number of steps taken
         :param use_locking: whether to lock in the context of multi-threaded operations
         :param name: internal name of optimizer
         """
         super(WalkerEnsembleOptimizer, self).__init__(use_locking, name)
-        self.covariance_blending = covariance_blending
+        self._covariance_blending = ensemble_precondition["covariance_blending"]
+        self._covariance_after_steps = ensemble_precondition["covariance_after_steps"]
+        self._current_step = ensemble_precondition["current_step"]
+
+    def _prepare(self):
+        """ Converts step width into a tensor, if given as a floating-point
+        number.
+        """
+        super(WalkerEnsembleOptimizer, self)._prepare()
+        self._covariance_blending_t = ops.convert_to_tensor(self._covariance_blending, name="covariance_blending")
+        self._covariance_after_steps_t = ops.convert_to_tensor(self._covariance_after_steps, name="covariance_after_steps")
+        self._current_step_t = ops.convert_to_tensor(self._current_step, name="current_step")
 
     def compute_and_check_gradients(self, loss, var_list=None,
                  gate_gradients=Optimizer.GATE_GRAPH, aggregation_method=None,
@@ -219,6 +230,28 @@ class WalkerEnsembleOptimizer(Optimizer):
 
             return apply_updates
 
+    def _get_preconditioner(self, flat_othervars, var):
+        covariance_blending_t = math_ops.cast(self._covariance_blending_t, var.dtype.base_dtype)
+        _, cov = self._get_covariance(flat_othervars, var)
+        # \sqrt{ 1_D + \eta cov(flat_othervars)}, see [Matthews, Weare, Leimkuhler, 2018]
+        unity = tf.matrix_band_part(tf.ones_like(cov, dtype=dds_basetype), 0, 0)
+        matrix = unity + covariance_blending_t * cov
+        max_matrix = tf.reduce_max(tf.abs(matrix))
+
+        def accept():
+            return tf.reciprocal(max_matrix)
+
+        def reject():
+            return max_matrix
+
+        normalizing_factor = tf.cond(tf.greater(max_matrix, 1.),
+                                     accept, reject)
+        return tf.sqrt(tf.reciprocal(
+            tf.Print(normalizing_factor, [normalizing_factor],
+                     "normalizing factor: "))) * \
+                tf.cholesky(tf.Print(normalizing_factor * matrix,
+                                     [matrix], "matrix: ", summarize=4))
+
     def _pick_grad(self, grads_and_vars, var):
         """ Helper function to extract the gradient associated with `var` from
         the list containing all gradients and variables in `grads_and_vars`.
@@ -230,38 +263,64 @@ class WalkerEnsembleOptimizer(Optimizer):
         :param var: current variable to associated to grad of this walker instance
         :return: (preconditioned) grad associated to var
         """
+        current_step_t = math_ops.cast(self._current_step_t, tf.int64)
+        covariance_after_steps_t = math_ops.cast(self._covariance_after_steps_t, tf.int64)
         #print(var.name[var.name.find("/"):])
         grad, _ = self._extract_grads(grads_and_vars, var)
         #print("grad: "+str(grad))
-        #print("othergrads: "+str(othergrads))
+        #print("grads_and_vars: "+str(grads_and_vars))
         _, flat_othervars = self._extract_vars(grads_and_vars, var)
         #print("picked_var: "+str(picked_var))
         #print("flat_othervars: "+str(flat_othervars))
+        number_dim = tf.size(var)
+        #print(number_dim)
+        precondition_matrix_initial = tf.eye(number_dim) # flat_othervars[0].shape[0])
+        scope_name = "EQN_%s" % (var.name[:var.name.find(":")].replace("/", "_"))
+        with tf.variable_scope(scope_name, reuse=False):
+            precondition_matrix = tf.Variable(precondition_matrix_initial,
+                                              validate_shape=False,  # shape is run-tine initialized
+                                              trainable=False, dtype=dds_basetype,
+                                              name="precondition_matrix")
+
         if len(flat_othervars) != 0:
-            _, cov = self._apply_covariance(flat_othervars, var)
-            # \sqrt{ 1_D + \eta cov(flat_othervars)}, see [Matthews, Weare, Leimkuhler, 2016]
-            unity = tf.matrix_band_part(tf.ones_like(cov, dtype=dds_basetype), 0, 0)
-            matrix = unity + self.covariance_blending * cov
-            max_matrix = tf.reduce_max(tf.abs(matrix))
-            def accept():
-                return tf.reciprocal(max_matrix)
-            def reject():
-                return max_matrix
-            normalizing_factor = tf.cond(tf.greater(max_matrix, 1.),
-                                         accept, reject)
-            preconditioner = tf.sqrt(tf.reciprocal(normalizing_factor)) * \
-                             tf.cholesky(normalizing_factor * matrix)
+
+            with tf.variable_scope(scope_name, reuse=False):
+                means = tf.get_variable(initializer=tf.initializers.zeros(dtype=dds_basetype),
+                                        shape=flat_othervars[0].shape, dtype=dds_basetype,
+                                        use_resource=True,
+                                        trainable=False, name="mean")
+                cov = tf.get_variable(
+                    initializer=tf.initializers.zeros(dtype=dds_basetype),
+                    shape=(flat_othervars[0].shape[0], flat_othervars[0].shape[0]), dtype=dds_basetype,
+                    use_resource=True,
+                    trainable=False, name="covariance_bias")
+
+            def take_covariance():
+                return tf.identity(precondition_matrix)
+
+            def recalc_covariance():
+                with tf.control_dependencies([
+                    tf.Print(
+                        precondition_matrix.assign(self._get_preconditioner(flat_othervars, var)),
+                        [self._current_step, precondition_matrix], "precondition_matrix: ", summarize=4)]):
+                    return tf.identity(precondition_matrix)
+
+            preconditioner = tf.cond(
+                tf.equal(tf.mod(current_step_t, covariance_after_steps_t),0),
+                recalc_covariance, take_covariance)
+
             # apply the covariance matrix to the flattened gradient and then return to
             # original shape to match for variable update
 
             # matrix-vector multiplication is however a bit more complicated, see
             # https://stackoverflow.com/a/43285258/1967646
             preconditioned_grad = tf.reshape(
-                tf.matmul(tf.expand_dims(tf.reshape(grad, [-1]), 0), preconditioner),
-                                             grad.get_shape())
+                tf.matmul( preconditioner, tf.expand_dims(tf.reshape(grad, [-1]), 1), transpose_a=True),
+                grad.get_shape())
+
+            return precondition_matrix, preconditioned_grad
         else:
-            preconditioned_grad = grad
-        return preconditioned_grad
+            return precondition_matrix, grad
 
     def _extract_grads(self, grads_and_vars, var):
         """ Helper function to extract the gradient associated with `var` from
@@ -300,15 +359,15 @@ class WalkerEnsembleOptimizer(Optimizer):
         othervars = []
         for i in range(len(grads_and_vars)):
             for g, v in grads_and_vars[i]:
-                if g is not None:
+                if v is not None:
                     if v.name == var.name:
                         pass
                     elif v.name[v.name.find("/"):] == var.name[var.name.find("/"):]:
-                        #print("Appending to othervars: "+str(v))
-                        othervars.append(tf.reshape(v, [-1]))
+                        print("Appending to othervars: "+str(v))
+                        othervars.append(tf.reshape(v, [-1], name=v.name[:v.name.find(":")]+"/reshape"))
         return var, othervars
 
-    def _apply_covariance(self, flat_othervars, var):
+    def _get_covariance(self, flat_othervars, var):
         """ Returns node for the covariance between the variables of all other
         walkers plus the identity.
 
@@ -319,106 +378,107 @@ class WalkerEnsembleOptimizer(Optimizer):
         # very complicate for the "matrix * vector" product (covariance matrix
         # times the gradient) in the end. This is undone in `_pick_grad()`
         #print(flat_othervars)
-        vars = tf.stack(flat_othervars)
+        vars = tf.Print(tf.stack(flat_othervars),
+                        [flat_othervars], "flat_othervars", summarize=10)
         number_dim = tf.size(flat_othervars[0])
+        number_walkers = vars.shape[0]
 
-        # means are needed for every component. Hence, we save a bit by
-        # creating all means beforehand
-        means = tf.Variable(tf.zeros_like(flat_othervars[0], dtype=dds_basetype),
-                            trainable=False, dtype=dds_basetype, name="mean")
+        scope_name = "EQN_%s" % (var.name[:var.name.find(":")].replace("/", "_"))
+        means = self._get_means(flat_othervars, vars, number_dim, scope_name)
 
-        def body_mean(i, mean_copy):
-            with tf.control_dependencies([ #tf.Print(
-                    means[i].assign(
-                    tf.reduce_mean(vars[:, i], name="reduce_mean"),
-                    name="assign_mean_component"),
-                    #[var.name, vars[:, i]], "vars for mean: ")
-                    ]):
-                return (tf.add(i, 1), mean_copy)
+        norm_factor = self._get_norm_factor(number_dim, number_walkers)
 
-        i = tf.constant(0)
-        c = lambda i, x: tf.less(i, number_dim)
-        r, mean_eval = tf.while_loop(c, body_mean, (i, means), name="means_loop")
-        means = mean_eval # tf.Print(mean_eval, [mean_eval.name, tf.size(mean_eval), mean_eval], "mean_eval: ")
-        #print(means)
+        rank1factors = self._get_rank1_factors(flat_othervars, vars, means, number_walkers, scope_name)
 
-        # complicated way of constructing a D \times D matrix when we cannot use
-        # D directly and only have a D vector as template: use an outer product
-        # with the known vector
-        template = tf.zeros_like(flat_othervars[0], dtype=dds_basetype)
-        expanded_template =  tf.expand_dims(template, -1)
-        # Use tf.shape() to get the runtime size of `x` in the 0th dimension.
-        cov = tf.Variable(
-            expanded_template * tf.transpose(expanded_template),
-            trainable=False, dtype=dds_basetype, name="covariance_bias")
+        with tf.variable_scope(scope_name, reuse=True):
+            cov = tf.get_variable(
+                initializer=tf.initializers.zeros(dtype=dds_basetype),
+                shape=(flat_othervars[0].shape[0],flat_othervars[0].shape[0]), dtype=dds_basetype,
+                use_resource=True,
+                trainable=False, name="covariance_bias")
         #print(cov)
 
-        # pair of indices for the covariance loop
-        Pair = collections.namedtuple('Pair', 'i, j')
+        # make a chained list of assigns, each assigning onto cov
+        cov_assigns = [cov.assign(tf.zeros_like(cov))]
+        for walker_index in range(len(flat_othervars)):
+            if vars[walker_index].name == var.name:
+                continue
+            if LooseVersion(tf.__version__) >= LooseVersion("1.6.0"):
+                cov_assigns.append(cov.assign(cov_assigns[-1]+tf.tensordot(
+                                   rank1factors[walker_index],
+                                   tf.transpose(rank1factors[walker_index]),
+                                   axes=0)))
+            else:
+                cov_assigns.append(cov.assign(cov_assigns[-1]+tf.tensordot(
+                                tf.expand_dims(rank1factors[walker_index], 0),
+                                tf.expand_dims(tf.transpose(rank1factors[walker_index]), 0),
+                                axes=[[0], [0]])))
 
-        # in the following we implement two nested loops to go through every
-        # component of the covariance matrix. The inner loop uses an extra
-        # tf.cond as I don't want to use anymore tf.while. There, the problem is
-        # that the body needs to return exactly the loop_vars. With an additional
-        # inner loop however, there is another loop var and the "structures" do
-        # not match anymore.
+        return vars, norm_factor * cov_assigns[-1] # tf.Print(cov_assigns[-1], [cov.name, cov_assigns[-1]], "cov: ")
 
-        # only on cov we can use sliced assignment, cov_copy seems to be some
-        # ref object (or other) which does not have this functionality
-
-        # note that the assigns modifies directly the node cov which lives
-        # outside the accept() function's scope.
-        def body_cov(p, cov_copy):
-            def accept():
-                # implement the assign as side effect when i,j is still valid:
-                # if we implement it in the scope of body_cov(), then it would
-                # also be applied when (i,j) is not a valid index pair.
-
-                # the return statements of both accept and reject need to have
-                # an identical structure. Therefore, we always return the
-                # # tuple (i,j).
-                with tf.control_dependencies([cov[p.i, p.j].assign(
-                                norm_factor * tf.reduce_sum(
-                                    (vars[:, p.i] - means[p.i])
-                                * (vars[:, p.j] - means[p.j]),
-                            name="cov_sum_reduction"),
-                        name="cov_assign_component")]):
-                    #return Pair(tf.Print(tf.identity(p.i, name="id"), [p.i], "i: "),
-                    #            tf.Print(tf.add(p.j, 1, name="j_add"), [p.j], "j: "))
-                    return Pair(tf.identity(p.i, name="id"),
-                                tf.add(p.j, 1, name="j_add"))
-
-            def reject():
-                # assign is not allowed, hence we use subtract to set to zero
-                #return Pair(tf.Print(tf.add(p.i, 1, name="i_add"), [p.i], "i: "),
-                #            tf.Print(tf.subtract(p.j, p.j, name="j_reset"), [p.j], "j: "))
-                return Pair(tf.add(p.i, 1, name="i_add"),
-                            tf.subtract(p.j, p.j, name="j_reset"))
-
-            ci = tf.less(p.j, number_dim, name="inner_check")
-            li = tf.cond(ci, accept, reject, name="inner_conditional")
-            return (li, cov_copy)
-
-        dim = math_ops.cast(number_dim, dtype=dds_basetype)
+    def _get_norm_factor(self, number_dim, number_walkers):
+        dim = math_ops.cast(number_walkers
+                            # tf.Print(number_walkers, [number_walkers], "number_walkers: ")
+                            , dtype=dds_basetype)
 
         def accept_block():
-            return tf.reciprocal(dim - 1.)
+            return tf.reciprocal(dim)
 
         def reject_block():
             return tf.constant(1.)
 
-        norm_factor = tf.cond(
-            tf.greater(tf.size(number_dim), 1),
-            accept_block, reject_block)
+        norm_factor = tf.Print(tf.cond(
+            tf.greater(number_dim, 1),
+            accept_block, reject_block),[number_dim], "number_dim: ")
 
-        p = Pair(tf.constant(0), tf.constant(0))
-        c = lambda p, _: tf.less(p.i, number_dim, name="outer_check")
-        r, cov = tf.while_loop(c, body_cov, loop_vars=(p, cov), name="cov_loop")
+        return norm_factor
 
-        # note that cov will trigger the whole loop and also the loop to obtain
-        # the means because of the dependency graph inside tensorflow.
+    def _get_means(self, flat_othervars, vars, number_dim, scope_name):
+        # means are needed for every component. Hence, we save a bit by
+        # creating all means beforehand
+        with tf.variable_scope(scope_name, reuse=True):
+            means = tf.get_variable(initializer=tf.initializers.zeros(dtype=dds_basetype),
+                                    shape=flat_othervars[0].shape, dtype=dds_basetype,
+                                    use_resource=True,
+                                    trainable=False, name="mean")
 
-        return vars, cov # tf.Print(cov, [cov.name, cov], "cov: ")
+        def body_mean(i, mean_copy):
+            with tf.control_dependencies([  # tf.Print(
+                means[i].assign(tf.reduce_mean(vars[:, i], name="reduce_mean"),
+                                name="assign_mean_component"),
+                # [var.name, i, means[i]], "i, mean: ", summarize=4),
+            ]):
+                return (tf.add(i, 1), mean_copy)
+
+        i = tf.constant(0)
+        c = lambda i, x: tf.less(i, number_dim)
+        with tf.control_dependencies(flat_othervars):
+            r, mean_eval = tf.while_loop(c, body_mean, (i, means), name="means_loop")
+        means = tf.Print(mean_eval, [mean_eval.name, mean_eval], "mean_eval: ")
+        # print(means)
+        return means
+
+    def _get_rank1_factors(self, flat_othervars, vars, means, number_walkers, scope_name):
+        with tf.variable_scope(scope_name, reuse=False):
+            rank1factors = tf.get_variable(initializer=tf.initializers.zeros(dtype=dds_basetype),
+                                    shape=tf.TensorShape(number_walkers+1).concatenate(flat_othervars[0].shape), dtype=dds_basetype,
+                                    use_resource=True,
+                                    trainable=False, name="rank1factor")
+
+        def body_factor(i, factor_copy):
+            with tf.control_dependencies([  # tf.Print(
+                rank1factors[i,:].assign(vars[i,:] - means, name="difference"),
+                # [var.name, i, rank1factors[i]], "i, rank1factor: ", summarize=4),
+            ]):
+                return (tf.add(i, 1), factor_copy)
+
+        i = tf.constant(0)
+        c = lambda i, x: tf.less(i, number_walkers)
+        with tf.control_dependencies(flat_othervars):
+            r, factor_eval = tf.while_loop(c, body_factor, (i, rank1factors), name="factor_loop")
+        factors = tf.Print(factor_eval, [factor_eval.name, factor_eval], "factor_eval: ")
+        # print(means)
+        return factors
 
     def _stack_gradients(self, grads_and_vars, var):
         """ Stacks all (other) gradients together to compute a covariance matrix.

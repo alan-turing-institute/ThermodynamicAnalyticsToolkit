@@ -63,7 +63,7 @@ class model:
         self.resources_created = None
 
         # mark already fixes variables
-        self.fixed_variables = {}
+        self.fixed_variables = None
 
         # mark neuralnetwork, saver and session objects as to be created
         self.nn = None
@@ -71,6 +71,9 @@ class model:
         self.true_labels = None
         self.saver = None
         self.sess = None
+
+        self.optimizer = None
+        self.sampler = None
 
         # mark placeholder neuralnet_parameters as to be created (over walker)
         self.weights = []
@@ -90,6 +93,7 @@ class model:
         self.averages_writer = None
         self.run_writer = None
         self.trajectory_writer = None
+        self.directions = None
 
     def scan_dataset_dimension(self):
         if len(self.FLAGS.batch_data_files) > 0:
@@ -311,43 +315,26 @@ class model:
         split_collection = []
         for i in range(number_walkers):
             split_collection.append([])
-            scope_name = 'walker'+str(i+1)
+            scope_name = 'walker'+str(i+1)+'/'
             for var in _collection:
                 if scope_name in var.name:
                     split_collection[-1].append(var)
         return split_collection
 
-    def init_network(self, filename = None, setup = None,
-                     add_vectorized_gradients = False):
-        """ Initializes the graph, from a stored model if filename is not None.
-
-        :param filename: name of file containing stored model
-        :param setup: "sample", "train" or else to add nodes that trigger a
-                single sampling or training step. Otherwise they are not added.
-                init_network() can be called consecutively with both variants
-                to add either type of node.
-        :param add_vectorized_gradients: add nodes to return gradients in fully
-                vectorized form, i.e. in the same sequence as nn_weights and
-                nn_biases parameters combined, see self.gradients.
-        """
-        # dataset was provided
-        assert( self.input_dimension is not None )
-
+    def init_input_layer(self):
         # create input layer
         if self.xinput is None or self.x is None:
             input_columns = get_list_from_string(self.FLAGS.input_columns)
             self.xinput, self.x = create_input_layer(self.input_dimension, input_columns)
 
-        fixed_variables = []
+    def init_neural_network(self):
         if self.nn is None:
             self.nn = []
             self.loss = []
             self.trainables = []
-            if self.FLAGS.do_hessians or add_vectorized_gradients:
-                self.gradients = []
-                if self.FLAGS.do_hessians:
-                    self.hessians = []
             self.true_labels = NeuralNetwork.add_true_labels(self.output_dimension)
+
+            # construct network per walker
             for i in range(self.FLAGS.number_walkers):
                 with tf.name_scope('walker'+str(i+1)):
                     self.trainables.append('trainables_walker'+str(i+1))
@@ -374,72 +361,93 @@ class model:
                         self.nn[-1].placeholder_nodes["y"],
                         self.nn[-1].placeholder_nodes["y_"],
                         self.output_type)
+        else:
+            self.loss = []
+            for i in range(self.FLAGS.number_walkers):
+                self.loss.append(self.nn[i].get_list_of_nodes(["loss"])[0])
 
-                    if self.FLAGS.fix_parameters is not None:
-                        names, values = self.split_parameters_as_names_values(self.FLAGS.fix_parameters)
-                        fixed_variables.append(self.fix_parameters(names))
-                        logging.info("Excluded the following degrees of freedom: " + str(fixed_variables[-1]))
-                        # exclude fixed degrees also from trainables_per_walker sets
+    def fix_variables(self):
+        fixed_variables = []
+        values = None
+        if self.fixed_variables is None:
+            self.fixed_variables = {}
+            # fix parameters
+            if self.FLAGS.fix_parameters is not None:
+                names, values = self.split_parameters_as_names_values(self.FLAGS.fix_parameters)
+                fixed_variables = self.fix_parameters(names)
+                logging.info("Excluded the following degrees of freedom: " + str(fixed_variables))
+                logging.debug("Fixed vars are: " + str(self.fixed_variables))
+
+                # additionally exclude fixed degrees from trainables_per_walker sets
+                for i in range(self.FLAGS.number_walkers):
+                    name_scope = 'walker' + str(i + 1)
+                    with tf.name_scope(name_scope):
                         trainables = tf.get_collection_ref(self.trainables[i])
-                        for var in fixed_variables[-1]:
-                            removed_vars = model._fix_parameter_in_collection(trainables, var)
+                        for var in fixed_variables:
+                            removed_vars = model._fix_parameter_in_collection(trainables, var, name_scope+"'s trainables")
                             # make sure we remove one per walker
                             if len(removed_vars) != 1:
                                 raise ValueError(
                                     "Cannot find " + var + " in walker " + str(i) + "." +
                                     " Have you checked the spelling, e.g., output/biases/Variable:0?")
-                            logging.debug("Remaining trainable variables in walker " + str(i + 1)
-                                          + ": " + str(tf.get_collection_ref(self.trainables[i])))
+                        logging.debug("Remaining trainable variables in walker " + str(i + 1)
+                                      + ": " + str(tf.get_collection_ref(self.trainables[i])))
+        else:
+            if self.FLAGS.fix_parameters is not None:
+                names, values = self.split_parameters_as_names_values(self.FLAGS.fix_parameters)
+                fixed_variables.extend(self.fix_parameters(names))
+                logging.info("Excluded the following degrees of freedom: " + str(fixed_variables))
+        return fixed_variables, values
 
+
+    def init_vectorized_gradients(self, add_vectorized_gradients):
+        all_vectorized_gradients = []
+        if self.gradients is None:
+            self.gradients = []
+            # construct (vectorized) gradient nodes and hessians
+            for i in range(self.FLAGS.number_walkers):
+                vectorized_gradients = []
+                with tf.name_scope('walker' + str(i + 1)):
                     if self.FLAGS.do_hessians or add_vectorized_gradients:
                         # create node for gradient and hessian computation only if specifically
                         # requested as the creation along is costly (apart from the expensive part
                         # of evaluating the nodes eventually). This would otherwise slow down
                         # startup quite a bit even when hessians are not evaluated.
                         #print("GRADIENTS")
-                        vectorized_gradients = []
-                        trainables = tf.get_collection_ref(self.trainables[-1])
+                        trainables = tf.get_collection_ref(self.trainables[i])
                         for tensor in trainables:
                             grad = tf.gradients(self.loss, tensor)
                             #print(grad)
                             vectorized_gradients.append(tf.reshape(grad, [-1]))
                         self.gradients.append(tf.reshape(tf.concat(vectorized_gradients, axis=0), [-1]))
+                all_vectorized_gradients.append(vectorized_gradients)
+        return all_vectorized_gradients
 
-                    if self.FLAGS.do_hessians:
-                        #print("HESSIAN")
-                        total_dofs = 0
-                        hessians = []
-                        for gradient in vectorized_gradients:
-                            dofs = int(np.cumprod(gradient.shape))
-                            total_dofs += dofs
-                            #print(dofs)
-                            # tensorflow cannot compute the gradient of a multi-dimensional mapping
-                            # only of functions (i.e. one-dimensional output). Hence, we have to
-                            # split the gradients into its components and do gradient on each
-                            split_gradient = tf.split(gradient, num_or_size_splits=dofs)
-                            for splitgrad in split_gradient:
-                                for othertensor in trainables:
-                                    grad = tf.gradients(splitgrad, othertensor)
-                                    hessians.append(
-                                        tf.reshape(grad, [-1]))
-                        self.hessians.append(tf.reshape(tf.concat(hessians, axis=0), [total_dofs, total_dofs]))
-        else:
-            self.loss = []
+    def init_hessians(self, all_vectorized_gradients):
+        if self.hessians is None:
+            self.hessians = []
             for i in range(self.FLAGS.number_walkers):
-                self.loss.append(self.nn[i].get_list_of_nodes(["loss"])[0])
+                if self.FLAGS.do_hessians:
+                    #print("HESSIAN")
+                    total_dofs = 0
+                    hessians = []
+                    trainables = tf.get_collection_ref(self.trainables[i])
+                    for gradient in all_vectorized_gradients[i]:
+                        dofs = int(np.cumprod(gradient.shape))
+                        total_dofs += dofs
+                        #print(dofs)
+                        # tensorflow cannot compute the gradient of a multi-dimensional mapping
+                        # only of functions (i.e. one-dimensional output). Hence, we have to
+                        # split the gradients into its components and do gradient on each
+                        split_gradient = tf.split(gradient, num_or_size_splits=dofs)
+                        for splitgrad in split_gradient:
+                            for othertensor in trainables:
+                                grad = tf.gradients(splitgrad, othertensor)
+                                hessians.append(
+                                    tf.reshape(grad, [-1]))
+                    self.hessians.append(tf.reshape(tf.concat(hessians, axis=0), [total_dofs, total_dofs]))
 
-                if self.FLAGS.fix_parameters is not None:
-                    names, values = self.split_parameters_as_names_values(self.FLAGS.fix_parameters)
-                    fixed_variables.append(self.fix_parameters(names))
-                    logging.info("Excluded the following degrees of freedom: " + str(fixed_variables[-1]))
-
-        logging.debug("Remaining global trainable variables: " + str(variables.trainable_variables()))
-
-        # create global variables, one for every walker in its replicated graph
-        self.create_resource_variables()
-        self.static_vars, self.zero_assigner, self.assigner, self.placeholders = \
-            self._create_static_variable_dict(self.FLAGS.number_walkers)
-
+    def get_split_weights_and_biases(self):
         # set number of degrees of freedom
         split_weights = self._split_collection_per_walker(
             tf.get_collection_ref(tf.GraphKeys.WEIGHTS), self.FLAGS.number_walkers)
@@ -449,7 +457,9 @@ class model:
             neuralnet_parameters.get_total_dof_from_list(split_weights[0]) \
             + neuralnet_parameters.get_total_dof_from_list(split_biases[0])
         logging.info("Number of dof per walker: "+str(self.number_of_parameters))
+        return split_weights, split_biases
 
+    def init_prior(self):
         # setup priors
         prior = {}
         try:
@@ -463,15 +473,39 @@ class model:
                 prior["upper_boundary"] = self.FLAGS.prior_upper_boundary
         except AttributeError:
             pass
+        return prior
 
+    def init_parse_directions(self):
+        # directions span a subspace to project trajectories. This may be
+        # used to not store overly many degrees of freedom per step.
+        if self.FLAGS.directions_file is not None:
+            try:
+                # try without header
+                self.directions = np.loadtxt(self.FLAGS.directions_file, delimiter=',', skiprows=0)
+            except ValueError:
+                # if it fails, skip header
+                self.directions = np.loadtxt(self.FLAGS.directions_file, delimiter=',', skiprows=1)
+            if len(self.directions.shape) == 1:
+                self.directions = np.expand_dims(self.directions, axis=0)
+        else:
+            self.directions = None
+
+    def init_train(self, setup, prior):
         # setup training/sampling
         if setup is not None:
             if "train" in setup:
                 self.optimizer = []
                 for i in range(self.FLAGS.number_walkers):
                     with tf.variable_scope("var_walker" + str(i + 1)):
-                    #with tf.name_scope('gradients_walker'+str(i+1)):
-                        self.optimizer.append(self.nn[i].add_train_method(self.loss[i], optimizer_method=self.FLAGS.optimizer, prior=prior))
+                        self.optimizer.append(self.nn[i].add_train_method(
+                            self.loss[i], optimizer_method=self.FLAGS.optimizer,
+                            prior=prior))
+            else:
+                logging.info("Not adding train method.")
+
+    def init_sample(self, setup, prior):
+        # setup training/sampling
+        if setup is not None:
             if "sample" in setup:
                 self.sampler = []
                 for i in range(self.FLAGS.number_walkers):
@@ -489,8 +523,7 @@ class model:
                     self.sampler.append(self.nn[i]._prepare_sampler(
                         self.loss[i], sampling_method=self.FLAGS.sampler,
                         seed=walker_seed, prior=prior,
-                        sigma=self.FLAGS.sigma, sigmaA=self.FLAGS.sigmaA,
-                        covariance_blending=self.FLAGS.covariance_blending))
+                        sigma=self.FLAGS.sigma, sigmaA=self.FLAGS.sigmaA))
                 # create gradients
                 grads_and_vars = []
                 for i in range(self.FLAGS.number_walkers):
@@ -498,14 +531,6 @@ class model:
                         trainables = tf.get_collection_ref(self.trainables[i])
                         grads_and_vars.append(self.sampler[i].compute_and_check_gradients(
                             self.loss[i], var_list=trainables))
-
-                # combine gradients
-                #for i in range(self.FLAGS.number_walkers):
-                #    print("walker "+str(i))
-                #    var_list = [v for g, v in grads_and_vars[i] if g is not None]
-                #    grad_list = [g for g, v in grads_and_vars[i] if g is not None]
-                #    for j in range(len(grad_list)):
-                #         print(var_list[j])
 
                 # add position update nodes
                 for i in range(self.FLAGS.number_walkers):
@@ -515,23 +540,26 @@ class model:
                             grads_and_vars, i, global_step=global_step,
                             name=self.sampler[i].get_name())
                     self.nn[i].summary_nodes['sample_step'] = train_step
-        else:
-            logging.info("Not adding sample or train method.")
+            else:
+                logging.info("Not adding sample method.")
 
-        if setup == "train" or setup == "sample":
-            if self.step_placeholder is None:
-                self.step_placeholder = []
-                for i in range(self.FLAGS.number_walkers):
-                    with tf.name_scope("walker"+str(i+1)):
-                        self.step_placeholder.append(tf.placeholder(shape=(), dtype=tf.int32))
-            if self.global_step_assign_t is None:
-                self.global_step_assign_t = []
-                for i in range(self.FLAGS.number_walkers):
-                    with tf.name_scope("walker"+str(i+1)):
-                        self.global_step_assign_t.append(tf.assign(self.nn[i].summary_nodes['global_step'], self.step_placeholder[i]))
+    def init_step_placeholder(self, setup):
+        if setup is not None:
+            if "train" in setup or "sample" in setup:
+                if self.step_placeholder is None:
+                    self.step_placeholder = []
+                    for i in range(self.FLAGS.number_walkers):
+                        with tf.name_scope("walker"+str(i+1)):
+                            self.step_placeholder.append(tf.placeholder(shape=(), dtype=tf.int32))
+                if self.global_step_assign_t is None:
+                    self.global_step_assign_t = []
+                    for i in range(self.FLAGS.number_walkers):
+                        with tf.name_scope("walker"+str(i+1)):
+                            self.global_step_assign_t.append(tf.assign(self.nn[i].summary_nodes['global_step'], self.step_placeholder[i]))
             else:
                 logging.debug("Not adding step placeholder or global step.")
 
+    def init_model_save_restore(self):
         # setup model saving/recovering
         if self.saver is None:
             self.saver = tf.train.Saver(tf.get_collection_ref(tf.GraphKeys.WEIGHTS) +
@@ -541,6 +569,8 @@ class model:
         # merge summaries at very end
         self.summary = tf.summary.merge_all()  # Merge all the summaries
 
+
+    def init_session(self):
         if self.sess is None:
             logging.debug("Using %s, %s threads " % (str(self.FLAGS.intra_ops_threads), str(self.FLAGS.inter_ops_threads)))
             self.sess = tf.Session(
@@ -548,60 +578,80 @@ class model:
                     intra_op_parallelism_threads=self.FLAGS.intra_ops_threads,
                     inter_op_parallelism_threads=self.FLAGS.inter_ops_threads))
 
+    def init_weights_access(self, setup, split_weights):
         if len(self.weights) == 0:
             assert(len(self.momenta_weights) == 0 )
             assert( len(split_weights) == self.FLAGS.number_walkers )
             for i in range(self.FLAGS.number_walkers):
                 self.weights.append(neuralnet_parameters(split_weights[i]))
-            assert( self.weights[i].get_total_dof() == self.get_total_weight_dof() )
+                assert( self.weights[i].get_total_dof() == self.get_total_weight_dof() )
             if setup is not None and "sample" in setup:
                 for i in range(self.FLAGS.number_walkers):
-                    momenta_weights = [self.sampler[i].get_slot(v, "momentum")
-                                       for v in split_weights[i]]
+                    momenta_weights = []
+                    for v in split_weights[i]:
+                        skip_var = False
+                        if self.fixed_variables is not None:
+                            for key in self.fixed_variables.keys():
+                                if key in v.name:
+                                    for var in self.fixed_variables[key]:
+                                        if v.name == var.name:
+                                            skip_var = True
+                                            break
+                        if not skip_var:
+                            momenta_weights.append(self.sampler[i].get_slot(v, "momentum"))
+                    #logging.debug("Momenta weights: "+str(momenta_weights))
                     if len(momenta_weights) > 0 and momenta_weights[0] is not None:
                         self.momenta_weights.append(neuralnet_parameters(momenta_weights))
                     else:
                         self.momenta_weights.append(None)
+
+    def init_biases_access(self, setup, split_biases):
         if len(self.biases) == 0:
             assert( len(self.momenta_biases) == 0 )
             assert( len(split_biases) == self.FLAGS.number_walkers )
             for i in range(self.FLAGS.number_walkers):
                 self.biases.append(neuralnet_parameters(split_biases[i]))
-            assert (self.biases[i].get_total_dof() == self.get_total_bias_dof())
+                assert (self.biases[i].get_total_dof() == self.get_total_bias_dof())
             if setup is not None and "sample" in setup:
                 for i in range(self.FLAGS.number_walkers):
-                    momenta_biases = [self.sampler[i].get_slot(v, "momentum")
-                                      for v in split_biases[i]]
+                    momenta_biases = []
+                    for v in split_biases[i]:
+                        skip_var = False
+                        for key in self.fixed_variables.keys():
+                            if key in v.name:
+                                for var in self.fixed_variables[key]:
+                                    if v.name == var.name:
+                                        skip_var = True
+                                        break
+                        if not skip_var:
+                            momenta_biases.append(self.sampler[i].get_slot(v, "momentum"))
+                    #logging.debug("Momenta biases: "+str(momenta_biases))
                     if len(momenta_biases) > 0 and momenta_biases[0] is not None:
                         self.momenta_biases.append(neuralnet_parameters(momenta_biases))
                     else:
                         self.momenta_biases.append(None)
 
+    def init_assign_fixed_parameters(self, fixed_variables, values):
+        fix_parameter_assigns = None
         if self.FLAGS.fix_parameters is not None:
             all_values = []
             all_variables = []
-            for k in range(self.FLAGS.number_walkers):
-                for i in range(len(fixed_variables[k])):
-                    var_name = fixed_variables[k][i]
-                    if var_name in self.fixed_variables.keys():
-                        all_variables.extend(self.fixed_variables[var_name])
-                        all_values.extend([values[i]]*len(self.fixed_variables[var_name]))
-                    else:
-                        logging.warning("Could not assign "+var_name+" a value as it was not found before.")
+            for i in range(len(fixed_variables)):
+                var_name = fixed_variables[i]
+                # skip None entries
+                if var_name is None:
+                    continue
+                logging.debug("Trying to assign the fixed variable "+str(var_name))
+                if var_name in self.fixed_variables.keys():
+                    all_variables.extend(self.fixed_variables[var_name])
+                    all_values.extend([values[i]]*len(self.fixed_variables[var_name]))
+                else:
+                    logging.warning("Could not assign "+var_name+" a value as it was not found before.")
             fix_parameter_assigns = self.create_assign_parameters(all_variables, all_values)
+        return fix_parameter_assigns
 
-        ### Now the session object is created, graph must be done here!
 
-        # initialize constants in graph
-        NeuralNetwork.init_graph(self.sess)
-
-        # initialize dataset
-        #self.input_pipeline.reset(self.sess)
-
-        if self.FLAGS.fix_parameters is not None:
-            logging.debug("Assigning the following values to fixed degrees of freedom: "+str(values))
-            self.sess.run(fix_parameter_assigns)
-
+    def restore_model(self, filename):
         # assign state of model from file if given
         if filename is not None:
             # Tensorflow DOCU says: initializing is not needed when restoring
@@ -612,6 +662,7 @@ class model:
             self.saver.restore(self.sess, restore_path)
             logging.info("Model restored from file: %s" % restore_path)
 
+    def assign_parse_parameter_file(self):
         # assign parameters of NN from step in given file
         if self.FLAGS.parse_parameters_file is not None \
                 and (self.FLAGS.parse_steps is not None and (len(self.FLAGS.parse_steps) > 0)):
@@ -619,6 +670,71 @@ class model:
             for i in range(self.FLAGS.number_walkers):
                 self.assign_weights_and_biases_from_file(self.FLAGS.parse_parameters_file, step,
                                                          walker_index=i, do_check=True)
+
+    def init_network(self, filename=None, setup=None,
+                     add_vectorized_gradients=False):
+        """ Initializes the graph, from a stored model if filename is not None.
+
+        :param filename: name of file containing stored model
+        :param setup: "sample", "train" or else to add nodes that trigger a
+                single sampling or training step. Otherwise they are not added.
+                init_network() can be called consecutively with both variants
+                to add either type of node.
+        :param add_vectorized_gradients: add nodes to return gradients in fully
+                vectorized form, i.e. in the same sequence as nn_weights and
+                nn_biases parameters combined, see self.gradients.
+        """
+        # dataset was provided
+        assert (self.input_dimension is not None)
+
+        self.init_input_layer()
+        self.init_neural_network()
+
+        fixed_variables, values = self.fix_variables()
+        logging.debug("Remaining global trainable variables: " + str(variables.trainable_variables()))
+
+        all_vectorized_gradients = self.init_vectorized_gradients(add_vectorized_gradients)
+        self.init_hessians(all_vectorized_gradients)
+
+        # create global variables, one for every walker in its replicated graph
+        self.create_resource_variables()
+        self.static_vars, self.zero_assigner, self.assigner, self.placeholders = \
+            self._create_static_variable_dict(self.FLAGS.number_walkers)
+
+        split_weights, split_biases = self.get_split_weights_and_biases()
+
+        prior = self.init_prior()
+        self.init_train(setup, prior)
+        self.init_sample(setup, prior)
+        self.init_step_placeholder(setup)
+
+        self.init_model_save_restore()
+
+        self.init_weights_access(setup, split_weights)
+        self.init_biases_access(setup, split_biases)
+
+        self.init_parse_directions()
+
+        fix_parameter_assigns = self.init_assign_fixed_parameters(fixed_variables, values)
+
+        self.init_session()
+
+        ### Now the session object is created, graph must be done here!
+
+        # initialize constants in graph
+        NeuralNetwork.init_graph(self.sess)
+
+        # initialize dataset
+        #self.input_pipeline.reset(self.sess)
+
+        # run assigns for fixed parameters
+        if self.FLAGS.fix_parameters is not None:
+            logging.debug("Assigning the following values to fixed degrees of freedom: "+str(values))
+            self.sess.run(fix_parameter_assigns)
+
+        self.restore_model(filename)
+
+        self.assign_parse_parameter_file()
 
     def init_files(self, setup):
         """ Initializes the output files.
@@ -643,9 +759,15 @@ class model:
             pass
         try:
             if self.trajectory_writer is None:
+                if self.directions is not None:
+                    number_weights = self.directions.shape[0]
+                    number_biases = 0
+                else:
+                    number_weights = self.weights[0].get_total_dof()
+                    number_biases = self.biases[0].get_total_dof()
                 self.trajectory_writer = setup_trajectory_file(self.FLAGS.trajectory_file,
-                                                               self.weights[0].get_total_dof(),
-                                                               self.biases[0].get_total_dof(),
+                                                               number_weights,
+                                                               number_biases,
                                                                self.config_map)
         except AttributeError:
             pass
@@ -789,6 +911,11 @@ class model:
     def _print_sampler_parameters(self, feed_dict):
         for walker_index in range(self.FLAGS.number_walkers):
             logging.info("Dependent walker #"+str(walker_index))
+            if self.FLAGS.covariance_blending != 0.:
+                eta, cov_steps =  self.sess.run(self.nn[walker_index].get_list_of_nodes(
+                    ["covariance_blending", "covariance_after_steps"]), feed_dict=feed_dict)
+                logging.info("EQN parameters, walker #%d: eta = %lg, cov at steps = %d" %
+                             (walker_index, eta, cov_steps))
             if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics",
                                       "GeometricLangevinAlgorithm_1stOrder",
                                       "GeometricLangevinAlgorithm_2ndOrder",
@@ -863,7 +990,7 @@ class model:
         return summary, acc, global_step, loss_eval
 
     def _get_elapsed_time_per_nth_step(self, current_step):
-        current_time = time.process_time()
+        current_time = time.time()
         time_elapsed_per_nth_step = current_time - self.last_time
         if current_step > 1:
             self.elapsed_time += time_elapsed_per_nth_step
@@ -876,8 +1003,12 @@ class model:
         return time_elapsed_per_nth_step
 
     def _decide_collapse_walkers(self, current_step):
-        if (self.FLAGS.number_walkers > 1) and (self.FLAGS.collapse_after_steps != 0) and \
-                (current_step % self.FLAGS.collapse_after_steps == 0):
+        # collapse walkers' positions onto first walker if desired and after having
+        # recomputed the covariance matrix
+        if (self.FLAGS.number_walkers > 1) and (self.FLAGS.collapse_walkers) and \
+                (current_step % self.FLAGS.covariance_after_steps == 0) and \
+                (current_step != 0):
+            print("COLLAPSING " + str(self.FLAGS.collapse_walkers))
             # get walker 0's position
             weights_eval, biases_eval = self.sess.run([
                 self.weights[0].parameters, self.biases[0].parameters])
@@ -991,6 +1122,18 @@ class model:
                 assert(check_accepted[walker_index] == 0)
                 assert(check_rejected[walker_index] == 0)
 
+    def _get_trajectory_header(self):
+        if self.directions is not None:
+            print(self.directions.shape)
+            header = get_trajectory_header(
+                self.directions.shape[0],
+                0)
+        else:
+            header = get_trajectory_header(
+                self.weights[0].get_total_dof(),
+                self.biases[0].get_total_dof())
+        return header
+
     def _sample_Metropolis(self, return_run_info=False, return_trajectories=False, return_averages=False):
 
         self.init_files("sample")
@@ -1022,12 +1165,11 @@ class model:
         trajectory = TrajectoryAccumulator(return_trajectories, self.FLAGS.sampler,
                                            self.config_map,
                                            self.trajectory_writer,
-                                           header=get_trajectory_header(
-                                               self.weights[0].get_total_dof(),
-                                               self.biases[0].get_total_dof()),
+                                           header=self._get_trajectory_header(),
                                            steps=total_eval_steps,
                                            every_nth=self.FLAGS.every_nth,
-                                           number_walkers=self.FLAGS.number_walkers)
+                                           number_walkers=self.FLAGS.number_walkers,
+                                           directions=self.directions)
         accumulated_values = AccumulatedValues()
 
         # place in feed dict: We have to supply all placeholders (regardless of
@@ -1049,7 +1191,7 @@ class model:
         # prepare some loop variables
         logging.info("Starting to sample")
         logging.info_intervals = max(1, int(self.FLAGS.max_steps / 100))
-        self.last_time = time.process_time()
+        self.last_time = time.time()
         self.elapsed_time = 0.
         HD_steps = [-2]*self.FLAGS.number_walkers        # number of hamiltonian dynamics steps
         HMC_steps = [0]*self.FLAGS.number_walkers       # next step where to evaluate criterion
@@ -1114,8 +1256,17 @@ class model:
                     self._get_parameters(return_trajectories, all_weights, all_biases)
 
             # perform the sampling step
-            summary, accumulated_values.accuracy, accumulated_values.global_step, accumulated_values.loss = \
-                self._perform_sampling_step(test_nodes, feed_dict)
+            try:
+                summary, accumulated_values.accuracy, accumulated_values.global_step, accumulated_values.loss = \
+                    self._perform_sampling_step(test_nodes, feed_dict)
+            except tf.errors.InvalidArgumentError as err:
+                # Cholesky failed, try again with smaller eta
+                logging.warning(str(err.op)+" FAILED, using tenth of eta.")
+                old_eta = feed_dict["covariance_blending"]
+                feed_dict["covariance_blending"] = feed_dict["covariance_blending"]/10.
+                summary, accumulated_values.accuracy, accumulated_values.global_step, accumulated_values.loss = \
+                    self._perform_sampling_step(test_nodes, feed_dict)
+                feed_dict["covariance_blending"] = old_eta
 
             # get updated state variables
             accumulated_values.evaluate(self.sess, self.FLAGS.sampler, self.static_vars)
@@ -1199,6 +1350,9 @@ class model:
 
         self.init_files("sample")
 
+        placeholder_nodes = []
+        for walker_index in range(self.FLAGS.number_walkers):
+            placeholder_nodes.append(self.nn[walker_index].get_dict_of_nodes(["current_step"]))
         test_nodes = self._get_test_nodes()
         all_weights, all_biases = self._get_all_parameters()
 
@@ -1222,12 +1376,11 @@ class model:
         trajectory = TrajectoryAccumulator(return_trajectories, self.FLAGS.sampler,
                                            self.config_map,
                                            self.trajectory_writer,
-                                           header=get_trajectory_header(
-                                               self.weights[0].get_total_dof(),
-                                               self.biases[0].get_total_dof()),
+                                           header=self._get_trajectory_header(),
                                            steps=total_eval_steps,
                                            every_nth=self.FLAGS.every_nth,
-                                           number_walkers=self.FLAGS.number_walkers)
+                                           number_walkers=self.FLAGS.number_walkers,
+                                           directions=self.directions)
         accumulated_values = AccumulatedValues()
 
         # place in feed dict: We have to supply all placeholders (regardless of
@@ -1246,7 +1399,7 @@ class model:
         # prepare some loop variables
         logging.info("Starting to sample")
         logging.info_intervals = max(1, int(self.FLAGS.max_steps / 100))
-        self.last_time = time.process_time()
+        self.last_time = time.time()
         self.elapsed_time = 0.
         if tqdm_present and self.FLAGS.progress:
             step_range = tqdm(range(self.FLAGS.max_steps))
@@ -1263,6 +1416,10 @@ class model:
                 self.xinput: features,
                 self.true_labels: labels
             })
+            for walker_index in range(self.FLAGS.number_walkers):
+                feed_dict.update({
+                    placeholder_nodes[walker_index]["current_step"]: current_step
+                })
 
             # zero kinetic energy and other variables
             self._zero_state_variables()
@@ -1275,8 +1432,17 @@ class model:
                     self._get_parameters(return_trajectories, all_weights, all_biases)
 
             # perform the sampling step
-            summary, accumulated_values.accuracy, accumulated_values.global_step, accumulated_values.loss = \
-                self._perform_sampling_step(test_nodes, feed_dict)
+            try:
+                summary, accumulated_values.accuracy, accumulated_values.global_step, accumulated_values.loss = \
+                    self._perform_sampling_step(test_nodes, feed_dict)
+            except tf.errors.InvalidArgumentError as err:
+                # Cholesky failed, try again with smaller eta
+                logging.warning(str(err.op)+" FAILED, using tenth of eta.")
+                old_eta = feed_dict["covariance_blending"]
+                feed_dict["covariance_blending"] = feed_dict["covariance_blending"]/10.
+                summary, accumulated_values.accuracy, accumulated_values.global_step, accumulated_values.loss = \
+                    self._perform_sampling_step(test_nodes, feed_dict)
+                feed_dict["covariance_blending"] = old_eta
 
             # get updated state variables
             accumulated_values.evaluate(self.sess, self.FLAGS.sampler, self.static_vars)
@@ -1330,7 +1496,8 @@ class model:
 
         # add sampler options only when they are present in parameter struct
         param_dict = {}
-        for key in ["covariance_blending", "friction_constant", "inverse_temperature",
+        for key in ["covariance_blending", "covariance_after_steps",
+                    "friction_constant", "inverse_temperature",
                     "learning_rate", "sigma", "sigmaA", "step_width"]:
             try:
                 param_dict[key] = getattr(self.FLAGS, key)
@@ -1375,7 +1542,6 @@ class model:
 
         assert( walker_index < self.FLAGS.number_walkers)
 
-        placeholder_nodes = self.nn[walker_index].get_dict_of_nodes(["learning_rate", "y_"])
         if self.FLAGS.summaries_path is not None:
             test_nodes = [self.summary]
         else:
@@ -1412,10 +1578,16 @@ class model:
         trajectory = None
         if return_trajectories:
             steps = (self.FLAGS.max_steps % self.FLAGS.every_nth)+1
-            header = get_trajectory_header(
-                self.weights[0].get_total_dof(),
-                self.biases[0].get_total_dof())
-            no_params = self.weights[0].get_total_dof()+self.biases[0].get_total_dof()+3
+            if self.directions is not None:
+                print(self.directions.shape)
+                header = get_trajectory_header(
+                    self.directions.shape[0],
+                    0)
+            else:
+                header = get_trajectory_header(
+                    self.weights[0].get_total_dof(),
+                    self.biases[0].get_total_dof())
+            no_params = len(header)
             trajectory = pd.DataFrame(
                 np.zeros((steps, no_params)),
                 columns=header)
@@ -1428,7 +1600,7 @@ class model:
             summary_writer = tf.summary.FileWriter(self.FLAGS.summaries_path, self.sess.graph)
 
         logging.info("Starting to train")
-        last_time = time.process_time()
+        last_time = time.time()
         elapsed_time = 0
         if tqdm_present and self.FLAGS.progress:
             step_range = tqdm(range(self.FLAGS.max_steps))
@@ -1480,8 +1652,9 @@ class model:
                 summary_writer.add_run_metadata(run_metadata, 'step%d' % current_step)
                 summary_writer.add_summary(summary, current_step)
 
-            if current_step % self.FLAGS.every_nth == 0:
-                current_time = time.process_time()
+            # we always write last step
+            if (current_step % self.FLAGS.every_nth == 0) or (current_step == (self.FLAGS.max_steps-1)):
+                current_time = time.time()
                 time_elapsed_per_nth_step = current_time - last_time
                 # neglect first step as initialization perturbs average
                 if current_step > 1:
@@ -1527,11 +1700,21 @@ class model:
                 if return_trajectories or self.config_map["do_write_trajectory_file"]:
                     trajectory_line = [0, global_step] \
                                       + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
-                                                                          precision=output_precision)] \
-                                      + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
-                                         for item in weights_eval] \
-                                      + ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
-                                         for item in biases_eval]
+                                                                          precision=output_precision)]
+
+                    dofs = []
+                    if len(weights_eval) > 0:
+                        dofs.append(neuralnet_parameters.flatten_list_of_arrays(weights_eval))
+
+                    if len(biases_eval) > 0:
+                        dofs.append(neuralnet_parameters.flatten_list_of_arrays(biases_eval))
+
+                    dofs = np.concatenate(dofs)
+                    if self.directions is not None:
+                        dofs = np.matmul(dofs, self.directions.T)
+
+                    trajectory_line += ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
+                                         for item in dofs]
                     if self.config_map["do_write_trajectory_file"]:
                         self.trajectory_writer.writerow(trajectory_line)
                     if return_trajectories:
@@ -1678,14 +1861,16 @@ class model:
         trainable_collection = tf.get_collection_ref(tf.GraphKeys.TRAINABLE_VARIABLES)
         if "weight" in _name:
             other_collection = tf.get_collection_ref(tf.GraphKeys.WEIGHTS)
+            other_collection_name = "weights"
         elif "bias" in _name:
             other_collection = tf.get_collection_ref(tf.GraphKeys.BIASES)
+            other_collection_name = "biases"
         else:
             logging.warning("Unknown parameter category for "+str(_name) \
                             +"), removing only from trainables.")
 
-        trainable_variable = model._fix_parameter_in_collection(trainable_collection, _name)
-        variable = model._fix_parameter_in_collection(other_collection, _name)
+        trainable_variable = model._fix_parameter_in_collection(trainable_collection, _name, "trainables")
+        variable = model._fix_parameter_in_collection(other_collection, _name, other_collection_name)
 
         #print(tf.get_collection_ref(tf.GraphKeys.TRAINABLE_VARIABLES))
         #if "weight" in _name:
@@ -1721,23 +1906,18 @@ class model:
             logging.debug("Looking for variable %s to fix." % (name))
             # look for tensor in already fixed variables
             variable_list = None
-            for k in self.fixed_variables.keys():
-                logging.debug("Comparing against fixed variable "+str(k))
-                if k == name:
-                    variable_list = self.fixed_variables[k]
-                    break
-            # if not found, fix it. Otherwise, simply add
-            if variable_list is None:
-                retvariable_list = self._fix_parameter(name)
-                logging.debug("Updated fixed parameters by: "+str(retvariable_list))
-                if retvariable_list is not None:
+            retvariable_list = self._fix_parameter(name)
+            logging.debug("Updated fixed parameters by: "+str(retvariable_list))
+            if retvariable_list is not None:
+                for retvariable in retvariable_list:
                     if name in self.fixed_variables.keys():
-                        self.fixed_variables[name].extend(retvariable_list)
+                        self.fixed_variables[name].append(retvariable)
                     else:
-                        self.fixed_variables[name] = retvariable_list
+                        self.fixed_variables[name] = [retvariable]
+                if name in self.fixed_variables.keys():
                     retlist.append(name)
-            else:
-                retlist.append(name)
+                else:
+                    retlist.append(None)
         return retlist
 
     def assign_current_step(self, step, walker_index=0):
@@ -1769,8 +1949,10 @@ class model:
         :param do_check: whether to check set values (and print) or not
         :return evaluated weights and bias on do_check or None otherwise
         """
-        self.weights[walker_index].assign(self.sess, weights_vals)
-        self.biases[walker_index].assign(self.sess, biases_vals)
+        if weights_vals.size > 0:
+            self.weights[walker_index].assign(self.sess, weights_vals)
+        if biases_vals.size > 0:
+            self.biases[walker_index].assign(self.sess, biases_vals)
 
         # get the input and biases to check against what we set
         if do_check:
@@ -1779,6 +1961,8 @@ class model:
             logging.info("Evaluating walker #"+str(walker_index) \
                          +" at weights " + str(weights_eval[0:10]) \
                          + ", biases " + str(biases_eval[0:10]))
+            assert( np.allclose(weights_eval, weights_vals, atol=1e-7) )
+            assert( np.allclose(biases_eval, biases_vals, atol=1e-7) )
             return weights_eval, biases_eval
         return None
 
@@ -1792,30 +1976,76 @@ class model:
         :param do_check: whether to evaluate (and print) set parameters
         :return evaluated weights and bias on do_check or None otherwise
         """
-        # parse csv file
-        parameters = {}
+        # check that column names are in order
+        weight_numbers = []
+        bias_numbers = []
         for keyname in df_parameters.columns:
             if (keyname[1] >= "0" and keyname[1] <= "9"):
                 if ("w" == keyname[0]):
-                    fullname = "weight"
+                    weight_numbers.append(int(keyname[1:]))
                 elif "b" == keyname[0]:
-                    fullname = "bias"
-                else:
-                    # not a parameter column
-                    continue
-                fullname += keyname[1:]
-                parameters[fullname] = df_parameters.loc[rownr, [keyname]].values[0]
+                    bias_numbers.append(int(keyname[1:]))
             else:
-                if ("weight" in keyname) or ("bias" in keyname):
-                    parameters[keyname] = df_parameters.loc[rownr, [keyname]].values[0]
-        logging.debug("Read row "+str(rownr)+":"+str([parameters[key] for key in ["weight0", "weight1", "weight2"] if key in parameters.keys()]) \
-                      +"..."+str([parameters[key] for key in ["bias0", "bias1", "bias2"] if key in parameters.keys()]))
+                if ("weight" in keyname):
+                    weight_numbers.append(int(keyname[6:]))
+                elif ("bias" in keyname):
+                    bias_numbers.append(int(keyname[4:]))
 
-        # create internal array to store parameters
-        weights_vals = self.weights[walker_index].create_flat_vector()
-        biases_vals = self.biases[walker_index].create_flat_vector()
-        weights_vals[:weights_vals.size] = [parameters[key] for key in sorted(parameters.keys()) if "w" in key]
-        biases_vals[:biases_vals.size] = [parameters[key] for key in sorted(parameters.keys()) if "b" in key]
+        def get_start_index(numbers, df, paramlist):
+            start_index = -1
+            if len(numbers) > 0:
+                for param in paramlist:
+                    try:
+                        start_index = df.columns.get_loc("%s%d" % (param, numbers[0]))
+                        break
+                    except KeyError:
+                        pass
+            return start_index
+
+        weights_start = get_start_index(weight_numbers, df_parameters, ["weight", "w"])
+        biases_start = get_start_index(bias_numbers, df_parameters, ["bias", "b"])
+
+        def check_aligned(numbers):
+            lastnr = None
+            for nr in numbers:
+                if lastnr is not None:
+                    if lastnr >= nr:
+                        break
+                lastnr = nr
+            return lastnr
+
+        weights_aligned = (len(weight_numbers) > 0) and (check_aligned(weight_numbers) == weight_numbers[-1])
+        biases_aligned = (len(bias_numbers) > 0) and (check_aligned(bias_numbers) == bias_numbers[-1])
+        values_aligned = weights_aligned and biases_aligned and weights_start < biases_start
+
+        if values_aligned:
+            # copy values in one go
+            weights_vals = df_parameters.iloc[rownr, weights_start:biases_start].values
+            biases_vals = df_parameters.iloc[rownr, biases_start:].values
+        else:
+            # singly pick each value
+
+            # create internal array to store parameters
+            weights_vals = self.weights[walker_index].create_flat_vector()
+            biases_vals = self.biases[walker_index].create_flat_vector()
+            for keyname in df_parameters.columns:
+                if (keyname[1] >= "0" and keyname[1] <= "9"):
+                    if ("w" == keyname[0]):
+                        weights_vals[int(keyname[1:])] = df_parameters.loc[rownr, [keyname]].values[0]
+                    elif "b" == keyname[0]:
+                        biases_vals[int(keyname[1:])] = df_parameters.loc[rownr, [keyname]].values[0]
+                    else:
+                        # not a parameter column
+                        continue
+                else:
+                    if ("weight" in keyname):
+                        weights_vals[int(keyname[6:])] = df_parameters.loc[rownr, [keyname]].values[0]
+                    elif ("bias" in keyname):
+                        biases_vals[int(keyname[4:])] = df_parameters.loc[rownr, [keyname]].values[0]
+
+        logging.debug("Read row (first three weights and biases) "+str(rownr)+":"+str(weights_vals[:5]) \
+                      +"..."+str(biases_vals[:5]))
+
         return self.assign_weights_and_biases(weights_vals, biases_vals, walker_index, do_check)
 
     def assign_weights_and_biases_from_file(self, filename, step, walker_index=0, do_check=False):
@@ -1830,8 +2060,23 @@ class model:
         """
         # parse csv file
         df_parameters = pd.read_csv(filename, sep=',', header=0)
-        if step in df_parameters.loc[:, ['step']].values:
-            rownr = np.where(df_parameters.loc[:, ['step']].values == step)[0]
+        if step in df_parameters.loc[:, 'step'].values:
+            rowlist = np.where((df_parameters.loc[:, 'step'].values == step))[0]
+            if self.FLAGS.number_walkers > 1:
+                # check whether param files contains entries for multiple walkers
+                id_idx = df_parameters.columns.get_loc("id")
+                num_ids = df_parameters.iloc[rowlist,id_idx].max() - \
+                          df_parameters.iloc[rowlist,id_idx].min() +1
+                if num_ids >= self.FLAGS.number_walkers:
+                    rowlist = np.where((df_parameters.iloc[rowlist,id_idx].values == walker_index))
+                else:
+                    logging.info("Not enough values in parse_parameters_file for all walkers, using first for all.")
+            if len(rowlist) > 1:
+                logging.warning("Found multiple matching entries to step "+str(step) \
+                                +" and walker #"+str(walker_index))
+            elif len(rowlist) == 0:
+                raise ValueError("Step "+str(step)+" and walker #"+str(walker_index)+" not found.")
+            rownr = rowlist[0]
             self.assign_current_step(step, walker_index=walker_index)
             return self.assign_weights_and_biases_from_dataframe(
                 df_parameters=df_parameters,

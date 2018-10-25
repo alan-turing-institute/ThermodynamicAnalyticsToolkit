@@ -219,12 +219,12 @@ class NeuralNetwork(object):
         :param sigmaA: scale of noise in convex combination for CCaDL only
         """
         global_step = self._prepare_global_step()
-        sampler = self._prepare_sampler(loss, sampling_method, seed, prior, sigma, sigmaA)
+        sampler = self._prepare_sampler(loss, sampling_method,
+                                        seed, prior, sigma, sigmaA)
         self._finalize_sample_method(loss, sampler, global_step)
 
     def _prepare_sampler(self, loss, sampling_method, seed,
-                         prior, sigma=None, sigmaA=None,
-                         covariance_blending=0.):
+                         prior, sigma=None, sigmaA=None):
         """ Prepares the sampler instance, adding also all placeholder nodes it requires.
 
         :param loss: node for the desired loss function to minimize during training
@@ -234,8 +234,6 @@ class NeuralNetwork(object):
                 specifies a wall-repelling force to ensure a prior on the parameters
         :param sigma: scale of noise injected to momentum per step for CCaDL only
         :param sigmaA: scale of noise in convex combination for CCaDL only
-        :param covariance_blending: eta value for blending of identity and covariance
-                matrix from other walkers
         :return: created sampler instance
         """
         with tf.name_scope('sample'):
@@ -265,39 +263,53 @@ class NeuralNetwork(object):
             tf.summary.scalar('friction_constant', friction_constant)
             self.placeholder_nodes['friction_constant'] = friction_constant
 
+            covariance_after_steps = tf.placeholder(tf.int64, name="covariance_after_steps")
+            tf.summary.scalar('covariance_after_steps', covariance_after_steps)
+            self.placeholder_nodes['covariance_after_steps'] = covariance_after_steps
+
             covariance_blending = tf.placeholder(dds_basetype, name="covariance_blending")
             tf.summary.scalar('covariance_blending', covariance_blending)
             self.placeholder_nodes['covariance_blending'] = covariance_blending
 
+            ensemble_precondition = {
+                "covariance_blending": covariance_blending,
+                "current_step": current_step,
+                "covariance_after_steps": covariance_after_steps
+            }
+
             if sampling_method == "StochasticGradientLangevinDynamics":
-                sampler = StochasticGradientLangevinDynamicsSampler(covariance_blending,
-                                                                    step_width, inverse_temperature, seed=seed)
+                sampler = StochasticGradientLangevinDynamicsSampler(ensemble_precondition,
+                                                                    step_width, inverse_temperature,
+                                                                    seed=seed)
             elif sampling_method == "GeometricLangevinAlgorithm_1stOrder":
-                sampler = GeometricLangevinAlgorithmFirstOrderSampler(covariance_blending,
-                                                                      step_width, inverse_temperature, friction_constant, seed=seed)
+                sampler = GeometricLangevinAlgorithmFirstOrderSampler(ensemble_precondition,
+                                                                      step_width, inverse_temperature, friction_constant,
+                                                                      seed=seed)
             elif sampling_method == "GeometricLangevinAlgorithm_2ndOrder":
-                sampler = GeometricLangevinAlgorithmSecondOrderSampler(covariance_blending,
-                                                                       step_width, inverse_temperature, friction_constant, seed=seed)
+                sampler = GeometricLangevinAlgorithmSecondOrderSampler(ensemble_precondition,
+                                                                       step_width, inverse_temperature, friction_constant,
+                                                                       seed=seed)
             elif "HamiltonianMonteCarlo" in sampling_method:
                 if seed is not None:
                     np.random.seed(seed)
                 accept_seed = int(np.random.uniform(low=0,high=67108864))
                 if sampling_method  == "HamiltonianMonteCarlo_1stOrder":
                     sampler = HamiltonianMonteCarloSamplerFirstOrderSampler(
-                        covariance_blending, step_width, inverse_temperature, loss,
+                        ensemble_precondition, step_width, inverse_temperature, loss,
                         current_step, next_eval_step, accept_seed=accept_seed, seed=seed)
                 elif sampling_method == "HamiltonianMonteCarlo_2ndOrder":
                     sampler = HamiltonianMonteCarloSamplerSecondOrderSampler(
-                        covariance_blending, step_width, inverse_temperature,
+                        ensemble_precondition, step_width, inverse_temperature,
                         loss, current_step, next_eval_step, hd_steps,
                         accept_seed=accept_seed, seed=seed)
                 else:
                     raise NotImplementedError("The HMC sampler %s is unknown" % (sampling_method))
             elif sampling_method == "BAOAB":
-                sampler = BAOABSampler(covariance_blending,
-                                       step_width, inverse_temperature, friction_constant, seed=seed)
+                sampler = BAOABSampler(ensemble_precondition,
+                                       step_width, inverse_temperature, friction_constant,
+                                       seed=seed)
             elif sampling_method == "CovarianceControlledAdaptiveLangevinThermostat":
-                sampler = CCAdLSampler(covariance_blending,
+                sampler = CCAdLSampler(ensemble_precondition,
                                        step_width, inverse_temperature, friction_constant,
                                        sigma=sigma, sigmaA=sigmaA, seed=seed)
             else:

@@ -37,10 +37,6 @@ def parse_parameters():
         help='CSV file name to output sampled values to.')
     options._add_option_cmd('--interval_biases', type=str, nargs='+', default=[],
         help='Min and max value for each bias.')
-    options._add_option_cmd('--interval_center_file', type=str, default=None,
-        help='CSV file with step column and one for each parameter, e.g. w4 and b3.')
-    options._add_option_cmd('--interval_center_step', type=int, default=None,
-        help='Giving the step to use of the interval_center_file, i.e. its row')
     options._add_option_cmd('--exclude_parameters', type=str, nargs='+', default=[],
         help='List of biases, e.g. b0, and weights, e.g. w3, to exclude from sampling.')
     options._add_option_cmd('--inter_ops_threads', type=int, default=1,
@@ -68,7 +64,7 @@ def countStringInCollection(_string, _collection, _sess):
     for var in _collection:
         if _string in var.name:
             size = _sess.run(tf.size(var))
-            print("Comparing "+_string+" with "+var.name+" of size "+str(size))
+            #print("Comparing "+_string+" with "+var.name+" of size "+str(size))
             count += size
     return count
 
@@ -80,6 +76,35 @@ def getDegreesFromLayerName(name, _sess):
 def getNumberFromParameter(key, name):
     start = name.index(key)+1
     return int(name[start:])
+
+def create_linspace_grid(coords_size, coords_start, interval, exclude_parameters, coordname, num_samples):
+    linspace = []
+    len_grid = []
+    for i in range(coords_size):
+        interval_start = float(interval[0])
+        interval_end = float(interval[1])
+
+        keyname = coordname+str(i)
+        if keyname in exclude_parameters:
+            interval_start = coords_start[i]
+            interval_end = interval_start
+
+        interval_length = interval_end - interval_start
+
+        if (num_samples > 0) and (interval_length > 0.):
+            linspace.append(np.arange(0,num_samples+1)*interval_length/float(
+                    num_samples)+interval_start)
+            len_grid.append(num_samples+1)
+        else:
+            linspace.append(np.arange(0,1)+(interval_start+interval_end)/2.)
+            len_grid.append(1)
+    assert( len(linspace) == coords_size )
+    assert( len(len_grid) == coords_size )
+    #print(linspace)
+    #print(len_grid)
+
+    return linspace, len_grid
+
 
 def main(_):
     # add options which model requires
@@ -103,6 +128,34 @@ def main(_):
     if options.parse_parameters_file is not None and \
             ((options.parse_steps is None) or (len(options.parse_steps) == 0)):
         options.max_steps = file_length(options.parse_parameters_file)-1
+    elif options.directions_file is not None:
+        # parse directions and compute max_steps from there
+        directions = pd.read_csv(options.directions_file, sep=",", header=0)
+        column_starts = ["weight0", "w0", "bias0", "b0", "c0", "coord0"]
+        weight_name = None
+        for i in range(len(column_starts)):
+            try:
+                weight_name = column_starts[i]
+                weight_start_index = directions.columns.get_loc(weight_name)
+                break
+            except KeyError:
+                pass
+        if weight_name is None:
+            print("Could not determine start column for weights and/or biases.")
+            sys.exit(127)
+        degrees=list(directions.columns[weight_start_index:].values)
+        if len(degrees) != weights_vals.size+biases_vals.size:
+           logging.critical("Directions file contains only "+str(len(degrees)) \
+                +", while there are "+str(weights_vals)+" weights and "+ \
+                str(biases_vals.size)+" biases.")
+        coords_size = len(directions.index)
+        directions = directions.iloc[:,weight_start_index:]
+        print(directions)
+        directions = directions.values
+        for i in range(len(directions)):
+            directions[i] *= 1./np.linalg.norm(directions[i])
+        print(directions)
+        options.max_steps = math.pow(options.samples_weights+1, coords_size)
     else:
         weight_degrees = weights_vals.size
         bias_degrees = biases_vals.size
@@ -139,10 +192,14 @@ def main(_):
 
     ## set up output csv file
     header = ["step", "loss", "accuracy"]
-    for i in range(weights_vals.size):
-        header.append("w"+str(i))
-    for i in range(biases_vals.size):
-        header.append("b"+str(i))
+    if options.directions_file is not None:
+        for i in range(coords_size):
+            header.append("c"+str(i))
+    else:
+        for i in range(weights_vals.size):
+            header.append("w"+str(i))
+        for i in range(biases_vals.size):
+            header.append("b"+str(i))
 
     if options.csv_file is not None:
         csv_writer, csv_file = setup_csv_file(options.csv_file, header)
@@ -151,7 +208,7 @@ def main(_):
 
     ## function to evaluate the loss
 
-    def evaluate_loss(weights_eval, biases_eval):
+    def evaluate_loss(coords_eval):
         # get next batch of data
         features, labels = network_model.input_pipeline.next_batch(sess)
 
@@ -163,8 +220,8 @@ def main(_):
 
         loss_eval, acc_eval = sess.run([loss, acc], feed_dict=feed_dict)
 
-        print("Loss and accuraccy at the given parameters w("+str(weights_eval)+" b("
-              +str(biases_eval)+") is "+str(loss_eval[0])+" and "+str(acc_eval[0]))
+        #print("Loss and accuraccy at the given parameters w("+str(weights_eval)+" b("
+        #      +str(biases_eval)+") is "+str(loss_eval[0])+" and "+str(acc_eval[0]))
 
         if options.csv_file is not None:
             print_row = [current_step] \
@@ -172,18 +229,104 @@ def main(_):
                                                             precision=output_precision)] \
                         + ['{:{width}.{precision}e}'.format(acc_eval[0], width=output_width,
                                                             precision=output_precision)] \
-                        + ['{:{width}.{precision}e}'.format(weight, width=output_width,
+                        + ['{:{width}.{precision}e}'.format(coord, width=output_width,
                                                             precision=output_precision)
-                                                            for weight in weights_eval[:]] \
-                        + ['{:{width}.{precision}e}'.format(bias, width=output_width,
-                                                            precision=output_precision)
-                                                            for bias in biases_eval[:]]
+                                                            for coord in coords_eval[:]]
             csv_writer.writerow(print_row)
 
         return loss_eval[0]
 
-    if (options.parse_parameters_file is None) or \
-            options.parse_steps is not None and (len(options.parse_steps) == 1):
+
+    if (options.parse_parameters_file is not None) and \
+            options.parse_steps is not None and (len(options.parse_steps) != 1):
+
+        # parse csv file
+        trajectories = pd.read_csv(options.parse_parameters_file, sep=',', header=0)
+        for rownr in trajectories.index:
+            weights_eval, biases_eval = network_model.assign_weights_and_biases_from_dataframe(
+                df_parameters=trajectories,
+                rownr=rownr,
+                do_check=True
+            )
+            #loss_check = trajectories.loc[rownr, ['loss']].values[0]
+            if (weights_eval.size != 0) and (biases_eval.size != 0):
+                coord_eval = np.concatenate([weights_eval,biases_eval])
+                loss_check = evaluate_loss(coord_eval)
+            elif weights_eval.size != 0:
+                loss_check = evaluate_loss(weights_eval)
+            elif biases_eval.size != 0:
+                loss_check = evaluate_loss(biases_eval)
+            else:
+                raise ValueError("There are no degrees of freedom")
+            #assert( math.fabs( loss_eval - float(loss_check) ) < 1e-6 )
+
+            current_step += 1
+
+    elif options.directions_file is not None:
+
+        print(options.parse_steps[0])
+        trajectories = pd.read_csv(options.parse_parameters_file, sep=',', header=0)
+        rownr = trajectories.index[trajectories.loc[:,'step'].values == options.parse_steps[0]]
+        print(rownr)
+        weights_eval, biases_eval = network_model.assign_weights_and_biases_from_dataframe(
+            df_parameters=trajectories,
+            rownr=rownr[0],
+            do_check=True
+        )
+
+        weights_start = network_model.weights[0].evaluate(network_model.sess)
+        biases_start = network_model.biases[0].evaluate(network_model.sess)
+        print(weights_start)
+        print(biases_start)
+
+        coords_index_grid = np.zeros(coords_size, dtype=int)
+
+        coords_start = np.concatenate([weights_start, biases_start])
+        coords_linspace, coords_len_grid = \
+            create_linspace_grid(coords_size, coords_start,
+                options.interval_weights, options.exclude_parameters, "w",
+                options.samples_weights)
+
+        def check_end():
+            isend = True
+            for i in range(coords_size):
+                if coords_index_grid[i] != coords_len_grid[i]-1:
+                    isend = False
+                    break
+            return isend
+
+        def next_index():
+            for i in range(coords_size):
+                if coords_index_grid[i] != coords_len_grid[i]-1:
+                    coords_index_grid[i] += 1
+                    for j in range(i):
+                        coords_index_grid[j]=0
+                    break
+
+        is_at_end = False
+        while not is_at_end:
+            vals = [coords_linspace[i][ coords_index_grid[i] ] for i in range(coords_size)]
+
+            weights_vals = weights_start.copy()
+            biases_vals = biases_start.copy()
+            for i in range(coords_size):
+                # set the parameters for the direction
+                temp = np.multiply(directions[i], vals[i])
+                print(temp)
+                weights_vals += temp[:weights_vals.size]
+                biases_vals += temp[weights_vals.size:]
+
+            weights_eval, biases_eval = network_model.assign_weights_and_biases( \
+                weights_vals, biases_vals, do_check=True)
+            evaluate_loss(vals)
+
+            current_step += 1
+
+            is_at_end = check_end()
+
+            next_index()
+
+    else:
 
         # evaluate weights and biases to obtain interval centers from parsed file
         weights_eval = nn_weights.evaluate(network_model.sess)
@@ -192,55 +335,14 @@ def main(_):
         weights_index_grid = np.zeros(weights_vals.size, dtype=int)
         biases_index_grid = np.zeros(biases_vals.size, dtype=int)
 
-        weights_linspace = []
-        weights_len_grid = []
-        for i in range(weights_vals.size):
-            weights_interval_start = float(options.interval_weights[0])
-            weights_interval_end = float(options.interval_weights[1])
-
-            keyname = "w"+str(i)
-            if keyname in options.exclude_parameters:
-                weights_interval_start = weights_eval[i]
-                weights_interval_end = weights_interval_start
-
-            weights_interval_length = weights_interval_end - weights_interval_start
-
-            if (options.samples_weights > 0) and (weights_interval_length > 0.):
-                weights_linspace.append(np.arange(0,options.samples_weights+1)*weights_interval_length/float(
-                        options.samples_weights)+weights_interval_start)
-                weights_len_grid.append(options.samples_weights+1)
-            else:
-                weights_linspace.append(np.arange(0,1)+(weights_interval_start+weights_interval_end)/2.)
-                weights_len_grid.append(1)
-        assert( len(weights_linspace) == weights_vals.size )
-        assert( len(weights_len_grid) == weights_vals.size )
-        print(weights_linspace)
-        print(weights_len_grid)
-
-        biases_linspace = []
-        biases_len_grid = []
-        for i in range(biases_vals.size):
-            biases_interval_start = float(options.interval_biases[0])
-            biases_interval_end = float(options.interval_biases[1])
-
-            keyname = "b"+str(i)
-            if keyname in options.exclude_parameters:
-                biases_interval_start = biases_eval[i]
-                biases_interval_end = biases_interval_start
-
-            biases_interval_length = biases_interval_end - biases_interval_start
-
-            if (options.samples_biases > 0) and (biases_interval_length > 0.):
-                biases_linspace.append(np.arange(0,options.samples_biases+1)*biases_interval_length/float(
-                        options.samples_biases)+biases_interval_start)
-                biases_len_grid.append(options.samples_biases+1)
-            else:
-                biases_linspace.append(np.arange(0,1)+(biases_interval_start+biases_interval_end)/2.)
-                biases_len_grid.append(1)
-        assert( len(biases_linspace) == biases_vals.size )
-        assert( len(biases_len_grid) == biases_vals.size )
-        print(biases_linspace)
-        print(biases_len_grid)
+        weights_linspace, weights_len_grid = \
+            create_linspace_grid(weights_vals.size, weights_eval,
+            options.interval_weights, options.exclude_parameters, "w",
+            options.samples_weights)
+        biases_linspace, biases_len_grid = \
+            create_linspace_grid(biases_vals.size, biases_eval,
+            options.interval_biases, options.exclude_parameters, "b",
+            options.samples_biases)
 
 	### functions to iterate over weights and biases
 
@@ -284,35 +386,23 @@ def main(_):
 
             weights_eval, biases_eval = network_model.assign_weights_and_biases( \
                 weights_vals, biases_vals, do_check=True)
-            evaluate_loss(weights_eval, biases_eval)
+            coord_eval = np.concatenate([weights_eval,biases_eval]) \
+                if (weights_eval.size != 0) and (biases_eval.size != 0) else \
+                (weights_eval if weights_eval.size != 0 else biases_eval)
+            evaluate_loss(coord_eval)
 
             for i in range(weights_eval.size):
-                print("Comparing "+str(weights_eval[i])+" against "+str(weights_vals[i]))
+                #print("Comparing "+str(weights_eval[i])+" against "+str(weights_vals[i]))
                 assert( math.fabs(weights_eval[i] - weights_vals[i]) < 1e-6 )
             for i in range(biases_eval.size):
-                print("Comparing "+str(biases_eval[i])+" against "+str(biases_vals[i]))
+                #print("Comparing "+str(biases_eval[i])+" against "+str(biases_vals[i]))
                 assert( math.fabs(biases_eval[i] - biases_vals[i]) < 1e-6 )
-
 
             current_step += 1
 
             is_at_end = check_end()
 
             next_index()
-    else:
-        # parse csv file
-        trajectories = pd.read_csv(options.parse_parameters_file, sep=',', header=0)
-        for rownr in trajectories.index:
-            weights_eval, biases_eval = network_model.assign_weights_and_biases_from_dataframe(
-                df_parameters=trajectories,
-                rownr=rownr,
-                do_check=True
-            )
-            #loss_check = trajectories.loc[rownr, ['loss']].values[0]
-            loss_eval = evaluate_loss(weights_eval, biases_eval)
-            #assert( math.fabs( loss_eval - float(loss_check) ) < 1e-6 )
-
-            current_step += 1
 
     if options.csv_file is not None:
         csv_file.close()
@@ -322,6 +412,8 @@ if __name__ == '__main__':
     logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
 
     unparsed = parse_parameters()
+
+    print(options)
 
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
 

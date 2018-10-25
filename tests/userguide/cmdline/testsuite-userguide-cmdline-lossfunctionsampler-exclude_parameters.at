@@ -42,3 +42,29 @@ AT_CHECK([cat TATiLossFunctionSampler-output-SGLD.csv | gawk -F"," 'BEGIN { col 
 
 AT_CLEANUP
 
+
+AT_SETUP([Examples cmdline - loss function sampling over grid excluding parameters, no biases])
+AT_KEYWORDS([example cmdline tatilossfunctionsampler grd exclude_parameters])
+
+AT_DATA(centers.csv,
+[step,w0,w1
+1,0.5,0.5
+])
+
+# dataset prepared as follows:
+# TATiDatasetWriter --data_type 2 --dimension 500 --seed 426 --noise 0.1 --train_test_ratio 0 --test_data_files dataset-twoclusters.csv
+AT_CHECK([cp -f ${abs_top_srcdir}/tests/userguide/cmdline/pre/dataset-twoclusters.csv .], 0, [ignore], [ignore])
+
+AT_CHECK([env - PATH=${AUTOTEST_PATH}/TATi/tools /bin/bash \
+	${abs_top_srcdir}/doc/userguide/cmdline/lossfunctionsampler-exclude_parameters-fixed.sh
+], 0, [stdout], [stderr])
+# w1 is still in there, only retains a single value!
+AT_CHECK([grep "step,loss,accuracy,w0,w1" TATiLossFunctionSampler-output-SGLD.csv], 0, [ignore], [ignore])
+AT_CHECK([wc -l TATiLossFunctionSampler-output-SGLD.csv], 0, [stdout], [ignore])
+# 11 (w0) * 1 (w1)= 11 lines (+1 header)
+AT_CHECK([grep "12" stdout], 0, [ignore], [ignore])
+# check that w1 is at interval center value
+AT_CHECK([cat TATiLossFunctionSampler-output-SGLD.csv | gawk -F"," 'BEGIN { col = -1 } { if (NR == 1) { for(i=1;i<=NF;++i) { if ($i == "w0") { col=i } } } else { if ($col != 0.5) exit(1) } }'], 0, [ignore], [ignore])
+
+AT_CLEANUP
+

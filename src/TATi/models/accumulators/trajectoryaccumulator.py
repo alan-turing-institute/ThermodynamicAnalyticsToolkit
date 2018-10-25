@@ -11,7 +11,7 @@ class TrajectoryAccumulator(Accumulator):
     """
 
     def __init__(self, return_trajectories, sampler, config_map, writer,
-                 header, steps, every_nth, number_walkers):
+                 header, steps, every_nth, number_walkers, directions):
         super(TrajectoryAccumulator, self).__init__(every_nth)
         self.trajectory = None
         self._return_trajectories = return_trajectories
@@ -19,6 +19,7 @@ class TrajectoryAccumulator(Accumulator):
         self._config_map = config_map
         self._trajectory_writer = writer
         self._number_walkers = number_walkers
+        self._directions = directions
         if self._return_trajectories:
             self.trajectory = []
             no_params = len(header)
@@ -29,18 +30,24 @@ class TrajectoryAccumulator(Accumulator):
 
     def _accumulate_nth_step_line(self, current_step, walker_index, values):
         trajectory_line = [walker_index, values.global_step[walker_index]] \
-                          + ['{:{width}.{precision}e}'.format(values.loss[walker_index], width=self.output_width,
+                          + ['{:{width}.{precision}e}'.format(values.loss[walker_index],
+                                                              width=self.output_width,
                                                               precision=self.output_precision)]
+        dofs = []
         if len(values.weights[walker_index]) > 0:
-            flat_array = neuralnet_parameters.flatten_list_of_arrays(values.weights[walker_index])
-            trajectory_line += [
-                '{:{width}.{precision}e}'.format(item, width=self.output_width, precision=self.output_precision) \
-                for item in flat_array[:]]
+            dofs.append(neuralnet_parameters.flatten_list_of_arrays(values.weights[walker_index]))
+
         if len(values.biases[walker_index]) > 0:
-            flat_array = neuralnet_parameters.flatten_list_of_arrays(values.biases[walker_index])
-            trajectory_line += [
-                '{:{width}.{precision}e}'.format(item, width=self.output_width, precision=self.output_precision) \
-                for item in flat_array[:]]
+            dofs.append(neuralnet_parameters.flatten_list_of_arrays(values.biases[walker_index]))
+
+        dofs = np.concatenate(dofs)
+        if self._directions is not None:
+            dofs = self._directions.dot(dofs)
+
+        trajectory_line += ['{:{width}.{precision}e}'.format(item, width=self.output_width,
+                                                             precision=self.output_precision) \
+                            for item in dofs[:]]
+
         return trajectory_line
 
     def accumulate_nth_step(self, current_step, walker_index, values):
