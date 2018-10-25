@@ -889,8 +889,20 @@ class model:
         else:
             return self._sample_LangevinDynamics(return_run_info, return_trajectories, return_averages)
 
-    def _get_test_nodes(self):
-        list_of_nodes = ["sample_step", "accuracy", "global_step", "loss"]
+    def _get_test_nodes(self, setup="sample"):
+        """ Helper function to create list of nodes for activating sampling or
+        training step.
+
+        :param setup: sample or train
+        """
+        if setup == "sample":
+            list_of_nodes = ["sample_step"]
+        elif setup == "train":
+            list_of_nodes = ["train_step"]
+        else:
+            logging.critical("Unknown setup parameter in _get_test_nodes().")
+            assert(False)
+        list_of_nodes.extend(["accuracy", "global_step", "loss"])
         if self.FLAGS.summaries_path is not None:
             test_nodes = [self.summary]*self.FLAGS.number_walkers
         else:
@@ -907,6 +919,13 @@ class model:
             all_weights.append(self.weights[walker_index].parameters)
             all_biases.append(self.biases[walker_index].parameters)
         return all_weights, all_biases
+
+    def _print_optimizer_parameters(self, feed_dict):
+        for walker_index in range(self.FLAGS.number_walkers):
+            logging.info("Dependent walker #"+str(walker_index))
+            deltat = self.sess.run(self.nn[walker_index].get_list_of_nodes(
+                ["learning_rate"]), feed_dict=feed_dict)[0]
+            logging.info("GD optimizer parameters, walker #%d: delta t = %lg" % (walker_index, deltat))
 
     def _print_sampler_parameters(self, feed_dict):
         for walker_index in range(self.FLAGS.number_walkers):
@@ -946,14 +965,15 @@ class model:
             summary_writer.add_run_metadata(run_metadata, 'step%d' % current_step)
             summary_writer.add_summary(summary, current_step)
 
-    def _zero_state_variables(self):
-        if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics",
-                                  "GeometricLangevinAlgorithm_1stOrder",
-                                  "GeometricLangevinAlgorithm_2ndOrder",
-                                  "HamiltonianMonteCarlo_1stOrder",
-                                  "HamiltonianMonteCarlo_2ndOrder",
-                                  "BAOAB",
-                                  "CovarianceControlledAdaptiveLangevinThermostat"]:
+    def _zero_state_variables(self, method):
+        if method in ["GradientDescent",
+                      "StochasticGradientLangevinDynamics",
+                      "GeometricLangevinAlgorithm_1stOrder",
+                      "GeometricLangevinAlgorithm_2ndOrder",
+                      "HamiltonianMonteCarlo_1stOrder",
+                      "HamiltonianMonteCarlo_2ndOrder",
+                      "BAOAB",
+                      "CovarianceControlledAdaptiveLangevinThermostat"]:
             check_kinetic, check_momenta, check_gradients, check_virials, check_noise = \
                 self.sess.run([
                     self.zero_assigner["kinetic_energy"],
@@ -976,7 +996,7 @@ class model:
             # [logging.info(str(item)) for item in biases_eval]
         return weights_eval, biases_eval
 
-    def _perform_sampling_step(self, test_nodes, feed_dict):
+    def _perform_step(self, test_nodes, feed_dict):
         summary = None
         results = self.sess.run(test_nodes, feed_dict=feed_dict)
         if self.FLAGS.summaries_path is not None:
@@ -1142,15 +1162,14 @@ class model:
             ["current_step", "next_eval_step", "step_width", "hamiltonian_dynamics_steps"])
             for walker_index in range(self.FLAGS.number_walkers)]
 
-        test_nodes = self._get_test_nodes()
+        test_nodes = self._get_test_nodes(setup="sample")
         all_weights, all_biases = self._get_all_parameters()
 
-        total_eval_steps = (self.FLAGS.max_steps % self.FLAGS.every_nth) + 1
         averages = AveragesAccumulator(return_averages, self.FLAGS.sampler,
                                        self.config_map,
                                        self.averages_writer,
                                        header=self.get_averages_header(setup="sample"),
-                                       steps=total_eval_steps,
+                                       max_steps=self.FLAGS.max_steps,
                                        every_nth=self.FLAGS.every_nth,
                                        inverse_temperature=self.FLAGS.inverse_temperature,
                                        burn_in_steps=self.FLAGS.burn_in_steps,
@@ -1159,14 +1178,14 @@ class model:
                                       self.config_map,
                                       self.run_writer,
                                       header=self.get_sample_header(),
-                                      steps=total_eval_steps,
+                                      max_steps=self.FLAGS.max_steps,
                                       every_nth=self.FLAGS.every_nth,
                                       number_walkers=self.FLAGS.number_walkers)
         trajectory = TrajectoryAccumulator(return_trajectories, self.FLAGS.sampler,
                                            self.config_map,
                                            self.trajectory_writer,
                                            header=self._get_trajectory_header(),
-                                           steps=total_eval_steps,
+                                           max_steps=self.FLAGS.max_steps,
                                            every_nth=self.FLAGS.every_nth,
                                            number_walkers=self.FLAGS.number_walkers,
                                            directions=self.directions)
@@ -1231,7 +1250,7 @@ class model:
             self._set_HMC_eval_variables(current_step, HMC_steps, accumulated_values)
 
             # zero kinetic energy and other variables
-            self._zero_state_variables()
+            self._zero_state_variables(self.FLAGS.sampler)
 
             # tell accumulators about next evaluation step (delayed by one)
             run_info.inform_next_eval_step(HMC_steps, accumulated_values.rejected)
@@ -1240,7 +1259,7 @@ class model:
 
             # set next criterion evaluation step
             # needs to be after `_set_HMC_eval_variables()`
-            # needs to be before `_perform_sampling_step()`
+            # needs to be before `_perform_step()`
             HMC_old_steps[:] = HMC_steps
             HD_steps, HMC_steps = self._set_HMC_next_eval_step(
                 current_step, step_widths, HD_steps, HMC_steps)
@@ -1258,14 +1277,14 @@ class model:
             # perform the sampling step
             try:
                 summary, accumulated_values.accuracy, accumulated_values.global_step, accumulated_values.loss = \
-                    self._perform_sampling_step(test_nodes, feed_dict)
+                    self._perform_step(test_nodes, feed_dict)
             except tf.errors.InvalidArgumentError as err:
                 # Cholesky failed, try again with smaller eta
                 logging.warning(str(err.op)+" FAILED, using tenth of eta.")
                 old_eta = feed_dict["covariance_blending"]
                 feed_dict["covariance_blending"] = feed_dict["covariance_blending"]/10.
                 summary, accumulated_values.accuracy, accumulated_values.global_step, accumulated_values.loss = \
-                    self._perform_sampling_step(test_nodes, feed_dict)
+                    self._perform_step(test_nodes, feed_dict)
                 feed_dict["covariance_blending"] = old_eta
 
             # get updated state variables
@@ -1353,15 +1372,14 @@ class model:
         placeholder_nodes = []
         for walker_index in range(self.FLAGS.number_walkers):
             placeholder_nodes.append(self.nn[walker_index].get_dict_of_nodes(["current_step"]))
-        test_nodes = self._get_test_nodes()
+        test_nodes = self._get_test_nodes(setup="sample")
         all_weights, all_biases = self._get_all_parameters()
 
-        total_eval_steps = (self.FLAGS.max_steps % self.FLAGS.every_nth) + 1
         averages = AveragesAccumulator(return_averages, self.FLAGS.sampler,
                                        self.config_map,
                                        self.averages_writer,
                                        header=self.get_averages_header(setup="sample"),
-                                       steps=total_eval_steps,
+                                       max_steps=self.FLAGS.max_steps,
                                        every_nth=self.FLAGS.every_nth,
                                        inverse_temperature=self.FLAGS.inverse_temperature,
                                        burn_in_steps=self.FLAGS.burn_in_steps,
@@ -1370,14 +1388,14 @@ class model:
                                       self.config_map,
                                       self.run_writer,
                                       header=self.get_sample_header(),
-                                      steps=total_eval_steps,
+                                      max_steps=self.FLAGS.max_steps,
                                       every_nth=self.FLAGS.every_nth,
                                       number_walkers=self.FLAGS.number_walkers)
         trajectory = TrajectoryAccumulator(return_trajectories, self.FLAGS.sampler,
                                            self.config_map,
                                            self.trajectory_writer,
                                            header=self._get_trajectory_header(),
-                                           steps=total_eval_steps,
+                                           max_steps=self.FLAGS.max_steps,
                                            every_nth=self.FLAGS.every_nth,
                                            number_walkers=self.FLAGS.number_walkers,
                                            directions=self.directions)
@@ -1422,7 +1440,7 @@ class model:
                 })
 
             # zero kinetic energy and other variables
-            self._zero_state_variables()
+            self._zero_state_variables(self.FLAGS.sampler)
 
             # get the weights and biases as otherwise the loss won't match
             # tf first computes loss, then gradient, then performs variable update
@@ -1434,14 +1452,14 @@ class model:
             # perform the sampling step
             try:
                 summary, accumulated_values.accuracy, accumulated_values.global_step, accumulated_values.loss = \
-                    self._perform_sampling_step(test_nodes, feed_dict)
+                    self._perform_step(test_nodes, feed_dict)
             except tf.errors.InvalidArgumentError as err:
                 # Cholesky failed, try again with smaller eta
                 logging.warning(str(err.op)+" FAILED, using tenth of eta.")
                 old_eta = feed_dict["covariance_blending"]
                 feed_dict["covariance_blending"] = feed_dict["covariance_blending"]/10.
                 summary, accumulated_values.accuracy, accumulated_values.global_step, accumulated_values.loss = \
-                    self._perform_sampling_step(test_nodes, feed_dict)
+                    self._perform_step(test_nodes, feed_dict)
                 feed_dict["covariance_blending"] = old_eta
 
             # get updated state variables
@@ -1542,190 +1560,108 @@ class model:
 
         assert( walker_index < self.FLAGS.number_walkers)
 
-        if self.FLAGS.summaries_path is not None:
-            test_nodes = [self.summary]
-        else:
-            test_nodes = []
-        test_nodes.extend(self.nn[walker_index].get_list_of_nodes(
-            ["train_step", "accuracy", "global_step", "loss", "y_", "y"]) \
-                     +[self.static_vars["gradients"]])
+        test_nodes = self._get_test_nodes(setup="train")
+        all_weights, all_biases = self._get_all_parameters()
 
-        output_width = 8
-        output_precision = 8
+        averages = AveragesAccumulator(return_averages, self.FLAGS.optimizer,
+                                       self.config_map,
+                                       self.averages_writer,
+                                       header=self.get_averages_header(setup="train"),
+                                       max_steps=self.FLAGS.max_steps,
+                                       every_nth=self.FLAGS.every_nth,
+                                       burn_in_steps=self.FLAGS.burn_in_steps,
+                                       number_walkers=self.FLAGS.number_walkers)
+        run_info = RuninfoAccumulator(return_run_info, self.FLAGS.optimizer,
+                                      self.config_map,
+                                      self.run_writer,
+                                      header=self.get_train_header(),
+                                      max_steps=self.FLAGS.max_steps,
+                                      every_nth=self.FLAGS.every_nth,
+                                      number_walkers=self.FLAGS.number_walkers)
+        trajectory = TrajectoryAccumulator(return_trajectories, self.FLAGS.optimizer,
+                                           self.config_map,
+                                           self.trajectory_writer,
+                                           header=self._get_trajectory_header(),
+                                           max_steps=self.FLAGS.max_steps,
+                                           every_nth=self.FLAGS.every_nth,
+                                           number_walkers=self.FLAGS.number_walkers,
+                                           directions=self.directions)
+        accumulated_values = AccumulatedValues()
 
-        written_row = 0
+        # place in feed dict: We have to supply all placeholders (regardless of
+        # which the employed optimizer actually requires) because of the evaluated
+        # summary! All of the placeholder nodes are also summary nodes.
+        feed_dict = {}
+        for walker_index in range(self.FLAGS.number_walkers):
+            feed_dict.update(self._create_default_feed_dict_with_constants(walker_index))
 
-        accumulated_virials = 0.
-
-        averages = None
-        if return_averages:
-            steps = (self.FLAGS.max_steps % self.FLAGS.every_nth)+1
-            header = self.get_averages_header(setup="train")
-            no_params = len(header)
-            averages = pd.DataFrame(
-                np.zeros((steps, no_params)),
-                columns=header)
-
-        run_info = None
-        if return_run_info:
-            steps = (self.FLAGS.max_steps % self.FLAGS.every_nth)+1
-            header = self.get_train_header()
-            no_params = len(header)
-            run_info = pd.DataFrame(
-                np.zeros((steps, no_params)),
-                columns=header)
-
-        trajectory = None
-        if return_trajectories:
-            steps = (self.FLAGS.max_steps % self.FLAGS.every_nth)+1
-            if self.directions is not None:
-                print(self.directions.shape)
-                header = get_trajectory_header(
-                    self.directions.shape[0],
-                    0)
-            else:
-                header = get_trajectory_header(
-                    self.weights[0].get_total_dof(),
-                    self.biases[0].get_total_dof())
-            no_params = len(header)
-            trajectory = pd.DataFrame(
-                np.zeros((steps, no_params)),
-                columns=header)
-
-
-        default_feed_dict = self._create_default_feed_dict_with_constants(walker_index)
+        # check that optimizers's parameters are actually used
+        self._print_optimizer_parameters(feed_dict)
 
         # prepare summaries for TensorBoard
-        if self.FLAGS.summaries_path is not None:
-            summary_writer = tf.summary.FileWriter(self.FLAGS.summaries_path, self.sess.graph)
+        summary_writer = self._prepare_summaries()
 
+        # prepare some loop variables
         logging.info("Starting to train")
-        last_time = time.time()
-        elapsed_time = 0
+        logging.info_intervals = max(1, int(self.FLAGS.max_steps / 100))
+        self.last_time = time.time()
+        self.elapsed_time = 0
         if tqdm_present and self.FLAGS.progress:
             step_range = tqdm(range(self.FLAGS.max_steps))
         else:
             step_range = range(self.FLAGS.max_steps)
-        for current_step in step_range:
-            logging.debug("Current step is " + str(current_step))
 
+        for current_step in step_range:
             # get next batch of data
             features, labels = self.input_pipeline.next_batch(self.sess)
+            # logging.debug("batch is x: "+str(features[:])+", y: "+str(labels[:]))
 
-            # place in feed dict
-            feed_dict = default_feed_dict.copy()
+            # update feed_dict for this step
             feed_dict.update({
                 self.xinput: features,
                 self.true_labels: labels
             })
-            #logging.debug("batch is x: "+str(features[:])+", y: "+str(labels[:]))
 
-            # zero accumulated gradient
-            check_gradients, check_virials = self.sess.run([self.zero_assigner["gradients"][walker_index],
-                                                            self.zero_assigner["virials"][walker_index]])
-            assert (abs(check_gradients) < 1e-10)
-            assert (abs(check_virials) < 1e-10)
+            # zero kinetic energy and other variables
+            self._zero_state_variables(self.FLAGS.optimizer)
 
             # get the weights and biases as otherwise the loss won't match
             # tf first computes loss, then gradient, then performs variable update
-            # hence, after the sample step, we would have updated variables but old loss
+            # hence after the sample step, we would have updated variables but old loss
             if current_step % self.FLAGS.every_nth == 0:
-                if self.config_map["do_write_trajectory_file"] or return_trajectories:
-                    weights_eval = self.weights[walker_index].evaluate(self.sess)
-                    biases_eval = self.biases[walker_index].evaluate(self.sess)
+                accumulated_values.weights, accumulated_values.biases = \
+                    self._get_parameters(return_trajectories, all_weights, all_biases)
 
-            if self.FLAGS.summaries_path is not None:
-                summary, _, acc, global_step, loss_eval, y_true_eval, y_eval, scaled_grad = \
-                    self.sess.run(test_nodes, feed_dict=feed_dict)
-            else:
-                _, acc, global_step, loss_eval, y_true_eval, y_eval, scaled_grad = \
-                    self.sess.run(test_nodes, feed_dict=feed_dict)
+            # perform the sampling step
+            summary, accumulated_values.accuracy, accumulated_values.global_step, accumulated_values.loss = \
+                self._perform_step(test_nodes, feed_dict)
 
-            gradients, virials = self.sess.run([self.static_vars["gradients"][walker_index],
-                                                self.static_vars["virials"][walker_index]])
+            # get updated state variables
+            accumulated_values.evaluate(self.sess, self.FLAGS.optimizer, self.static_vars)
+
+            # write summaries for tensorboard
+            self._write_summaries(summary_writer, summary, current_step)
+
+            # accumulate averages
             if current_step >= self.FLAGS.burn_in_steps:
-                accumulated_virials += virials
+                for walker_index in range(self.FLAGS.number_walkers):
+                    averages.accumulate_each_step(current_step, walker_index, accumulated_values)
 
-            if self.FLAGS.summaries_path is not None:
-                run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
-                run_metadata = tf.RunMetadata()
-                summary_writer.add_run_metadata(run_metadata, 'step%d' % current_step)
-                summary_writer.add_summary(summary, current_step)
+            accumulated_values.time_elapsed_per_nth_step = self._get_elapsed_time_per_nth_step(current_step)
 
-            # we always write last step
-            if (current_step % self.FLAGS.every_nth == 0) or (current_step == (self.FLAGS.max_steps-1)):
-                current_time = time.time()
-                time_elapsed_per_nth_step = current_time - last_time
-                # neglect first step as initialization perturbs average
-                if current_step > 1:
-                    elapsed_time += time_elapsed_per_nth_step
-                    estimated_time_left = (self.FLAGS.max_steps-current_step)*elapsed_time/(current_step-1)
-                else:
-                    estimated_time_left = 0.
-                logging.debug("Output at step #" + str(current_step) \
-                              + ", est. remaining time is " + str(estimated_time_left)+" seconds.")
-                last_time = current_time
+            for walker_index in range(self.FLAGS.number_walkers):
+                run_info.accumulate_nth_step(current_step, walker_index, accumulated_values)
+                trajectory.accumulate_nth_step(current_step, walker_index, accumulated_values)
+                averages.accumulate_nth_step(current_step, walker_index, accumulated_values)
 
-                run_line = [0, global_step, current_step] + ['{:1.3f}'.format(acc)] \
-                           + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
-                                                               precision=output_precision)] \
-                           + ['{:{width}.{precision}e}'.format(time_elapsed_per_nth_step, width=output_width,
-                                                               precision=output_precision)] \
-                           + ['{:{width}.{precision}e}'.format(sqrt(gradients), width=output_width,
-                                                               precision=output_precision)] \
-                           + ['{:{width}.{precision}e}'.format(abs(0.5*virials),width=output_width,
-                                                               precision=output_precision)]
-                if self.config_map["do_write_run_file"]:
-                    self.run_writer.writerow(run_line)
-                if return_run_info:
+            #if (i % logging.info_intervals) == 0:
+                #logging.debug('Accuracy at step %s (%s): %s' % (i, global_step, acc))
+                #logging.debug('Loss at step %s: %s' % (i, loss_eval))
 
-                    run_info.loc[written_row] = run_line
-                if self.config_map["do_write_averages_file"] or return_averages:
-                    if current_step >= self.FLAGS.burn_in_steps:
-                        average_virials = abs(0.5 * accumulated_virials) / (float(current_step + 1. - self.FLAGS.burn_in_steps))
-                    else:
-                        average_virials = 0.
-                    averages_line = [0, global_step, current_step] \
-                                    + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
-                                                                        precision=output_precision)] \
-                                    + ['{:{width}.{precision}e}'.format(average_virials, width=output_width,
-                                                                        precision=output_precision)]
+            self._decide_collapse_walkers(current_step)
 
-                    if self.config_map["do_write_averages_file"]:
-                        self.averages_writer.writerow(averages_line)
-                    if return_averages:
-                        averages.loc[written_row] = averages_line
-
-
-                if return_trajectories or self.config_map["do_write_trajectory_file"]:
-                    trajectory_line = [0, global_step] \
-                                      + ['{:{width}.{precision}e}'.format(loss_eval, width=output_width,
-                                                                          precision=output_precision)]
-
-                    dofs = []
-                    if len(weights_eval) > 0:
-                        dofs.append(neuralnet_parameters.flatten_list_of_arrays(weights_eval))
-
-                    if len(biases_eval) > 0:
-                        dofs.append(neuralnet_parameters.flatten_list_of_arrays(biases_eval))
-
-                    dofs = np.concatenate(dofs)
-                    if self.directions is not None:
-                        dofs = np.matmul(dofs, self.directions.T)
-
-                    trajectory_line += ['{:{width}.{precision}e}'.format(item, width=output_width, precision=output_precision)
-                                         for item in dofs]
-                    if self.config_map["do_write_trajectory_file"]:
-                        self.trajectory_writer.writerow(trajectory_line)
-                    if return_trajectories:
-                        trajectory.loc[written_row] = trajectory_line
-                written_row+=1
-
-            logging.debug('Accuracy at step %s (%s): %s' % (current_step, global_step, acc))
-            logging.debug('Loss at step %s: %s' % (current_step, loss_eval))
-            #logging.debug('y_ at step %s: %s' % (i, str(y_true_eval[0:9].transpose())))
-            #logging.debug('y at step %s: %s' % (i, str(y_eval[0:9].transpose())))
-        logging.info("TRAINED down to loss %s and accuracy %s." % (loss_eval, acc))
+        logging.info("TRAINED down to loss %s and accuracy %s." %
+                     (accumulated_values.loss[0], accumulated_values.accuracy[0]))
 
         # close summaries file
         if self.FLAGS.summaries_path is not None:
@@ -1733,7 +1669,15 @@ class model:
 
         self.finish_files()
 
-        return run_info, trajectory, averages
+        # get rid of possile arrays (because of multiple walkers) in return arrays
+        ret_vals = [None, None, None]
+        if run_info.run_info is not None:
+            ret_vals[0] = run_info.run_info[0]
+        if trajectory.trajectory is not None:
+            ret_vals[1] = trajectory.trajectory[0]
+        if averages.averages is not None:
+            ret_vals[2] = averages.averages[0]
+        return ret_vals
 
     def compute_optimal_stepwidth(self, walker_index=0):
         assert( walker_index < self.FLAGS.number_walkers )

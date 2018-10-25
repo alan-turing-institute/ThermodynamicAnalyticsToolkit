@@ -10,12 +10,11 @@ class TrajectoryAccumulator(Accumulator):
 
     """
 
-    def __init__(self, return_trajectories, sampler, config_map, writer,
-                 header, steps, every_nth, number_walkers, directions):
-        super(TrajectoryAccumulator, self).__init__(every_nth)
+    def __init__(self, return_trajectories, method, config_map, writer,
+                 header, max_steps, every_nth, number_walkers, directions):
+        super(TrajectoryAccumulator, self).__init__(method, max_steps, every_nth)
         self.trajectory = None
         self._return_trajectories = return_trajectories
-        self._sampler = sampler
         self._config_map = config_map
         self._trajectory_writer = writer
         self._number_walkers = number_walkers
@@ -25,7 +24,7 @@ class TrajectoryAccumulator(Accumulator):
             no_params = len(header)
             for walker_index in range(self._number_walkers):
                 self.trajectory.append(pd.DataFrame(
-                    np.zeros((steps, no_params)),
+                    np.zeros((self._total_eval_steps, no_params)),
                     columns=header))
 
     def _accumulate_nth_step_line(self, current_step, walker_index, values):

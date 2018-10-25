@@ -26,21 +26,22 @@ class AccumulatedValues(object):
         self.accepted = 0
         self.rejected = 0
 
-    def evaluate(self, sess, sampler, static_vars):
-        if sampler in ["StochasticGradientLangevinDynamics",
-                                  "GeometricLangevinAlgorithm_1stOrder",
-                                  "GeometricLangevinAlgorithm_2ndOrder",
-                                  "HamiltonianMonteCarlo_1stOrder",
-                                  "HamiltonianMonteCarlo_2ndOrder",
-                                  "BAOAB",
-                                  "CovarianceControlledAdaptiveLangevinThermostat"]:
-            if sampler == "StochasticGradientLangevinDynamics":
+    def evaluate(self, sess, method, static_vars):
+        if method in ["GradientDescent",
+                      "StochasticGradientLangevinDynamics",
+                      "GeometricLangevinAlgorithm_1stOrder",
+                      "GeometricLangevinAlgorithm_2ndOrder",
+                      "HamiltonianMonteCarlo_1stOrder",
+                      "HamiltonianMonteCarlo_2ndOrder",
+                      "BAOAB",
+                      "CovarianceControlledAdaptiveLangevinThermostat"]:
+            if method == "StochasticGradientLangevinDynamics" or method == "GradientDescent":
                 self.gradients, self.virials, self.noise = \
                     sess.run([
                         static_vars["gradients"],
                         static_vars["virials"],
                         static_vars["noise"]])
-            elif "HamiltonianMonteCarlo" in sampler:
+            elif "HamiltonianMonteCarlo" in method:
                 # when HMC accepts, it overwrites `old_total_energy` with the updated value
                 # hence, we cannot see the old value in output any more. Therefore, we
                 # always keep the last value as backup.

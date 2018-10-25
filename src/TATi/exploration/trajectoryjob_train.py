@@ -32,6 +32,7 @@ class TrajectoryJob_train(TrajectoryJob_sample):
 
     def _store_last_step_of_trajectory(self, _data, averages, run_info, trajectory):
         for walker_index in range(self.network_model.FLAGS.number_walkers):
+            print(run_info)
             step = [int(np.asarray(run_info.loc[:, 'step'])[-1])]
             loss = [float(np.asarray(run_info.loc[:, 'loss'])[-1])]
             gradient = [float(np.asarray(run_info.loc[:, 'scaled_gradient'])[-1])]
@@ -41,7 +42,7 @@ class TrajectoryJob_train(TrajectoryJob_sample):
             logging.debug("Step : " + str(step[-1]))
             logging.debug("Loss : " + str(loss[-1]))
             logging.debug("Gradient : " + str(gradient[-1]))
-            logging.debug("Parameter (first ten component shown): " + str(parameters[-1,0:10]))
+            logging.debug("Parameter (first ten component shown): " + str(parameters[-1,:1]))
             # append parameters to data
             _data.add_run_step(_steps=step,
                                _losses=loss,
