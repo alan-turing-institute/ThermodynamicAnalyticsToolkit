@@ -104,11 +104,10 @@ done
 
 AT_CLEANUP
 
-# HMC is a bit more touchy here than the rest, probably because of
-# re-initializing of momenta. We need to decrease step_width slightly.
-AT_SETUP([Sampler - Prior in HMC])
-AT_KEYWORDS([tatisampler samplers prior wall_repelling lower_boundary upper_boundary hmc])
-AT_SKIP_IF([$BIN_TRUE])
+AT_SETUP([Sampler - Prior in HMC 1st order])
+AT_KEYWORDS([tatisampler samplers prior wall_repelling lower_boundary upper_boundary hmc 1st])
+AT_XFAIL_IF([$BIN_TRUE])
+# Priors with HMC is currently not allowed
 
 # dataset prepared as follows:
 # TATiDatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_files dataset-twoclusters.csv
@@ -122,7 +121,7 @@ AT_CHECK([../../../TATiSampler \
 	--prior_factor .1 \
 	--prior_lower_boundary .0 \
 	--prior_upper_boundary 1.0 \
-	--sampler HamiltonianMonteCarlo \
+	--sampler HamiltonianMonteCarlo_1stOrder \
 	--seed 426 \
 	--step_width 5e-2 \
 	--trajectory_file trajectory.csv

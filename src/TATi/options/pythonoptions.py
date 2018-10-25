@@ -93,7 +93,8 @@ class PythonOptions(Options):
                    "CovarianceControlledAdaptiveLangevin, "+ \
                    "GeometricLangevinAlgorithm_1stOrder, "+ \
                    "GeometricLangevinAlgorithm_2ndOrder, "+ \
-                   "HamiltonianMonteCarlo, "+ \
+                   "HamiltonianMonteCarlo_1stOrder, "+ \
+                   "HamiltonianMonteCarlo_2ndOrder, "+ \
                    "StochasticGradientLangevinDynamics",
         "save_model": "Save model (weights and biases) to a file for later "+ \
                       "restoring.",

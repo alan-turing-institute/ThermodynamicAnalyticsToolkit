@@ -2,9 +2,6 @@
 
 EXTRA_DIST =
 
-EXTRA_DIST += \
-	$(top_builddir)/doc/thermodynamicanalyticstoolkit.pdf
-
 clean-local:
 
 distclean-local:

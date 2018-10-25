@@ -48,6 +48,7 @@ AC_CONFIG_FILES(
 	src/TATi/diffusion_maps/Makefile
 	src/TATi/exploration/Makefile
 	src/TATi/models/Makefile
+	src/TATi/models/accumulators/Makefile
 	src/TATi/models/input/Makefile
 	src/TATi/options/Makefile
 	src/TATi/parameters/Makefile

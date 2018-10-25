@@ -22,6 +22,11 @@ The computation of averages from equilibrium and nonequilibrium Langevin molecul
 IMA Journal of Numerical Analysis, 1–55.
 http://doi.org/10.1093/imanum/dru056
 
+- [[MacKenzie1989]] Mackenzie, P. B. (1989). 
+An improved hybrid Monte Carlo method. 
+Physics Letters B, 226(3–4), 369–371. 
+https://doi.org/10.1016/0370-2693(89)91212-4
+
 - [[Matthews2018]] Matthews, C., Weare, J., & Leimkuhler, B. (2018).
 Ensemble preconditioning for Markov chain Monte Carlo simulation.
 Statistics and Computing, 28(2), 277–290.

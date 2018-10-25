@@ -44,14 +44,15 @@ TESTSCRIPTS += \
 	$(srcdir)/DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-given_seeds-ccadl.at \
 	$(srcdir)/DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-given_seeds-gla1.at \
 	$(srcdir)/DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-given_seeds-gla2.at \
+	$(srcdir)/DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-given_seeds-hmc_1st.at \
 	$(srcdir)/DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-given_seeds-sgld.at \
-	$(srcdir)/DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-given_seeds-hmc.at \
 	$(srcdir)/DataDrivenSampler/Reproducibility/testsuite-datadrivensampler-reproducibility-no_seeds.at \
 	$(srcdir)/DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-baoab.at \
 	$(srcdir)/DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-ccadl.at \
 	$(srcdir)/DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-gla_1st.at \
 	$(srcdir)/DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-gla_2nd.at \
-	$(srcdir)/DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-hmc.at \
+	$(srcdir)/DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-hmc_1st.at \
+	$(srcdir)/DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-hmc_2nd.at \
 	$(srcdir)/DataDrivenSampler/Samplers/testsuite-datadrivensampler-samplers-sgld.at \
 	$(srcdir)/DataDrivenSampler/SavingRestoring/testsuite-datadrivensampler-saving_restoring.at \
 	$(srcdir)/DataDrivenSampler/Trajectories/testsuite-datadrivensampler-trajectories.at \

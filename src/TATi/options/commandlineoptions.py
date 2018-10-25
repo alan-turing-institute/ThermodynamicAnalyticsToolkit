@@ -343,8 +343,9 @@ class CommandlineOptions(PythonOptions):
                              "GeometricLangevinAlgorithm_2ndOrder",
                              "BAOAB",
                              "CovarianceControlledAdaptiveLangevinThermostat",
-                             "HamiltonianMonteCarlo"] \
-                and self.inverse_temperature == 0.:
+                             "HamiltonianMonteCarlo_1stOrder",
+                             "HamiltonianMonteCarlo_2ndOrder"] \
+                        and self.inverse_temperature == 0.:
             logging.error("You are using a sampler but have not set the inverse_temperature.")
             sys.exit(255)
 

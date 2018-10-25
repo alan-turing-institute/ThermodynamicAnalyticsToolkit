@@ -1,0 +1,243 @@
+#
+#    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
+#    Copyright (C) 2018 The University of Edinburgh
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### test on different samplers
+
+AT_SETUP([Samplers - HMC 2nd order, always accept])
+AT_KEYWORDS([samplers tatisampler hmc 2nd accept])
+
+# dataset prepared as follows:
+# TATiDatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_files dataset-twoclusters.csv
+
+# we picked a case (temp, seed, number_mc_steps) were there is accept&reject
+AT_CHECK([../../../TATiSampler \
+    --averages_file averages-HMC.csv \
+	--batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/pre/dataset-twoclusters.csv \
+	--batch_size 20 \
+	--run_file run-HMC.csv \
+	--inverse_temperature 1e1 \
+	--max_steps 100 \
+	--hamiltonian_dynamics_time 0.05 \
+	--step_width 1e-2 \
+	--sampler HamiltonianMonteCarlo_2ndOrder \
+	--seed 426 \
+	--trajectory_file trajectory-HMC.csv
+], 0, [stdout], [stderr])
+
+# now compare (exclude time_per_nth_step column)
+AT_CHECK([../../../NumericalDiff \
+    --general_threshold 1e-7 absolute \
+    --column_drop time_per_nth_step id -- \
+    run-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-HMC_2nd-accept.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff \
+    --general_threshold 1e-7 absolute \
+    --column_drop id -- \
+    trajectory-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-HMC_2nd-accept.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff \
+    --general_threshold 1e-7 absolute \
+    --column_drop id -- \
+    averages-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/averages-HMC_2nd-accept.csv], 0, [ignore], [ignore])
+
+AT_CLEANUP
+
+
+AT_SETUP([Samplers - HMC 2nd order, initial rejects])
+AT_KEYWORDS([samplers tatisampler hmc 2nd reject])
+# In contrast to HMC_1st we need a higher step_width here.
+#
+# Again, it is not easy to get initial rejections.
+# Higher temperatures ease the rejection criterion
+# longer HD times yield only rejections.
+
+# dataset prepared as follows:
+# TATiDatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_files dataset-twoclusters.csv
+
+# we picked a case (temp, seed, number_mc_steps) were there is accept&reject
+AT_CHECK([../../../TATiSampler \
+    --averages_file averages-HMC.csv \
+	--batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/pre/dataset-twoclusters.csv \
+	--batch_size 20 \
+	--run_file run-HMC.csv \
+	--inverse_temperature 1e2 \
+	--max_steps 100 \
+	--hamiltonian_dynamics_time 2. \
+	--step_width 1. \
+	--sampler HamiltonianMonteCarlo_2ndOrder \
+	--seed 426 \
+	--trajectory_file trajectory-HMC.csv
+], 0, [stdout], [stderr])
+
+# now compare (exclude time_per_nth_step column)
+AT_CHECK([../../../NumericalDiff \
+    --general_threshold 1e-7 absolute \
+    --column_drop time_per_nth_step id -- \
+    run-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-HMC_2nd-reject.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff \
+    --general_threshold 1e-7 absolute \
+    --column_drop id -- \
+    trajectory-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-HMC_2nd-reject.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff \
+    --general_threshold 1e-7 absolute \
+    --column_drop id -- \
+    averages-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/averages-HMC_2nd-reject.csv], 0, [ignore], [ignore])
+
+AT_CLEANUP
+
+AT_SETUP([Samplers - HMC 2nd order, always accept, single step])
+AT_KEYWORDS([samplers tatisampler hmc 2nd accept singlestep])
+
+# dataset prepared as follows:
+# TATiDatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_files dataset-twoclusters.csv
+
+# we picked a case (temp, seed, number_mc_steps) were there is accept&reject
+AT_CHECK([../../../TATiSampler \
+    --averages_file averages-HMC.csv \
+	--batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/pre/dataset-twoclusters.csv \
+	--batch_size 20 \
+	--run_file run-HMC.csv \
+	--inverse_temperature 1e1 \
+	--max_steps 100 \
+	--hamiltonian_dynamics_time 1e-2 \
+	--step_width 1e-2 \
+	--sampler HamiltonianMonteCarlo_2ndOrder \
+	--seed 426 \
+	--trajectory_file trajectory-HMC.csv
+], 0, [stdout], [stderr])
+
+# now compare (exclude time_per_nth_step column)
+AT_CHECK([../../../NumericalDiff \
+    --general_threshold 1e-7 absolute \
+    --column_drop time_per_nth_step id -- \
+    run-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-HMC_2nd-accept-singlestep.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff \
+    --general_threshold 1e-7 absolute \
+    --column_drop id -- \
+    trajectory-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-HMC_2nd-accept-singlestep.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff \
+    --general_threshold 1e-7 absolute \
+    --column_drop id -- \
+    averages-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/averages-HMC_2nd-accept-singlestep.csv], 0, [ignore], [ignore])
+
+AT_CLEANUP
+
+
+AT_SETUP([Samplers - HMC 2nd order, initial rejects, single step])
+AT_KEYWORDS([samplers tatisampler hmc 2nd reject singlestep])
+# Here, we had to increase the step width as well to get initial
+# rejects and then accepts after a while.
+
+# dataset prepared as follows:
+# TATiDatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_files dataset-twoclusters.csv
+
+# we picked a case (temp, seed, number_mc_steps) were there is accept&reject
+AT_CHECK([../../../TATiSampler \
+    --averages_file averages-HMC.csv \
+	--batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/pre/dataset-twoclusters.csv \
+	--batch_size 20 \
+	--run_file run-HMC.csv \
+	--inverse_temperature 1e2 \
+	--max_steps 100 \
+	--hamiltonian_dynamics_time 1. \
+	--step_width 1. \
+	--sampler HamiltonianMonteCarlo_2ndOrder \
+	--seed 426 \
+	--trajectory_file trajectory-HMC.csv
+], 0, [stdout], [stderr])
+
+# now compare (exclude time_per_nth_step column)
+AT_CHECK([../../../NumericalDiff \
+    --general_threshold 1e-7 absolute \
+    --column_drop time_per_nth_step id -- \
+    run-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-HMC_2nd-reject-singlestep.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff \
+    --general_threshold 1e-7 absolute \
+    --column_drop id -- \
+    trajectory-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-HMC_2nd-reject-singlestep.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff \
+    --general_threshold 1e-7 absolute \
+    --column_drop id -- \
+    averages-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/averages-HMC_2nd-reject-singlestep.csv], 0, [ignore], [ignore])
+
+AT_CLEANUP
+
+
+AT_SETUP([Samplers - HMC 2nd order with hidden nodes])
+AT_KEYWORDS([samplers tatisampler hmc 2nd hidden])
+
+# dataset prepared as follows:
+# TATiDatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_files dataset-twoclusters.csv
+
+# we picked a case (temp, seed, number_mc_steps) were there is accept&reject
+AT_CHECK([../../../TATiSampler \
+    --averages_file averages-HMC-hidden.csv \
+	--batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/pre/dataset-twoclusters.csv \
+	--batch_size 20 \
+	--run_file run-HMC-hidden.csv \
+	--hidden_dimension 4 \
+	--inverse_temperature 1e1 \
+	--max_steps 100 \
+	--hamiltonian_dynamics_time 0.05 \
+	--step_width 1e-2 \
+	--sampler HamiltonianMonteCarlo_2ndOrder \
+	--seed 426 \
+	--trajectory_file trajectory-HMC-hidden.csv
+], 0, [stdout], [stderr])
+
+# now compare: for some reason with hidden layers loss, total_energy, old_total_energy slightly vary from run to run
+AT_CHECK([../../../NumericalDiff \
+    --general_threshold 3e-7 absolute \
+    --column_drop time_per_nth_step id -- \
+    run-HMC-hidden.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-HMC_2nd-hidden.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff \
+    --general_threshold 3e-7 absolute \
+    --column_drop id -- \
+    trajectory-HMC-hidden.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-HMC_2nd-hidden.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff \
+    --general_threshold 1e-7 absolute \
+    --column_drop id -- \
+    averages-HMC-hidden.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/averages-HMC_2nd-hidden.csv], 0, [ignore], [ignore])
+
+AT_CLEANUP
+
+
+AT_SETUP([Samplers - HMC 2nd order with multiple walkers])
+AT_KEYWORDS([samplers tatisampler hmc 2nd walkers])
+AT_XFAIL_IF([$BIN_TRUE])
+# at the moment we raise an exception if HMC is uses with multiple walkers
+# as this would work in principle but is not properly tested, yet.
+
+# dataset prepared as follows:
+# TATiDatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_files dataset-twoclusters.csv
+
+# we picked a case (temp, seed, number_mc_steps) were there is accept&reject
+AT_CHECK([../../../TATiSampler \
+    --averages_file averages-HMC-hidden.csv \
+	--batch_data_files ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/pre/dataset-twoclusters.csv \
+	--batch_size 20 \
+	--hamiltonian_dynamics_time 0.05 \
+	--hidden_dimension 4 \
+	--inverse_temperature 1e1 \
+	--max_steps 100 \
+	--number_walkers 2 \
+	--run_file run-HMC-hidden.csv \
+	--step_width 1e-2 \
+	--sampler HamiltonianMonteCarlo_2ndOrder \
+	--seed 426 \
+	--trajectory_file trajectory-HMC-hidden.csv
+], 0, [stdout], [stderr])
+
+AT_CLEANUP
