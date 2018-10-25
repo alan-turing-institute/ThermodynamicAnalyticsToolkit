@@ -1,6 +1,6 @@
 [[reference.simulation]]
-Simulation module: A General NN interface
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Simulation module reference
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When trying out new methods on sampling or training neural networks, one
 needs to play around with the network directly. This may require one or
@@ -73,7 +73,8 @@ https://www.tensorflow.org/tutorial[tutorials].
 Help on Options
 ^^^^^^^^^^^^^^^
 TATi has quite a number of options that control its behavior with respect
-to sampling, optimizing and so on. You can request help to a specific option.
+to sampling, optimizing and so on. We briefly remind of how you can request 
+help to a specific option.
 Let us inspect the help for `batch_data_files`:
 
 [source,python]
@@ -107,23 +108,6 @@ Setup
 
 Let's first look at how to set up the neural network and supply it with
 a dataset.
-
-[[reference.simulation.setup.notation]]
-Notation
-++++++++
-
-In the following, we will use the following notation:
-
-- dataset: latexmath:[D = \{X,Y\}] with features latexmath:[X=\{x_d\}] and labels
-latexmath:[Y=\{y_d\}]
-- batch of the dataset: latexmath:[D_i=\{X_i, Y_i\}]
-- network parameters: latexmath:[w=\{w_1, w_M\}]
-- momenta of network parameters: latexmath:[p=\{p_1, p_M\}]
-- neural network function: latexmath:[F_w(x)]
-- loss function: latexmath:[L_D(w) = \sum_i l(F_w(x_i), y_i)] with a loss
-latexmath:[l(x,y)]
-- gradients: latexmath:[\nabla_w L_D(w)]
-- hessians: latexmath:[H_{ij} = \partial_{w_i} \partial_{w_j} L_D(w)]
 
 [[reference.simulation.setup.setting_up_network]]
 Setting up the network

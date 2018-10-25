@@ -493,6 +493,9 @@ of each walker is rescaled.
 
 include::reference_implementing_sampler.txt[]
 
+include::reference_simulation.txt[]
+
+
 [[reference.reproducibility]]
 A Note on Reproducibility
 ~~~~~~~~~~~~~~~~~~~~~~~~~
