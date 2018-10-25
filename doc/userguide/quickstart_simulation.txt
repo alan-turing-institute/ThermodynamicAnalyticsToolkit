@@ -434,6 +434,13 @@ In this example we have parsed the same file as the in the previous section
 into a numpy array using the pandas module. Natually, this is just one way of
 creating a suitable numpy array.
 
+At the end we have stated `loss()` and the `score()`. While the loss is simply
+the output of the training function, the score gives the accuracy in a
+classification problem setting: We compare the label given in the dataset with
+the label predicted by the network and take the average over the whole dataset
+(or its mini-batch if `batch_size` is used). For multi-labels, we use the
+largest entry as the label in multi classification.
+
 NOTE: Input and output dimensions are directly deduced from the the tuple sizes.
 
 NOTE: The nodes in the input layer can be modified using `input_columns`, e.g.,
