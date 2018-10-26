@@ -1,3 +1,27 @@
+v0.9.2
+======
+
+- added fully tested Hamiltonian Monte Carlo method with first and second
+  order time integrator (Euler and Leapfrog), following [Neal, 2011].
+- added Ensemble Quasi Newton scheme for all samplers, tested on simple
+  Gaussian mixture model and MNIST single-layer perceptron.
+- for checking virial theorem, average moment of inertia is written to averages
+  file.
+- allowing "0" in option hidden_dimension.
+- trajectory can be written w.r.t to subspace spanned by vectors in new option
+  directions_file.
+- summaries now write memory and cputime usage for debugging bottlenecks.
+- DOCU: re-added accidentally dropped reference section on simulation module.
+- FIX: TATiOptimizer always writes last step to files.
+- FIX: update of parameters caused no update of simulation's evaluation cache.
+- FIX: time_per_nth_step was using process_time instead of time, i.e. 
+  accumulated time over all processes.
+- FIX: Boolean parameters were not used from cmd-line.
+- FIX: Assigning weights from dataframes took ages. Now works also for multiple
+  walkers.
+- FIX: parse_parameters_file was not working in TATi.simulation.
+- tested on TF version up to 1.10.
+
 v0.9.1
 ======
 
