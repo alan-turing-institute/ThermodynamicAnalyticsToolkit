@@ -12,7 +12,7 @@ class TrajectoryAccumulator(Accumulator):
 
     def __init__(self, return_trajectories, method, config_map, writer,
                  header, max_steps, every_nth, number_walkers, directions):
-        super(TrajectoryAccumulator, self).__init__(method, max_steps, every_nth)
+        super(TrajectoryAccumulator, self).__init__(method, max_steps, every_nth, number_walkers)
         self.trajectory = None
         self._return_trajectories = return_trajectories
         self._config_map = config_map

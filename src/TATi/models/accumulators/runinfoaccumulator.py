@@ -11,7 +11,7 @@ class RuninfoAccumulator(Accumulator):
 
     def __init__(self, return_run_info, method, config_map, writer,
                  header, max_steps, every_nth, number_walkers):
-        super(RuninfoAccumulator, self).__init__(method, max_steps, every_nth)
+        super(RuninfoAccumulator, self).__init__(method, max_steps, every_nth, number_walkers)
         self.run_info = None
         self._return_run_info = return_run_info
         self._config_map = config_map
