@@ -73,7 +73,7 @@ class StochasticGradientLangevinDynamicsSampler(WalkerEnsembleOptimizer):
         else:
             # increment such that we use different seed for each random tensor
             self._seed += 1
-            print("Creating random_noise_t with seed "+str(self._seed))
+            #print("Creating random_noise_t with seed "+str(self._seed))
             random_noise_t = tf.random_normal(grad.get_shape(), mean=0., stddev=1., dtype=dds_basetype, seed=self._seed)
         return step_width_t, inverse_temperature_t, random_noise_t
 

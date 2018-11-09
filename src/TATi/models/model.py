@@ -1030,7 +1030,7 @@ class model:
         if (self.FLAGS.number_walkers > 1) and (self.FLAGS.collapse_walkers) and \
                 (current_step % self.FLAGS.covariance_after_steps == 0) and \
                 (current_step != 0):
-            print("COLLAPSING " + str(self.FLAGS.collapse_walkers))
+            #print("COLLAPSING " + str(self.FLAGS.collapse_walkers))
             # get walker 0's position
             weights_eval, biases_eval = self.sess.run([
                 self.weights[0].parameters, self.biases[0].parameters])
