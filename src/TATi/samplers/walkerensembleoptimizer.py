@@ -246,11 +246,11 @@ class WalkerEnsembleOptimizer(Optimizer):
 
         normalizing_factor = tf.cond(tf.greater(max_matrix, 1.),
                                      accept, reject)
-        return tf.sqrt(tf.reciprocal(
-            tf.Print(normalizing_factor, [normalizing_factor],
-                     "normalizing factor: "))) * \
-                tf.cholesky(tf.Print(normalizing_factor * matrix,
-                                     [matrix], "matrix: ", summarize=4))
+        return tf.sqrt(tf.reciprocal(normalizing_factor)) * \
+                tf.cholesky(normalizing_factor * matrix)
+        # tf.Print(, [normalizing_factor],
+        # "normalizing factor: ")
+        # tf.Print(, [matrix], "matrix: ", summarize=4)
 
     def _pick_grad(self, grads_and_vars, var):
         """ Helper function to extract the gradient associated with `var` from
@@ -300,9 +300,9 @@ class WalkerEnsembleOptimizer(Optimizer):
 
             def recalc_covariance():
                 with tf.control_dependencies([
-                    tf.Print(
-                        precondition_matrix.assign(self._get_preconditioner(flat_othervars, var)),
-                        [self._current_step, precondition_matrix], "precondition_matrix: ", summarize=4)]):
+                    precondition_matrix.assign(self._get_preconditioner(flat_othervars, var))
+                ]):
+                    #tf.Print(, [self._current_step, precondition_matrix], "precondition_matrix: ", summarize=4)
                     return tf.identity(precondition_matrix)
 
             preconditioner = tf.cond(
@@ -363,7 +363,7 @@ class WalkerEnsembleOptimizer(Optimizer):
                     if v.name == var.name:
                         pass
                     elif v.name[v.name.find("/"):] == var.name[var.name.find("/"):]:
-                        print("Appending to othervars: "+str(v))
+                        #print("Appending to othervars: "+str(v))
                         othervars.append(tf.reshape(v, [-1], name=v.name[:v.name.find(":")]+"/reshape"))
         return var, othervars
 
@@ -378,8 +378,9 @@ class WalkerEnsembleOptimizer(Optimizer):
         # very complicate for the "matrix * vector" product (covariance matrix
         # times the gradient) in the end. This is undone in `_pick_grad()`
         #print(flat_othervars)
-        vars = tf.Print(tf.stack(flat_othervars),
-                        [flat_othervars], "flat_othervars", summarize=10)
+        vars = tf.stack(flat_othervars)
+            # tf.Print(,
+            # [flat_othervars], "flat_othervars", summarize=10)
         number_dim = tf.size(flat_othervars[0])
         number_walkers = vars.shape[0]
 
@@ -427,9 +428,10 @@ class WalkerEnsembleOptimizer(Optimizer):
         def reject_block():
             return tf.constant(1.)
 
-        norm_factor = tf.Print(tf.cond(
+        norm_factor = tf.cond(
             tf.greater(number_dim, 1),
-            accept_block, reject_block),[number_dim], "number_dim: ")
+            accept_block, reject_block)
+            # tf.Print(,[number_dim], "number_dim: ")
 
         return norm_factor
 
@@ -454,7 +456,9 @@ class WalkerEnsembleOptimizer(Optimizer):
         c = lambda i, x: tf.less(i, number_dim)
         with tf.control_dependencies(flat_othervars):
             r, mean_eval = tf.while_loop(c, body_mean, (i, means), name="means_loop")
-        means = tf.Print(mean_eval, [mean_eval.name, mean_eval], "mean_eval: ")
+        means = mean_eval
+            #tf.Print(,
+            # [mean_eval.name, mean_eval], "mean_eval: ")
         # print(means)
         return means
 
@@ -476,7 +480,8 @@ class WalkerEnsembleOptimizer(Optimizer):
         c = lambda i, x: tf.less(i, number_walkers)
         with tf.control_dependencies(flat_othervars):
             r, factor_eval = tf.while_loop(c, body_factor, (i, rank1factors), name="factor_loop")
-        factors = tf.Print(factor_eval, [factor_eval.name, factor_eval], "factor_eval: ")
+        factors = factor_eval
+        #tf.Print(, [factor_eval.name, factor_eval], "factor_eval: ")
         # print(means)
         return factors
 
