@@ -1278,17 +1278,28 @@ class model:
                     self._get_parameters(return_trajectories, all_weights, all_biases)
 
             # perform the sampling step
-            try:
-                summary, accumulated_values.accuracy, accumulated_values.global_step, accumulated_values.loss = \
-                    self._perform_step(test_nodes, feed_dict)
-            except tf.errors.InvalidArgumentError as err:
-                # Cholesky failed, try again with smaller eta
-                logging.warning(str(err.op)+" FAILED, using tenth of eta.")
-                old_eta = feed_dict["covariance_blending"]
-                feed_dict["covariance_blending"] = feed_dict["covariance_blending"]/10.
-                summary, accumulated_values.accuracy, accumulated_values.global_step, accumulated_values.loss = \
-                    self._perform_step(test_nodes, feed_dict)
-                feed_dict["covariance_blending"] = old_eta
+            step_success = False
+            blending_key = [self.nn[walker_index].placeholder_nodes["covariance_blending"]
+                            for walker_index in range(self.FLAGS.number_walkers)]
+            old_eta = [feed_dict[blending_key[walker_index]] for walker_index in range(self.FLAGS.number_walkers)]
+            while not step_success:
+                for walker_index in range(self.FLAGS.number_walkers):
+                    if feed_dict[blending_key[walker_index]] > 0. \
+                            and feed_dict[blending_key[walker_index]] < 1e-12:
+                        logging.warning("Possible NaNs or Infs in covariance matrix, setting eta to 0 temporarily.")
+                        feed_dict[blending_key[walker_index]] = 0.
+                try:
+                    summary, accumulated_values.accuracy, accumulated_values.global_step, accumulated_values.loss = \
+                        self._perform_step(test_nodes, feed_dict)
+                    step_success = True
+                except tf.errors.InvalidArgumentError as err:
+                    # Cholesky failed, try again with smaller eta
+                    for walker_index in range(self.FLAGS.number_walkers):
+                        feed_dict[blending_key[walker_index]] = feed_dict[blending_key[walker_index]]/10.
+                    logging.warning(str(err.op) + " FAILED at step %d, using %lg as eta." \
+                                    % (current_step, feed_dict[blending_key[0]]))
+            for walker_index in range(self.FLAGS.number_walkers):
+                feed_dict[blending_key[walker_index]] = old_eta[walker_index]
 
             # get updated state variables
             accumulated_values.evaluate(self.sess, self.FLAGS.sampler, self.static_vars)
@@ -1455,17 +1466,28 @@ class model:
                     self._get_parameters(return_trajectories, all_weights, all_biases)
 
             # perform the sampling step
-            try:
-                summary, accumulated_values.accuracy, accumulated_values.global_step, accumulated_values.loss = \
-                    self._perform_step(test_nodes, feed_dict)
-            except tf.errors.InvalidArgumentError as err:
-                # Cholesky failed, try again with smaller eta
-                logging.warning(str(err.op)+" FAILED, using tenth of eta.")
-                old_eta = feed_dict["covariance_blending"]
-                feed_dict["covariance_blending"] = feed_dict["covariance_blending"]/10.
-                summary, accumulated_values.accuracy, accumulated_values.global_step, accumulated_values.loss = \
-                    self._perform_step(test_nodes, feed_dict)
-                feed_dict["covariance_blending"] = old_eta
+            step_success = False
+            blending_key = [self.nn[walker_index].placeholder_nodes["covariance_blending"]
+                            for walker_index in range(self.FLAGS.number_walkers)]
+            old_eta = [feed_dict[blending_key[walker_index]] for walker_index in range(self.FLAGS.number_walkers)]
+            while not step_success:
+                for walker_index in range(self.FLAGS.number_walkers):
+                    if feed_dict[blending_key[walker_index]] > 0. \
+                            and feed_dict[blending_key[walker_index]] < 1e-12:
+                        logging.warning("Possible NaNs or Infs in covariance matrix, setting eta to 0 temporarily.")
+                        feed_dict[blending_key[walker_index]] = 0.
+                try:
+                    summary, accumulated_values.accuracy, accumulated_values.global_step, accumulated_values.loss = \
+                        self._perform_step(test_nodes, feed_dict)
+                    step_success = True
+                except tf.errors.InvalidArgumentError as err:
+                    # Cholesky failed, try again with smaller eta
+                    for walker_index in range(self.FLAGS.number_walkers):
+                        feed_dict[blending_key[walker_index]] = feed_dict[blending_key[walker_index]]/10.
+                    logging.warning(str(err.op) + " FAILED at step %d, using %lg as eta." \
+                                    % (current_step, feed_dict[blending_key[0]]))
+            for walker_index in range(self.FLAGS.number_walkers):
+                feed_dict[blending_key[walker_index]] = old_eta[walker_index]
 
             # get updated state variables
             accumulated_values.evaluate(self.sess, self.FLAGS.sampler, self.static_vars)
