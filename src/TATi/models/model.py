@@ -1355,7 +1355,8 @@ class model:
             # write summaries for tensorboard
             self._write_summaries(summary_writer, summary, current_step)
 
-            accumulated_values.time_elapsed_per_nth_step = self._get_elapsed_time_per_nth_step(current_step)
+            if current_step % self.FLAGS.every_nth == 0:
+                accumulated_values.time_elapsed_per_nth_step = self._get_elapsed_time_per_nth_step(current_step)
 
             for walker_index in range(self.FLAGS.number_walkers):
                 run_info.accumulate_nth_step(current_step, walker_index, accumulated_values)
@@ -1500,7 +1501,8 @@ class model:
                 for walker_index in range(self.FLAGS.number_walkers):
                     averages.accumulate_each_step(current_step, walker_index, accumulated_values)
 
-            accumulated_values.time_elapsed_per_nth_step = self._get_elapsed_time_per_nth_step(current_step)
+            if current_step % self.FLAGS.every_nth == 0:
+                accumulated_values.time_elapsed_per_nth_step = self._get_elapsed_time_per_nth_step(current_step)
 
             for walker_index in range(self.FLAGS.number_walkers):
                 run_info.accumulate_nth_step(current_step, walker_index, accumulated_values)
@@ -1674,7 +1676,8 @@ class model:
                 for walker_index in range(self.FLAGS.number_walkers):
                     averages.accumulate_each_step(current_step, walker_index, accumulated_values)
 
-            accumulated_values.time_elapsed_per_nth_step = self._get_elapsed_time_per_nth_step(current_step)
+            if current_step % self.FLAGS.every_nth == 0:
+                accumulated_values.time_elapsed_per_nth_step = self._get_elapsed_time_per_nth_step(current_step)
 
             for walker_index in range(self.FLAGS.number_walkers):
                 run_info.accumulate_nth_step(current_step, walker_index, accumulated_values)
