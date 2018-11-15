@@ -95,9 +95,12 @@ class GeometricLangevinAlgorithmFirstOrderSampler(StochasticGradientLangevinDyna
         ub_repell, lb_repell = self._apply_prior(var)
         prior_force = step_width_t * (ub_repell + lb_repell)
 
-        preconditioned_momentum_full_step_t = tf.reshape(
-            tf.matmul(tf.expand_dims(tf.reshape(momentum_full_step_t, [-1]), 0), precondition_matrix),
-            var.shape)
+        if len(grads_and_vars) != 1:
+            preconditioned_momentum_full_step_t = tf.reshape(
+                tf.matmul(tf.expand_dims(tf.reshape(momentum_full_step_t, [-1]), 0), precondition_matrix),
+                var.shape)
+        else:
+            preconditioned_momentum_full_step_t = momentum_full_step_t
 
         alpha_t = tf.exp(-friction_constant_t * step_width_t)
 

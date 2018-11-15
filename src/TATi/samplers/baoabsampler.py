@@ -233,12 +233,14 @@ class BAOABSampler(GeometricLangevinAlgorithmFirstOrderSampler):
         momentum_full_step_t = \
             momentum_half_step_t - 0.5 * scaled_gradient
             #,[var.name, momentum_half_step_t], "B2: ")
-        preconditioned_momentum_full_step_t = \
-            tf.reshape(
-            tf.matmul(precondition_matrix, tf.expand_dims(tf.reshape(momentum_full_step_t, [-1]), 1)),
-            var.shape)
-            # ,[precondition_matrix], "B2 precond: ")
-
+        if len(grads_and_vars) != 1:
+            preconditioned_momentum_full_step_t = \
+                tf.reshape(
+                tf.matmul(precondition_matrix, tf.expand_dims(tf.reshape(momentum_full_step_t, [-1]), 1)),
+                var.shape)
+                # ,[precondition_matrix], "B2 precond: ")
+        else:
+            preconditioned_momentum_full_step_t = momentum_full_step_t
         # half_qn = A(qn, half_pn, h / 2)
         position_half_step_t = \
             var + 0.5 * step_width_t * preconditioned_momentum_full_step_t
@@ -253,9 +255,12 @@ class BAOABSampler(GeometricLangevinAlgorithmFirstOrderSampler):
             noise_global_t = tf.assign_add(noise_global,
                                            tf.reduce_sum(tf.multiply(rescaled_noise, rescaled_noise)))
         momentum_noise_step_t = alpha_t * momentum_full_step_t + scaled_noise
-        preconditioned_momentum_noise_step_t = tf.reshape(
-            tf.matmul(precondition_matrix, tf.expand_dims(tf.reshape(momentum_noise_step_t, [-1]), 1)),
-            var.shape)
+        if len(grads_and_vars) != 1:
+            preconditioned_momentum_noise_step_t = tf.reshape(
+                tf.matmul(precondition_matrix, tf.expand_dims(tf.reshape(momentum_noise_step_t, [-1]), 1)),
+                var.shape)
+        else:
+            preconditioned_momentum_noise_step_t = momentum_noise_step_t
 
         # next_qn = A(half_qn, tilde_half_pn, h / 2)
         position_full_step_t = \
