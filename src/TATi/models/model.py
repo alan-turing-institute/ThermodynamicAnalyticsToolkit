@@ -960,10 +960,8 @@ class model:
 
     def _write_summaries(self, summary_writer, summary, current_step):
         if self.FLAGS.summaries_path is not None:
-            run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
-            run_metadata = tf.RunMetadata()
-            summary_writer.add_run_metadata(run_metadata, 'step%d' % current_step)
-            summary_writer.add_summary(summary, current_step)
+            summary_writer.add_run_metadata(summary[1], 'step%d' % current_step)
+            summary_writer.add_summary(summary[0], current_step)
 
     def _zero_state_variables(self, method):
         if method in ["GradientDescent",
@@ -1000,16 +998,24 @@ class model:
 
     def _perform_step(self, test_nodes, feed_dict):
         summary = None
-        results = self.sess.run(test_nodes, feed_dict=feed_dict)
+        run_metadata = None
         if self.FLAGS.summaries_path is not None:
+            run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+            run_metadata = tf.RunMetadata()
+            results = self.sess.run(test_nodes,
+                                    feed_dict=feed_dict,
+                                    options=run_options,
+                                    run_metadata=run_metadata)
             summary, acc, global_step, loss_eval = \
                 results[0], results[2], results[3], results[4]
 
         else:
+            results = self.sess.run(test_nodes,
+                                    feed_dict=feed_dict)
             acc, global_step, loss_eval = \
                 results[1], results[2], results[3]
 
-        return summary, acc, global_step, loss_eval
+        return [summary, run_metadata], acc, global_step, loss_eval
 
     def _get_elapsed_time_per_nth_step(self, current_step):
         current_time = time.time()
