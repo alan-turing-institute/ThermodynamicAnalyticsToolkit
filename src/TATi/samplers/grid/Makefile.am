@@ -1,7 +1,3 @@
-SUBDIRS = \
-    dynamics \
-    grid
-
 TATI_samplers_PYTHON = \
 	__init__.py
 
