@@ -44,6 +44,7 @@ AC_CONFIG_FILES(
 	Makefile
 	src/Makefile
 	src/TATi/Makefile
+	src/TATi/analysis/Makefile
 	src/TATi/datasets/Makefile
 	src/TATi/diffusion_maps/Makefile
 	src/TATi/exploration/Makefile

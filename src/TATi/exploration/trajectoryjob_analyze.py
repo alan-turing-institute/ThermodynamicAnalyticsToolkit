@@ -1,9 +1,11 @@
 import logging
+
 import numpy as np
 import scipy
 
+from TATi.analysis.TrajectoryAnalyser import compute_diffusion_maps
 from TATi.exploration.trajectoryjob import TrajectoryJob
-from TATi.TrajectoryAnalyser import compute_diffusion_maps
+
 
 class TrajectoryJob_analyze(TrajectoryJob):
     ''' This implements a job that analyzes the last leg of a given trajectory.

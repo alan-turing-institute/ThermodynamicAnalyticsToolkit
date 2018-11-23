@@ -12,7 +12,7 @@ import tensorflow as tf
 
 from TATi.version import get_package_version, get_build_hash
 from TATi.common import get_filename_from_fullpath, setup_csv_file
-from TATi.TrajectoryAnalyser import compute_diffusion_maps, \
+from TATi.analysis.TrajectoryAnalyser import compute_diffusion_maps, \
             compute_free_energy, compute_free_energy_using_histograms, \
             get_landmarks_over_vectors, moving_average, parse_parameters, \
             write_landmarks, write_values_as_csv

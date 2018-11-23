@@ -19,7 +19,6 @@ from TATi.exploration.trajectoryjobid import TrajectoryJobId
 from TATi.models.model import model
 from TATi.options.commandlineoptions import CommandlineOptions, str2bool
 from TATi.runtime.runtime import runtime
-from TATi.TrajectoryAnalyser import compute_diffusion_maps
 
 from multiprocessing.managers import BaseManager
 

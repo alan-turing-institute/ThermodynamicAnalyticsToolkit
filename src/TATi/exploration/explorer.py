@@ -1,13 +1,12 @@
-from TATi.exploration.trajectoryjobqueue import TrajectoryJobQueue
-from TATi.exploration.trajectoryprocessqueue import TrajectoryProcessQueue
-from TATi.TrajectoryAnalyser import compute_diffusion_maps
-
 import logging
 
 import numpy as np
-
 import scipy.sparse
 import scipy.spatial.distance as scidist
+
+from TATi.analysis.TrajectoryAnalyser import compute_diffusion_maps
+from TATi.exploration.trajectoryjobqueue import TrajectoryJobQueue
+from TATi.exploration.trajectoryprocessqueue import TrajectoryProcessQueue
 
 
 class Explorer(object):

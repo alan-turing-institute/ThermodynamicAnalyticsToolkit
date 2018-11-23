@@ -1,11 +1,12 @@
+import matplotlib
 import numpy as np
 import pandas as pd
-import matplotlib
+
 # use agg as backend to allow command-line use as well
 matplotlib.use("agg")
 import matplotlib.pyplot as plt
 
-from TATi.TrajectoryAnalyser import compute_diffusion_maps
+from TATi.analysis.TrajectoryAnalyser import compute_diffusion_maps
 
 # option values coming from the sampling
 inverse_temperature=2e-1
