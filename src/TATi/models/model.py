@@ -1295,7 +1295,7 @@ class model:
                 except tf.errors.InvalidArgumentError as err:
                     # Cholesky failed, try again with smaller eta
                     for walker_index in range(self.FLAGS.number_walkers):
-                        feed_dict[blending_key[walker_index]] = feed_dict[blending_key[walker_index]]/10.
+                        feed_dict[blending_key[walker_index]] = feed_dict[blending_key[walker_index]]/2.
                     logging.warning(str(err.op) + " FAILED at step %d, using %lg as eta." \
                                     % (current_step, feed_dict[blending_key[0]]))
             for walker_index in range(self.FLAGS.number_walkers):
@@ -1483,7 +1483,7 @@ class model:
                 except tf.errors.InvalidArgumentError as err:
                     # Cholesky failed, try again with smaller eta
                     for walker_index in range(self.FLAGS.number_walkers):
-                        feed_dict[blending_key[walker_index]] = feed_dict[blending_key[walker_index]]/10.
+                        feed_dict[blending_key[walker_index]] = feed_dict[blending_key[walker_index]]/2.
                     logging.warning(str(err.op) + " FAILED at step %d, using %lg as eta." \
                                     % (current_step, feed_dict[blending_key[0]]))
             for walker_index in range(self.FLAGS.number_walkers):
