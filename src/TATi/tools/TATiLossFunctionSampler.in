@@ -41,8 +41,10 @@ def parse_parameters():
         help='List of biases, e.g. b0, and weights, e.g. w3, to exclude from sampling.')
     options._add_option_cmd('--inter_ops_threads', type=int, default=1,
         help='Sets the number of threads to split up ops in between. NOTE: This hurts reproducibility to some extent because of parallelism.')
-    options._add_option_cmd('--interval_weights', type=str, nargs='+', default=[],
+    options._add_option_cmd('--interval_weights', type=float, nargs='+', default=[],
         help='Min and max value for each weight.')
+    options._add_option_cmd('--interval_offsets', type=float, nargs='+', default=[],
+        help='Offset to shift centers of intervals per axis')
     options._add_option_cmd('--intra_ops_threads', type=int, default=None,
         help='Sets the number of threads to use within an op, i.e. Eigen threads for linear algebra routines.')
     options._add_option_cmd('--restore_model', type=str, default=None,
@@ -81,8 +83,8 @@ def create_linspace_grid(coords_size, coords_start, interval, exclude_parameters
     linspace = []
     len_grid = []
     for i in range(coords_size):
-        interval_start = float(interval[0])
-        interval_end = float(interval[1])
+        interval_start = interval[0]+coords_start[i]
+        interval_end = interval[1]+coords_start[i]
 
         keyname = coordname+str(i)
         if keyname in exclude_parameters:
@@ -119,8 +121,13 @@ def main(_):
     nn_weights = network_model.weights[0]
     nn_biases = network_model.biases[0]
 
+    # initially set weights and biases to zero (possibly overriden by
+    # parse_parameters_file)
     weights_vals = nn_weights.create_flat_vector()
     biases_vals = nn_biases.create_flat_vector()
+    if options.parse_parameters_file is None:
+        weights_eval, biases_eval = network_model.assign_weights_and_biases( \
+            weights_vals, biases_vals, do_check=True)
 
     options.exclude_parameters = get_list_from_string(options.exclude_parameters)
 
@@ -281,7 +288,14 @@ def main(_):
 
         coords_index_grid = np.zeros(coords_size, dtype=int)
 
-        coords_start = np.concatenate([weights_start, biases_start])
+        if len(options.interval_offsets) != 0:
+            coords_start = np.array(options.interval_offsets)
+            if coords_start.size != coords_size:
+                logging.critical("You need to specify as many interval starts as there are degrees," + \
+                    " i.e. here "+str(coords_size)+" dof.")
+                sys.exit(255)
+        else:
+            coords_start = np.zeros(coords_size)
         coords_linspace, coords_len_grid = \
             create_linspace_grid(coords_size, coords_start,
                 options.interval_weights, options.exclude_parameters, "w",
@@ -337,11 +351,11 @@ def main(_):
 
         weights_linspace, weights_len_grid = \
             create_linspace_grid(weights_vals.size, weights_eval,
-            options.interval_weights, options.exclude_parameters, "w",
+            [float(i) for i in options.interval_weights], options.exclude_parameters, "w",
             options.samples_weights)
         biases_linspace, biases_len_grid = \
             create_linspace_grid(biases_vals.size, biases_eval,
-            options.interval_biases, options.exclude_parameters, "b",
+            [float(i) for i in options.interval_biases], options.exclude_parameters, "b",
             options.samples_biases)
 
 	### functions to iterate over weights and biases

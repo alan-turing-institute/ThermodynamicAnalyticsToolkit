@@ -15,10 +15,10 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-### test on option interval_center_file
+### test on option parse_parameters_file
 
-AT_SETUP([LossFunctionSampler - interval center file])
-AT_KEYWORDS([tatilossfunctionsampler interval_center_file])
+AT_SETUP([LossFunctionSampler - interval centers])
+AT_KEYWORDS([tatilossfunctionsampler parse_parameters_file])
 
 # dataset prepared as follows:
 # TATiDatasetWriter --data_type 2 --dimension 20 --seed 426 --noise 0. --train_test_ratio 0 --test_data_files dataset-twoclusters.csv

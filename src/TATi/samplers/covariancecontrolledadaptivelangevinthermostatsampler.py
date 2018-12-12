@@ -123,9 +123,12 @@ class CovarianceControlledAdaptiveLangevinThermostat(GeometricLangevinAlgorithmS
         momentum_half_step_t = momentum_final_step_t - 0.5 * scaled_gradient
         momentum_half_step_plus_noise_t = momentum_half_step_t + scaled_noise
 
-        preconditioned_momentum_half_step_plus_noise_t = tf.reshape(
-            tf.matmul(tf.expand_dims(tf.reshape(momentum_half_step_plus_noise_t, [-1]), 0), precondition_matrix),
-            var.shape)
+        if len(grads_and_vars) != 1:
+            preconditioned_momentum_half_step_plus_noise_t = tf.reshape(
+                tf.matmul(tf.expand_dims(tf.reshape(momentum_half_step_plus_noise_t, [-1]), 0), precondition_matrix),
+                var.shape)
+        else:
+            preconditioned_momentum_half_step_plus_noise_t = momentum_half_step_plus_noise_t
 
         #x = step.A(x, p, 0.5 * self.dt, 1.)
         with tf.control_dependencies([virial_global_t, inertia_global_t]):
@@ -182,9 +185,12 @@ class CovarianceControlledAdaptiveLangevinThermostat(GeometricLangevinAlgorithmS
         ub_repell, lb_repell = self._apply_prior(var)
         prior_force = step_width_t * (ub_repell + lb_repell)
 
-        preconditioned_momentum = tf.reshape(
-            tf.matmul(tf.expand_dims(tf.reshape(momentum, [-1]), 0), precondition_matrix),
-            var.shape)
+        if len(grads_and_vars) != 1:
+            preconditioned_momentum = tf.reshape(
+                tf.matmul(tf.expand_dims(tf.reshape(momentum, [-1]), 0), precondition_matrix),
+                var.shape)
+        else:
+            preconditioned_momentum = momentum
 
         #x = step.A(x, p, 0.5 * self.dt, 1.)
         with tf.control_dependencies([if_block_t]):

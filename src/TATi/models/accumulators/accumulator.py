@@ -7,13 +7,13 @@ class Accumulator(object):
     output_width = 8
     output_precision = 8
 
-    def __init__(self, method, max_steps, every_nth):
+    def __init__(self, method, max_steps, every_nth, number_walkers):
         self._next_eval_step = []       # next step when to write buffer
         self._last_rejected = 0         # stores the last rejected from AccumulatedValues
         self._method = method           # stores the sampling/optimization method
         self._max_steps = max_steps     # stores which total number of steps are evaluated
         self._every_nth = every_nth     # stores that only each nth output step is actually written
-        self._internal_nth = -1         # internal counting for dropping other but nth step
+        self._internal_nth = [-1]*number_walkers         # internal counting for dropping other but nth step
         self.written_row = 0            # current row to append in accumulated lines
         self._total_eval_steps = (max_steps % every_nth) + 1
 
@@ -43,11 +43,11 @@ class Accumulator(object):
             return True
 
         # here we count to only write every_nth step
-        self._internal_nth += 1
-        if self._internal_nth == self._every_nth:
-            self._internal_nth = 0
+        self._internal_nth[walker_index] += 1
+        if self._internal_nth[walker_index] == self._every_nth:
+            self._internal_nth[walker_index] = 0
 
-        return self._internal_nth == 0
+        return self._internal_nth[walker_index] == 0
 
     def inform_next_eval_step(self, next_eval_step, rejected):
         self._next_eval_step[:] = next_eval_step

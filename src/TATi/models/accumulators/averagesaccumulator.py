@@ -12,7 +12,7 @@ class AveragesAccumulator(Accumulator):
     def __init__(self, return_averages, method, config_map, writer,
                  header, max_steps, every_nth, number_walkers,
                  inverse_temperature=1., burn_in_steps=0):
-        super(AveragesAccumulator, self).__init__(method, max_steps, every_nth)
+        super(AveragesAccumulator, self).__init__(method, max_steps, every_nth, number_walkers)
         self.accumulated_kinetic_energy = [0.]*number_walkers
         self.accumulated_loss_nominator = [0.]*number_walkers
         self.accumulated_loss_denominator = [0.]*number_walkers

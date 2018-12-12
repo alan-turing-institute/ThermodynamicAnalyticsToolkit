@@ -960,10 +960,8 @@ class model:
 
     def _write_summaries(self, summary_writer, summary, current_step):
         if self.FLAGS.summaries_path is not None:
-            run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
-            run_metadata = tf.RunMetadata()
-            summary_writer.add_run_metadata(run_metadata, 'step%d' % current_step)
-            summary_writer.add_summary(summary, current_step)
+            summary_writer.add_run_metadata(summary[1], 'step%d' % current_step)
+            summary_writer.add_summary(summary[0], current_step)
 
     def _zero_state_variables(self, method):
         if method in ["GradientDescent",
@@ -1000,16 +998,24 @@ class model:
 
     def _perform_step(self, test_nodes, feed_dict):
         summary = None
-        results = self.sess.run(test_nodes, feed_dict=feed_dict)
+        run_metadata = None
         if self.FLAGS.summaries_path is not None:
+            run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+            run_metadata = tf.RunMetadata()
+            results = self.sess.run(test_nodes,
+                                    feed_dict=feed_dict,
+                                    options=run_options,
+                                    run_metadata=run_metadata)
             summary, acc, global_step, loss_eval = \
                 results[0], results[2], results[3], results[4]
 
         else:
+            results = self.sess.run(test_nodes,
+                                    feed_dict=feed_dict)
             acc, global_step, loss_eval = \
                 results[1], results[2], results[3]
 
-        return summary, acc, global_step, loss_eval
+        return [summary, run_metadata], acc, global_step, loss_eval
 
     def _get_elapsed_time_per_nth_step(self, current_step):
         current_time = time.time()
@@ -1030,7 +1036,7 @@ class model:
         if (self.FLAGS.number_walkers > 1) and (self.FLAGS.collapse_walkers) and \
                 (current_step % self.FLAGS.covariance_after_steps == 0) and \
                 (current_step != 0):
-            print("COLLAPSING " + str(self.FLAGS.collapse_walkers))
+            #print("COLLAPSING " + str(self.FLAGS.collapse_walkers))
             # get walker 0's position
             weights_eval, biases_eval = self.sess.run([
                 self.weights[0].parameters, self.biases[0].parameters])
@@ -1278,17 +1284,28 @@ class model:
                     self._get_parameters(return_trajectories, all_weights, all_biases)
 
             # perform the sampling step
-            try:
-                summary, accumulated_values.accuracy, accumulated_values.global_step, accumulated_values.loss = \
-                    self._perform_step(test_nodes, feed_dict)
-            except tf.errors.InvalidArgumentError as err:
-                # Cholesky failed, try again with smaller eta
-                logging.warning(str(err.op)+" FAILED, using tenth of eta.")
-                old_eta = feed_dict["covariance_blending"]
-                feed_dict["covariance_blending"] = feed_dict["covariance_blending"]/10.
-                summary, accumulated_values.accuracy, accumulated_values.global_step, accumulated_values.loss = \
-                    self._perform_step(test_nodes, feed_dict)
-                feed_dict["covariance_blending"] = old_eta
+            step_success = False
+            blending_key = [self.nn[walker_index].placeholder_nodes["covariance_blending"]
+                            for walker_index in range(self.FLAGS.number_walkers)]
+            old_eta = [feed_dict[blending_key[walker_index]] for walker_index in range(self.FLAGS.number_walkers)]
+            while not step_success:
+                for walker_index in range(self.FLAGS.number_walkers):
+                    if feed_dict[blending_key[walker_index]] > 0. \
+                            and feed_dict[blending_key[walker_index]] < 1e-12:
+                        logging.warning("Possible NaNs or Infs in covariance matrix, setting eta to 0 temporarily.")
+                        feed_dict[blending_key[walker_index]] = 0.
+                try:
+                    summary, accumulated_values.accuracy, accumulated_values.global_step, accumulated_values.loss = \
+                        self._perform_step(test_nodes, feed_dict)
+                    step_success = True
+                except tf.errors.InvalidArgumentError as err:
+                    # Cholesky failed, try again with smaller eta
+                    for walker_index in range(self.FLAGS.number_walkers):
+                        feed_dict[blending_key[walker_index]] = feed_dict[blending_key[walker_index]]/2.
+                    logging.warning(str(err.op) + " FAILED at step %d, using %lg as eta." \
+                                    % (current_step, feed_dict[blending_key[0]]))
+            for walker_index in range(self.FLAGS.number_walkers):
+                feed_dict[blending_key[walker_index]] = old_eta[walker_index]
 
             # get updated state variables
             accumulated_values.evaluate(self.sess, self.FLAGS.sampler, self.static_vars)
@@ -1344,7 +1361,8 @@ class model:
             # write summaries for tensorboard
             self._write_summaries(summary_writer, summary, current_step)
 
-            accumulated_values.time_elapsed_per_nth_step = self._get_elapsed_time_per_nth_step(current_step)
+            if current_step % self.FLAGS.every_nth == 0:
+                accumulated_values.time_elapsed_per_nth_step = self._get_elapsed_time_per_nth_step(current_step)
 
             for walker_index in range(self.FLAGS.number_walkers):
                 run_info.accumulate_nth_step(current_step, walker_index, accumulated_values)
@@ -1455,17 +1473,28 @@ class model:
                     self._get_parameters(return_trajectories, all_weights, all_biases)
 
             # perform the sampling step
-            try:
-                summary, accumulated_values.accuracy, accumulated_values.global_step, accumulated_values.loss = \
-                    self._perform_step(test_nodes, feed_dict)
-            except tf.errors.InvalidArgumentError as err:
-                # Cholesky failed, try again with smaller eta
-                logging.warning(str(err.op)+" FAILED, using tenth of eta.")
-                old_eta = feed_dict["covariance_blending"]
-                feed_dict["covariance_blending"] = feed_dict["covariance_blending"]/10.
-                summary, accumulated_values.accuracy, accumulated_values.global_step, accumulated_values.loss = \
-                    self._perform_step(test_nodes, feed_dict)
-                feed_dict["covariance_blending"] = old_eta
+            step_success = False
+            blending_key = [self.nn[walker_index].placeholder_nodes["covariance_blending"]
+                            for walker_index in range(self.FLAGS.number_walkers)]
+            old_eta = [feed_dict[blending_key[walker_index]] for walker_index in range(self.FLAGS.number_walkers)]
+            while not step_success:
+                for walker_index in range(self.FLAGS.number_walkers):
+                    if feed_dict[blending_key[walker_index]] > 0. \
+                            and feed_dict[blending_key[walker_index]] < 1e-12:
+                        logging.warning("Possible NaNs or Infs in covariance matrix, setting eta to 0 temporarily.")
+                        feed_dict[blending_key[walker_index]] = 0.
+                try:
+                    summary, accumulated_values.accuracy, accumulated_values.global_step, accumulated_values.loss = \
+                        self._perform_step(test_nodes, feed_dict)
+                    step_success = True
+                except tf.errors.InvalidArgumentError as err:
+                    # Cholesky failed, try again with smaller eta
+                    for walker_index in range(self.FLAGS.number_walkers):
+                        feed_dict[blending_key[walker_index]] = feed_dict[blending_key[walker_index]]/2.
+                    logging.warning(str(err.op) + " FAILED at step %d, using %lg as eta." \
+                                    % (current_step, feed_dict[blending_key[0]]))
+            for walker_index in range(self.FLAGS.number_walkers):
+                feed_dict[blending_key[walker_index]] = old_eta[walker_index]
 
             # get updated state variables
             accumulated_values.evaluate(self.sess, self.FLAGS.sampler, self.static_vars)
@@ -1478,7 +1507,8 @@ class model:
                 for walker_index in range(self.FLAGS.number_walkers):
                     averages.accumulate_each_step(current_step, walker_index, accumulated_values)
 
-            accumulated_values.time_elapsed_per_nth_step = self._get_elapsed_time_per_nth_step(current_step)
+            if current_step % self.FLAGS.every_nth == 0:
+                accumulated_values.time_elapsed_per_nth_step = self._get_elapsed_time_per_nth_step(current_step)
 
             for walker_index in range(self.FLAGS.number_walkers):
                 run_info.accumulate_nth_step(current_step, walker_index, accumulated_values)
@@ -1652,7 +1682,8 @@ class model:
                 for walker_index in range(self.FLAGS.number_walkers):
                     averages.accumulate_each_step(current_step, walker_index, accumulated_values)
 
-            accumulated_values.time_elapsed_per_nth_step = self._get_elapsed_time_per_nth_step(current_step)
+            if current_step % self.FLAGS.every_nth == 0:
+                accumulated_values.time_elapsed_per_nth_step = self._get_elapsed_time_per_nth_step(current_step)
 
             for walker_index in range(self.FLAGS.number_walkers):
                 run_info.accumulate_nth_step(current_step, walker_index, accumulated_values)
