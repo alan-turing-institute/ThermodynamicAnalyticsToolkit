@@ -11,6 +11,9 @@ of options, then calling a function to `fit()` or `sample()`. In the very end
 of this quickstart you will learn how to implement your first sampler using this
 interface.
 
+For a more extensive description of the simulation module, we refer to its
+link:#reference.simulation[reference section].
+
 If you have installed the package in the folder `/foo`, i.e. we have
 a folder `TATi` with a file `simulation.py` residing in there, then you
 probably need to add it to the `PYTHONPATH` as follows
@@ -184,12 +187,67 @@ it around.
 This is the very simple dataset we want to learn, sample from and exlore in the
 following.
 
+[[quickstart.simulation.setup.setting_up_network]]
+Setting up the network
+++++++++++++++++++++++
+
+Let's first create a neural network. At the moment of writing TATi is
+constrained to multi-layer perceptrons but this will soon be extended to
+convolutional and other networks.
+
+Multi-layer perceptrons are characterized by the number of layers, the
+number of nodes per layer and the output function used in each node.
+
+[source,python]
+---------------
+include::simulation/setting_up_network.py[]
+---------------
+
+In the above example, we specify a neural network of two hidden layers,
+each having 8 nodes. We use the "rectified linear" activation function
+for these nodes. The output nodes are activated by a linear function.
+
+Let us briefly highlight the essential options:
+
+- `input_columns`: This option allows to add an additional layer after the
+input that selects a subset of the input nodes and additionally modifies them,
+e.g., by passing through a sine function. Example: `input_columns=["sin(x1), x2^2"]`
+- `input_dimension`: This is the number of input nodes of the network, one node
+per dimension of the supplied dataset. Example `input_dimension=10`
+- `output_activation`: Defines the activation function for the output layer.
+Example: `output_activation="sigmoid"`
+- `output_dimension`: Sets the number of output nodes. Example: `output_dimension=1`
+- `hidden_activation`: Defines the common activation function for all hidden
+layers. Example: `hidden_activation="relu6"`
+- `hidden_dimension`: Gives the hidden layers and the nodes per layer by giving
+a list of integers. Example: `hidden_dimension=[2,2]` defines two hidden layers,
+each with 2 nodes.
+- `loss`: Sets the loss function to use. Example: `loss="softmax_cross_entropy"`
+
+For a complete list of values per option, we refer to the following sections in
+the code base for currentness:
+
+- activation functions: in ++src/TATi/models/neuralnetwork.py++ see `get_activations()`
+- loss function: in ++src/TATi/models/neuralnetwork.py++ see `add_losses()`
+
+[NOTE]
+====
+At the moment it is not possible to set different activation functions
+for individual nodes or between hidden layers.
+====
+
+[NOTE]
+====
+Note that (re-)creating the `tati_model` instance model will always reset the
+computational graph of tensorflow in case you need to add nodes.
+====
+
 [[quickstart.simulation.simple_evaluation]]
 Evaluating loss and gradients
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Having created the dataset, we are good to go and the remaining examples are
-easy and straight-forward.
+Having created the dataset and explained how the network is set up, we are good
+to go and the remaining examples are easy and straight-forward.
 
 The main idea of the `simulation` module is to be used as a simplified
 interface to access the loss and the gradients of the neural network without
@@ -278,7 +336,6 @@ Stochastic Gradient Descent).
 * 'output_activation'
 +
 defines the activation function of all output nodes, here it is linear.
-Other choices are: tanh, relu, relu6.
 
 * 'seed'
 +
@@ -377,9 +434,16 @@ In this example we have parsed the same file as the in the previous section
 into a numpy array using the pandas module. Natually, this is just one way of
 creating a suitable numpy array.
 
+At the end we have stated `loss()` and the `score()`. While the loss is simply
+the output of the training function, the score gives the accuracy in a
+classification problem setting: We compare the label given in the dataset with
+the label predicted by the network and take the average over the whole dataset
+(or its mini-batch if `batch_size` is used). For multi-labels, we use the
+largest entry as the label in multi classification.
+
 NOTE: Input and output dimensions are directly deduced from the the tuple sizes.
 
-NOTE: The nodes in the input layer can be modified using 'input_columns', e.g.,
+NOTE: The nodes in the input layer can be modified using `input_columns`, e.g.,
 `input_columns=["x1", "sin(x2)", "x1^2"]`.
 
 [[quickstart.simulation.sampling]]
@@ -430,7 +494,7 @@ parameter degrees of freedom for each step (or 'every_nth' step). Run info
 contains loss, accuracy, norm of gradient, norm of noise and others, again for
 each step. Finally, in averages we compute running averages over the trajectory
 such as average (ensemble) loss, average kinetic energy, average virial, see
-link:#reference.concepts[general concepts]. 
+link:#reference.concepts[general concepts].
 
 Take a peep at `sampling_data.run_info.columns` to see all columns in the
 run info dataframe (and similarly for the others.)

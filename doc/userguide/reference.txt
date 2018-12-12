@@ -236,6 +236,9 @@ include::reference_samplers.txt[]
 
 include::reference_implementing_sampler.txt[]
 
+include::reference_simulation.txt[]
+
+
 [[reference.reproducibility]]
 A Note on Reproducibility
 ~~~~~~~~~~~~~~~~~~~~~~~~~
