@@ -5,7 +5,7 @@ from tensorflow.python.ops import state_ops
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import variables
 from tensorflow.python.training.optimizer import Optimizer, _DenseResourceVariableProcessor, \
-    _OptimizableVariable, _StreamingModelPortProcessor
+    _OptimizableVariable
 import tensorflow as tf
 
 from distutils.version import LooseVersion
@@ -15,6 +15,9 @@ if LooseVersion(tf.__version__) >= LooseVersion("1.7.0"):
 
 if LooseVersion(tf.__version__) < LooseVersion("1.8.0"):
     from tensorflow.python.training.optimizer import _get_variable_for
+
+if LooseVersion(tf.__version__) < LooseVersion("1.9.0"):
+    from tensorflow.python.training.optimizer import _StreamingModelPortProcessor
 
 import collections
 
@@ -69,8 +72,9 @@ def _get_processor(v):
         return _DenseResourceVariableProcessor(v)
     if isinstance(v, variables.Variable):
         return RefVariableWalkerEnsembleProcessor(v)
-    if v.op.type == "SubmodelPort":
-        return _StreamingModelPortProcessor(v)
+    if LooseVersion(tf.__version__) < LooseVersion("1.9.0"):
+        if v.op.type == "SubmodelPort":
+            return _StreamingModelPortProcessor(v)
     if LooseVersion(tf.__version__) >= LooseVersion("1.7.0"):
         if isinstance(v, ops.Tensor):
             return _TensorProcessor(v)
