@@ -12,7 +12,7 @@ and free energy.
 
 In total, we depend on the following python packages:
 
- * tensorflow (1.4.1, 1.6-1.8; 1.5 is not recommended)
+ * tensorflow (1.4.1, 1.6-1.10; 1.5 is not recommended)
  * numpy
  * pandas
  * scipy

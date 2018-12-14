@@ -206,8 +206,10 @@ AT_CHECK([../../../NumericalDiff \
     --general_threshold 3e-7 absolute \
     --column_drop id -- \
     trajectory-HMC-hidden.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-HMC_2nd-hidden.csv], 0, [ignore], [ignore])
+# TF1.9: Probably due to MKL introduction (anaconda has it by default), we
+# need to degrade from 1e-7 to 2e-7
 AT_CHECK([../../../NumericalDiff \
-    --general_threshold 1e-7 absolute \
+    --general_threshold 2e-7 absolute \
     --column_drop id average_inertia -- \
     averages-HMC-hidden.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/averages-HMC_2nd-hidden.csv], 0, [ignore], [ignore])
 
