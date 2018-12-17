@@ -5,7 +5,6 @@ TATI_analysis_PYTHON = \
     freeenergy.py \
     parsedrunfile.py \
     parsedtrajectory.py \
-    TrajectoryAnalyser.py \
 	__init__.py
 
 TATI_analysisdir = $(pythondir)/TATi/analysis
