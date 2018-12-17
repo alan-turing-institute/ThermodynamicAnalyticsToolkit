@@ -1,4 +1,5 @@
 TATiAnalyser \
+    free_energy_levelsets \
     --diffusion_map_method TMDMap \
     --drop_burnin 100 \
     --every_nth 10 \

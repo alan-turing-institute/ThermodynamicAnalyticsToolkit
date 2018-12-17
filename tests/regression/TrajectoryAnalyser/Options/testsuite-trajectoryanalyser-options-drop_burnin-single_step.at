@@ -22,6 +22,7 @@ AT_KEYWORDS([options trajectoryanalyser drop_burnin run_info])
 
 # run1: no drop
 AT_CHECK([../../../TATiAnalyser \
+    average_energies \
 	--average_run_file average_run-single_step-drop_burnin_0.csv \
 	--drop_burnin 0 \
 	--run_file ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/Options/pre/run-single_step.csv \
@@ -31,6 +32,7 @@ AT_CHECK([diff average_run-single_step-drop_burnin_0.csv ${abs_top_srcdir}/tests
 
 # run2: half drop
 AT_CHECK([../../../TATiAnalyser \
+    average_energies \
 	--average_run_file average_run-single_step-drop_burnin_2.csv \
 	--drop_burnin 2 \
 	--run_file ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/Options/pre/run-single_step.csv \
@@ -40,6 +42,7 @@ AT_CHECK([diff average_run-single_step-drop_burnin_2.csv ${abs_top_srcdir}/tests
 
 # run3: full drop
 AT_CHECK([../../../TATiAnalyser \
+    average_energies \
 	--average_run_file average_run-single_step-drop_burnin_4.csv \
 	--drop_burnin 4 \
 	--run_file ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/Options/pre/run-single_step.csv \

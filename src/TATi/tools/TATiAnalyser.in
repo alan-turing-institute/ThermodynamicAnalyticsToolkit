@@ -5,21 +5,12 @@ sys.path.insert(1, '@pythondir@')
 
 import argparse
 import logging
-import numpy as np
-import os.path
-import pandas as pd
-import scipy
+import sys
 import tensorflow as tf
 
-from TATi.version import get_package_version, get_build_hash
-from TATi.common import get_filename_from_fullpath, setup_csv_file
-from TATi.analysis.parsedrunfile import ParsedRunfile
-from TATi.analysis.parsedtrajectory import ParsedTrajectory
-from TATi.analysis.averageenergieswriter import AverageEnergiesWriter
-from TATi.analysis.averagetrajectorywriter import AverageTrajectoryWriter
-from TATi.analysis.diffusionmap import DiffusionMap
-from TATi.analysis.freeenergy import FreeEnergy
-from TATi.options.commandlineoptions import str2bool
+from TATi.analysis.analyser_modules import AnalyserModules
+from TATi.options.commandlineoptions import str2bool, react_generally_to_options
+from TATi.options.pythonoptions import PythonOptions
 
 FLAGS = None
 
@@ -32,6 +23,8 @@ def parse_parameters():
     :return: dictionary with parameter names as keys, unrecognized parameters
     """
     parser = argparse.ArgumentParser()
+    parser.add_argument('modules', type=str, default=[], nargs='+',
+        help='analysis modules to execute')
     # please adhere to alphabetical ordering
     parser.add_argument('--average_run_file', type=str, default=None,
         help='CSV file name to output averages and variances of energies.')
@@ -65,103 +58,23 @@ def parse_parameters():
         help='CSV trajectory file name to read trajectories from and compute diffusion maps on.')
     parser.add_argument('--use_reweighting', type=str2bool, default=False,
         help='Use reweighting of the kernel matrix of diffusion maps by the target distribution.')
+    parser.add_argument('--verbose', '-v', action='count', default=1,
+        help='Level of verbosity during compare')
     parser.add_argument('--version', '-V', action="store_true",
         help='Gives version information')
     return parser.parse_known_args()
 
 
 def main(_):
-    print("Run file is "+str(FLAGS.run_file))
-    if FLAGS.run_file is not None:
-        # load run file
-        runfile = ParsedRunfile(FLAGS.run_file, FLAGS.every_nth)
-        if not runfile.add_drop_burnin(FLAGS.drop_burnin):
-            sys.stderr.write("FLAGS.drop_burnin is too large, no data points left.")
-            sys.exit(1)
+    modules = AnalyserModules(FLAGS, output_width, output_precision)
 
-        print("%d steps after dropping burn in." % (runfile.number_steps()))
-        print("%lg average and %lg variance in runfile.get_loss()." % \
-                (np.average(runfile.get_loss()), runfile.get_loss().var()))
-
-        if FLAGS.average_run_file is not None:
-            avg_writer = AverageEnergiesWriter(runfile, FLAGS.steps)
-            avg_writer.write(FLAGS.average_run_file)
-
-    print("Trajectory file is "+str(FLAGS.trajectory_file))
-    if FLAGS.trajectory_file is not None:
-        # load trajectory file
-        trajectory = ParsedTrajectory(FLAGS.trajectory_file, FLAGS.every_nth)
-        if not trajectory.add_drop_burnin(FLAGS.drop_burnin):
-            sys.stderr.write("FLAGS.drop_burnin is too large, no data points left.")
-            sys.exit(1)
-
-        if FLAGS.average_trajectory_file is not None:
-            averagewriter = AverageTrajectoryWriter(trajectory.get_trajectory())
-            averagewriter.write(FLAGS.average_trajectory_file)
-
-        # compute diffusion map and write to file
-        if FLAGS.diffusion_map_file is not None or FLAGS.diffusion_matrix_file is not None \
-                or FLAGS.landmarks is not None:
-            if FLAGS.inverse_temperature is None or FLAGS.number_of_eigenvalues is None:
-                print("Require both inverse_temperature and number_of_eigenvalues.")
-                sys.exit(255)
-
-            dmap = DiffusionMap.from_parsedtrajectory(trajectory)
-            if not dmap.compute(number_eigenvalues=FLAGS.number_of_eigenvalues,
-                                inverse_temperature=FLAGS.inverse_temperature,
-                                diffusion_map_method=FLAGS.diffusion_map_method,
-                                use_reweighting=FLAGS.use_reweighting):
-                logging.warning("Diffusion Map computation failed, not computing landmarks.")
-                FLAGS.landmarks = 0
-
-            if FLAGS.diffusion_map_file is not None and not os.path.isfile(FLAGS.diffusion_map_file):
-                print("Eigenvalues are "+str(dmap.values))
-                dmap.write_values_to_csv(FLAGS.diffusion_map_file, output_precision, output_width)
-
-            if FLAGS.diffusion_matrix_file is not None and not os.path.isfile(FLAGS.diffusion_matrix_file):
-                dmap.write_vectors_to_csv(FLAGS.diffusion_matrix_file, output_precision, output_width)
-
-            freeenergy = None
-            if FLAGS.landmark_prefix is not None and FLAGS.landmarks > 0:
-                if freeenergy is None:
-                    freeenergy = FreeEnergy(trajectory, dmap)
-                freeEnergies, levelsets = freeenergy.compute_on_levelsets( \
-                    num_landmarks=FLAGS.landmarks)
-
-                landmarks = dmap.compute_landmarks(FLAGS.landmarks)
-
-                steps = trajectory.get_steps()
-                for ev_index in range(np.shape(dmap.vectors)[1]):
-                    landmark_filename = FLAGS.landmark_prefix + "-ev_" + str(ev_index + 1) + ".csv"
-                    freeenergy.write_levelsets_to_csv( \
-                        steps=steps,
-                        ev_index=ev_index,
-                        landmarks=landmarks[ev_index],
-                        freeEnergies=freeEnergies[ev_index],
-                        landmark_filename=landmark_filename,
-                        output_width=output_width, output_precision=output_precision)
-
-            if FLAGS.free_energy_prefix is not None:
-                if freeenergy is None:
-                    freeenergy = FreeEnergy(trajectory, dmap)
-                freeEnergies, HistogramBins = freeenergy.compute_by_histogramming( \
-                    num_bins = FLAGS.landmarks)
-                for ev_index in range(len(freeEnergies)):
-                    filename = FLAGS.free_energy_prefix + "-ev_" + str(ev_index + 1) + ".csv"
-                    freeenergy.write_histograms_to_csv(freeEnergies[ev_index], HistogramBins[ev_index], filename,
-                        output_width=output_width, output_precision=output_precision)
-
+    modules.execute(FLAGS.modules)
 
 if __name__ == '__main__':
     # setup logging
     logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
 
     FLAGS, unparsed = parse_parameters()
-
-    if FLAGS.version:
-        # give version and exit
-        print(get_filename_from_fullpath(sys.argv[0])+" "+get_package_version()+" -- version "+get_build_hash())
-        sys.exit(0)
 
     # obtain prefix from given filename
     if FLAGS.landmark_file is not None:
@@ -181,11 +94,7 @@ if __name__ == '__main__':
     else:
         FLAGS.free_energy_prefix = None
 
-    print("Using parameters: "+str(FLAGS))
-
-    if len(unparsed) != 0:
-        print("There are unparsed parameters '"+str(unparsed)+"', have you misspelled some?")
-        sys.exit(255)
+    PythonOptions.set_verbosity_level(FLAGS.verbose)
+    react_generally_to_options(FLAGS, unparsed)
 
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
-

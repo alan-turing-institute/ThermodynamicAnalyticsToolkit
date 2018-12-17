@@ -34,6 +34,7 @@ AT_KEYWORDS([tatianalyser free_energy vanilla])
 # --trajectory_file trajectory-two_clusters-dim_500-gamma_10-beta_1e4-max_steps_1000-noise_0.1-linear-seed_426.csv
 
 AT_CHECK([../../../TATiAnalyser \
+    free_energy_levelsets \
     --diffusion_map_method "vanilla" \
     --drop_burnin 10 \
     --every_nth 1 \
@@ -64,6 +65,7 @@ AT_KEYWORDS([tatianalyser free_energy TMDMap])
 # --trajectory_file trajectory-two_clusters-dim_500-gamma_10-beta_1e1-max_steps_1000-noise_0.1-linear-seed_426.csv
 
 AT_CHECK([../../../TATiAnalyser \
+    free_energy_levelsets \
     --diffusion_map_method "TMDMap" \
     --drop_burnin 10 \
     --every_nth 1 \
@@ -95,6 +97,7 @@ AT_SKIP_IF([! ../../../check_package pydiffmap])
 # --trajectory_file trajectory-two_clusters-dim_500-gamma_10-beta_1e1-max_steps_1000-noise_0.1-linear-seed_426.csv
 
 AT_CHECK([../../../TATiAnalyser \
+    free_energy_levelsets \
     --diffusion_map_method "pydiffmap" \
     --drop_burnin 10 \
     --every_nth 1 \
@@ -126,6 +129,7 @@ AT_SKIP_IF([! ../../../check_package pydiffmap])
 # --trajectory_file trajectory-two_clusters-dim_500-gamma_10-beta_1e1-max_steps_1000-noise_0.1-linear-seed_426.csv
 
 AT_CHECK([../../../TATiAnalyser \
+    free_energy_histograms \
     --diffusion_map_method "pydiffmap" \
     --drop_burnin 10 \
     --every_nth 1 \

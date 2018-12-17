@@ -35,6 +35,7 @@ AT_KEYWORDS([tatianalyser averages])
 # --trajectory_file trajectory-two_clusters-dim_500-gamma_10-beta_1e4-max_steps_1000-noise_0.1-linear-seed_426.csv
 #
 AT_CHECK([../../../TATiAnalyser \
+    average_energies average_trajectory \
     --average_run_file average_run.csv \
     --average_trajectory_file average_trajectory.csv \
     --drop_burnin 10 \

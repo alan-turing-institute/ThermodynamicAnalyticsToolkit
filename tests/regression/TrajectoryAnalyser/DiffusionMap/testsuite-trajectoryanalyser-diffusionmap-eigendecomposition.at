@@ -34,6 +34,7 @@ AT_KEYWORDS([tatianalyser diffusion_map vanilla])
 # --trajectory_file trajectory-two_clusters-dim_500-gamma_10-beta_1e4-max_steps_1000-noise_0.1-linear-seed_426.csv
 #
 AT_CHECK([../../../TATiAnalyser \
+    diffusion_map \
     --diffusion_map_file eigenvalues.csv \
     --diffusion_map_method "vanilla" \
     --diffusion_matrix_file eigenvectors.csv \
@@ -66,6 +67,7 @@ AT_KEYWORDS([tatianalyser diffusion_map TMDMap])
 # --trajectory_file trajectory-two_clusters-dim_500-gamma_10-beta_1e1-max_steps_1000-noise_0.1-linear-seed_426.csv
 #
 AT_CHECK([../../../TATiAnalyser \
+    diffusion_map \
     --diffusion_map_file eigenvalues.csv \
     --diffusion_map_method "TMDMap" \
     --diffusion_matrix_file eigenvectors.csv \
@@ -99,6 +101,7 @@ AT_SKIP_IF([! ../../../check_package pydiffmap])
 # --trajectory_file trajectory-two_clusters-dim_500-gamma_10-beta_1e1-max_steps_1000-noise_0.1-linear-seed_426.csv
 #
 AT_CHECK([../../../TATiAnalyser \
+    diffusion_map \
     --diffusion_map_file eigenvalues.csv \
     --diffusion_map_method "pydiffmap" \
     --diffusion_matrix_file eigenvectors.csv \

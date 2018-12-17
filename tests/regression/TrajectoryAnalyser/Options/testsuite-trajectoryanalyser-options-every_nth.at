@@ -22,6 +22,7 @@ AT_KEYWORDS([options trajectoryanalyser every_nth run_info])
 
 # run1: every step
 AT_CHECK([../../../TATiAnalyser \
+    average_energies \
 	--average_run_file average_run-every_nth_1.csv \
 	--every_nth 1 \
 	--run_file ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/Options/pre/run-more_steps.csv \
@@ -31,6 +32,7 @@ AT_CHECK([diff average_run-every_nth_1.csv ${abs_top_srcdir}/tests/regression/Tr
 
 # run2: every second step
 AT_CHECK([../../../TATiAnalyser \
+    average_energies \
 	--average_run_file average_run-every_nth_2.csv \
 	--every_nth 2 \
 	--run_file ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/Options/pre/run-more_steps.csv \

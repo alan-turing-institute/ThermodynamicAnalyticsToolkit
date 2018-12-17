@@ -1,4 +1,5 @@
 TATI_analysis_PYTHON = \
+    analyser_modules.py \
     averageenergieswriter.py \
     averagetrajectorywriter.py \
     diffusionmap.py \
