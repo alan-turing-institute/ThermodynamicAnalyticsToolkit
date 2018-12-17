@@ -55,6 +55,26 @@ class DiffusionMap(object):
         self.kernel_diff = np.asarray(self.q)
         return status
 
+    @staticmethod
+    def _get_landmarks_over_vectors(data, K, dmap_kernel, dmap_vectors, energies):
+        landmark_per_vector = []
+        for vindex in range(np.shape(dmap_vectors)[1]):
+            V = dmap_vectors[:, vindex]
+
+            landmarks = dm.get_landmarks(data, K, dmap_kernel, V, energies)
+
+            landmark_per_vector.append(landmarks)
+        return landmark_per_vector
+
+    def compute_landmarks(self, num_landmarks):
+        print("Getting landmarks")
+        return self._get_landmarks_over_vectors( \
+            data=self.trajectory, \
+            K=num_landmarks, \
+            dmap_kernel=self.q, \
+            dmap_vectors=self.vectors, \
+            energies=self.loss)
+
     def write_values_to_csv(self, diffusion_map_file, output_width, output_precision):
         if np.shape(self.values)[0] == 0:
             return

@@ -12,15 +12,13 @@ import tensorflow as tf
 
 from TATi.version import get_package_version, get_build_hash
 from TATi.common import get_filename_from_fullpath, setup_csv_file
-from TATi.analysis.TrajectoryAnalyser import \
-            compute_free_energy, compute_free_energy_using_histograms, \
-            get_landmarks_over_vectors, moving_average, parse_parameters, \
-            write_landmarks
+from TATi.analysis.TrajectoryAnalyser import parse_parameters
+from TATi.analysis.parsedrunfile import ParsedRunfile
+from TATi.analysis.parsedtrajectory import ParsedTrajectory
 from TATi.analysis.averageenergieswriter import AverageEnergiesWriter
 from TATi.analysis.averagetrajectorywriter import AverageTrajectoryWriter
 from TATi.analysis.diffusionmap import DiffusionMap
-from TATi.analysis.parsedrunfile import ParsedRunfile
-from TATi.analysis.parsedtrajectory import ParsedTrajectory
+from TATi.analysis.freeenergy import FreeEnergy
 
 FLAGS = None
 
@@ -79,68 +77,35 @@ def main(_):
             if FLAGS.diffusion_matrix_file is not None and not os.path.isfile(FLAGS.diffusion_matrix_file):
                 dmap.write_vectors_to_csv(FLAGS.diffusion_matrix_file, output_precision, output_width)
 
-            if FLAGS.landmark_prefix is not None:
-                # compute landmarks
-                if FLAGS.landmarks > 0:
-                    print("Getting landmarks")
-                    landmarks=get_landmarks_over_vectors( \
-                        data=trajectory.get_trajectory(), \
-                        K=FLAGS.landmarks, \
-                        q=dmap.q, \
-                        vectors=dmap.vectors, \
-                        energies=trajectory.get_loss())
-                else:
-                    landmarks = []
-                    for vindex in range(np.shape(dmap.vectors)[1]):
-                        landmarks.append(np.zeros(FLAGS.landmarks))
+            freeenergy = None
+            if FLAGS.landmark_prefix is not None and FLAGS.landmarks > 0:
+                if freeenergy is None:
+                    freeenergy = FreeEnergy(trajectory, dmap)
+                freeEnergies, levelsets = freeenergy.compute_on_levelsets( \
+                    num_landmarks=FLAGS.landmarks)
 
-                # compute free energy at landmark points
-                print("Computing free energy")
-                freeEnergies, NumLevelsets = compute_free_energy(
-                    trajectory.get_trajectory(), FLAGS.landmarks, dmap.q, dmap.vectors)
-                print("freeEnergies: "+str(freeEnergies))
-                print("NumLevelsets: "+str(NumLevelsets))
+                landmarks = dmap.compute_landmarks(FLAGS.landmarks)
 
+                steps = trajectory.get_steps()
                 for ev_index in range(np.shape(dmap.vectors)[1]):
-                    header = ["landmark", "loss", "kernel_diff"]
-                    for i in range(np.shape(trajectory.get_trajectory())[1]):
-                        header.append("dof_"+str(i))
-                    header.append("free_energy")
-                    header.append("ev_"+str(ev_index+1))
-                    csv_writer, csv_file = setup_csv_file(FLAGS.landmark_prefix+"-ev_"+str(ev_index+1)+".csv", header)
-                    for k in range(np.shape(landmarks[ev_index])[0]):
-                        i = landmarks[ev_index][k]
-                        csv_writer.writerow([trajectory.get_steps()[i,0]]
-                            +['{:{width}.{precision}e}'.format(trajectory.get_loss()[i,0], \
-                                width=output_width, precision=output_precision)] \
-                            +['{:{width}.{precision}e}'.format(dmap.q[i,0], \
-                                width=output_width, precision=output_precision)] \
-                            +['{:{width}.{precision}e}'.format(x, \
-                                width=output_width, precision=output_precision) for x in np.asarray(trajectory.get_trajectory()[i,:])] \
-                            +['{:{width}.{precision}e}'.format(freeEnergies[ev_index][k], \
-                                width=output_width, precision=output_precision)] \
-                            +['{:{width}.{precision}e}'.format(np.real(dmap.vectors[i,ev_index]), \
-                                width=output_width, precision=output_precision)])
-                    csv_file.close()
-
+                    landmark_filename = FLAGS.landmark_prefix + "-ev_" + str(ev_index + 1) + ".csv"
+                    freeenergy.write_levelsets_to_csv( \
+                        steps=steps,
+                        ev_index=ev_index,
+                        landmarks=landmarks[ev_index],
+                        freeEnergies=freeEnergies[ev_index],
+                        landmark_filename=landmark_filename,
+                        output_width=output_width, output_precision=output_precision)
 
             if FLAGS.free_energy_prefix is not None:
-                for ev_index in range(np.shape(dmap.vectors)[1]):
-                    # calculate free energy by histogramming the eigenvector
-                    freeEnergies, HistogramBins = compute_free_energy_using_histograms(
-                        radius=dmap.vectors[:, ev_index],
-                        nrbins=FLAGS.landmarks)
-                    print("freeEnergies: "+str(freeEnergies))
-                    print("HistogramBins: "+str(HistogramBins))
-                    header = ["bin", "free_energy"]
-                    csv_writer, csv_file = setup_csv_file(FLAGS.free_energy_prefix+"-ev_"+str(ev_index+1)+".csv", header)
-                    for k in range(len(freeEnergies)):
-                        csv_writer.writerow(
-                            ['{:{width}.{precision}e}'.format(HistogramBins[k], \
-                                width=output_width, precision=output_precision)] \
-                            +['{:{width}.{precision}e}'.format(freeEnergies[k], \
-                                width=output_width, precision=output_precision)])
-                    csv_file.close()
+                if freeenergy is None:
+                    freeenergy = FreeEnergy(trajectory, dmap)
+                freeEnergies, HistogramBins = freeenergy.compute_by_histogramming( \
+                    num_bins = FLAGS.landmarks)
+                for ev_index in range(len(freeEnergies)):
+                    filename = FLAGS.free_energy_prefix + "-ev_" + str(ev_index + 1) + ".csv"
+                    freeenergy.write_histograms_to_csv(freeEnergies[ev_index], HistogramBins[ev_index], filename,
+                        output_width=output_width, output_precision=output_precision)
 
 
 if __name__ == '__main__':

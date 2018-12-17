@@ -95,38 +95,3 @@ def write_landmarks(traj, landmarks, csv_filename, header):
         csv_file.close()
 
 
-def compute_free_energy_using_histograms(radius,   weights=None, nrbins=100, kBT=1):
-
-
-    free_energy, edges=np.histogram(radius, bins=nrbins, weights = weights, normed=True)
-    #free_energy+=0.0001
-    free_energy= - np.log(free_energy)
-
-    logging.debug(edges.shape)
-
-    return free_energy, edges[:-1]
-
-
-def compute_free_energy(traj, landmarks, q, vectors):
-    #compute levelsets
-
-    freeEnergies = []
-    NumLevelsets = []
-    for vindex in range(np.shape(vectors)[1]):
-        V1 = vectors[:,vindex]
-        levelsets, dummy = dm.get_levelsets(traj, landmarks, q, V1)
-
-        K=len(levelsets)
-        freeEnergy=np.zeros(K)
-        h=np.zeros(K)
-
-        for k in range(0,K):
-            h[k] = len(levelsets[k])
-
-        for k in range(0,K):
-            freeEnergy[k] = -np.log(h[k]/sum(h))
-
-        freeEnergies.append(freeEnergy)
-        NumLevelsets.append(K)
-
-    return freeEnergies, NumLevelsets
