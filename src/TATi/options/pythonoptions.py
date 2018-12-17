@@ -308,7 +308,11 @@ class PythonOptions(Options):
         """
         if key == "verbose":
             super(PythonOptions, self).set("verbose", min(3, value))
-            verbosity = [logging.WARNING, logging.INFO, logging.DEBUG, logging.NOTSET]
-            logging.getLogger().setLevel(verbosity[self.verbose])
+            self.set_verbosity_level(self.verbose)
         else:
             super(PythonOptions, self).set(key, value)
+
+    @staticmethod
+    def set_verbosity_level(verbose):
+        verbosity = [logging.WARNING, logging.INFO, logging.DEBUG, logging.NOTSET]
+        logging.getLogger().setLevel(verbosity[verbose])
