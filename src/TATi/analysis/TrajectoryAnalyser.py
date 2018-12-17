@@ -14,49 +14,6 @@ import TATi.diffusion_maps.diffusionmap as dm
 from TATi.common import setup_csv_file
 
 
-def parse_parameters():
-    """ Sets up the argument parser for parsing command line parameters into dictionary
-
-    :return: dictionary with parameter names as keys, unrecognized parameters
-    """
-    parser = argparse.ArgumentParser()
-    # please adhere to alphabetical ordering
-    parser.add_argument('--average_run_file', type=str, default=None,
-        help='CSV file name to output averages and variances of energies.')
-    parser.add_argument('--average_trajectory_file', type=str, default=None,
-        help='CSV file name to output averages and variances of all degrees of freedom.')
-    parser.add_argument('--diffusion_map_method', type=str, default='vanilla',
-        help='Method to use for computing the diffusion map: pydiffmap, vanilla or TMDMap')
-    parser.add_argument('--diffusion_map_file', type=str, default=None,
-        help='Give file name to write eigenvalues of diffusion map to')
-    parser.add_argument('--diffusion_matrix_file', type=str, default=None,
-        help='Give file name to write eigenvectors and loss of diffusion map to')
-    parser.add_argument('--drop_burnin', type=int, default=0,
-        help='How many values to drop at the beginning of the trajectory.')
-    parser.add_argument('--every_nth', type=int, default=1,
-        help='Evaluate only every nth trajectory point to files, e.g. 10')
-    parser.add_argument('--free_energy_file', type=str, default=None,
-        help='Give file name ending in "-ev_1.csv" to write free energy over bins per eigenvector to')
-    parser.add_argument('--inverse_temperature', type=float, default=None,
-        help='Inverse temperature at which the sampling was executed for target Boltzmann distribution')
-    parser.add_argument('--landmarks', type=int, default=None,
-        help='How many landmark points to computer for the trajectory (if any)')
-    parser.add_argument('--landmark_file', type=str, default=None,
-        help='Give file name ending in "-ev_1.csv" to write trajectory at obtained landmark points per eigenvector to')
-    parser.add_argument('--number_of_eigenvalues', type=int, default=4,
-        help='How many largest eigenvalues to compute')
-    parser.add_argument('--run_file', type=str, default=None,
-        help='CSV run file name to read run time values from.')
-    parser.add_argument('--steps', type=int, default=20,
-        help='How many evaluation steps for averages to take')
-    parser.add_argument('--trajectory_file', type=str, default=None,
-        help='CSV trajectory file name to read trajectories from and compute diffusion maps on.')
-    parser.add_argument('--use_reweighting', type=str2bool, default=False,
-        help='Use reweighting of the kernel matrix of diffusion maps by the target distribution.')
-    parser.add_argument('--version', '-V', action="store_true",
-        help='Gives version information')
-    return parser.parse_known_args()
-
 
 def moving_average(a, n=3) :
     ret = np.cumsum(a, dtype=float)
