@@ -1,37 +1,51 @@
+import numpy as np
 import pandas as pd
+
+import sys
 
 class ParsedTrajectory(object):
     """ This class encapsulates a single or multiple trajectories
     parsed from file.
 
     """
-    def __init__(self, filename):
+    def __init__(self, filename, every_nth=1):
         """
 
         :param filename: trajectory filename to parse
+        :param every_nth: only consider every nth step
     *    """
-        df_run = pd.read_csv(FLAGS.run_file, sep=',', header=0)
-        run = np.asarray(df_run.loc[:, ['step', 'loss', 'kinetic_energy', 'total_energy']])
+        print("Loading trajectory file")
+        self.df_trajectory = pd.read_csv(filename, sep=',', header=0)
+        self.every_nth = every_nth
+        self.start = 0
 
-    if (len(run[:, 0]) > 1) and (FLAGS.drop_burnin >= run[1, 0]):
-        if FLAGS.drop_burnin < run[-1, 0]:
-            start = next(x[0] for x in enumerate(run[:, 0]) if x[1] > FLAGS.drop_burnin)
-        else:
-            sys.stderr.write("FLAGS.drop_burnin is too large, no data points left.")
-            sys.exit(1)
-    else:
-        start = 0
-    print("Starting run array at " + str(start))
+    def add_drop_burnin(self, drop_burnin):
+        """ Allows to exclude an initial selection of steps.
 
-    steps = run[start::FLAGS.every_nth, 0]
-    loss = run[start::FLAGS.every_nth, 1]
-    kinetic_energy = run[start::FLAGS.every_nth, 2]
-    total_energy = run[start::FLAGS.every_nth, 3]
+        :param drop_burnin: up to which value in step column to exclude
+        :return:  True - excluded, False - drop_burnin is illegal
+        """
+        steps = self.df_trajectory.loc[:,['step']].values
+        if (len(steps) > 1) and (drop_burnin >= steps[1]):
+            if drop_burnin < steps[-1]:
+                self.start = next(x[0] for x in enumerate(steps) if x[1] > drop_burnin)
+            else:
+                return False
+        return True
 
-    no_steps = len(steps)
+    def get_steps(self):
+        return self.df_trajectory.loc[self.start::self.every_nth,['step']].values
 
-    print("%d steps after dropping burn in." % (no_steps))
-    print("%lg average and %lg variance in loss." % (np.average(loss), loss.var()))
+    def get_loss(self):
+        return self.df_trajectory.loc[self.start::self.every_nth,['loss']].values
 
-    end_list = np.arange(1, FLAGS.steps + 1) * int(no_steps / FLAGS.steps)
-    print("Evaluating at steps: " + str(end_list))
+    def get_trajectory(self):
+        index = -1
+        index2 = -1
+        if "weight0" in self.df_trajectory.columns:
+            index = self.df_trajectory.columns.get_loc('weight0')
+        if "bias0" in self.df_trajectory.columns:
+            index2 = self.df_trajectory.columns.get_loc('bias0')
+        if (index2 < index and index2 >=0) or (index == -1):
+            index = index2
+        return self.df_trajectory.iloc[self.start::self.every_nth,index:].values

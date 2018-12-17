@@ -17,7 +17,9 @@ from TATi.analysis.TrajectoryAnalyser import compute_diffusion_maps, \
             get_landmarks_over_vectors, moving_average, parse_parameters, \
             write_landmarks, write_values_as_csv
 from TATi.analysis.averageenergieswriter import AverageEnergiesWriter
+from TATi.analysis.averagetrajectorywriter import AverageTrajectoryWriter
 from TATi.analysis.parsedrunfile import ParsedRunfile
+from TATi.analysis.parsedtrajectory import ParsedTrajectory
 
 FLAGS = None
 
@@ -45,48 +47,14 @@ def main(_):
     print("Trajectory file is "+str(FLAGS.trajectory_file))
     if FLAGS.trajectory_file is not None:
         # load trajectory file
-        print("Loading trajectory file")
-        df_trajectory = pd.read_csv(FLAGS.trajectory_file, sep=',', header=0)
-        trajectoryLoaded=np.asarray(df_trajectory)
-
-        index_step = df_trajectory.columns.get_loc("step")
-        if (len(trajectoryLoaded[:,index_step]) > 1) and (FLAGS.drop_burnin >= trajectoryLoaded[1,index_step]):
-            if FLAGS.drop_burnin < trajectoryLoaded[-1,index_step]:
-                start = next(x[0] for x in enumerate(trajectoryLoaded[:,index_step]) if x[1] > FLAGS.drop_burnin)
-            else:
-                sys.stderr.write("FLAGS.drop_burnin is too large, no data points left.")
-                sys.exit(1)
-        else:
-            start = 0
-
-        steps=df_trajectory.loc[start::FLAGS.every_nth,['step']].values
-        loss=df_trajectory.loc[start::FLAGS.every_nth,['loss']].values
-        index = -1
-        index2 = -1
-        if "weight0" in df_trajectory.columns:
-            index = df_trajectory.columns.get_loc('weight0')
-        if "bias0" in df_trajectory.columns:
-            index2 = df_trajectory.columns.get_loc('bias0')
-        if (index2 < index and index2 >=0) or (index == -1):
-            index = index2
-        trajectory=df_trajectory.iloc[start::FLAGS.every_nth,index:].values
-
-        # check whether dofs are sufficiently converged
-        number_dof = len(trajectory[0,:])
-        average_params = [np.average(trajectory[0:, i]) for i in range(number_dof)]
-        variance_params = [np.var(trajectory[0:, i]) for i in range(number_dof)]
-        print("First ten parameters are converged to the following values:")
-        print(str(average_params[0:10]))
-        print(str(variance_params[0:10]))
+        trajectory = ParsedTrajectory(FLAGS.trajectory_file, FLAGS.every_nth)
+        if not trajectory.add_drop_burnin(FLAGS.drop_burnin):
+            sys.stderr.write("FLAGS.drop_burnin is too large, no data points left.")
+            sys.exit(1)
 
         if FLAGS.average_trajectory_file is not None:
-            csv_writer, csv_file = setup_csv_file(FLAGS.average_trajectory_file, ['step', 'average_parameter', 'variance_parameter'])
-            for step, avg,var in zip(range(number_dof), average_params, variance_params):
-                csv_writer.writerow(
-                    [step, '{:{width}.{precision}e}'.format(avg, width=output_width, precision=output_precision)]+
-                    ['{:{width}.{precision}e}'.format(var, width=output_width, precision=output_precision)]
-                )
-            csv_file.close()
+            averagewriter = AverageTrajectoryWriter(trajectory.get_trajectory())
+            averagewriter.write(FLAGS.average_trajectory_file)
 
         # compute diffusion map and write to file
         if FLAGS.diffusion_map_file is not None or FLAGS.diffusion_matrix_file is not None \
@@ -105,9 +73,9 @@ def main(_):
             # header and the file names accordingly.
             try:
                 vectors, values, q = compute_diffusion_maps( \
-                    traj=trajectory, \
+                    traj=trajectory.get_trajectory(), \
                     beta=FLAGS.inverse_temperature, \
-                    loss=loss, \
+                    loss=trajectory.get_loss(), \
                     nrOfFirstEigenVectors=FLAGS.number_of_eigenvalues, \
                     method=FLAGS.diffusion_map_method,
                     use_reweighting=FLAGS.use_reweighting)
@@ -115,7 +83,7 @@ def main(_):
                 print("ERROR: Vectors were non-convergent.")
                 vectors = np.zeros( (np.shape(trajectory)[0], FLAGS.number_of_eigenvalues) )
                 values = np.zeros( (FLAGS.number_of_eigenvalues) )
-                q = np.zeros( (np.shape(trajectory)[0], np.shape(trajectory)[0]) )
+                q = np.zeros( (np.shape(trajectory.get_trajectory())[0], np.shape(trajectory)[0]) )
                 # override landmarks to skip computation
                 FLAGS.landmarks = 0
             kernel_diff = np.asarray(q)
@@ -126,19 +94,19 @@ def main(_):
 
             if FLAGS.diffusion_matrix_file is not None and not os.path.isfile(FLAGS.diffusion_matrix_file):
                 header = ["i", "loss", "kernel_diff"]
-                for i in range(np.shape(trajectory)[1]):
+                for i in range(np.shape(trajectory.get_trajectory())[1]):
                     header.append("dof_"+str(i))
                 for i in range(np.shape(vectors)[1]):
                     header.append("ev_"+str(i+1))   # we omit ev_0 as it's constant
                 csv_writer, csv_file = setup_csv_file(FLAGS.diffusion_matrix_file, header)
                 for i in range(np.shape(vectors)[0]):
                     csv_writer.writerow([i] \
-                        +['{:{width}.{precision}e}'.format(loss[i,0], \
+                        +['{:{width}.{precision}e}'.format(trajectory.get_loss()[i,0], \
                             width=output_width, precision=output_precision)] \
                         +['{:{width}.{precision}e}'.format(kernel_diff[i,0], \
                             width=output_width, precision=output_precision)] \
                         +['{:{width}.{precision}e}'.format(x, \
-                            width=output_width, precision=output_precision) for x in trajectory[i,:]] \
+                            width=output_width, precision=output_precision) for x in trajectory.get_trajectory()[i,:]] \
                         +['{:{width}.{precision}e}'.format(x, \
                             width=output_width, precision=output_precision) for x in np.real(vectors[i,:])])
                 csv_file.close()
@@ -148,11 +116,11 @@ def main(_):
                 if FLAGS.landmarks > 0:
                     print("Getting landmarks")
                     landmarks=get_landmarks_over_vectors( \
-                        data=trajectory, \
+                        data=trajectory.get_trajectory(), \
                         K=FLAGS.landmarks, \
                         q=q, \
                         vectors=vectors, \
-                        energies=loss)
+                        energies=trajectory.get_loss())
                 else:
                     landmarks = []
                     for vindex in range(np.shape(vectors)[1]):
@@ -161,26 +129,26 @@ def main(_):
                 # compute free energy at landmark points
                 print("Computing free energy")
                 freeEnergies, NumLevelsets = compute_free_energy(
-                    trajectory, FLAGS.landmarks, q, vectors)
+                    trajectory.get_trajectory(), FLAGS.landmarks, q, vectors)
                 print("freeEnergies: "+str(freeEnergies))
                 print("NumLevelsets: "+str(NumLevelsets))
 
                 for ev_index in range(np.shape(vectors)[1]):
                     header = ["landmark", "loss", "kernel_diff"]
-                    for i in range(np.shape(trajectory)[1]):
+                    for i in range(np.shape(trajectory.get_trajectory())[1]):
                         header.append("dof_"+str(i))
                     header.append("free_energy")
                     header.append("ev_"+str(ev_index+1))
                     csv_writer, csv_file = setup_csv_file(FLAGS.landmark_prefix+"-ev_"+str(ev_index+1)+".csv", header)
                     for k in range(np.shape(landmarks[ev_index])[0]):
                         i = landmarks[ev_index][k]
-                        csv_writer.writerow([steps[i,0]]
-                            +['{:{width}.{precision}e}'.format(loss[i,0], \
+                        csv_writer.writerow([trajectory.get_steps()[i,0]]
+                            +['{:{width}.{precision}e}'.format(trajectory.get_loss()[i,0], \
                                 width=output_width, precision=output_precision)] \
                             +['{:{width}.{precision}e}'.format(q[i,0], \
                                 width=output_width, precision=output_precision)] \
                             +['{:{width}.{precision}e}'.format(x, \
-                                width=output_width, precision=output_precision) for x in np.asarray(trajectory[i,:])] \
+                                width=output_width, precision=output_precision) for x in np.asarray(trajectory.get_trajectory()[i,:])] \
                             +['{:{width}.{precision}e}'.format(freeEnergies[ev_index][k], \
                                 width=output_width, precision=output_precision)] \
                             +['{:{width}.{precision}e}'.format(np.real(vectors[i,ev_index]), \
