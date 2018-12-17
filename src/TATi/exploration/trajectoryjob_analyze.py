@@ -3,7 +3,7 @@ import logging
 import numpy as np
 import scipy
 
-from TATi.analysis.TrajectoryAnalyser import compute_diffusion_maps
+from TATi.analysis.diffusionmap import DiffusionMap
 from TATi.exploration.trajectoryjob import TrajectoryJob
 
 
@@ -38,32 +38,25 @@ class TrajectoryJob_analyze(TrajectoryJob):
         trajectory = _data.parameters
         losses = _data.losses
         logging.debug("Computing diffusion map")
-        try:
-            vectors, values, q = compute_diffusion_maps( \
-                traj=trajectory, \
-                beta=self.parameters.inverse_temperature, \
-                loss=losses, \
-                nrOfFirstEigenVectors=self.parameters.number_of_eigenvalues, \
-                method=self.parameters.diffusion_map_method,
-                use_reweighting=self.parameters.use_reweighting)
-        except scipy.sparse.linalg.eigen.arpack.ArpackNoConvergence:
-            logging.error(": Vectors were non-convergent.")
-            vectors = np.zeros((np.shape(trajectory)[0], self.parameters.number_of_eigenvalues))
-            values = np.zeros((self.parameters.number_of_eigenvalues))
-            q = np.zeros((np.shape(trajectory)[0], np.shape(trajectory)[0]))
-        kernel_diff = np.asarray(q)
+        dmap = DiffusionMap( \
+            trajectory=trajectory, \
+            loss=losses)
+        evs_converged = dmap.compute( \
+            number_eigenvalues=self.parameters.number_of_eigenvalues, \
+            inverse_temperature=self.parameters.inverse_temperature, \
+            diffusion_map_method=self.parameters.diffusion_map_method,
+            use_reweighting=self.parameters.use_reweighting)
 
         # append vectors and values to data
-        _data.diffmap_eigenvectors.append(vectors)
-        _data.diffmap_eigenvalues.append(values)
-        logging.debug("eigenvalues is "+str(values))
+        _data.diffmap_eigenvectors.append(dmap.vectors)
+        _data.diffmap_eigenvalues.append(dmap.values)
+        logging.debug("eigenvalues is "+str(dmap.values))
 
         # check whether converged w.r.t to previous eigenvalues
         if len(_data.diffmap_eigenvalues) > 1:
-            assert( len(values) == len(_data.diffmap_eigenvalues[-2]) )
-            evs_converged = True    # evs converged?
-            for i in range(len(values)):
-                if abs(values[i] - _data.diffmap_eigenvalues[-2][i]) > self.TOLERANCE:
+            assert( len(dmap.values) == len(_data.diffmap_eigenvalues[-2]) )
+            for i in range(len(dmap.values)):
+                if abs(dmap.values[i] - _data.diffmap_eigenvalues[-2][i]) > self.TOLERANCE:
                     evs_converged = False
         else:
             evs_converged = False

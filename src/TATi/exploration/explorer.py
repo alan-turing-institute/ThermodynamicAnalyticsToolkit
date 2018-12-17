@@ -1,10 +1,9 @@
 import logging
 
 import numpy as np
-import scipy.sparse
 import scipy.spatial.distance as scidist
 
-from TATi.analysis.TrajectoryAnalyser import compute_diffusion_maps
+from TATi.analysis.diffusionmap import DiffusionMap
 from TATi.exploration.trajectoryjobqueue import TrajectoryJobQueue
 from TATi.exploration.trajectoryprocessqueue import TrajectoryProcessQueue
 
@@ -149,26 +148,19 @@ class Explorer(object):
         :param number_of_corner_points: number of corner points to return
         :return: list of indices of the corner points with respect to the given trajectory
         """
-        try:
-            dmap_eigenvectors, dmap_eigenvalues, dmap_kernel = compute_diffusion_maps( \
-                traj=trajectory, \
-                beta=parameters.inverse_temperature, \
-                loss=losses, \
-                nrOfFirstEigenVectors=parameters.number_of_eigenvalues, \
-                method=parameters.diffusion_map_method,
-                use_reweighting=parameters.use_reweighting)
-        except scipy.sparse.linalg.eigen.arpack.ArpackNoConvergence:
-            logging.error(": Vectors were non-convergent.")
-            dmap_eigenvectors = np.zeros( (np.shape(trajectory)[0], parameters.number_of_eigenvalues) )
-            dmap_eigenvalues = np.zeros( (parameters.number_of_eigenvalues) )
-            dmap_kernel = np.zeros( (np.shape(trajectory)[0], np.shape(trajectory)[0]) )
-            # override landmarks to skip computation
-            parameters.landmarks = 0
-        logging.info("Global diffusion map eigenvalues: "+str(dmap_eigenvalues))
+        dmap = DiffusionMap( \
+            trajectory=trajectory, \
+            loss=losses)
+        dmap.compute( \
+            number_eigenvalues=parameters.number_of_eigenvalues, \
+            inverse_temperature=parameters.inverse_temperature, \
+            diffusion_map_method=parameters.diffusion_map_method,
+            use_reweighting=parameters.use_reweighting)
+        logging.info("Global diffusion map eigenvalues: "+str(dmap.values))
 
         # c. find number of points maximally apart
         idx_corner = self.find_corner_points(
-                dmap_eigenvectors, number_of_corner_points)
+            dmap.vectors, number_of_corner_points)
         return idx_corner
 
     def run_all_jobs(self, network_model, parameters):

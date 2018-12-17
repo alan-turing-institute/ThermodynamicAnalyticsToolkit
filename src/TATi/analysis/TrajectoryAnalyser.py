@@ -7,19 +7,9 @@
 import argparse
 import logging
 import numpy as np
-import scipy.sparse as sps
-import sys
 
 from TATi.options.commandlineoptions import str2bool
 import TATi.diffusion_maps.diffusionmap as dm
-
-try:
-    import pydiffmap.diffusion_map as pydiffmap_dm
-    can_use_pydiffmap = True
-except ImportError:
-    can_use_pydiffmap = False
-
-
 
 from TATi.common import setup_csv_file
 
@@ -72,73 +62,6 @@ def moving_average(a, n=3) :
     ret = np.cumsum(a, dtype=float)
     ret[n:] = ret[n:] - ret[:-n]
     return ret[n - 1:] / n
-
-
-def compute_diffusion_maps(traj, beta, loss, nrOfFirstEigenVectors,
-                           method='vanilla', use_reweighting=False):
-    if method == 'pydiffmap':
-        if can_use_pydiffmap:
-            if use_reweighting:
-                # pydiffmap calculates one more and leaves out the first
-                qTargetDistribution = dm.compute_target_distribution(len(traj), beta, loss)
-                # optimal choice for epsilon
-                mydmap = pydiffmap_dm.DiffusionMap(alpha=1, n_evecs=nrOfFirstEigenVectors, epsilon='bgh', k=400)
-                mydmap.fit_transform(traj, weights=qTargetDistribution)
-            else:
-                mydmap = pydiffmap_dm.DiffusionMap(n_evecs=nrOfFirstEigenVectors, epsilon='bgh', k=400)
-                mydmap.fit_transform(traj)
-            kernel = mydmap.kernel_matrix
-            qEstimated = kernel.sum(axis=1)
-            X_se = mydmap.evecs
-            lambdas = mydmap.evals
-        else:
-            logging.info("Cannot use " + method + " as package not found on import.")
-            sys.exit(255)
-    elif method == 'vanilla' or method == 'TMDMap':
-        epsilon = 0.1  # try 1 (i.e. make it bigger, then reduce to average distance)
-        if method == "vanilla" and not use_reweighting:
-            kernel = dm.compute_kernel(traj, epsilon=epsilon)
-            qEstimated = kernel.sum(axis=1)
-            P = dm.compute_VanillaDiffusionMap(kernel, traj)
-        elif method == 'TMDMap' or (method == 'vanilla' and use_reweighting):
-            qTargetDistribution = dm.compute_target_distribution(len(traj), beta, loss)
-            P, qEstimated = dm.compute_TMDMap(traj, epsilon, qTargetDistribution)
-
-        lambdas, eigenvectors = sps.linalg.eigs(P, k=nrOfFirstEigenVectors+1)  # , which='LM' )
-
-        ix = lambdas.argsort()[::-1]
-        X_se = np.real(eigenvectors[:, ix[1:]])
-        lambdas = np.real(lambdas[ix[1:]])
-    else:
-        logging.info("Unknown diffusion map method "+method)
-        sys.exit(255)
-
-    # flip signs of ev to maximize non-negative entries (does not change ev property)
-    for index in range(len(lambdas)):
-        neg_signs = (X_se[:, index] < 0).sum()
-        if neg_signs > X_se[:, index].size / 2:
-            logging.debug("Negative signs: " + str(neg_signs) + ", dim: " + str(X_se[:, index].size)+", flipping.")
-            X_se[:, index] = np.negative(X_se[:, index])
-        if neg_signs == X_se[:, index].size / 2:
-            # exactly half is negative, half is positive, then decide on first comp
-            if X_se[0, index] < 0:
-                X_se[:, index] = np.negative(X_se[:, index])
-
-    return X_se, lambdas, qEstimated
-
-
-def write_values_as_csv(values, csv_filename, output_width, output_precision):
-    if np.shape(values)[0] == 0:
-        return
-    if csv_filename is not None:
-        header = ["i", "eigenvalue"]
-        csv_writer, csv_file = setup_csv_file(csv_filename, header)
-        for i in range(0, np.shape(values)[0]):
-            csv_writer.writerow([i]
-                + ['{:{width}.{precision}e}'.format(values[i],
-                            width=output_width,
-                            precision=output_precision)])
-        csv_file.close()
 
 
 def write_matrix(matrix, csv_filename=None):

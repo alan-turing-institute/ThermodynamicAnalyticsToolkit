@@ -1,6 +1,7 @@
 TATI_analysis_PYTHON = \
     averageenergieswriter.py \
     averagetrajectorywriter.py \
+    diffusionmap.py \
     parsedrunfile.py \
     parsedtrajectory.py \
     TrajectoryAnalyser.py \

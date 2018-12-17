@@ -223,7 +223,7 @@ def get_levelsets(data, K, q, V1):
     :param K: number of level sets to calculate
     :param q: empirial distribution
     :param V1: eigenvector
-    :return: level set values
+    :return: indices of V1 for start of level set, level set values
     """
 
     m = float(q.size)
@@ -261,6 +261,7 @@ def get_levelsets(data, K, q, V1):
                     levelset_k=range(0,len(V1))
                     logging.debug("In get_landmarks: Levelset chosen as V1")
 
+                # store first index where we are below delta
                 levelsets.append(levelset_k[0])
 
     return levelsets, levels
