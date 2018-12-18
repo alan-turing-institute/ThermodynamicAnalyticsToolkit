@@ -5,6 +5,7 @@ TATI_analysis_PYTHON = \
     covariance.py \
     diffusionmap.py \
     freeenergy.py \
+    integratedautocorrelation.py \
     parsedrunfile.py \
     parsedtrajectory.py \
 	__init__.py

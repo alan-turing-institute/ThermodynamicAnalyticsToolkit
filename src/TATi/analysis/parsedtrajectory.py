@@ -56,15 +56,24 @@ class ParsedTrajectory(object):
         id_max = int(self.df_trajectory.max(axis=0).loc['id'])
         return id_max - id_min + 1 # ids start zero-based
 
+    @staticmethod
+    def _get_weights_start(dataframe):
+        column_starts = ["weight0", "w0", "bias0", "b0", "coord0", "c0"]
+        weight_name = None
+        for i in range(len(column_starts)):
+            try:
+                weight_name = column_starts[i]
+                weight_start_index = dataframe.columns.get_loc(weight_name)
+                break
+            except KeyError:
+                pass
+        if weight_name is None:
+            raise ValueError("Could not determine start column for weights and/or biases.")
+        else:
+            return weight_start_index
+
     def get_trajectory(self):
-        index = -1
-        index2 = -1
-        if "weight0" in self.df_trajectory.columns:
-            index = self.df_trajectory.columns.get_loc('weight0')
-        if "bias0" in self.df_trajectory.columns:
-            index2 = self.df_trajectory.columns.get_loc('bias0')
-        if (index2 < index and index2 >=0) or (index == -1):
-            index = index2
+        index = self._get_weights_start(self.df_trajectory)
         return self.df_trajectory.iloc[self.start::self.every_nth,index:].values
 
     def get_trajectory_for_walker(self, walker_index=None):

@@ -34,6 +34,9 @@ m4_include([TrajectoryAnalyser/DiffusionMap/testsuite-trajectoryanalyser-diffusi
 # tests on free energy analysis
 m4_include([TrajectoryAnalyser/FreeEnergy/testsuite-trajectoryanalyser-free_energy.at])
 
+# tests on Integrated Autocorrelation Time analysis
+m4_include([TrajectoryAnalyser/IntegratedAutocorrelationTime/testsuite-trajectoryanalyser-integratedautocorrelationtime.at])
+
 # test on command-line options
 m4_include([TrajectoryAnalyser/Options/testsuite-trajectoryanalyser-options-drop_burnin-single_step.at])
 m4_include([TrajectoryAnalyser/Options/testsuite-trajectoryanalyser-options-drop_burnin-more_steps.at])
