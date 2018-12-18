@@ -117,7 +117,7 @@ class AnalyserModules(object):
         # then execute each stage
         for module in sorted_list:
             logging.info("Executing analysis module "+module)
-            getattr(self, "analyse_"+module)()
+            getattr(self, "_analyse_"+module)()
 
     def get_stage_results(self, name):
         if self.analysis_storage[name] is not None:
@@ -126,7 +126,7 @@ class AnalyserModules(object):
             logging.critical("Results from dependent stage "+name+" not present!?")
             sys.exit(127)
 
-    def analyse_parse_run_file(self):
+    def _analyse_parse_run_file(self):
         runfile = ParsedRunfile(self.FLAGS.run_file, self.FLAGS.every_nth)
         self.analysis_storage["parse_run_file"][0] = runfile
 
@@ -142,7 +142,7 @@ class AnalyserModules(object):
             print("%lg average and %lg variance in runfile.get_loss()." % \
                   (np.average(runfile.get_loss()), runfile.get_loss().var()))
 
-    def analyse_parse_trajectory_file(self):
+    def _analyse_parse_trajectory_file(self):
         print("Trajectory file is " + str(self.FLAGS.trajectory_file))
         trajectory = ParsedTrajectory(self.FLAGS.trajectory_file, self.FLAGS.every_nth)
         self.analysis_storage["parse_trajectory_file"][0] = trajectory
@@ -154,19 +154,19 @@ class AnalyserModules(object):
                 sys.stderr.write("self.FLAGS.drop_burnin is too large, no data points left.")
                 sys.exit(1)
 
-    def analyse_average_energies(self):
+    def _analyse_average_energies(self):
         runfile = self.analysis_storage["parse_run_file"][0]
         if self.FLAGS.average_run_file is not None:
             avg_writer = AverageEnergiesWriter(runfile, self.FLAGS.steps)
             avg_writer.write(self.FLAGS.average_run_file)
 
-    def analyse_average_trajectory(self):
+    def _analyse_average_trajectory(self):
         trajectory = self.get_stage_results("parse_trajectory_file")[0]
         if self.FLAGS.average_trajectory_file is not None:
             averagewriter = AverageTrajectoryWriter(trajectory.get_trajectory())
             averagewriter.write(self.FLAGS.average_trajectory_file)
 
-    def analyse_diffusion_map(self):
+    def _analyse_diffusion_map(self):
         # compute diffusion map and write to file
         trajectory = self.get_stage_results("parse_trajectory_file")[0]
         dmap = DiffusionMap.from_parsedtrajectory(trajectory)
@@ -195,7 +195,7 @@ class AnalyserModules(object):
                 dmap.write_vectors_to_csv(self.FLAGS.diffusion_matrix_file,
                                           self.output_precision, self.output_width)
 
-    def analyse_free_energy_levelsets(self):
+    def _analyse_free_energy_levelsets(self):
         trajectory = self.get_stage_results("parse_trajectory_file")[0]
         dmap = self.get_stage_results("diffusion_map")[0]
         freeenergy = FreeEnergy(trajectory, dmap)
@@ -219,7 +219,7 @@ class AnalyserModules(object):
                     landmark_filename=landmark_filename,
                     output_width=self.output_width, output_precision=self.output_precision)
 
-    def analyse_free_energy_histograms(self):
+    def _analyse_free_energy_histograms(self):
         trajectory = self.get_stage_results("parse_trajectory_file")[0]
         dmap = self.get_stage_results("diffusion_map")[0]
         freeenergy = FreeEnergy(trajectory, dmap)
