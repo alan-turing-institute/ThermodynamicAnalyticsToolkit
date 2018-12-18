@@ -2,6 +2,7 @@ TATI_analysis_PYTHON = \
     analyser_modules.py \
     averageenergieswriter.py \
     averagetrajectorywriter.py \
+    covariance.py \
     diffusionmap.py \
     freeenergy.py \
     parsedrunfile.py \

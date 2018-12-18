@@ -30,6 +30,12 @@ def parse_parameters():
         help='CSV file name to output averages and variances of energies.')
     parser.add_argument('--average_trajectory_file', type=str, default=None,
         help='CSV file name to output averages and variances of all degrees of freedom.')
+    parser.add_argument('--covariance_matrix', type=str, default=None,
+        help='Give file name to write covariance matrix as CSV to')
+    parser.add_argument('--covariance_eigenvalues', type=str, default=None,
+        help='Give file name to write covariance\'s eigenvalues as CSV to')
+    parser.add_argument('--covariance_eigenvectors', type=str, default=None,
+        help='Give file name to write covariance\'s eigenvectors as CSV to')
     parser.add_argument('--diffusion_map_method', type=str, default='vanilla',
         help='Method to use for computing the diffusion map: pydiffmap, vanilla or TMDMap')
     parser.add_argument('--diffusion_map_file', type=str, default=None,

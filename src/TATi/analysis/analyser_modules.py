@@ -7,6 +7,7 @@ from TATi.analysis.parsedrunfile import ParsedRunfile
 from TATi.analysis.parsedtrajectory import ParsedTrajectory
 from TATi.analysis.averageenergieswriter import AverageEnergiesWriter
 from TATi.analysis.averagetrajectorywriter import AverageTrajectoryWriter
+from TATi.analysis.covariance import Covariance
 from TATi.analysis.diffusionmap import DiffusionMap
 from TATi.analysis.freeenergy import FreeEnergy
 
@@ -28,7 +29,7 @@ class AnalyserModules(object):
     # and the other way round: all functions analyse_...() need to be enlisted
     # here to be executable by TATiAnalyser.
     analysis_modules = ("parse_run_file", "parse_trajectory_file", "average_energies", "average_trajectory",
-                        "diffusion_map", "free_energy_levelsets", "free_energy_histograms")
+                        "covariance", "diffusion_map", "free_energy_levelsets", "free_energy_histograms")
 
     # list all dependencies between the different analysis modules, i.e. what
     # needs to be done before the module itself is run. Note that subdependencies
@@ -38,6 +39,7 @@ class AnalyserModules(object):
         "parse_trajectory_file": [],
         "average_energies": ["parse_run_file"],
         "average_trajectory": ["parse_trajectory_file"],
+        "covariance": ["parse_trajectory_file"],
         "diffusion_map": ["parse_trajectory_file"],
         "free_energy_levelsets": ["diffusion_map"],
         "free_energy_histograms": ["diffusion_map"],
@@ -50,6 +52,7 @@ class AnalyserModules(object):
         "parse_trajectory_file": [None],
         "average_energies": [None],
         "average_trajectory": [None],
+        "covariance": [None],
         "diffusion_map": [None],
         "free_energy_levelsets": [None],
         "free_energy_histograms": [None],
@@ -165,6 +168,25 @@ class AnalyserModules(object):
         if self.FLAGS.average_trajectory_file is not None:
             averagewriter = AverageTrajectoryWriter(trajectory.get_trajectory())
             averagewriter.write(self.FLAGS.average_trajectory_file)
+
+    def _analyse_covariance(self):
+        trajectory = self.get_stage_results("parse_trajectory_file")[0]
+        cov = Covariance(trajectory)
+        cov.compute(self.FLAGS.number_of_eigenvalues)
+        self.analysis_storage["covariance"] = [cov.covariance, cov.vectors, cov.values]
+
+        # write results
+        if self.FLAGS.covariance_matrix is not None \
+            or self.FLAGS.covariance_eigenvalues is not None \
+            or self.FLAGS.covariance_eigenvectors is not None:
+            if self.FLAGS.covariance_matrix is not None:
+                cov.write_covariance_as_csv(self.FLAGS.covariance_matrix)
+            if self.FLAGS.covariance_eigenvalues is not None \
+                or self.FLAGS.covariance_eigenvectors is not None:
+                if self.FLAGS.covariance_eigenvalues is not None:
+                    cov.write_values_as_csv(self.FLAGS.covariance_eigenvalues)
+                if self.FLAGS.covariance_eigenvectors is not None:
+                    cov.write_vectors_as_csv(self.FLAGS.covariance_eigenvectors)
 
     def _analyse_diffusion_map(self):
         # compute diffusion map and write to file
