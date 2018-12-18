@@ -17,5 +17,6 @@
 #
 ### all tests on free energy
 
+m4_include([TrajectoryAnalyser/FreeEnergy/testsuite-trajectoryanalyser-free_energy-harmonic_oscillator.at])
 m4_include([TrajectoryAnalyser/FreeEnergy/testsuite-trajectoryanalyser-free_energy-histograms.at])
 m4_include([TrajectoryAnalyser/FreeEnergy/testsuite-trajectoryanalyser-free_energy-levelsets.at])

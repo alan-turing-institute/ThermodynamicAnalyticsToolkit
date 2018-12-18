@@ -113,6 +113,7 @@ TESTSCRIPTS += \
 	$(srcdir)/TrajectoryAnalyser/Averages/testsuite-trajectoryanalyser-averages.at \
 	$(srcdir)/TrajectoryAnalyser/DiffusionMap/testsuite-trajectoryanalyser-diffusionmap-eigendecomposition.at \
 	$(srcdir)/TrajectoryAnalyser/FreeEnergy/testsuite-trajectoryanalyser-free_energy.at \
+	$(srcdir)/TrajectoryAnalyser/FreeEnergy/testsuite-trajectoryanalyser-free_energy-harmonic_oscillator.at \
 	$(srcdir)/TrajectoryAnalyser/FreeEnergy/testsuite-trajectoryanalyser-free_energy-histograms.at \
 	$(srcdir)/TrajectoryAnalyser/FreeEnergy/testsuite-trajectoryanalyser-free_energy-levelsets.at \
 	$(srcdir)/TrajectoryAnalyser/Options/testsuite-trajectoryanalyser-options-drop_burnin-more_steps.at \

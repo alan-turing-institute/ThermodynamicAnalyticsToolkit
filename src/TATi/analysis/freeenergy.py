@@ -12,6 +12,15 @@ class FreeEnergy(object):
     different minima basins by taking the proportions of all minima basins
     into account.
 
+    Note:
+        Both analysis variants - levelsets and histograms - do not yet give
+        results that completely coincide. The concept of free energy still
+        needs to be properly defined for neural network loss manifolds.
+
+    Warning:
+
+        THIS IS STILL EXPERIMENTAL.
+
     """
 
     def __init__(self, trajectory, loss, dmap_vectors, dmap_q):
@@ -27,6 +36,7 @@ class FreeEnergy(object):
         self.dmap_q = dmap.q
 
     def compute_on_levelsets(self, num_landmarks):
+        logging.warning("Free energy analysis using levelsets is not yet tested and probably does not give meaningful results, yet.")
         print("Computing free energy")
         #compute levelsets
 
@@ -57,6 +67,7 @@ class FreeEnergy(object):
     def compute_by_histogramming(self, num_bins):
         """ Calculate free energy by histogramming the eigenvector.
         """
+        logging.warning("Free energy analysis using histograms is not yet tested and probably does not give meaningful results, yet.")
         mlist = []
         for ev_index in range(np.shape(self.dmap_vectors)[1]):
             mlist.append(self._compute_free_energy_using_histograms(
