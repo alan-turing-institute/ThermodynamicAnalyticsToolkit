@@ -1,6 +1,6 @@
 #
 #    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
-#    Copyright (C) 2017 The University of Edinburgh
+#    Copyright (C) 2018 The University of Edinburgh
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -42,9 +42,9 @@ AT_CHECK([../../../TATiAnalyser \
     --landmarks 10 \
     --landmark_file landmarks-ev_1.csv \
     --number_of_eigenvalues 4 \
-    --trajectory_file ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/pre/trajectory-two_clusters-dim_500-gamma_10-beta_1e4-max_steps_1000-noise_0.1-linear-seed_426.csv
+    --trajectory_file ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/FreeEnergy/pre/trajectory-two_clusters-dim_500-gamma_10-beta_1e4-max_steps_1000-noise_0.1-linear-seed_426.csv
 ], 0, [stdout], [stderr])
-AT_CHECK([../../../NumericalDiff --column_ignore_sign "ev_1" -- landmarks-ev_1.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/post/landmarks-ev_1-method_vanilla.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff --column_ignore_sign "ev_1" -- landmarks-ev_1.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/FreeEnergy/post/landmarks-ev_1-method_vanilla.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
 
@@ -73,9 +73,9 @@ AT_CHECK([../../../TATiAnalyser \
     --landmarks 10 \
     --landmark_file landmarks-ev_1.csv \
     --number_of_eigenvalues 4 \
-    --trajectory_file ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/pre/trajectory-two_clusters-dim_500-gamma_10-beta_1e1-max_steps_1000-noise_0.1-linear-seed_426.csv
+    --trajectory_file ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/FreeEnergy/pre/trajectory-two_clusters-dim_500-gamma_10-beta_1e1-max_steps_1000-noise_0.1-linear-seed_426.csv
 ], 0, [stdout], [stderr])
-AT_CHECK([../../../NumericalDiff --column_ignore_sign "ev_1" -- landmarks-ev_1.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/post/landmarks-ev_1-method_TMDMap.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff --column_ignore_sign "ev_1" -- landmarks-ev_1.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/FreeEnergy/post/landmarks-ev_1-method_TMDMap.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
 
@@ -105,41 +105,8 @@ AT_CHECK([../../../TATiAnalyser \
     --landmarks 10 \
     --landmark_file landmarks-ev_1.csv \
     --number_of_eigenvalues 4 \
-    --trajectory_file ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/pre/trajectory-two_clusters-dim_500-gamma_10-beta_1e1-max_steps_1000-noise_0.1-linear-seed_426.csv
+    --trajectory_file ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/FreeEnergy/pre/trajectory-two_clusters-dim_500-gamma_10-beta_1e1-max_steps_1000-noise_0.1-linear-seed_426.csv
 ], 0, [stdout], [stderr])
-AT_CHECK([../../../NumericalDiff --column_ignore_sign "ev_1" -- landmarks-ev_1.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/post/landmarks-ev_1-method_pydiffmap.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff --column_ignore_sign "ev_1" -- landmarks-ev_1.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/FreeEnergy/post/landmarks-ev_1-method_pydiffmap.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
-
-AT_SETUP([Analyser - Free energy using histograms])
-AT_KEYWORDS([tatianalyser free_energy histograms])
-AT_SKIP_IF([! ../../../check_package pydiffmap])
-
-# analyse a trajectory that was created by:
-# (Two clusters dataset with two inputs nodes, single output, linear activation)
-# TATiSampler \
-# --data_type 2 \
-# --dimension 500 \
-# --friction_constant 10 \
-# --inverse_temperatur 1e1 \
-# --max_steps 1000 \
-# --noise 0.1 \
-# --output_activation linear \
-# --seed 426 \
-# --trajectory_file trajectory-two_clusters-dim_500-gamma_10-beta_1e1-max_steps_1000-noise_0.1-linear-seed_426.csv
-
-AT_CHECK([../../../TATiAnalyser \
-    free_energy_histograms \
-    --diffusion_map_method "pydiffmap" \
-    --drop_burnin 10 \
-    --every_nth 1 \
-    --inverse_temperature 1e1 \
-    --landmarks 10 \
-    --free_energy_file free_energy-ev_1.csv \
-    --number_of_eigenvalues 4 \
-    --trajectory_file ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/pre/trajectory-two_clusters-dim_500-gamma_10-beta_1e1-max_steps_1000-noise_0.1-linear-seed_426.csv
-], 0, [stdout], [stderr])
-AT_CHECK([../../../NumericalDiff --column_ignore_sign "ev_1" -- free_energy-ev_1.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/DiffusionMap/post/free_energy-ev_1-method_pydiffmap.csv], 0, [ignore], [ignore])
-
-AT_CLEANUP
-
