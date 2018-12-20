@@ -18,3 +18,4 @@
 ### all tests on covariance analysis
 
 m4_include([TrajectoryAnalyser/Covariance/testsuite-trajectoryanalyser-covariance-gaussian_mixture.at])
+m4_include([TrajectoryAnalyser/Covariance/testsuite-trajectoryanalyser-covariance-gaussian_mixture-walker_individual.at])

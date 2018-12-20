@@ -113,6 +113,7 @@ TESTSCRIPTS += \
 	$(srcdir)/TrajectoryAnalyser/Averages/testsuite-trajectoryanalyser-averages.at \
 	$(srcdir)/TrajectoryAnalyser/Covariance/testsuite-trajectoryanalyser-covariance.at \
 	$(srcdir)/TrajectoryAnalyser/Covariance/testsuite-trajectoryanalyser-covariance-gaussian_mixture.at \
+	$(srcdir)/TrajectoryAnalyser/Covariance/testsuite-trajectoryanalyser-covariance-gaussian_mixture-walker_individual.at \
 	$(srcdir)/TrajectoryAnalyser/DiffusionMap/testsuite-trajectoryanalyser-diffusionmap-eigendecomposition.at \
 	$(srcdir)/TrajectoryAnalyser/FreeEnergy/testsuite-trajectoryanalyser-free_energy.at \
 	$(srcdir)/TrajectoryAnalyser/FreeEnergy/testsuite-trajectoryanalyser-free_energy-harmonic_oscillator.at \

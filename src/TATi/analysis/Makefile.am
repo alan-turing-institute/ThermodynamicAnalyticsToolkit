@@ -3,6 +3,7 @@ TATI_analysis_PYTHON = \
     averageenergieswriter.py \
     averagetrajectorywriter.py \
     covariance.py \
+    covariance_perwalker.py \
     diffusionmap.py \
     freeenergy.py \
     integratedautocorrelation.py \

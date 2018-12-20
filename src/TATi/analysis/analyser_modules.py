@@ -8,6 +8,7 @@ from TATi.analysis.parsedtrajectory import ParsedTrajectory
 from TATi.analysis.averageenergieswriter import AverageEnergiesWriter
 from TATi.analysis.averagetrajectorywriter import AverageTrajectoryWriter
 from TATi.analysis.covariance import Covariance
+from TATi.analysis.covariance_perwalker import CovariancePerWalker
 from TATi.analysis.diffusionmap import DiffusionMap
 from TATi.analysis.freeenergy import FreeEnergy
 from TATi.analysis.integratedautocorrelation import IntegratedAutoCorrelation
@@ -30,7 +31,7 @@ class AnalyserModules(object):
     # and the other way round: all functions analyse_...() need to be enlisted
     # here to be executable by TATiAnalyser.
     analysis_modules = ("parse_run_file", "parse_trajectory_file", "average_energies", "average_trajectory",
-                        "covariance", "diffusion_map", "free_energy_levelsets", "free_energy_histograms",
+                        "covariance", "covariance_per_walker", "diffusion_map", "free_energy_levelsets", "free_energy_histograms",
                         "integrated_autocorrelation_time_covariance")
 
     # list all dependencies between the different analysis modules, i.e. what
@@ -42,6 +43,7 @@ class AnalyserModules(object):
         "average_energies": ["parse_run_file"],
         "average_trajectory": ["parse_trajectory_file"],
         "covariance": ["parse_trajectory_file"],
+        "covariance_per_walker": ["parse_trajectory_file"],
         "diffusion_map": ["parse_trajectory_file"],
         "free_energy_levelsets": ["diffusion_map"],
         "free_energy_histograms": ["diffusion_map"],
@@ -56,6 +58,7 @@ class AnalyserModules(object):
         "average_energies": [None],
         "average_trajectory": [None],
         "covariance": [None],
+        "covariance_per_walker": [None],
         "diffusion_map": [None],
         "free_energy_levelsets": [None],
         "free_energy_histograms": [None],
@@ -133,34 +136,6 @@ class AnalyserModules(object):
             logging.critical("Results from dependent stage "+name+" not present!?")
             sys.exit(127)
 
-    def _analyse_parse_run_file(self):
-        runfile = ParsedRunfile(self.FLAGS.run_file, self.FLAGS.every_nth)
-        self.analysis_storage["parse_run_file"][0] = runfile
-
-        # write results
-        if self.FLAGS.run_file is not None:
-            print("Run file is " + str(self.FLAGS.run_file))
-            # load run file
-            if not runfile.add_drop_burnin(self.FLAGS.drop_burnin):
-                sys.stderr.write("self.FLAGS.drop_burnin is too large, no data points left.")
-                sys.exit(1)
-
-            print("%d steps after dropping burn in." % (runfile.number_steps()))
-            print("%lg average and %lg variance in runfile.get_loss()." % \
-                  (np.average(runfile.get_loss()), runfile.get_loss().var()))
-
-    def _analyse_parse_trajectory_file(self):
-        print("Trajectory file is " + str(self.FLAGS.trajectory_file))
-        trajectory = ParsedTrajectory(self.FLAGS.trajectory_file, self.FLAGS.every_nth)
-        self.analysis_storage["parse_trajectory_file"][0] = trajectory
-
-        # write results
-        if self.FLAGS.trajectory_file is not None:
-            # load trajectory file
-            if not trajectory.add_drop_burnin(self.FLAGS.drop_burnin):
-                sys.stderr.write("self.FLAGS.drop_burnin is too large, no data points left.")
-                sys.exit(1)
-
     def _analyse_average_energies(self):
         runfile = self.analysis_storage["parse_run_file"][0]
         if self.FLAGS.average_run_file is not None:
@@ -178,19 +153,14 @@ class AnalyserModules(object):
         cov = Covariance(trajectory)
         cov.compute(self.FLAGS.number_of_eigenvalues)
         self.analysis_storage["covariance"] = [cov.covariance, cov.vectors, cov.values]
+        self._write_covariance_results(cov)
 
-        # write results
-        if self.FLAGS.covariance_matrix is not None \
-            or self.FLAGS.covariance_eigenvalues is not None \
-            or self.FLAGS.covariance_eigenvectors is not None:
-            if self.FLAGS.covariance_matrix is not None:
-                cov.write_covariance_as_csv(self.FLAGS.covariance_matrix)
-            if self.FLAGS.covariance_eigenvalues is not None \
-                or self.FLAGS.covariance_eigenvectors is not None:
-                if self.FLAGS.covariance_eigenvalues is not None:
-                    cov.write_values_as_csv(self.FLAGS.covariance_eigenvalues)
-                if self.FLAGS.covariance_eigenvectors is not None:
-                    cov.write_vectors_as_csv(self.FLAGS.covariance_eigenvectors)
+    def _analyse_covariance_per_walker(self):
+        trajectory = self.get_stage_results("parse_trajectory_file")[0]
+        cov = CovariancePerWalker(trajectory)
+        cov.compute(self.FLAGS.number_of_eigenvalues)
+        self.analysis_storage["covariance_per_walker"] = [cov.covariance, cov.vectors, cov.values]
+        self._write_covariance_results(cov)
 
     def _analyse_diffusion_map(self):
         # compute diffusion map and write to file
@@ -269,3 +239,45 @@ class AnalyserModules(object):
                 iat.write_tau_as_csv(self.FLAGS.integrated_autocorrelation_time)
             except RuntimeError:
                 logging.error("Could not write taus due to acor computation failure.")
+
+    def _analyse_parse_run_file(self):
+        runfile = ParsedRunfile(self.FLAGS.run_file, self.FLAGS.every_nth)
+        self.analysis_storage["parse_run_file"][0] = runfile
+
+        # write results
+        if self.FLAGS.run_file is not None:
+            print("Run file is " + str(self.FLAGS.run_file))
+            # load run file
+            if not runfile.add_drop_burnin(self.FLAGS.drop_burnin):
+                sys.stderr.write("self.FLAGS.drop_burnin is too large, no data points left.")
+                sys.exit(1)
+
+            print("%d steps after dropping burn in." % (runfile.number_steps()))
+            print("%lg average and %lg variance in runfile.get_loss()." % \
+                  (np.average(runfile.get_loss()), runfile.get_loss().var()))
+
+    def _analyse_parse_trajectory_file(self):
+        print("Trajectory file is " + str(self.FLAGS.trajectory_file))
+        trajectory = ParsedTrajectory(self.FLAGS.trajectory_file, self.FLAGS.every_nth)
+        self.analysis_storage["parse_trajectory_file"][0] = trajectory
+
+        # write results
+        if self.FLAGS.trajectory_file is not None:
+            # load trajectory file
+            if not trajectory.add_drop_burnin(self.FLAGS.drop_burnin):
+                sys.stderr.write("self.FLAGS.drop_burnin is too large, no data points left.")
+                sys.exit(1)
+
+    def _write_covariance_results(self, cov):
+        # write results
+        if self.FLAGS.covariance_matrix is not None \
+            or self.FLAGS.covariance_eigenvalues is not None \
+            or self.FLAGS.covariance_eigenvectors is not None:
+            if self.FLAGS.covariance_matrix is not None:
+                cov.write_covariance_as_csv(self.FLAGS.covariance_matrix)
+            if self.FLAGS.covariance_eigenvalues is not None \
+                or self.FLAGS.covariance_eigenvectors is not None:
+                if self.FLAGS.covariance_eigenvalues is not None:
+                    cov.write_values_as_csv(self.FLAGS.covariance_eigenvalues)
+                if self.FLAGS.covariance_eigenvectors is not None:
+                    cov.write_vectors_as_csv(self.FLAGS.covariance_eigenvectors)
