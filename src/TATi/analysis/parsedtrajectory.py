@@ -39,6 +39,23 @@ class ParsedTrajectory(object):
     def get_loss(self):
         return self.df_trajectory.loc[self.start::self.every_nth,['loss']].values
 
+    def get_degrees(self):
+        index = self._get_weights_start(self.df_trajectory)
+        return self.df_trajectory.columns[index:]
+
+    def get_degrees_start_index(self):
+        return self._get_weights_start(self.df_trajectory)
+
+    def get_degrees_of_freedom(self):
+        index = self._get_weights_start(self.df_trajectory)
+        return len(self.df_trajectory.columns) - index
+
+    def get_number_walkers(self):
+        # get the range of ids in trajectory: number of distinct trajectories
+        id_min = int(self.df_trajectory.min(axis=0).loc['id'])
+        id_max = int(self.df_trajectory.max(axis=0).loc['id'])
+        return id_max - id_min + 1 # ids start zero-based
+
     def get_trajectory(self):
         index = -1
         index2 = -1
@@ -49,3 +66,9 @@ class ParsedTrajectory(object):
         if (index2 < index and index2 >=0) or (index == -1):
             index = index2
         return self.df_trajectory.iloc[self.start::self.every_nth,index:].values
+
+    def get_trajectory_for_walker(self, walker_index=None):
+        index = self._get_weights_start(self.df_trajectory)
+        return self.df_trajectory[
+                   self.df_trajectory['id'] == walker_index].iloc[
+               self.start::self.every_nth, index:].values
