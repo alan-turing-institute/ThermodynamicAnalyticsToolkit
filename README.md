@@ -1,14 +1,14 @@
-Thermodynamic Analytics Toolkit
-===============================
+Thermodynamic Analytics ToolkIt (TATi)
+======================================
 
 Thermodynamic Analytics Toolkit is a sampling-based approach to understand the
-effectiveness of neural networks training.
+effectiveness of neural networks training and investigate their loss manufolds.
 
 It uses Tensorflow (https://www.tensorflow.org/) as neural network
-framework and implements sampling algorithms on top of it. These
-samplers create trajectories with certain statistical properties
-that are used to extract quantities such as slow reaction coordinates
-and free energy.
+framework and implements sampling algorithms on top of it. It contains both
+a rapid prototyping platform for new sampling methods and also an analysis
+framework to understand the intricacies of the loss manifold in terms of
+averages, covariance, diffusion maps, and free energy.
 
 In total, we depend on the following python packages:
 
@@ -17,11 +17,13 @@ In total, we depend on the following python packages:
  * pandas
  * scipy
  * scikit-learn
+ * acor (see the userguide for installation instructions)
 
 It has received financial support from a seed funding grant and through a 
 Rutherford fellowship from the Alan Turing Institute in London (R-SIS-003, 
 R-RUT-001) and EPSRC grant no. EP/P006175/1 (Data Driven Coarse Graining using
-Space-Time Diffusion Maps, B. Leimkuhler PI)
+Space-Time Diffusion Maps, B. Leimkuhler PI), and also from a Microsoft Azure 
+Sponsorship (MS-AZR-0143P).
 
 In general, see doc/userguide for all manuals and guides accompanying this
 package.
@@ -38,6 +40,7 @@ Furthermore, for installation from a cloned git repository or a pure source
 tarball, the following non-standard packages are required for creating the
 userguide and running all tests:
 
+ * doxygen
  * asciidoc, dblatex
  * gawk, sqlite3
 
