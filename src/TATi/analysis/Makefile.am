@@ -7,6 +7,7 @@ TATI_analysis_PYTHON = \
     diffusionmap.py \
     freeenergy.py \
     integratedautocorrelation.py \
+    integratedautocorrelation_perwalker.py \
     parsedrunfile.py \
     parsedtrajectory.py \
 	__init__.py

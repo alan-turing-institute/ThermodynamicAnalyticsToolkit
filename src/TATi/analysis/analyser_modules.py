@@ -12,6 +12,7 @@ from TATi.analysis.covariance_perwalker import CovariancePerWalker
 from TATi.analysis.diffusionmap import DiffusionMap
 from TATi.analysis.freeenergy import FreeEnergy
 from TATi.analysis.integratedautocorrelation import IntegratedAutoCorrelation
+from TATi.analysis.integratedautocorrelation_perwalker import IntegratedAutoCorrelationPerWalker
 
 class AnalyserModules(object):
     """ This class contains all analyser modules with their dependencies in
@@ -32,7 +33,7 @@ class AnalyserModules(object):
     # here to be executable by TATiAnalyser.
     analysis_modules = ("parse_run_file", "parse_trajectory_file", "average_energies", "average_trajectory",
                         "covariance", "covariance_per_walker", "diffusion_map", "free_energy_levelsets", "free_energy_histograms",
-                        "integrated_autocorrelation_time_covariance")
+                        "integrated_autocorrelation_time_covariance", "integrated_autocorrelation_time_covariance_per_walker")
 
     # list all dependencies between the different analysis modules, i.e. what
     # needs to be done before the module itself is run. Note that subdependencies
@@ -48,6 +49,7 @@ class AnalyserModules(object):
         "free_energy_levelsets": ["diffusion_map"],
         "free_energy_histograms": ["diffusion_map"],
         "integrated_autocorrelation_time_covariance": ["covariance"],
+        "integrated_autocorrelation_time_covariance_per_walker": ["covariance_per_walker"],
     }
 
     # stores all results obtained through a specific analysis module, i.e.
@@ -63,6 +65,7 @@ class AnalyserModules(object):
         "free_energy_levelsets": [None],
         "free_energy_histograms": [None],
         "integrated_autocorrelation_time_covariance": [None],
+        "integrated_autocorrelation_time_covariance_per_walker": [None],
     }
 
     def __init__(self, FLAGS, output_width, output_precision):
@@ -236,6 +239,17 @@ class AnalyserModules(object):
             iat = IntegratedAutoCorrelation(trajectory)
             try:
                 iat.compute(transformation=covariance_evec)
+                iat.write_tau_as_csv(self.FLAGS.integrated_autocorrelation_time)
+            except RuntimeError:
+                logging.error("Could not write taus due to acor computation failure.")
+
+    def _analyse_integrated_autocorrelation_time_covariance_per_walker(self):
+        if self.FLAGS.integrated_autocorrelation_time is not None:
+            trajectory = self.get_stage_results("parse_trajectory_file")[0]
+            covariance_evec_per_walker = self.get_stage_results("covariance_per_walker")[1]
+            iat = IntegratedAutoCorrelationPerWalker(trajectory)
+            try:
+                iat.compute(transformation=covariance_evec_per_walker)
                 iat.write_tau_as_csv(self.FLAGS.integrated_autocorrelation_time)
             except RuntimeError:
                 logging.error("Could not write taus due to acor computation failure.")

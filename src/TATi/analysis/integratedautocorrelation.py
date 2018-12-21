@@ -13,6 +13,14 @@ class IntegratedAutoCorrelation(object):
     """ This class computes the integrated autocorrelation time on a given
     trajectory whose covariance directions have been computed beforehand.
 
+    NOTE:
+        When the trajectory comes from multiple walkers, i.e. there are
+        multiple distinct trajectories contained in ParsedTrajectory, then
+        there are two cases:
+
+        1. The trajectories are averaged over
+        2. The trajectories are analysed individually
+
     """
     def __init__(self, parsedtrajectory):
         if not isinstance(parsedtrajectory, ParsedTrajectory):

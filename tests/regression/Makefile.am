@@ -121,6 +121,7 @@ TESTSCRIPTS += \
 	$(srcdir)/TrajectoryAnalyser/FreeEnergy/testsuite-trajectoryanalyser-free_energy-levelsets.at \
 	$(srcdir)/TrajectoryAnalyser/IntegratedAutocorrelationTime/testsuite-trajectoryanalyser-integratedautocorrelationtime.at \
 	$(srcdir)/TrajectoryAnalyser/IntegratedAutocorrelationTime/testsuite-trajectoryanalyser-integratedautocorrelationtime-gaussian_mixture.at \
+	$(srcdir)/TrajectoryAnalyser/IntegratedAutocorrelationTime/testsuite-trajectoryanalyser-integratedautocorrelationtime-gaussian_mixture-walker_individual.at \
 	$(srcdir)/TrajectoryAnalyser/Options/testsuite-trajectoryanalyser-options-drop_burnin-more_steps.at \
 	$(srcdir)/TrajectoryAnalyser/Options/testsuite-trajectoryanalyser-options-drop_burnin-single_step.at \
 	$(srcdir)/TrajectoryAnalyser/Options/testsuite-trajectoryanalyser-options-every_nth.at

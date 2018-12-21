@@ -17,53 +17,8 @@
 #
 ### integrated autocorrelation time of a 2d Gaussian Mixture model
 
-AT_SETUP([Analyser - IAT 2d Gaussian mixture, single walker])
-AT_KEYWORDS([tatianalyser IAT 2d Gaussian mixture])
-AT_SKIP_IF([! ../../../check_package acor])
-
-# analyse a trajectory that was created by:
-# (random symmetric 2x2 matrix, eigendecomposed, new eigenvalues {1,100})
-# TATiSampler \
-# --batch_data_files pre/dataset-dimension_2-eigenvalues_upper_100.csv \
-# --collapse_walkers 0 \
-# --covariance_after_steps 1000 \
-# --covariance_blending 10. \
-# --directions_file pre/directions-dimension_2-eigenvalues_upper_100.csv \
-# --every_nth 1 \
-# --fix_parameters "output/biases/Variable:0=0." \
-# --friction_constant 1 \
-# --input_dimension 2 \
-# --inverse_temperature 1 \
-# --loss mean_squared \
-# --max_step 50000 \
-# --number_walkers 1 \
-# --output_activation linear \
-# --output_dimension 1 \
-# --parse_parameters_file pre/initial_conditions-dimension_2-eigenvalues_upper_100.csv \
-# --parse_steps 0 \
-# --sampler BAOAB \
-# --seed 31 \
-# --step_width 0.125 \
-# --trajectory_file trajectory_sample-collapse_walkers_0-covariance_blending_10_-dimension_2-eigenvalues_upper_100-number_walkers_1-run_seed_31.csv
-
-AT_CHECK([../../../TATiAnalyser \
-    integrated_autocorrelation_time_covariance \
-    --drop_burnin 10 \
-    --every_nth 10 \
-    --number_of_eigenvalues 2 \
-    --integrated_autocorrelation_time iat-gaussian_mixture-walkers_1.csv \
-    --trajectory_file ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/IntegratedAutocorrelationTime/pre/trajectory_sample-collapse_walkers_0-covariance_blending_10_-dimension_2-eigenvalues_upper_100-number_walkers_1-run_seed_31.csv
-], 0, [stdout], [stderr])
-
-# note that we should approximately retrieve the original covariance matrix and its
-# eigenvectors.
-AT_CHECK([../../../NumericalDiff -- iat-gaussian_mixture-walkers_1.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/IntegratedAutocorrelationTime/post/iat-gaussian_mixture-walkers_1.csv], 0, [ignore], [ignore])
-
-AT_CLEANUP
-
-
-AT_SETUP([Analyser - IAT 2d Gaussian mixture, multiple walker])
-AT_KEYWORDS([tatianalyser IAT 2d Gaussian mixture])
+AT_SETUP([Analyser - IAT 2d Gaussian mixture, multiple walker, individual])
+AT_KEYWORDS([tatianalyser IAT 2d Gaussian mixture multiple individual])
 AT_SKIP_IF([! ../../../check_package acor])
 
 # analyse a trajectory that was created by:
@@ -92,17 +47,17 @@ AT_SKIP_IF([! ../../../check_package acor])
 # --trajectory_file trajectory_sample-collapse_walkers_0-covariance_blending_10_-dimension_2-eigenvalues_upper_100-number_walkers_4-run_seed_31.csv
 
 AT_CHECK([../../../TATiAnalyser \
-    integrated_autocorrelation_time_covariance \
+    integrated_autocorrelation_time_covariance_per_walker \
     --drop_burnin 10 \
-    --every_nth 10 \
+    --every_nth 1 \
     --number_of_eigenvalues 2 \
-    --integrated_autocorrelation_time iat-gaussian_mixture-walkers_4.csv \
+    --integrated_autocorrelation_time iat-gaussian_mixture-walkers_4-individual.csv \
     --trajectory_file ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/IntegratedAutocorrelationTime/pre/trajectory_sample-collapse_walkers_0-covariance_blending_10_-dimension_2-eigenvalues_upper_100-number_walkers_4-run_seed_31.csv
 ], 0, [stdout], [stderr])
 
 # note that we should approximately retrieve the original covariance matrix and its
 # eigenvectors.
-AT_CHECK([../../../NumericalDiff -- iat-gaussian_mixture-walkers_4.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/IntegratedAutocorrelationTime/post/iat-gaussian_mixture-walkers_4.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff -- iat-gaussian_mixture-walkers_4-individual.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/IntegratedAutocorrelationTime/post/iat-gaussian_mixture-walkers_4-individual.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
 

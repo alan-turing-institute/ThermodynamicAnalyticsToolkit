@@ -18,3 +18,4 @@
 ### all tests on IAT analysis
 
 m4_include([TrajectoryAnalyser/IntegratedAutocorrelationTime/testsuite-trajectoryanalyser-integratedautocorrelationtime-gaussian_mixture.at])
+m4_include([TrajectoryAnalyser/IntegratedAutocorrelationTime/testsuite-trajectoryanalyser-integratedautocorrelationtime-gaussian_mixture-walker_individual.at])
