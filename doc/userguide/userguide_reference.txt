@@ -230,13 +230,13 @@ appear in the set of parameters written to file. This will raise an
 error as the file will contain too few values.
 ====
 
-include::reference_examples.txt[]
+include::userguide_reference_examples.txt[]
 
-include::reference_samplers.txt[]
+include::userguide_reference_samplers.txt[]
 
-include::reference_implementing_sampler.txt[]
+include::userguide_reference_implementing_sampler.txt[]
 
-include::reference_simulation.txt[]
+include::userguide_reference_simulation.txt[]
 
 
 [[reference.reproducibility]]

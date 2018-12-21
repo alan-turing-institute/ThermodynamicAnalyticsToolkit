@@ -6,11 +6,11 @@ Before we come to actually using TATi, we want to set the stage with a little
 trivial example: We will look at a very simple classification task and see how
 it is solved using neural networks.
 
-include::quickstart_sampling.txt[]
+include::userguide_quickstart_sampling.txt[]
 
-include::quickstart_simulation.txt[]
+include::userguide_quickstart_simulation.txt[]
 
-include::quickstart_cmdline.txt[]
+include::userguide_quickstart_cmdline.txt[]
 
 [[quickstart.parallelization]]
 A note on parallelization

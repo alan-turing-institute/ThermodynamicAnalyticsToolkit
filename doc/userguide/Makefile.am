@@ -55,39 +55,47 @@ PYTHON_EXAMPLES = \
 	$(srcdir)/simulation/supply_dataset_array.py \
 	$(srcdir)/simulation/supply_dataset_csv.py
 
-DEPENDENCIES = \
+programmersguide_files = \
 	bibliography.txt \
 	glossary.txt \
-	introduction.txt \
 	programmersguide.txt \
 	programmersguide_computational_graph.txt \
-    programmersguide_debugging_tips.txt \
+  programmersguide_debugging_tips.txt \
 	programmersguide_extensions_samplers.txt \
 	programmersguide_neural_networks.txt \
 	programmersguide_tati_buildsystem.txt \
 	programmersguide_tati_structure.txt \
 	programmersguide_tati_versioncontrol.txt \
 	programmersguide_tensorflow.txt \
-	quickstart_cmdline.txt \
-	quickstart_sampling.txt \
-	quickstart_simulation.txt \
-	quickstart.txt \
-	reference.txt \
-	reference_examples.txt \
-	reference_examples_harmonic_oscillator.txt \
-	reference_implementing_sampler.txt \
-	reference_samplers.txt \
-	reference_simulation.txt \
-	roadmap.txt \
-	tensorflow_flaws.txt \
+	programmersguide_tensorflow_flaws.txt
+
+roadmap_files = \
+	roadmap.txt
+
+userguide_files = \
+	bibliography.txt \
+	glossary.txt \
 	userguide.txt \
+	userguide_introduction.txt \
+	userguide_quickstart_cmdline.txt \
+	userguide_quickstart_sampling.txt \
+	userguide_quickstart_simulation.txt \
+	userguide_quickstart.txt \
+	userguide_reference.txt \
+	userguide_reference_examples.txt \
+	userguide_reference_examples_harmonic_oscillator.txt \
+	userguide_reference_implementing_sampler.txt \
+	userguide_reference_samplers.txt \
+	userguide_reference_simulation.txt \
 	$(PYTHON_EXAMPLES)
 
 EXTRA_DIST = \
 	cmdline \
 	pictures \
 	python \
-	$(DEPENDENCIES)
+	$(programmersguide_DEPENDENCIES) \
+	$(roadmap_DEPENDENCIES) \
+	$(userguide_DEPENDENCIES)
 
 versionfile = $(srcdir)/.git-version
 version = $(shell cat $(versionfile))
@@ -97,10 +105,10 @@ revdate = $(shell date +%Y-%m-%d)
 
 #thermodynamicanalyticstoolkit.html: $(srcdir)/userguide.txt
 
-%.xml: $(srcdir)/%.txt $(DEPENDENCIES) $(srcdir)/.git-version
+%.xml: $(srcdir)/%.txt $(srcdir)/.git-version
 	$(ASCIIDOC) -b docbook -aimagesdir=$(srcdir) -arevdate=$(revdate) -aversion-label=@PACKAGE@ -arevnumber=$(version) -o $@ $<
 
-%.html: $(srcdir)/%.txt $(DEPENDENCIES) $(srcdir)/.git-version
+%.html: $(srcdir)/%.txt $(srcdir)/.git-version
 	$(ASCIIDOC) -b html5 -a toc2 -a latexmath -a numbered -aimagesdir=$(srcdir) -arevdate=$(revdate) -aversion-label=@PACKAGE@ -arevnumber=$(version) -o $@ $<
 
 %.pdf: %.xml
@@ -110,10 +118,17 @@ revdate = $(shell date +%Y-%m-%d)
 %.tex: %.xml
 	$(DBLATEX) --param=doc.lot.show=figure,table --param=paper.type=a4paper -t tex $< $@
 
+programmersguide.html: $(programmersguide_files)
+programmersguide.pdf: $(programmersguide_files)
+roadmap.html: $(roadmap_files)
+roadmap.pdf: $(roadmap_files)
+userguide.html: $(userguide_files)
+userguide.pdf: $(userguide_files)
+
 DOC_TARGETS = \
 	programmersguide.pdf programmersguide.html \
 	userguide.pdf userguide.html \
-    roadmap.pdf roadmap.html
+  roadmap.pdf roadmap.html
 
 all: ${DOC_TARGETS}
 
