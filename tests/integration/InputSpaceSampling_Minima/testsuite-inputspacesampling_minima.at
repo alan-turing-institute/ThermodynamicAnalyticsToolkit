@@ -52,6 +52,9 @@ AT_CHECK([../../../TATiExplorer \
 	--trajectory_file trajectory.csv
 ], 0, [stdout], [stderr])
 
+# there is at least one minima
+AT_CHECK([wc -l minima.csv | grep "1"], 1, [ignore], [ignore])
+
 # run 3: use minima file for input space sampling
 AT_CHECK([../../../TATiInputSpaceSampler \
     --batch_data_files sampled_grid_step28.csv \

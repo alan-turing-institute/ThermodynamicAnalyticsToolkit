@@ -38,7 +38,7 @@ AT_CHECK([../../../TATiExplorer \
 	--friction_constant 1 \
 	--inverse_temperature 1 \
 	--learning_rate 3e-2 \
-	--max_exploration_steps 0 \
+	--max_exploration_steps 1 \
 	--max_legs 2 \
 	--max_steps 10 \
 	--minima_file minima.csv \
@@ -51,6 +51,9 @@ AT_CHECK([../../../TATiExplorer \
 	--step_width 1e-1 \
 	--trajectory_file trajectory.csv
 ], 0, [stdout], [stderr])
+
+# there is at least one minima
+AT_CHECK([wc -l minima.csv | grep "1"], 1, [ignore], [ignore])
 
 # run 3: use trajectory file for loss function sampling
 AT_CHECK([../../../TATiLossFunctionSampler \
