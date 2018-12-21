@@ -97,6 +97,8 @@ TESTSCRIPTS += \
 	$(srcdir)/InputSpaceSampler/testsuite-inputspacesampler-two_clusters_grid.at \
 	$(srcdir)/LossFunctionSampler/testsuite-lossfunctionsampler.at \
 	$(srcdir)/LossFunctionSampler/testsuite-lossfunctionsampler-exclude_parameters.at \
+	$(srcdir)/LossFunctionSampler/testsuite-lossfunctionsampler-grid.at \
+	$(srcdir)/LossFunctionSampler/testsuite-lossfunctionsampler-grid-directions.at \
 	$(srcdir)/LossFunctionSampler/testsuite-lossfunctionsampler-interval_center_file.at \
 	$(srcdir)/LossFunctionSampler/testsuite-lossfunctionsampler-sgld-trajectory.at \
 	$(srcdir)/LossFunctionSampler/testsuite-lossfunctionsampler-simple.at \

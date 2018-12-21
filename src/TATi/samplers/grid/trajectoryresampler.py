@@ -34,7 +34,6 @@ class TrajectoryReSampler(Sampler):
 
     def goto_start(self):
         super(TrajectoryReSampler, self).goto_start()
-        print(self.df_trajectory)
         self.rownr = self.df_trajectory.index[self.current_step]
 
     def set_step(self):

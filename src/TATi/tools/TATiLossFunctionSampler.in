@@ -11,6 +11,7 @@ from TATi.common import get_list_from_string
 from TATi.models.model import model
 from TATi.options.commandlineoptions import CommandlineOptions
 from TATi.samplers.grid.naivegridsampler import NaiveGridSampler
+from TATi.samplers.grid.subgridsampler import SubgridSampler
 from TATi.samplers.grid.trajectoryresampler import TrajectoryReSampler
 
 options = CommandlineOptions()
@@ -22,6 +23,7 @@ def get_description():
     output = "The 'mode' parameter determines which way the sampling is executed.\n"
     output += "You have the following choices:\n"
     output += "\tnaive_grid\n"
+    output += "\tnaive_subgrid\n"
     output += "\ttrajectory\n"
     return output
 
@@ -90,6 +92,16 @@ def main(_):
                             trajectory_stepnr=trajectory_stepnr,
                             interval_weights=options.interval_weights,
                             interval_biases=options.interval_biases)
+    elif options.mode == "naive_subgrid":
+        sampler = SubgridSampler.from_file(
+                network_model=network_model,
+                exclude_parameters=options.exclude_parameters,
+                samples_weights=options.samples_weights,
+                directions_file=options.directions_file)
+        sampler.setup_start(trajectory_file=trajectory_file,
+                            trajectory_stepnr=trajectory_stepnr,
+                            interval_weights=options.interval_weights,
+                            interval_offsets=options.interval_offsets)
     elif options.mode == "trajectory":
         sampler = TrajectoryReSampler.from_trajectory_file(
                 network_model=network_model,
@@ -117,7 +129,6 @@ def main(_):
 
     for i in range(options.max_steps):
         coords_eval = sampler.set_step()
-        print(coords_eval)
         loss_eval, acc_eval = sampler.evaluate_loss()
         if csv_writer is not None:
             sampler.write_output_line(csv_writer, loss_eval, acc_eval, coords_eval,
