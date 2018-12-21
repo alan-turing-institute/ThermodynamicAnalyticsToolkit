@@ -2,19 +2,15 @@
 Introduction
 ------------
 
-As an image says more than a thousand words, here is a mindmap showing all of
-TATi's main features.
+TATi contains a set of distinct guides aimed at different user audiences. All
+of them reside in
++<installation folder>/share/doc/thermodynamicanalyticstoolkit/+ in the
+installation folder.
 
-.Mindmap of all TATi features
-image::pictures/tati-mindmap.png[align="right",alt="TATi mindmap",{basebackend@docbook:scaledwidth="60%":width=500}]
-
-If you know what all of this means, you might probably be interested. If not,
-then read on to the next section.
-
-NOTE: TATi is growing, see the
-ifdef::basebackend-docbook[ roadmap ]
-ifdef::basebackend-html[ link:roadmap.html[roadmap] ]
-for things to come.
+* User guide (this document: +userguide.html+ or +userguide.pdf+)
+* Programmer's guide (see +programmersguide.html+ or +programmersguide.pdf+)
+* Reference documentation (see +html/index.html+)
+* Roadmap (see +roadmap.html+ or +roadmap.pdf+)
 
 [[introduction.needtoknow]]
 Before you start
@@ -36,7 +32,7 @@ read the section on link:#reference.concepts[Concepts.]
 What is ThermodynamicAnalyticsToolkit?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Typically, optimzation in neural network training employs methods such
+Typically, optimization in neural network training employs methods such
 as Gradient Descent, Stochastic Gradient Descent or derived methods
 using momentum such as ADAM and so on. The loss function itself may be
 convex, however, the loss manifold given a large dataset is not convex
