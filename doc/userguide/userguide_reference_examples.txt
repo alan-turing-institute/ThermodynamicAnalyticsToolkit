@@ -5,4 +5,4 @@ Examples
 We show how to set up some basic models, which can be a useful tool
 to study and test methods.
 
-include::reference_examples_harmonic_oscillator.txt[]
+include::userguide_reference_examples_harmonic_oscillator.txt[]
