@@ -1,6 +1,6 @@
 Thermodynamic Analytics Toolkit (TATi)
 ======================================
-:Author:      Frederik Heber
+:Author:      Frederik Heber, Zofia Trstanova, Benedict Leimkuhler
 :Email:       frederik.heber@gmail.com
 :keywords:    neural networks, loss, loss manifold, sampling, exploration
 :description: TATi is a software suite based on tensorflow that brings enhanced +
@@ -33,7 +33,7 @@ R-RUT-001) and EPSRC grant no. EP/P006175/1 (Data Driven Coarse Graining using
 Space-Time Diffusion Maps, B. Leimkuhler PI). Moreover, the development was
 aided by a Microsoft Azure Sponsorship (MS-AZR-0143P).
 
-'Frederik Heber'
+'Frederik Heber', 'Zofia Trstanova', 'Benedict Leimkuhler'
 ***************************************
 
 include::userguide_introduction.txt[]
