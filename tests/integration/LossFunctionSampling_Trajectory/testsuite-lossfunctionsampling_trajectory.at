@@ -57,6 +57,7 @@ AT_CHECK([../../../TATiSampler \
 
 # run 3: use trajectory file for loss function sampling
 AT_CHECK([../../../TATiLossFunctionSampler \
+    trajectory \
     --batch_data_files dataset-twocluster.csv \
 	--batch_size 20 \
     --csv_file lossfunction.csv \

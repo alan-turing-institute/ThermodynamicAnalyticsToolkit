@@ -1,4 +1,5 @@
 TATiLossFunctionSampler \
+  naive_grid \
   --batch_data_files dataset-twoclusters.csv \
   --batch_size 20 \
   --csv_file TATiLossFunctionSampler-output-SGLD.csv \
