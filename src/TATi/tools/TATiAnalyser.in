@@ -17,12 +17,19 @@ FLAGS = None
 output_width=8
 output_precision=8
 
+def get_description():
+    output = "The 'modules' parameter determines which analysis functionality is executed.\n"
+    output += "You have the following choices:\n"
+    for name in AnalyserModules.analysis_modules:
+        output += "\t"+name+"\n"
+    return output
+
 def parse_parameters():
     """ Sets up the argument parser for parsing command line parameters into dictionary
 
     :return: dictionary with parameter names as keys, unrecognized parameters
     """
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description=get_description())
     parser.add_argument('modules', type=str, default=[], nargs='+',
         help='analysis modules to execute')
     # please adhere to alphabetical ordering
