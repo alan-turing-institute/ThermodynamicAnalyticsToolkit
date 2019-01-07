@@ -24,14 +24,15 @@ The simulation module contains the interface to generically access neural networ
 """
 
 import logging
+
 import numpy as np
 
-from TATi.models.model import model
-from TATi.options.pythonoptions import PythonOptions
-from TATi.parameters.parameters import Parameters
 from TATi.models.evaluationcache import EvaluationCache
+from TATi.models.model import model
 from TATi.models.networkparameter_adapter import NetworkParameterAdapter
+from TATi.models.parameters.parameters import Parameters
 from TATi.models.trajectorydata import TrajectoryData
+from TATi.options.pythonoptions import PythonOptions
 
 
 class Simulation(object):
