@@ -92,6 +92,8 @@ TESTSCRIPTS += \
 	$(srcdir)/DatasetWriter/Datasets/testsuite-datasetwriter-datasets-twocircles.at \
 	$(srcdir)/DatasetWriter/Datasets/testsuite-datasetwriter-datasets-twoclusters.at \
 	$(srcdir)/DatasetWriter/Datasets/testsuite-datasetwriter-datasets-twospirals.at \
+	$(srcdir)/DatasetWriter/Reproducibility/testsuite-datasetwriter-reproducibility-no_seeds.at \
+	$(srcdir)/DatasetWriter/Reproducibility/testsuite-datasetwriter-reproducibility-given_seeds.at \
 	$(srcdir)/InputSpaceSampler/testsuite-inputspacesampler.at \
 	$(srcdir)/InputSpaceSampler/testsuite-inputspacesampler-simple.at \
 	$(srcdir)/InputSpaceSampler/testsuite-inputspacesampler-two_clusters_grid.at \
@@ -104,6 +106,7 @@ TESTSCRIPTS += \
 	$(srcdir)/LossFunctionSampler/testsuite-lossfunctionsampler-simple.at \
 	$(srcdir)/NumericalDiff/testsuite-numericaldiff.at \
 	$(srcdir)/NumericalDiff/testsuite-numericaldiff-simple.at \
+	$(srcdir)/NumericalDiff/Comparisons/testsuite-numericaldiff-comparisons.at \
 	$(srcdir)/NumericalDiff/Comparisons/testsuite-numericaldiff-comparisons-different_header.at \
 	$(srcdir)/NumericalDiff/Comparisons/testsuite-numericaldiff-comparisons-different_length.at \
 	$(srcdir)/NumericalDiff/Comparisons/testsuite-numericaldiff-comparisons-different_sign.at \

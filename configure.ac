@@ -59,6 +59,10 @@ AC_CONFIG_FILES(
 	src/TATi/samplers/grid/Makefile
 	src/TATi/tools/Makefile
 	tests/Makefile)
+AC_CONFIG_TESTDIR([tests/codechecks])
+AC_CONFIG_FILES(
+	tests/codechecks/atlocal
+	tests/codechecks/Makefile)
 AC_CONFIG_TESTDIR([tests/integration])
 AC_CONFIG_FILES(
 	tests/integration/atlocal

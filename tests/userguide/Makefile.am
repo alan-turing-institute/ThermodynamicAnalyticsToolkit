@@ -43,6 +43,7 @@ TESTSCRIPTS += \
 	$(srcdir)/simulation/complex/testsuite-userguide-simulation-complex-optimize_sample.at \
 	$(srcdir)/simulation/complex/testsuite-userguide-simulation-complex-sample.at \
 	$(srcdir)/simulation/complex/testsuite-userguide-simulation-complex-supply_dataset.at \
+	$(srcdir)/simulation/examples/testsuite-userguide-simulation-examples.at \
 	$(srcdir)/simulation/examples/testsuite-userguide-simulation-examples-harmonic_oscillator_dataset.at \
 	$(srcdir)/simulation/examples/testsuite-userguide-simulation-examples-harmonic_oscillator_sampling.at \
 	$(srcdir)/simulation/testsuite-userguide-simulation.at \
