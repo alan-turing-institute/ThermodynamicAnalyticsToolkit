@@ -1,6 +1,6 @@
 /*
  * Project: ThermodynamicAnalyticsToolkit
- * Description: Explore the high-dimensional landscape of neural networks
+ * Description: Analyze loss landscape of neural networks
  * Copyright (C)  2017 The University of Edinburgh. All rights reserved.
  * Please see the LICENSE file for details.
  */
