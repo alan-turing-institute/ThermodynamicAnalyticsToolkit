@@ -398,8 +398,7 @@ class Simulation(object):
         self._check_nn()
         self._nn.reset_dataset()
         run_info, trajectory, averages = \
-            self._nn.train(walker_index,
-                           return_run_info=True, \
+            self._nn.train(return_run_info=True, \
                            return_trajectories=True,
                            return_averages=True)
         self._cache.reset()

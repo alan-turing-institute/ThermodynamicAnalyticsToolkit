@@ -95,9 +95,7 @@ def main(_):
     rt.set_init_network_time(time.process_time() - time_init_network_zero)
 
     # prevent writing of output files during leg sampling
-    network_model.set_config_map("do_write_averages_file", False)
-    network_model.set_config_map("do_write_run_file", False)
-    network_model.set_config_map("do_write_trajectory_file", False)
+    network_model.deactivate_file_writing()
 
     # 1. run initially just one trajectory
     explorer = Explorer(parameters=options,
@@ -167,7 +165,7 @@ def main(_):
 
     # write away run info
     if options.run_file is not None:
-        run_header = network_model.get_sample_header()
+        run_header = network_model.get_run_header(setup="sample")
         run_writer, run_file = setup_csv_file(options.run_file, run_header)
         for current_id in data_container.get_ids():
             data_object = data_container.get_data(current_id)

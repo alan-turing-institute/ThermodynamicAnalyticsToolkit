@@ -38,21 +38,27 @@ class AveragesAccumulator(Accumulator):
         self._burn_in_steps = burn_in_steps
         self._inverse_temperature = 1.
 
-        self.averages = None
+        self.accumulated_kinetic_energy = []
+        self.accumulated_loss_nominator = []
+        self.accumulated_loss_denominator = []
+        self.accumulated_virials = []
+        self.accumulated_inertia = []
+        self.last_inertia = []
+        self.averages = []
+        self.accumulated_steps = 0
 
     def reset(self, return_averages, header):
         super(AveragesAccumulator, self).reset()
         self._return_averages = return_averages
-        self.accumulated_kinetic_energy = [0.]*self._number_walkers
-        self.accumulated_loss_nominator = [0.]*self._number_walkers
-        self.accumulated_loss_denominator = [0.]*self._number_walkers
-        self.accumulated_virials = [0.]*self._number_walkers
-        self.accumulated_inertia = [0.]*self._number_walkers
-        self.last_inertia = [0.]*self._number_walkers
-        self.averages = None
+        self.accumulated_kinetic_energy[:] = [0.]*self._number_walkers
+        self.accumulated_loss_nominator[:] = [0.]*self._number_walkers
+        self.accumulated_loss_denominator[:] = [0.]*self._number_walkers
+        self.accumulated_virials[:] = [0.]*self._number_walkers
+        self.accumulated_inertia[:] = [0.]*self._number_walkers
+        self.last_inertia[:] = [0.]*self._number_walkers
         self.accumulated_steps = 0
 
-        self.averages = []
+        self.averages[:] = []
         if self._return_averages:
             no_params = len(header)
             for walker_index in range(self._number_walkers):

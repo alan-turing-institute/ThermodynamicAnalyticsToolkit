@@ -29,6 +29,7 @@ class AccumulatedValues(object):
     def reset(self):
         self.loss = None
         self.accuracy = None
+        self.global_step = None
 
         self.weights = None
         self.biases = None

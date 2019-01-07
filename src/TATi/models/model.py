@@ -30,31 +30,20 @@ import tensorflow as tf
 # scipy does not automatically import submodules
 from scipy.sparse import linalg
 
-try:
-    from tqdm import tqdm # allows progress bar
-    tqdm_present = True
-    # workaround: otherwise we get deadlock on exceptions,
-    # see https://github.com/tqdm/tqdm/issues/469
-    tqdm.monitor_interval = 0
-except ImportError:
-    tqdm_present = False
-
 from tensorflow.python.ops import variables
 
 from TATi.common import create_input_layer, file_length, get_list_from_string, \
-    get_trajectory_header, initialize_config_map, setup_csv_file, setup_run_file, \
+    initialize_config_map, setup_csv_file, setup_run_file, \
     setup_trajectory_file
-from TATi.models.accumulators.averagesaccumulator import AveragesAccumulator
-from TATi.models.accumulators.runinfoaccumulator import RuninfoAccumulator
-from TATi.models.accumulators.trajectoryaccumulator import TrajectoryAccumulator
-from TATi.models.accumulators.accumulated_values import AccumulatedValues
 from TATi.models.input.datasetpipeline import DatasetPipeline
 from TATi.models.input.inmemorypipeline import InMemoryPipeline
 from TATi.models.basetype import dds_basetype
 from TATi.models.neuralnet_parameters import neuralnet_parameters
 from TATi.models.neuralnetwork import NeuralNetwork
+from TATi.models.trajectories.trajectorystate import TrajectoryState
+from TATi.models.trajectories.trajectory_sampling_factory import TrajectorySamplingFactory
+from TATi.models.trajectories.trajectory_training import TrajectoryTraining
 from TATi.options.pythonoptions import PythonOptions
-
 
 class model:
     """ This class combines the whole setup for creating a neural network.
@@ -68,9 +57,20 @@ class model:
         # the neural network
         tf.reset_default_graph()
 
-        self.reset_parameters(FLAGS)
+        self.FLAGS = FLAGS
 
-        self.number_of_parameters = 0   # number of biases and weights
+        # reset trajectory instances
+        self.trajectorystate = TrajectoryState(self)
+        self.trajectory_sample = None
+        self.trajectory_train = None
+        self.reset_parameters(FLAGS)
+        if "sampler" in self.FLAGS:
+            self.trajectory_sample = TrajectorySamplingFactory.create(
+                self.FLAGS.sampler, self.trajectorystate)
+        if "optimizer" in self.FLAGS:
+            self.trajectory_train = TrajectoryTraining(self.trajectorystate)
+
+        self.number_of_parameters = 0  # number of biases and weights
 
         self.output_type = None
         self.scan_dataset_dimension()
@@ -78,9 +78,6 @@ class model:
         # mark input layer as to be created
         self.xinput = None
         self.x = None
-
-        # mark resource variables as to be created
-        self.resources_created = None
 
         # mark already fixes variables
         self.fixed_variables = None
@@ -92,9 +89,6 @@ class model:
         self.saver = None
         self.sess = None
 
-        self.optimizer = None
-        self.sampler = None
-
         # mark placeholder neuralnet_parameters as to be created (over walker)
         self.weights = []
         self.momenta_weights = []
@@ -104,16 +98,6 @@ class model:
         # mark placeholders for gradient and hessian computation as to be created
         self.gradients = None
         self.hessians = None
-
-        # mark step assign op as to be created
-        self.step_placeholder = None
-        self.global_step_assign_t = None
-
-        # mark writer as to be created
-        self.averages_writer = None
-        self.run_writer = None
-        self.trajectory_writer = None
-        self.directions = None
 
     def scan_dataset_dimension(self):
         if len(self.FLAGS.batch_data_files) > 0:
@@ -248,6 +232,18 @@ class model:
                                                   input_dimension=self.input_dimension, output_dimension=self.output_dimension,
                                                   shuffle=shuffle, seed=FLAGS.seed)
 
+    def get_averages_header(self, setup):
+        if setup == "sample":
+            return self.trajectory_sample.get_averages_header()
+        elif setup == "train":
+            return self.trajectory_train.get_averages_header()
+
+    def get_run_header(self, setup):
+        if setup == "sample":
+            return self.trajectory_sample.get_run_header()
+        elif setup == "train":
+            return self.trajectory_train.get_run_header()
+
     def get_parameters(self):
         """ Getter for the internal set oF FLAGS controlling training and sampling.
 
@@ -261,53 +257,17 @@ class model:
         :param FLAGS: new set of parameters
         """
         self.FLAGS = FLAGS
-        self.config_map = initialize_config_map()
+        if self.trajectory_sample is not None:
+            self.trajectory_sample.config_map = initialize_config_map()
+        if self.trajectory_train is not None:
+            self.trajectory_train.config_map = initialize_config_map()
 
         try:
             self.FLAGS.max_steps
         except KeyError:
             self.FLAGS.add("max_steps")
             self.FLAGS.max_steps = 1
-
-    def create_resource_variables(self):
-        """ Creates some global resource variables to hold statistical quantities
-        during sampling.
-        """
-        static_vars_float = ["current_kinetic", "kinetic_energy", \
-                             "old_total_energy", "inertia", "momenta", "gradients", "virials", "noise"]
-        static_vars_int64 = ["accepted", "rejected"]
-        for i in range(self.FLAGS.number_walkers):
-            with tf.variable_scope("var_walker"+str(i+1), reuse=self.resources_created):
-                with tf.variable_scope("accumulate", reuse=self.resources_created):
-                    for key in static_vars_float:
-                        tf.get_variable(key, shape=[], trainable=False,
-                                        initializer=tf.zeros_initializer,
-                                        use_resource=True, dtype=dds_basetype)
-                    for key in static_vars_int64:
-                        # the following are used for HMC to measure rejection rate
-                        tf.get_variable(key, shape=[], trainable=False,
-                                        initializer=tf.zeros_initializer,
-                                        use_resource=True, dtype=tf.int64)
-
-        self.resources_created = True
-
-    def get_config_map(self, key):
-        if key in self.config_map.keys():
-            return self.config_map[key]
-        else:
-            return None
-
-    def set_config_map(self, key, value):
-        self.config_map[key] = value
-
-    def write_run_row(self, line):
-        self.run_writer.writerow(line)
-
-    def write_trajectory_row(self, line):
-        self.trajectory_writer.writerow(line)
-
-    def write_averages_row(self, line):
-        self.averages_writer.writerow(line)
+        self.trajectorystate.FLAGS = FLAGS
 
     def create_model_file(self, initial_step, parameters, model_filename):
         self.assign_current_step(initial_step)
@@ -495,91 +455,6 @@ class model:
             pass
         return prior
 
-    def init_parse_directions(self):
-        # directions span a subspace to project trajectories. This may be
-        # used to not store overly many degrees of freedom per step.
-        if self.FLAGS.directions_file is not None:
-            try:
-                # try without header
-                self.directions = np.loadtxt(self.FLAGS.directions_file, delimiter=',', skiprows=0)
-            except ValueError:
-                # if it fails, skip header
-                self.directions = np.loadtxt(self.FLAGS.directions_file, delimiter=',', skiprows=1)
-            if len(self.directions.shape) == 1:
-                self.directions = np.expand_dims(self.directions, axis=0)
-        else:
-            self.directions = None
-
-    def init_train(self, setup, prior):
-        # setup training/sampling
-        if setup is not None:
-            if "train" in setup:
-                self.optimizer = []
-                for i in range(self.FLAGS.number_walkers):
-                    with tf.variable_scope("var_walker" + str(i + 1)):
-                        self.optimizer.append(self.nn[i].add_train_method(
-                            self.loss[i], optimizer_method=self.FLAGS.optimizer,
-                            prior=prior))
-            else:
-                logging.info("Not adding train method.")
-
-    def init_sample(self, setup, prior):
-        # setup training/sampling
-        if setup is not None:
-            if "sample" in setup:
-                self.sampler = []
-                for i in range(self.FLAGS.number_walkers):
-                    if self.FLAGS.seed is not None:
-                        walker_seed = self.FLAGS.seed + i
-                    else:
-                        walker_seed = self.FLAGS.seed
-
-                    # raise exception if HMC is used with multiple walkers
-                    if "HamiltonianMonteCarlo" in self.FLAGS.sampler \
-                        and self.FLAGS.number_walkers > 1:
-                        raise NotImplementedError(
-                            "HamiltonianMonteCarlo implementation has not been properly tested with multiple walkers.")
-
-                    self.sampler.append(self.nn[i]._prepare_sampler(
-                        self.loss[i], sampling_method=self.FLAGS.sampler,
-                        seed=walker_seed, prior=prior,
-                        sigma=self.FLAGS.sigma, sigmaA=self.FLAGS.sigmaA))
-                # create gradients
-                grads_and_vars = []
-                for i in range(self.FLAGS.number_walkers):
-                    with tf.name_scope('gradients_walker'+str(i+1)):
-                        trainables = tf.get_collection_ref(self.trainables[i])
-                        grads_and_vars.append(self.sampler[i].compute_and_check_gradients(
-                            self.loss[i], var_list=trainables))
-
-                # add position update nodes
-                for i in range(self.FLAGS.number_walkers):
-                    with tf.variable_scope("var_walker" + str(i + 1)):
-                        global_step = self.nn[i]._prepare_global_step()
-                        train_step = self.sampler[i].apply_gradients(
-                            grads_and_vars, i, global_step=global_step,
-                            name=self.sampler[i].get_name())
-                    self.nn[i].summary_nodes['sample_step'] = train_step
-                    self.nn[i].summary_nodes['EQN_step'] = self.sampler[i].EQN_update
-            else:
-                logging.info("Not adding sample method.")
-
-    def init_step_placeholder(self, setup):
-        if setup is not None:
-            if "train" in setup or "sample" in setup:
-                if self.step_placeholder is None:
-                    self.step_placeholder = []
-                    for i in range(self.FLAGS.number_walkers):
-                        with tf.name_scope("walker"+str(i+1)):
-                            self.step_placeholder.append(tf.placeholder(shape=(), dtype=tf.int32))
-                if self.global_step_assign_t is None:
-                    self.global_step_assign_t = []
-                    for i in range(self.FLAGS.number_walkers):
-                        with tf.name_scope("walker"+str(i+1)):
-                            self.global_step_assign_t.append(tf.assign(self.nn[i].summary_nodes['global_step'], self.step_placeholder[i]))
-            else:
-                logging.debug("Not adding step placeholder or global step.")
-
     def init_model_save_restore(self):
         # setup model saving/recovering
         if self.saver is None:
@@ -588,8 +463,7 @@ class model:
                                    tf.get_collection_ref("Variables_to_Save"))
 
         # merge summaries at very end
-        self.summary = tf.summary.merge_all()  # Merge all the summaries
-
+        self.trajectorystate.summary = tf.summary.merge_all()  # Merge all the summaries
 
     def init_session(self):
         if self.sess is None:
@@ -606,6 +480,9 @@ class model:
             for i in range(self.FLAGS.number_walkers):
                 self.weights.append(neuralnet_parameters(split_weights[i]))
                 assert( self.weights[i].get_total_dof() == self.get_total_weight_dof() )
+
+    def init_weights_momenta_access(self, setup, split_weights):
+        if len(self.momenta_weights) == 0:
             if setup is not None and "sample" in setup:
                 for i in range(self.FLAGS.number_walkers):
                     momenta_weights = []
@@ -619,7 +496,7 @@ class model:
                                             skip_var = True
                                             break
                         if not skip_var:
-                            momenta_weights.append(self.sampler[i].get_slot(v, "momentum"))
+                            momenta_weights.append(self.trajectory_sample.sampler[i].get_slot(v, "momentum"))
                     #logging.debug("Momenta weights: "+str(momenta_weights))
                     if len(momenta_weights) > 0 and momenta_weights[0] is not None:
                         self.momenta_weights.append(neuralnet_parameters(momenta_weights))
@@ -633,6 +510,9 @@ class model:
             for i in range(self.FLAGS.number_walkers):
                 self.biases.append(neuralnet_parameters(split_biases[i]))
                 assert (self.biases[i].get_total_dof() == self.get_total_bias_dof())
+
+    def init_biases_momenta_access(self, setup, split_biases):
+        if len(self.momenta_biases) == 0:
             if setup is not None and "sample" in setup:
                 for i in range(self.FLAGS.number_walkers):
                     momenta_biases = []
@@ -645,7 +525,7 @@ class model:
                                         skip_var = True
                                         break
                         if not skip_var:
-                            momenta_biases.append(self.sampler[i].get_slot(v, "momentum"))
+                            momenta_biases.append(self.trajectory_sample.sampler[i].get_slot(v, "momentum"))
                     #logging.debug("Momenta biases: "+str(momenta_biases))
                     if len(momenta_biases) > 0 and momenta_biases[0] is not None:
                         self.momenta_biases.append(neuralnet_parameters(momenta_biases))
@@ -717,24 +597,25 @@ class model:
         all_vectorized_gradients = self.init_vectorized_gradients(add_vectorized_gradients)
         self.init_hessians(all_vectorized_gradients)
 
-        # create global variables, one for every walker in its replicated graph
-        self.create_resource_variables()
-        self.static_vars, self.zero_assigner, self.assigner, self.placeholders = \
-            self._create_static_variable_dict(self.FLAGS.number_walkers)
-
         split_weights, split_biases = self.get_split_weights_and_biases()
 
         prior = self.init_prior()
-        self.init_train(setup, prior)
-        self.init_sample(setup, prior)
-        self.init_step_placeholder(setup)
+        self.trajectorystate.init_trajectory(self)
+        if setup is not None and "sample" in setup:
+            self.trajectory_sample.init_trajectory(prior, self)
+        if setup is not None and "train" in setup:
+            self.trajectory_train.init_trajectory(prior, self)
+        self.trajectorystate.init_step_placeholder()
+        self.trajectorystate.init_parse_directions()
 
         self.init_model_save_restore()
 
         self.init_weights_access(setup, split_weights)
+        if setup is not None and "sample" in setup:
+            self.init_weights_momenta_access(setup, split_weights)
         self.init_biases_access(setup, split_biases)
-
-        self.init_parse_directions()
+        if setup is not None and "sample" in setup:
+            self.init_biases_momenta_access(setup, split_biases)
 
         fix_parameter_assigns = self.init_assign_fixed_parameters(fixed_variables, values)
 
@@ -757,1016 +638,11 @@ class model:
 
         self.assign_parse_parameter_file()
 
-    def init_files(self, setup):
-        """ Initializes the output files.
-        """
-        header = None
-        if setup == "sample":
-            header = self.get_sample_header()
-        elif setup == "train":
-            header = self.get_train_header()
-
-        try:
-            if self.averages_writer is None:
-                if self.FLAGS.averages_file is not None:
-                    self.config_map["do_write_averages_file"] = True
-                    self.averages_writer, self.config_map["averages_file"] = setup_csv_file(self.FLAGS.averages_file, self.get_averages_header(setup))
-        except AttributeError:
-            pass
-        try:
-            if self.run_writer is None:
-                self.run_writer = setup_run_file(self.FLAGS.run_file, header, self.config_map)
-        except AttributeError:
-            pass
-        try:
-            if self.trajectory_writer is None:
-                if self.directions is not None:
-                    number_weights = self.directions.shape[0]
-                    number_biases = 0
-                else:
-                    number_weights = self.weights[0].get_total_dof()
-                    number_biases = self.biases[0].get_total_dof()
-                self.trajectory_writer = setup_trajectory_file(self.FLAGS.trajectory_file,
-                                                               number_weights,
-                                                               number_biases,
-                                                               self.config_map)
-        except AttributeError:
-            pass
-
-    def get_averages_header(self, setup=None):
-        """ Prepares the distinct header for the averages file for sampling
-
-        :param setup: sample, train or None
-        """
-        header = ['id', 'step', 'epoch', 'loss']
-        if setup == "train":
-            if self.FLAGS.optimizer == "GradientDescent":
-                header += ['average_virials']
-        elif setup == "sample":
-            if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
-                header += ['ensemble_average_loss', 'average_virials']
-            elif self.FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder",
-                                        "GeometricLangevinAlgorithm_2ndOrder",
-                                        "BAOAB",
-                                        "CovarianceControlledAdaptiveLangevinThermostat"]:
-                header += ['ensemble_average_loss', 'average_kinetic_energy', 'average_virials', 'average_inertia']
-            elif "HamiltonianMonteCarlo" in self.FLAGS.sampler:
-                header += ['ensemble_average_loss', 'average_kinetic_energy', 'average_virials', 'average_inertia', 'average_rejection_rate']
-        return header
-
-    def get_sample_header(self):
-        """ Prepares the distinct header for the run file for sampling
-        """
-        header = ['id', 'step', 'epoch', 'accuracy', 'loss', 'time_per_nth_step']
-        if self.FLAGS.sampler == "StochasticGradientLangevinDynamics":
-            header += ['scaled_gradient', 'virial', 'scaled_noise']
-        elif self.FLAGS.sampler in ["GeometricLangevinAlgorithm_1stOrder",
-                                    "GeometricLangevinAlgorithm_2ndOrder",
-                                    "BAOAB",
-                                    "CovarianceControlledAdaptiveLangevinThermostat"]:
-            header += ['total_energy', 'kinetic_energy', 'scaled_momentum',
-                      'scaled_gradient', 'virial', 'scaled_noise']
-        elif "HamiltonianMonteCarlo" in self.FLAGS.sampler:
-            header += ['total_energy', 'old_total_energy', 'kinetic_energy', 'scaled_momentum',
-                      'scaled_gradient', 'virial', 'average_rejection_rate']
-        return header
-
-    def get_train_header(self):
-        """ Prepares the distinct header for the run file for training
-        """
-        return ['id', 'step', 'epoch', 'accuracy', 'loss', 'time_per_nth_step', 'scaled_gradient', 'virial']
-
     def get_total_weight_dof(self):
         return self.weights[0].get_total_dof()
 
     def get_total_bias_dof(self):
         return self.biases[0].get_total_dof()
-
-    @staticmethod
-    def _dict_append(_dict, _key, _item):
-        if _key in _dict.keys():
-            _dict[_key].append(_item)
-        else:
-            _dict[_key] = [_item]
-
-    def _create_static_variable_dict(self, number_replicated_graphs):
-        """ Instantiate all sampler's resource variables. Also create
-        assign zero nodes.
-
-        This returns a dictionary with lists as values where the lists contain
-        the created variable for each replicated graph associated to a walker.
-
-        :param number_replicated_graphs: number of replicated graphs to instantiate for
-        :return: dict with static_var lists (one per walker), equivalent dict
-                for zero assigners, dict with assigners (required for HMC), and dict
-                with placeholders for assigners (required for HMC)
-        """
-        static_vars_float = ["current_kinetic", "kinetic_energy", \
-                             "old_total_energy", "inertia", "momenta", "gradients", "virials", "noise"]
-        static_vars_int64 = ["accepted", "rejected"]
-        static_var_dict = {}
-        zero_assigner_dict = {}
-        assigner_dict = {}
-        placeholder_dict = {}
-        for i in range(number_replicated_graphs):
-            with tf.variable_scope("var_walker" + str(i + 1), reuse=True):
-                with tf.variable_scope("accumulate", reuse=True):
-                    for key in static_vars_float:
-                        static_var =  tf.get_variable(key, dtype=dds_basetype)
-                        model._dict_append(static_var_dict, key, static_var)
-                        zero_assigner = static_var.assign(0.)
-                        model._dict_append(zero_assigner_dict, key, zero_assigner)
-                    for key in static_vars_int64:
-                        static_var = tf.get_variable(key, dtype=tf.int64)
-                        model._dict_append(static_var_dict, key, static_var)
-                        zero_assigner = static_var.assign(0)
-                        model._dict_append(zero_assigner_dict, key, zero_assigner)
-
-                    for key in ["current_kinetic", "old_total_energy"]:
-                        placeholder = tf.placeholder(dds_basetype, name=key)
-                        model._dict_append(placeholder_dict, key, placeholder)
-                        assigner = static_var_dict[key][i].assign(placeholder)
-                        model._dict_append(assigner_dict, key, assigner)
-
-        return static_var_dict, zero_assigner_dict, assigner_dict, placeholder_dict
-
-
-
-    def sample(self, return_run_info = False, return_trajectories = False, return_averages = False):
-        """ Performs the actual sampling of the neural network `nn` given a dataset `ds` and a
-        Session `session`.
-
-        :param return_run_info: if set to true, run information will be accumulated
-                inside a numpy array and returned
-        :param return_trajectories: if set to true, trajectories will be accumulated
-                inside a numpy array and returned (adhering to FLAGS.every_nth)
-        :param return_averages: if set to true, accumulated average values will be
-                returned as numpy array
-        :return: either thrice None or lists (per walker) of pandas dataframes
-                depending on whether either parameter has evaluated to True
-        """
-        if "HamiltonianMonteCarlo" in self.FLAGS.sampler:
-            return self._sample_Metropolis(return_run_info, return_trajectories, return_averages)
-        else:
-            return self._sample_LangevinDynamics(return_run_info, return_trajectories, return_averages)
-
-    def _get_test_nodes(self, setup="sample"):
-        """ Helper function to create list of nodes for activating sampling or
-        training step.
-
-        :param setup: sample or train
-        """
-        if setup == "sample":
-            list_of_nodes = ["sample_step"]
-        elif setup == "train":
-            list_of_nodes = ["train_step"]
-        else:
-            logging.critical("Unknown setup parameter in _get_test_nodes().")
-            assert(False)
-        list_of_nodes.extend(["accuracy", "global_step", "loss"])
-        if self.FLAGS.summaries_path is not None:
-            test_nodes = [self.summary]*self.FLAGS.number_walkers
-        else:
-            test_nodes = []
-        for item in list_of_nodes:
-            test_nodes.append([self.nn[walker_index].get(item) \
-                               for walker_index in range(self.FLAGS.number_walkers)])
-        return test_nodes
-
-    def _get_all_parameters(self):
-        all_weights = []
-        all_biases = []
-        for walker_index in range(self.FLAGS.number_walkers):
-            all_weights.append(self.weights[walker_index].parameters)
-            all_biases.append(self.biases[walker_index].parameters)
-        return all_weights, all_biases
-
-    def _print_optimizer_parameters(self, feed_dict):
-        for walker_index in range(self.FLAGS.number_walkers):
-            logging.info("Dependent walker #"+str(walker_index))
-            deltat = self.sess.run(self.nn[walker_index].get_list_of_nodes(
-                ["learning_rate"]), feed_dict=feed_dict)[0]
-            logging.info("GD optimizer parameters, walker #%d: delta t = %lg" % (walker_index, deltat))
-
-    def _print_sampler_parameters(self, feed_dict):
-        for walker_index in range(self.FLAGS.number_walkers):
-            logging.info("Dependent walker #"+str(walker_index))
-            if self.FLAGS.covariance_blending != 0.:
-                eta = self.sess.run(self.nn[walker_index].get_list_of_nodes(
-                    ["covariance_blending"]), feed_dict=feed_dict)[0]
-                logging.info("EQN parameters, walker #%d: eta = %lg" % (walker_index, eta))
-            if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics",
-                                      "GeometricLangevinAlgorithm_1stOrder",
-                                      "GeometricLangevinAlgorithm_2ndOrder",
-                                      "BAOAB",
-                                      "CovarianceControlledAdaptiveLangevinThermostat"]:
-                gamma, beta, deltat = self.sess.run(self.nn[walker_index].get_list_of_nodes(
-                    ["friction_constant", "inverse_temperature", "step_width"]), feed_dict=feed_dict)
-                logging.info("LD Sampler parameters, walker #%d: gamma = %lg, beta = %lg, delta t = %lg" %
-                      (walker_index, gamma, beta, deltat))
-            elif "HamiltonianMonteCarlo" in self.FLAGS.sampler:
-                current_step, num_mc_steps, hd_steps, deltat = self.sess.run(self.nn[walker_index].get_list_of_nodes(
-                    ["current_step", "next_eval_step", "hamiltonian_dynamics_steps", "step_width"]), feed_dict=feed_dict)
-                logging.info("MC Sampler parameters, walker #%d: current_step = %lg, num_mc_steps = %lg, HD_steps = %lg, delta t = %lg" %
-                      (walker_index, current_step, num_mc_steps, hd_steps, deltat))
-            else:
-                raise NotImplementedError("The sampler method %s is unknown" % (self.FLAGS.sampler))
-
-    def _prepare_summaries(self):
-        summary_writer = None
-        if self.FLAGS.summaries_path is not None:
-            summary_writer = tf.summary.FileWriter(self.FLAGS.summaries_path, self.sess.graph)
-        return summary_writer
-
-    def _write_summaries(self, summary_writer, summary, current_step):
-        if self.FLAGS.summaries_path is not None:
-            summary_writer.add_run_metadata(summary[1], 'step%d' % current_step)
-            summary_writer.add_summary(summary[0], current_step)
-
-    def _zero_state_variables(self, method):
-        if method in ["GradientDescent",
-                      "StochasticGradientLangevinDynamics",
-                      "GeometricLangevinAlgorithm_1stOrder",
-                      "GeometricLangevinAlgorithm_2ndOrder",
-                      "HamiltonianMonteCarlo_1stOrder",
-                      "HamiltonianMonteCarlo_2ndOrder",
-                      "BAOAB",
-                      "CovarianceControlledAdaptiveLangevinThermostat"]:
-            check_kinetic, check_inertia, check_momenta, check_gradients, check_virials, check_noise = \
-                self.sess.run([
-                    self.zero_assigner["kinetic_energy"],
-                    self.zero_assigner["inertia"],
-                    self.zero_assigner["momenta"],
-                    self.zero_assigner["gradients"],
-                    self.zero_assigner["virials"],
-                    self.zero_assigner["noise"]])
-            for walker_index in range(self.FLAGS.number_walkers):
-                assert (abs(check_kinetic[walker_index]) < 1e-10)
-                assert (abs(check_inertia[walker_index]) < 1e-10)
-                assert (abs(check_momenta[walker_index]) < 1e-10)
-                assert (abs(check_gradients[walker_index]) < 1e-10)
-                assert (abs(check_virials[walker_index]) < 1e-10)
-                assert (abs(check_noise[walker_index]) < 1e-10)
-
-    def _get_parameters(self, return_trajectories, all_weights, all_biases):
-        weights_eval, biases_eval = None, None
-        if self.config_map["do_write_trajectory_file"] or return_trajectories:
-            weights_eval, biases_eval = self.sess.run([all_weights, all_biases])
-            # [logging.info(str(item)) for item in weights_eval]
-            # [logging.info(str(item)) for item in biases_eval]
-        return weights_eval, biases_eval
-
-    def _perform_step(self, test_nodes, feed_dict):
-        summary = None
-        run_metadata = None
-        if self.FLAGS.summaries_path is not None:
-            run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
-            run_metadata = tf.RunMetadata()
-            results = self.sess.run(test_nodes,
-                                    feed_dict=feed_dict,
-                                    options=run_options,
-                                    run_metadata=run_metadata)
-            summary, acc, global_step, loss_eval = \
-                results[0], results[2], results[3], results[4]
-
-        else:
-            results = self.sess.run(test_nodes,
-                                    feed_dict=feed_dict)
-            acc, global_step, loss_eval = \
-                results[1], results[2], results[3]
-
-        return [summary, run_metadata], acc, global_step, loss_eval
-
-    def _get_elapsed_time_per_nth_step(self, current_step):
-        current_time = time.time()
-        time_elapsed_per_nth_step = current_time - self.last_time
-        if current_step > 1:
-            self.elapsed_time += time_elapsed_per_nth_step
-            estimated_time_left = (self.FLAGS.max_steps - current_step) * self.elapsed_time / (current_step - 1)
-        else:
-            estimated_time_left = 0.
-        logging.debug("Output at step #" + str(current_step) \
-                      + ", est. remaining time is " + str(estimated_time_left) + " seconds.")
-        self.last_time = current_time
-        return time_elapsed_per_nth_step
-
-    def _decide_collapse_walkers(self, current_step):
-        # collapse walkers' positions onto first walker if desired and after having
-        # recomputed the covariance matrix
-        if (self.FLAGS.number_walkers > 1) and (self.FLAGS.collapse_walkers) and \
-                (current_step % self.FLAGS.covariance_after_steps == 0) and \
-                (current_step != 0):
-            #print("COLLAPSING " + str(self.FLAGS.collapse_walkers))
-            # get walker 0's position
-            weights_eval, biases_eval = self.sess.run([
-                self.weights[0].parameters, self.biases[0].parameters])
-
-            # reset positions of walker 1 till end to that of walker 0
-            # assign all in a single session run to allow parallelization
-            collapse_feed_dict = {}
-            assigns = []
-            for walker_index in range(1, self.FLAGS.number_walkers):
-                # directly connecting the flat parameters tensor with the respective
-                # other walker's parameters' placeholder does not seem to work, i.e.
-                # replacing weights_eval -> self.weights[0].parameters
-                assert (len(self.weights[0].parameters) == len(self.weights[walker_index].placeholders))
-                for weight, weight_placeholder in zip(weights_eval,
-                                                      self.weights[walker_index].placeholders):
-                    collapse_feed_dict[weight_placeholder] = weight
-                assert (len(self.biases[0].parameters) == len(self.biases[walker_index].placeholders))
-                for bias, bias_placeholder in zip(biases_eval,
-                                                  self.biases[walker_index].placeholders):
-                    collapse_feed_dict[bias_placeholder] = bias
-                assigns.append(self.weights[walker_index].assign_all_t)
-                assigns.append(self.biases[walker_index].assign_all_t)
-            # evaluate and assign all at once
-            self.sess.run(assigns, feed_dict=collapse_feed_dict)
-
-    def _set_HMC_placeholders(self, HMC_placeholder_nodes, current_step, step_widths, HD_steps, HMC_steps, feed_dict):
-        if "HamiltonianMonteCarlo" in self.FLAGS.sampler:
-            for walker_index in range(self.FLAGS.number_walkers):
-                feed_dict.update({
-                    HMC_placeholder_nodes[walker_index]["step_width"]: step_widths[walker_index],
-                    HMC_placeholder_nodes[walker_index]["next_eval_step"]: HMC_steps[walker_index],
-                    HMC_placeholder_nodes[walker_index]["hamiltonian_dynamics_steps"]: HD_steps[walker_index]
-                })
-                feed_dict.update({
-                    HMC_placeholder_nodes[walker_index]["current_step"]: current_step
-                })
-        return feed_dict
-
-    def _set_HMC_next_eval_step(self, current_step, step_widths, HD_steps, HMC_steps):
-        if "HamiltonianMonteCarlo" in self.FLAGS.sampler:
-            for walker_index in range(self.FLAGS.number_walkers):
-                if current_step > HMC_steps[walker_index]:
-                    # pick next evaluation step with a little random variation
-                    step_widths[walker_index] = \
-                        np.random.uniform(low=0.7, high=1.3) * self.FLAGS.step_width
-                    logging.debug("Next step width of #"+str(walker_index) \
-                                  +" is " + str(step_widths[walker_index]))
-
-                    # pick next evaluation step with a little random variation
-                    HD_steps[walker_index] = \
-                        max(1, round((0.9 + np.random.uniform(low=0., high=0.2)) \
-                                     * self.FLAGS.hamiltonian_dynamics_time / self.FLAGS.step_width))
-                    if self.FLAGS.sampler == "HamiltonianMonteCarlo_1stOrder":
-                        # one extra step for the criterion evaluation
-                        HMC_steps[walker_index] += 1 + HD_steps[walker_index]
-                    elif self.FLAGS.sampler == "HamiltonianMonteCarlo_2ndOrder":
-                        # with Leapfrog integration we need an additional step
-                        # for the last "B" step of BAB due to cyclic permutation
-                        # to BBA.
-                        HMC_steps[walker_index] += 2 + HD_steps[walker_index]
-                    else:
-                        raise NotImplementedError("The HMC sampler method %S is unknown" % (self.FLAGS.sampler))
-                    logging.debug("Next amount of HD steps is " + str(HD_steps)
-                                  +", evaluation of HMC criterion at step " + str(HMC_steps))
-        else:
-            for walker_index in range(self.FLAGS.number_walkers):
-                HMC_steps[walker_index] = current_step
-        return HD_steps, HMC_steps
-
-    def _set_HMC_eval_variables(self, current_step, HMC_steps, values):
-        if "HamiltonianMonteCarlo" in self.FLAGS.sampler:
-            # set current kinetic as it is accumulated outside of tensorflow
-            kin_eval = self.sess.run(self.static_vars["kinetic_energy"])
-            set_dict = {}
-            for walker_index in range(self.FLAGS.number_walkers):
-                set_dict[ self.placeholders["current_kinetic"][walker_index] ] = \
-                    kin_eval[walker_index]
-            self.sess.run(self.assigner["current_kinetic"], feed_dict=set_dict)
-
-            # possibly reset some old energy values for acceptance criterion if
-            # an acceptance evaluation has just occured
-            #
-            # Note that we always evaluate the criterion in step 0 and make sure that
-            # the we always accept (by having old total and current energy coincide)
-            # such that a valid old parameter set is stored to which we may restore
-            # if the next evaluation rejects.
-            do_evaluate = False
-            for walker_index in range(self.FLAGS.number_walkers):
-                if current_step > HMC_steps[walker_index] or current_step == 0:
-                    # at least one walker requires a loss calculation
-                    do_evaluate = True
-            if do_evaluate or self.FLAGS.verbose > 1:
-                HMC_set_total_energy = []
-                energy_placeholders = {}
-                for walker_index in range(self.FLAGS.number_walkers):
-                    if current_step > HMC_steps[walker_index] or current_step == 0:
-                        HMC_set_total_energy.extend([self.assigner["old_total_energy"][walker_index]])
-                        energy_placeholders[self.placeholders["old_total_energy"][walker_index]] = \
-                            values.loss[walker_index]+values.kinetic_energy[walker_index]
-                        logging.debug("Resetting total energy for walker #"+str(walker_index))
-                if len(HMC_set_total_energy) > 0:
-                    total_eval = self.sess.run(HMC_set_total_energy, feed_dict=energy_placeholders)
-                    logging.debug("New total energies are "+str(total_eval))
-
-    def _prepare_HMC_nodes(self):
-        if "HamiltonianMonteCarlo" in self.FLAGS.sampler:
-            # zero rejection rate before sampling start
-            check_accepted, check_rejected = self.sess.run([
-                self.zero_assigner["accepted"], self.zero_assigner["rejected"]])
-            for walker_index in range(self.FLAGS.number_walkers):
-                assert(check_accepted[walker_index] == 0)
-                assert(check_rejected[walker_index] == 0)
-
-    def _get_trajectory_header(self):
-        if self.directions is not None:
-            print(self.directions.shape)
-            header = get_trajectory_header(
-                self.directions.shape[0],
-                0)
-        else:
-            header = get_trajectory_header(
-                self.weights[0].get_total_dof(),
-                self.biases[0].get_total_dof())
-        return header
-
-    def _sample_Metropolis(self, return_run_info=False, return_trajectories=False, return_averages=False):
-
-        self.init_files("sample")
-
-        HMC_placeholder_nodes = [self.nn[walker_index].get_dict_of_nodes(
-            ["current_step", "next_eval_step", "step_width", "hamiltonian_dynamics_steps"])
-            for walker_index in range(self.FLAGS.number_walkers)]
-
-        test_nodes = self._get_test_nodes(setup="sample")
-        EQN_nodes =[self.nn[walker_index].get("EQN_step") \
-                           for walker_index in range(self.FLAGS.number_walkers)]
-        all_weights, all_biases = self._get_all_parameters()
-
-        averages = AveragesAccumulator(self.FLAGS.sampler,
-                                       self.config_map,
-                                       max_steps=self.FLAGS.max_steps,
-                                       every_nth=self.FLAGS.every_nth,
-                                       burn_in_steps=self.FLAGS.burn_in_steps,
-                                       number_walkers=self.FLAGS.number_walkers)
-        averages.reset(return_averages=return_averages,
-                       header=self.get_averages_header(setup="sample"))
-        averages.init_writer(self.averages_writer)
-        averages._inverse_temperature = self.FLAGS.inverse_temperature
-        run_info = RuninfoAccumulator(self.FLAGS.sampler,
-                                      self.config_map,
-                                      max_steps=self.FLAGS.max_steps,
-                                      every_nth=self.FLAGS.every_nth,
-                                      number_walkers=self.FLAGS.number_walkers)
-        run_info.reset(return_run_info=return_run_info,
-                       header=self.get_sample_header())
-        run_info.init_writer(self.run_writer)
-        trajectory = TrajectoryAccumulator(self.FLAGS.sampler,
-                                           self.config_map,
-                                           max_steps=self.FLAGS.max_steps,
-                                           every_nth=self.FLAGS.every_nth,
-                                           number_walkers=self.FLAGS.number_walkers,
-                                           directions=self.directions)
-        trajectory.reset(return_trajectories=return_trajectories,
-                         header=self._get_trajectory_header())
-        trajectory.init_writer(self.trajectory_writer)
-        accumulated_values = AccumulatedValues()
-        accumulated_values.reset()
-
-        # place in feed dict: We have to supply all placeholders (regardless of
-        # which the employed sampler actually requires) because of the evaluated
-        # summary! All of the placeholder nodes are also summary nodes.
-        feed_dict = {}
-        for walker_index in range(self.FLAGS.number_walkers):
-            feed_dict.update(self._create_default_feed_dict_with_constants(walker_index))
-
-        # zero extra nodes for HMC
-        self._prepare_HMC_nodes()
-
-        # check that sampler's parameters are actually used
-        self._print_sampler_parameters(feed_dict)
-
-        # prepare summaries for TensorBoard
-        summary_writer = self._prepare_summaries()
-
-        # prepare some loop variables
-        logging.info("Starting to sample")
-        logging.info_intervals = max(1, int(self.FLAGS.max_steps / 100))
-        self.last_time = time.time()
-        self.elapsed_time = 0.
-        HD_steps = [-2]*self.FLAGS.number_walkers        # number of hamiltonian dynamics steps
-        HMC_steps = [0]*self.FLAGS.number_walkers       # next step where to evaluate criterion
-        HMC_old_steps = [0]*self.FLAGS.number_walkers   # last step where criterion was evaluated
-        # we need to randomly vary the step widths to avoid (quasi-)periodicities
-        step_widths = [self.FLAGS.step_width]*self.FLAGS.number_walkers
-        self._set_HMC_placeholders(HMC_placeholder_nodes,
-                                   1, step_widths, HD_steps, HMC_steps, feed_dict)
-        if tqdm_present and self.FLAGS.progress:
-            step_range = tqdm(range(self.FLAGS.max_steps))
-        else:
-            step_range = range(self.FLAGS.max_steps)
-
-        # backup gradients and virials of each initial state to avoid recalculation
-        initial_state_gradients = None
-        initial_state_virials = None
-        initial_state_inertia = None
-        initial_state_momenta = None
-
-        last_rejected = self.sess.run(self.static_vars["rejected"])   # temporary to see whether last evaluation was a rejection
-        for current_step in step_range:
-            # get next batch of data
-            features, labels = self.input_pipeline.next_batch(self.sess)
-            # logging.debug("batch is x: "+str(features[:])+", y: "+str(labels[:]))
-
-            # update feed_dict for this step
-            feed_dict.update({
-                self.xinput: features,
-                self.true_labels: labels
-            })
-
-            # get energies for acceptance evaluation in very first step
-            if current_step == 0:
-                accumulated_values.loss, accumulated_values.kinetic_energy = \
-                    self.sess.run([test_nodes[3], self.static_vars["kinetic_energy"]], feed_dict=feed_dict)
-
-            # set global variable used in HMC sampler for criterion to initial loss
-            self._set_HMC_eval_variables(current_step, HMC_steps, accumulated_values)
-
-            # zero kinetic energy and other variables
-            self._zero_state_variables(self.FLAGS.sampler)
-
-            # tell accumulators about next evaluation step (delayed by one)
-            run_info.inform_next_eval_step(HMC_steps, accumulated_values.rejected)
-            trajectory.inform_next_eval_step(HMC_steps, accumulated_values.rejected)
-            averages.inform_next_eval_step(HMC_steps, accumulated_values.rejected)
-
-            # set next criterion evaluation step
-            # needs to be after `_set_HMC_eval_variables()`
-            # needs to be before `_perform_step()`
-            HMC_old_steps[:] = HMC_steps
-            HD_steps, HMC_steps = self._set_HMC_next_eval_step(
-                current_step, step_widths, HD_steps, HMC_steps)
-            feed_dict = self._set_HMC_placeholders(HMC_placeholder_nodes,
-                                                   current_step, step_widths,
-                                                   HD_steps, HMC_steps, feed_dict)
-
-            # get the weights and biases as otherwise the loss won't match
-            # tf first computes loss, then gradient, then performs variable update
-            # hence after the sample step, we would have updated variables but old loss
-            if current_step % self.FLAGS.every_nth == 0:
-                accumulated_values.weights, accumulated_values.biases = \
-                    self._get_parameters(return_trajectories, all_weights, all_biases)
-
-            # perform the EQN update step
-            if self.FLAGS.covariance_blending != 0. and \
-                    current_step % self.FLAGS.covariance_after_steps == 0:
-                self.sess.run(EQN_nodes, feed_dict=feed_dict)
-
-            # perform the sampling step
-            step_success = False
-            blending_key = [self.nn[walker_index].placeholder_nodes["covariance_blending"]
-                            for walker_index in range(self.FLAGS.number_walkers)]
-            old_eta = [feed_dict[blending_key[walker_index]] for walker_index in range(self.FLAGS.number_walkers)]
-            while not step_success:
-                for walker_index in range(self.FLAGS.number_walkers):
-                    if feed_dict[blending_key[walker_index]] > 0. \
-                            and feed_dict[blending_key[walker_index]] < 1e-12:
-                        logging.warning("Possible NaNs or Infs in covariance matrix, setting eta to 0 temporarily.")
-                        feed_dict[blending_key[walker_index]] = 0.
-                try:
-                    summary, accumulated_values.accuracy, accumulated_values.global_step, accumulated_values.loss = \
-                        self._perform_step(test_nodes, feed_dict)
-                    step_success = True
-                except tf.errors.InvalidArgumentError as err:
-                    # Cholesky failed, try again with smaller eta
-                    for walker_index in range(self.FLAGS.number_walkers):
-                        feed_dict[blending_key[walker_index]] = feed_dict[blending_key[walker_index]]/2.
-                    logging.warning(str(err.op) + " FAILED at step %d, using %lg as eta." \
-                                    % (current_step, feed_dict[blending_key[0]]))
-            for walker_index in range(self.FLAGS.number_walkers):
-                feed_dict[blending_key[walker_index]] = old_eta[walker_index]
-
-            # get updated state variables
-            accumulated_values.evaluate(self.sess, self.FLAGS.sampler, self.static_vars)
-
-            def print_energies():
-                if self.FLAGS.verbose > 1:
-                    for walker_index in range(self.FLAGS.number_walkers):
-                        loss_subtext = "n" if accumulated_values.rejected[walker_index] != last_rejected[walker_index] else "n-1"
-                        kinetic_subtext = "n-1" if "HamiltonianMonteCarlo_2ndOrder" in self.FLAGS.sampler \
-                                and current_step != HMC_old_steps[walker_index] else "n"
-                        logging.debug("walker #%d, #%d: L(x_{%s})=%lg, total is %lg, T(p_{%s})=%lg, sum is %lg" \
-                                  % (walker_index, current_step, loss_subtext,
-                                     # to emphasize updated loss
-                                     accumulated_values.loss[walker_index],
-                                     accumulated_values.old_total_energy[walker_index],
-                                     kinetic_subtext, # for HMC_2nd
-                                     accumulated_values.kinetic_energy[walker_index],
-                                     accumulated_values.loss[walker_index] + accumulated_values.kinetic_energy[
-                                         walker_index]))
-
-            # give output on debug mode
-            print_energies()
-
-            # if last step was rejection, re-evaluate loss and weights as state changed
-            if accumulated_values.rejected != last_rejected:
-                # recalculate loss and get kinetic energy
-                accumulated_values.loss, accumulated_values.kinetic_energy = \
-                    self.sess.run([test_nodes[3], self.static_vars["kinetic_energy"]], feed_dict=feed_dict)
-                # get restored weights and biases
-                accumulated_values.weights, accumulated_values.biases = \
-                    self._get_parameters(return_trajectories, all_weights, all_biases)
-                logging.info("Last state REJECTed.")
-                print_energies()
-
-            # reset gradients and virials to initial state's if rejected
-            for walker_index in range(self.FLAGS.number_walkers):
-                if current_step == HMC_old_steps[walker_index]:
-                    # restore gradients and virials
-                    if accumulated_values.rejected[walker_index] != last_rejected[walker_index]:
-                        accumulated_values.gradients[walker_index] = initial_state_gradients
-                        accumulated_values.virials[walker_index] = initial_state_virials
-                        accumulated_values.inertia[walker_index] = initial_state_inertia
-                        accumulated_values.momenta[walker_index] = initial_state_momenta
-                    else:
-                        initial_state_gradients = accumulated_values.gradients[walker_index]
-                        initial_state_virials = accumulated_values.virials[walker_index]
-                        initial_state_inertia = accumulated_values.inertia[walker_index]
-                        initial_state_momenta = accumulated_values.momenta[walker_index]
-                    # accumulate averages and other information
-                    if current_step >= self.FLAGS.burn_in_steps:
-                        averages.accumulate_each_step(current_step, walker_index, accumulated_values)
-
-            # write summaries for tensorboard
-            self._write_summaries(summary_writer, summary, current_step)
-
-            if current_step % self.FLAGS.every_nth == 0:
-                accumulated_values.time_elapsed_per_nth_step = self._get_elapsed_time_per_nth_step(current_step)
-
-            for walker_index in range(self.FLAGS.number_walkers):
-                run_info.accumulate_nth_step(current_step, walker_index, accumulated_values)
-                trajectory.accumulate_nth_step(current_step, walker_index, accumulated_values)
-                averages.accumulate_nth_step(current_step, walker_index, accumulated_values)
-
-            # update temporary rejected
-            last_rejected = accumulated_values.rejected
-
-            #if (i % logging.info_intervals) == 0:
-                #logging.debug('Accuracy at step %s (%s): %s' % (i, global_step, acc))
-                #logging.debug('Loss at step %s: %s' % (i, loss_eval))
-
-            self._decide_collapse_walkers(current_step)
-
-        logging.info("SAMPLED.")
-
-        # close summaries file
-        if self.FLAGS.summaries_path is not None:
-            summary_writer.close()
-
-        self.finish_files()
-
-        return run_info.run_info, trajectory.trajectory, averages.averages
-
-    def _sample_LangevinDynamics(self, return_run_info=False, return_trajectories=False, return_averages=False):
-
-        self.init_files("sample")
-
-        placeholder_nodes = []
-        for walker_index in range(self.FLAGS.number_walkers):
-            placeholder_nodes.append(self.nn[walker_index].get_dict_of_nodes(["current_step"]))
-        test_nodes = self._get_test_nodes(setup="sample")
-        EQN_nodes =[self.nn[walker_index].get("EQN_step") \
-                           for walker_index in range(self.FLAGS.number_walkers)]
-        all_weights, all_biases = self._get_all_parameters()
-
-        averages = AveragesAccumulator(self.FLAGS.sampler,
-                                       self.config_map,
-                                       max_steps=self.FLAGS.max_steps,
-                                       every_nth=self.FLAGS.every_nth,
-                                       burn_in_steps=self.FLAGS.burn_in_steps,
-                                       number_walkers=self.FLAGS.number_walkers)
-        averages.reset(return_averages=return_averages,
-                       header=self.get_averages_header(setup="sample"))
-        averages.init_writer(self.averages_writer)
-        averages._inverse_temperature = self.FLAGS.inverse_temperature
-        run_info = RuninfoAccumulator(self.FLAGS.sampler,
-                                      self.config_map,
-                                      max_steps=self.FLAGS.max_steps,
-                                      every_nth=self.FLAGS.every_nth,
-                                      number_walkers=self.FLAGS.number_walkers)
-        run_info.reset(return_run_info=return_run_info,
-                       header=self.get_sample_header())
-        run_info.init_writer(self.run_writer)
-        trajectory = TrajectoryAccumulator(self.FLAGS.sampler,
-                                           self.config_map,
-                                           max_steps=self.FLAGS.max_steps,
-                                           every_nth=self.FLAGS.every_nth,
-                                           number_walkers=self.FLAGS.number_walkers,
-                                           directions=self.directions)
-        trajectory.reset(return_trajectories=return_trajectories,
-                         header=self._get_trajectory_header())
-        trajectory.init_writer(self.trajectory_writer)
-        accumulated_values = AccumulatedValues()
-        accumulated_values.reset()
-
-        # place in feed dict: We have to supply all placeholders (regardless of
-        # which the employed sampler actually requires) because of the evaluated
-        # summary! All of the placeholder nodes are also summary nodes.
-        feed_dict = {}
-        for walker_index in range(self.FLAGS.number_walkers):
-            feed_dict.update(self._create_default_feed_dict_with_constants(walker_index))
-
-        # check that sampler's parameters are actually used
-        self._print_sampler_parameters(feed_dict)
-
-        # prepare summaries for TensorBoard
-        summary_writer = self._prepare_summaries()
-
-        # prepare some loop variables
-        logging.info("Starting to sample")
-        logging.info_intervals = max(1, int(self.FLAGS.max_steps / 100))
-        self.last_time = time.time()
-        self.elapsed_time = 0.
-        if tqdm_present and self.FLAGS.progress:
-            step_range = tqdm(range(self.FLAGS.max_steps))
-        else:
-            step_range = range(self.FLAGS.max_steps)
-
-        for current_step in step_range:
-            # get next batch of data
-            features, labels = self.input_pipeline.next_batch(self.sess)
-            # logging.debug("batch is x: "+str(features[:])+", y: "+str(labels[:]))
-
-            # update feed_dict for this step
-            feed_dict.update({
-                self.xinput: features,
-                self.true_labels: labels
-            })
-            for walker_index in range(self.FLAGS.number_walkers):
-                feed_dict.update({
-                    placeholder_nodes[walker_index]["current_step"]: current_step
-                })
-
-            # zero kinetic energy and other variables
-            self._zero_state_variables(self.FLAGS.sampler)
-
-            # get the weights and biases as otherwise the loss won't match
-            # tf first computes loss, then gradient, then performs variable update
-            # hence after the sample step, we would have updated variables but old loss
-            if current_step % self.FLAGS.every_nth == 0:
-                accumulated_values.weights, accumulated_values.biases = \
-                    self._get_parameters(return_trajectories, all_weights, all_biases)
-
-            # perform the EQN update step
-            if self.FLAGS.covariance_blending != 0. and \
-                    current_step % self.FLAGS.covariance_after_steps == 0:
-                self.sess.run(EQN_nodes, feed_dict=feed_dict)
-
-            # perform the sampling step
-            step_success = False
-            blending_key = [self.nn[walker_index].placeholder_nodes["covariance_blending"]
-                            for walker_index in range(self.FLAGS.number_walkers)]
-            old_eta = [feed_dict[blending_key[walker_index]] for walker_index in range(self.FLAGS.number_walkers)]
-            while not step_success:
-                for walker_index in range(self.FLAGS.number_walkers):
-                    if feed_dict[blending_key[walker_index]] > 0. \
-                            and feed_dict[blending_key[walker_index]] < 1e-12:
-                        logging.warning("Possible NaNs or Infs in covariance matrix, setting eta to 0 temporarily.")
-                        feed_dict[blending_key[walker_index]] = 0.
-                try:
-                    summary, accumulated_values.accuracy, accumulated_values.global_step, accumulated_values.loss = \
-                        self._perform_step(test_nodes, feed_dict)
-                    step_success = True
-                except tf.errors.InvalidArgumentError as err:
-                    # Cholesky failed, try again with smaller eta
-                    for walker_index in range(self.FLAGS.number_walkers):
-                        feed_dict[blending_key[walker_index]] = feed_dict[blending_key[walker_index]]/2.
-                    logging.warning(str(err.op) + " FAILED at step %d, using %lg as eta." \
-                                    % (current_step, feed_dict[blending_key[0]]))
-            for walker_index in range(self.FLAGS.number_walkers):
-                feed_dict[blending_key[walker_index]] = old_eta[walker_index]
-
-            # get updated state variables
-            accumulated_values.evaluate(self.sess, self.FLAGS.sampler, self.static_vars)
-
-            # write summaries for tensorboard
-            self._write_summaries(summary_writer, summary, current_step)
-
-            # accumulate averages
-            if current_step >= self.FLAGS.burn_in_steps:
-                for walker_index in range(self.FLAGS.number_walkers):
-                    averages.accumulate_each_step(current_step, walker_index, accumulated_values)
-
-            if current_step % self.FLAGS.every_nth == 0:
-                accumulated_values.time_elapsed_per_nth_step = self._get_elapsed_time_per_nth_step(current_step)
-
-            for walker_index in range(self.FLAGS.number_walkers):
-                run_info.accumulate_nth_step(current_step, walker_index, accumulated_values)
-                trajectory.accumulate_nth_step(current_step, walker_index, accumulated_values)
-                averages.accumulate_nth_step(current_step, walker_index, accumulated_values)
-
-            #if (i % logging.info_intervals) == 0:
-                #logging.debug('Accuracy at step %s (%s): %s' % (i, global_step, acc))
-                #logging.debug('Loss at step %s: %s' % (i, loss_eval))
-
-            self._decide_collapse_walkers(current_step)
-
-        logging.info("SAMPLED.")
-
-        # close summaries file
-        if self.FLAGS.summaries_path is not None:
-            summary_writer.close()
-
-        self.finish_files()
-
-        return run_info.run_info, trajectory.trajectory, averages.averages
-
-    def _create_default_feed_dict_with_constants(self, walker_index=0):
-        """ Construct an initial feed dict from all constant parameters
-        such as step width, ...
-
-        Here, we check whether the respective placeholder node is contained
-        in the neural network and only in that case add the value to the
-        feed_dict.
-
-        Basically, we connect entries in the "FLAGS" structure that is parsed
-        from cmd-line or created through `setup_parameters()` with the slew of
-        placeholders in tensorflow's neural network.
-
-        :param walker_index: index of walker whose placeholders to feed
-        :return: feed_dict with constant parameters
-        """
-
-        # add sampler options only when they are present in parameter struct
-        param_dict = {}
-        for key in ["covariance_blending",
-                    "friction_constant", "inverse_temperature",
-                    "learning_rate", "sigma", "sigmaA", "step_width"]:
-            try:
-                param_dict[key] = getattr(self.FLAGS, key)
-            except AttributeError:
-                pass
-        # special case because key and attribute's name differ
-        try:
-            param_dict["next_eval_step"] = 0
-            param_dict["hamiltonian_dynamics_steps"] = 0
-        except AttributeError:
-            pass
-
-        # add other options that are present in any case
-        param_dict.update({
-            "current_step": 0,
-            "keep_probability": self.FLAGS.dropout if self.FLAGS.dropout is not None else 0.})
-
-        # for each parameter check for placeholder and add to dict on its presence
-        default_feed_dict = {}
-        for key in param_dict.keys():
-            if key in self.nn[walker_index].placeholder_nodes.keys():
-                default_feed_dict.update({
-                    self.nn[walker_index].placeholder_nodes[key]: param_dict[key]})
-
-        return default_feed_dict
-
-
-    def train(self, walker_index=0, return_run_info = False, return_trajectories = False, return_averages=False):
-        """ Performs the actual training of the neural network `nn` given a dataset `ds` and a
-        Session `session`.
-
-        :param return_run_info: if set to true, run information will be accumulated
-                inside a numpy array and returned
-        :param return_trajectories: if set to true, trajectories will be accumulated
-                inside a numpy array and returned (adhering to FLAGS.every_nth)
-        :param return_averages: if set to true, accumulated average values will be
-                returned as numpy array
-        :return: either twice None or a pandas dataframe depending on whether either
-                parameter has evaluated to True
-        """
-        self.init_files("train")
-
-        assert( walker_index < self.FLAGS.number_walkers)
-
-        test_nodes = self._get_test_nodes(setup="train")
-        EQN_nodes =[self.nn[walker_index].get("EQN_step") \
-                           for walker_index in range(self.FLAGS.number_walkers)]
-        all_weights, all_biases = self._get_all_parameters()
-
-        averages = AveragesAccumulator(self.FLAGS.optimizer,
-                                       self.config_map,
-                                       max_steps=self.FLAGS.max_steps,
-                                       every_nth=self.FLAGS.every_nth,
-                                       burn_in_steps=self.FLAGS.burn_in_steps,
-                                       number_walkers=self.FLAGS.number_walkers)
-        averages.reset(return_averages=return_averages,
-                       header=self.get_averages_header(setup="train"))
-        averages.init_writer(self.averages_writer)
-        run_info = RuninfoAccumulator(self.FLAGS.optimizer,
-                                      self.config_map,
-                                      max_steps=self.FLAGS.max_steps,
-                                      every_nth=self.FLAGS.every_nth,
-                                      number_walkers=self.FLAGS.number_walkers)
-        run_info.reset(return_run_info=return_run_info,
-                       header=self.get_train_header())
-        run_info.init_writer(self.run_writer)
-        trajectory = TrajectoryAccumulator(self.FLAGS.optimizer,
-                                           self.config_map,
-                                           max_steps=self.FLAGS.max_steps,
-                                           every_nth=self.FLAGS.every_nth,
-                                           number_walkers=self.FLAGS.number_walkers,
-                                           directions=self.directions)
-        trajectory.reset(return_trajectories=return_trajectories,
-                         header=self._get_trajectory_header())
-        trajectory.init_writer(self.trajectory_writer)
-        accumulated_values = AccumulatedValues()
-        accumulated_values.reset()
-
-        # place in feed dict: We have to supply all placeholders (regardless of
-        # which the employed optimizer actually requires) because of the evaluated
-        # summary! All of the placeholder nodes are also summary nodes.
-        feed_dict = {}
-        for walker_index in range(self.FLAGS.number_walkers):
-            feed_dict.update(self._create_default_feed_dict_with_constants(walker_index))
-
-        # check that optimizers's parameters are actually used
-        self._print_optimizer_parameters(feed_dict)
-
-        # prepare summaries for TensorBoard
-        summary_writer = self._prepare_summaries()
-
-        # prepare some loop variables
-        logging.info("Starting to train")
-        logging.info_intervals = max(1, int(self.FLAGS.max_steps / 100))
-        self.last_time = time.time()
-        self.elapsed_time = 0
-        if tqdm_present and self.FLAGS.progress:
-            step_range = tqdm(range(self.FLAGS.max_steps))
-        else:
-            step_range = range(self.FLAGS.max_steps)
-
-        for current_step in step_range:
-            # get next batch of data
-            features, labels = self.input_pipeline.next_batch(self.sess)
-            # logging.debug("batch is x: "+str(features[:])+", y: "+str(labels[:]))
-
-            # update feed_dict for this step
-            feed_dict.update({
-                self.xinput: features,
-                self.true_labels: labels
-            })
-
-            # zero kinetic energy and other variables
-            self._zero_state_variables(self.FLAGS.optimizer)
-
-            # get the weights and biases as otherwise the loss won't match
-            # tf first computes loss, then gradient, then performs variable update
-            # hence after the sample step, we would have updated variables but old loss
-            if current_step % self.FLAGS.every_nth == 0:
-                accumulated_values.weights, accumulated_values.biases = \
-                    self._get_parameters(return_trajectories, all_weights, all_biases)
-
-            ## training is not compatible (yet) with performing the EQN update step
-            #if self.FLAGS.covariance_blending != 0. and \
-            #        current_step % self.FLAGS.covariance_after_steps == 0:
-            #    self.sess.run(EQN_nodes, feed_dict=feed_dict)
-
-            # perform the sampling step
-            summary, accumulated_values.accuracy, accumulated_values.global_step, accumulated_values.loss = \
-                self._perform_step(test_nodes, feed_dict)
-
-            # get updated state variables
-            accumulated_values.evaluate(self.sess, self.FLAGS.optimizer, self.static_vars)
-
-            # write summaries for tensorboard
-            self._write_summaries(summary_writer, summary, current_step)
-
-            # accumulate averages
-            if current_step >= self.FLAGS.burn_in_steps:
-                for walker_index in range(self.FLAGS.number_walkers):
-                    averages.accumulate_each_step(current_step, walker_index, accumulated_values)
-
-            if current_step % self.FLAGS.every_nth == 0:
-                accumulated_values.time_elapsed_per_nth_step = self._get_elapsed_time_per_nth_step(current_step)
-
-            for walker_index in range(self.FLAGS.number_walkers):
-                run_info.accumulate_nth_step(current_step, walker_index, accumulated_values)
-                trajectory.accumulate_nth_step(current_step, walker_index, accumulated_values)
-                averages.accumulate_nth_step(current_step, walker_index, accumulated_values)
-
-            #if (i % logging.info_intervals) == 0:
-                #logging.debug('Accuracy at step %s (%s): %s' % (i, global_step, acc))
-                #logging.debug('Loss at step %s: %s' % (i, loss_eval))
-
-            self._decide_collapse_walkers(current_step)
-
-        logging.info("TRAINED down to loss %s and accuracy %s." %
-                     (accumulated_values.loss[0], accumulated_values.accuracy[0]))
-
-        # close summaries file
-        if self.FLAGS.summaries_path is not None:
-            summary_writer.close()
-
-        self.finish_files()
-
-        # get rid of possile arrays (because of multiple walkers) in return arrays
-        ret_vals = [None, None, None]
-        if len(run_info.run_info) != 0:
-            ret_vals[0] = run_info.run_info[0]
-        if len(trajectory.trajectory) != 0:
-            ret_vals[1] = trajectory.trajectory[0]
-        if len(averages.averages) != 0:
-            ret_vals[2] = averages.averages[0]
-        return ret_vals
 
     def compute_optimal_stepwidth(self, walker_index=0):
         assert( walker_index < self.FLAGS.number_walkers )
@@ -1790,26 +666,6 @@ class model:
         optimal_step_width = 2/sqrt(lambdas[0])
         logging.info("Optimal step width would be "+str(optimal_step_width))
 
-
-    def close_files(self):
-        """ Closes the output files if they have been opened.
-        """
-        if self.config_map["do_write_averages_file"]:
-            assert self.config_map["averages_file"] is not None
-            self.config_map["averages_file"].close()
-            self.config_map["averages_file"] = None
-            self.averages_writer = None
-        if self.config_map["do_write_run_file"]:
-            assert self.config_map["csv_file"] is not None
-            self.config_map["csv_file"].close()
-            self.config_map["csv_file"] = None
-            self.run_writer = None
-        if self.config_map["do_write_trajectory_file"]:
-            assert self.config_map["trajectory_file"] is not None
-            self.config_map["trajectory_file"].close()
-            self.config_map["trajectory_file"] = None
-            self.trajectory_writer = None
-
     def save_model(self, filename):
         """ Saves the current neural network model to a set of files,
         whose prefix is given by filename.
@@ -1819,11 +675,9 @@ class model:
         """
         return self.saver.save(self.sess, filename)
 
-    def finish_files(self):
+    def finish(self):
         """ Closes all open files and saves the model if desired
         """
-        self.close_files()
-
         try:
             if self.FLAGS.save_model is not None:
                 save_path = self.save_model(self.FLAGS.save_model.replace('.meta', ''))
@@ -1957,9 +811,9 @@ class model:
         assert( walker_index < self.FLAGS.number_walkers )
         # set step
         if ('global_step' in self.nn[walker_index].summary_nodes.keys()):
-            sample_step_placeholder = self.step_placeholder[walker_index]
+            sample_step_placeholder = self.trajectorystate.step_placeholder[walker_index]
             feed_dict = {sample_step_placeholder: step}
-            set_step = self.sess.run(self.global_step_assign_t[walker_index], feed_dict=feed_dict)
+            set_step = self.sess.run(self.trajectorystate.global_step_assign_t[walker_index], feed_dict=feed_dict)
             assert (set_step == step)
 
     def assign_neural_network_parameters(self, parameters, walker_index=0):
@@ -2156,3 +1010,54 @@ class model:
             names.append(b[0])
             values.append(np.fromstring(b[1], dtype=float, sep=","))
         return names, values
+
+    def sample(self, return_run_info = False, return_trajectories = False, return_averages = False):
+        """ Performs the actual sampling of the neural network `nn` given a dataset `ds` and a
+        Session `session`.
+
+        :param return_run_info: if set to true, run information will be accumulated
+                inside a numpy array and returned
+        :param return_trajectories: if set to true, trajectories will be accumulated
+                inside a numpy array and returned (adhering to FLAGS.every_nth)
+        :param return_averages: if set to true, accumulated average values will be
+                returned as numpy array
+        :return: either thrice None or lists (per walker) of pandas dataframes
+                depending on whether either parameter has evaluated to True
+        """
+        return self._execute_trajectory_run(self.trajectory_sample, self.sess,
+                                     return_run_info, return_trajectories, return_averages)
+
+    def train(self, return_run_info = False, return_trajectories = False, return_averages=False):
+        """ Performs the actual training of the neural network `nn` given a dataset `ds` and a
+        Session `session`.
+
+        :param return_run_info: if set to true, run information will be accumulated
+                inside a numpy array and returned
+        :param return_trajectories: if set to true, trajectories will be accumulated
+                inside a numpy array and returned (adhering to FLAGS.every_nth)
+        :param return_averages: if set to true, accumulated average values will be
+                returned as numpy array
+        :return: either twice None or a pandas dataframe depending on whether either
+                parameter has evaluated to True
+        """
+        return self._execute_trajectory_run(self.trajectory_train, self.sess,
+                                     return_run_info, return_trajectories, return_averages)
+
+    def _execute_trajectory_run(self, trajectory, session, return_run_info = False, return_trajectories = False, return_averages=False):
+        retvals = trajectory.execute(session,
+            { "input_pipeline": self.input_pipeline,
+              "xinput": self.xinput,
+              "true_labels": self.true_labels},
+            return_run_info, return_trajectories, return_averages)
+        self.finish()
+        return retvals
+
+    def deactivate_file_writing(self):
+        """ Deactivates writing of average, run info and trajectory files.
+
+        """
+        for entity in [self.trajectory_train, self.trajectory_sample]:
+            if entity is not None:
+                entity.set_config_map("do_write_averages_file", False)
+                entity.set_config_map("do_write_run_file", False)
+                entity.set_config_map("do_write_trajectory_file", False)
