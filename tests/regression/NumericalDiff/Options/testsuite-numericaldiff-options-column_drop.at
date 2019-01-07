@@ -1,6 +1,7 @@
 #
 #    NumericalDiff - diffing files taking numerical imprecision into acccount
 #    Copyright (C) 2018 The University of Edinburgh
+#    The TATi authors, see file AUTHORS, have asserted their moral rights.
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by

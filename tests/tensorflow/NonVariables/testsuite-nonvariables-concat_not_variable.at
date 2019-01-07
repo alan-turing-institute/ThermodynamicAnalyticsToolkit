@@ -1,6 +1,7 @@
 #
-#    DataDrivenSampler - explore high-dimensional manifold of neural networks
+#    DataDrivenSampler - analyze loss manifolds of neural networks
 #    Copyright (C) 2017 The University of Edinburgh
+#    The TATi authors, see file AUTHORS, have asserted their moral rights.
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
