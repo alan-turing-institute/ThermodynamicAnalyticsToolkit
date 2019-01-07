@@ -59,6 +59,7 @@ AC_CONFIG_FILES(
 	src/TATi/models/accumulators/Makefile
 	src/TATi/models/input/Makefile
 	src/TATi/models/parameters/Makefile
+	src/TATi/models/trajectories/Makefile
 	src/TATi/options/Makefile
 	src/TATi/runtime/Makefile
 	src/TATi/samplers/Makefile
