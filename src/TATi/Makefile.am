@@ -6,8 +6,8 @@ SUBDIRS = \
     models \
     models/accumulators \
     models/input \
+    models/parameters \
     options \
-    parameters \
     runtime \
     samplers \
     tools
