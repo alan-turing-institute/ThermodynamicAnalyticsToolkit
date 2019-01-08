@@ -66,12 +66,12 @@ done
 # using decreased accuracy of 3e-7 for rounding issues, see tensorflaw sum test
 # using even more decreased accuracy of 1e-7 due to additional cancellation effects for virials
 AT_CHECK([../../../NumericalDiff \
-    --general_threshold 3e-7 relative \
+    --general_threshold `echo 3 $threshold | $awk '{print $1*$2}'` relative \
     --column_threshold virial 2e-6 relative \
     --column_drop time_per_nth_step id -- \
     run-0.csv run-1.csv], 0, [ignore], [ignore])
 AT_CHECK([../../../NumericalDiff \
-    --general_threshold 3e-7 relative \
+    --general_threshold `echo 3 $threshold | $awk '{print $1*$2}'` relative \
     --column_threshold virial 2e-6 relative \
     --column_drop time_per_nth_step id -- \
     run-0.csv run-2.csv], 1, [ignore], [ignore])

@@ -315,6 +315,11 @@ might be a not working tensorflow installation. If some fail, please
 contact the author.
 The extra argument *-j4* instructs +make+ to use four threads in parallel for
 testing. Use as many as you have cores on your machine.
+
+In case you run the testcases on strongly parallel hardware, tests may
+fail because of cancellation effects during parallel summation. In this
+case you made degrade the test threshold using the environment variable
++TATI_TEST_THRESHOLD+. If unset, *it defaults to 1e-7*.
 =========================
 
 

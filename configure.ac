@@ -19,6 +19,14 @@ DX_INIT_DOXYGEN(ThermodynamicAnalyticsToolkit, Doxyfile, ${docdir})
 # awk for tests
 AC_PROG_AWK()
 
+# allow to change general test threshold
+AC_MSG_CHECKING(for tati test threshold)
+AC_ARG_VAR(TATI_TEST_THRESHOLD, ["Allows to change the general numerical threshold used in all test cases, [default: 1e-7]"])
+if test -z "$TATI_TEST_THRESHOLD"; then
+	TATI_TEST_THRESHOLD="1e-7"
+fi
+AC_MSG_RESULT($TATI_TEST_THRESHOLD)
+
 # asciidoc and dblatex
 AC_CHECK_PROGS([ASCIIDOC], [asciidoc])
 if test -z $ASCIIDOC; then

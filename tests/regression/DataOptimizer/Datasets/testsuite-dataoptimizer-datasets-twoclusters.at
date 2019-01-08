@@ -36,7 +36,7 @@ AT_CHECK([../../../TATiOptimizer \
 
 # and compare (exclude time_per_nth_step column)
 AT_CHECK([../../../NumericalDiff \
-    --general_threshold 2e-7 absolute \
+    --general_threshold `echo 2 $threshold | $awk '{print $1*$2}'` absolute \
     --column_drop time_per_nth_step id -- \
     run-twoclusters.csv ${abs_top_srcdir}/tests/regression/DataOptimizer/Datasets/post/run-twoclusters.csv], 0, [ignore], [ignore])
 

@@ -40,15 +40,15 @@ AT_CHECK([../../../TATiSampler \
 
 # now compare (exclude time_per_nth_step column)
 AT_CHECK([../../../NumericalDiff \
-    --general_threshold 1e-7 absolute \
+    --general_threshold $threshold absolute \
     --column_drop time_per_nth_step id -- \
     run-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-HMC_2nd-accept.csv], 0, [ignore], [ignore])
 AT_CHECK([../../../NumericalDiff \
-    --general_threshold 1e-7 absolute \
+    --general_threshold $threshold absolute \
     --column_drop id -- \
     trajectory-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-HMC_2nd-accept.csv], 0, [ignore], [ignore])
 AT_CHECK([../../../NumericalDiff \
-    --general_threshold 1e-7 absolute \
+    --general_threshold $threshold absolute \
     --column_drop id average_inertia -- \
     averages-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/averages-HMC_2nd-accept.csv], 0, [ignore], [ignore])
 
@@ -83,15 +83,15 @@ AT_CHECK([../../../TATiSampler \
 
 # now compare (exclude time_per_nth_step column)
 AT_CHECK([../../../NumericalDiff \
-    --general_threshold 1e-7 absolute \
+    --general_threshold $threshold absolute \
     --column_drop time_per_nth_step id -- \
     run-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-HMC_2nd-reject.csv], 0, [ignore], [ignore])
 AT_CHECK([../../../NumericalDiff \
-    --general_threshold 1e-7 absolute \
+    --general_threshold $threshold absolute \
     --column_drop id -- \
     trajectory-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-HMC_2nd-reject.csv], 0, [ignore], [ignore])
 AT_CHECK([../../../NumericalDiff \
-    --general_threshold 1e-7 absolute \
+    --general_threshold $threshold absolute \
     --column_drop id average_inertia -- \
     averages-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/averages-HMC_2nd-reject.csv], 0, [ignore], [ignore])
 
@@ -120,15 +120,15 @@ AT_CHECK([../../../TATiSampler \
 
 # now compare (exclude time_per_nth_step column)
 AT_CHECK([../../../NumericalDiff \
-    --general_threshold 1e-7 absolute \
+    --general_threshold $threshold absolute \
     --column_drop time_per_nth_step id -- \
     run-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-HMC_2nd-accept-singlestep.csv], 0, [ignore], [ignore])
 AT_CHECK([../../../NumericalDiff \
-    --general_threshold 1e-7 absolute \
+    --general_threshold $threshold absolute \
     --column_drop id -- \
     trajectory-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-HMC_2nd-accept-singlestep.csv], 0, [ignore], [ignore])
 AT_CHECK([../../../NumericalDiff \
-    --general_threshold 1e-7 absolute \
+    --general_threshold $threshold absolute \
     --column_drop id average_inertia -- \
     averages-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/averages-HMC_2nd-accept-singlestep.csv], 0, [ignore], [ignore])
 
@@ -160,15 +160,15 @@ AT_CHECK([../../../TATiSampler \
 
 # now compare (exclude time_per_nth_step column)
 AT_CHECK([../../../NumericalDiff \
-    --general_threshold 1e-7 absolute \
+    --general_threshold $threshold absolute \
     --column_drop time_per_nth_step id -- \
     run-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-HMC_2nd-reject-singlestep.csv], 0, [ignore], [ignore])
 AT_CHECK([../../../NumericalDiff \
-    --general_threshold 1e-7 absolute \
+    --general_threshold $threshold absolute \
     --column_drop id -- \
     trajectory-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-HMC_2nd-reject-singlestep.csv], 0, [ignore], [ignore])
 AT_CHECK([../../../NumericalDiff \
-    --general_threshold 1e-7 absolute \
+    --general_threshold $threshold absolute \
     --column_drop id average_inertia -- \
     averages-HMC.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/averages-HMC_2nd-reject-singlestep.csv], 0, [ignore], [ignore])
 
@@ -199,17 +199,17 @@ AT_CHECK([../../../TATiSampler \
 
 # now compare: for some reason with hidden layers loss, total_energy, old_total_energy slightly vary from run to run
 AT_CHECK([../../../NumericalDiff \
-    --general_threshold 3e-7 absolute \
+    --general_threshold `echo 3 $threshold | $awk '{print $1*$2}'` absolute \
     --column_drop time_per_nth_step id -- \
     run-HMC-hidden.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-HMC_2nd-hidden.csv], 0, [ignore], [ignore])
 AT_CHECK([../../../NumericalDiff \
-    --general_threshold 3e-7 absolute \
+    --general_threshold `echo 3 $threshold | $awk '{print $1*$2}'` absolute \
     --column_drop id -- \
     trajectory-HMC-hidden.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-HMC_2nd-hidden.csv], 0, [ignore], [ignore])
 # TF1.9: Probably due to MKL introduction (anaconda has it by default), we
 # need to degrade from 1e-7 to 2e-7
 AT_CHECK([../../../NumericalDiff \
-    --general_threshold 2e-7 absolute \
+    --general_threshold `echo 2 $threshold | $awk '{print $1*$2}'` absolute \
     --column_drop id average_inertia -- \
     averages-HMC-hidden.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/averages-HMC_2nd-hidden.csv], 0, [ignore], [ignore])
 
