@@ -53,7 +53,7 @@ AT_CHECK([../../../NumericalDiff \
     run-single.csv ${abs_top_srcdir}/tests/regression/DataDrivenExplorer/SingleTrajectory/post/run-single.csv], 0, [ignore], [ignore])
 colname="num_negative_ev"
 AT_CHECK([cat minima.csv | \
-    gawk -F"," -v colname=$colname \
+    $awk -F"," -v colname=$colname \
     'BEGIN { col=-1} \
     { if (NR == 1) { for (i=1;i<=NF;++i) { if ($i == colname) { col = i } } } else \
         { if (col == -1) { print "Could not find column with name "colname; exit 255 } else \
