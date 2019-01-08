@@ -107,6 +107,14 @@ class Options(object):
         except KeyError:
             raise AttributeError("Option '"+str(key)+"' is unknown")
 
+    def __contains__(self, key):
+        """ Checks whether 'key` is a known key to this options class.
+
+        :param key: key name
+        :return: True - key found, False - key unknown
+        """
+        return str(key) in self._option_map.keys()
+
     def __getattr__(self, key):
         """ Override `__getattr__` to mask access to options as if they were
         member variables.
