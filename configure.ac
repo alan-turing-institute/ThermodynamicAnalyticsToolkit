@@ -16,6 +16,9 @@ DX_PS_FEATURE(OFF)
 DX_PDF_FEATURE(OFF)
 DX_INIT_DOXYGEN(ThermodynamicAnalyticsToolkit, Doxyfile, ${docdir})
 
+# awk for tests
+AC_PROG_AWK()
+
 # asciidoc and dblatex
 AC_CHECK_PROGS([ASCIIDOC], [asciidoc])
 if test -z $ASCIIDOC; then
