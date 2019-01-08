@@ -29,16 +29,19 @@ class RuninfoAccumulator(Accumulator):
 
     """
 
-    def __init__(self, return_run_info, method, config_map, writer,
-                 header, max_steps, every_nth, number_walkers):
+    def __init__(self, method, config_map,
+                 max_steps, every_nth, number_walkers):
         super(RuninfoAccumulator, self).__init__(method, max_steps, every_nth, number_walkers)
-        self.run_info = None
-        self._return_run_info = return_run_info
         self._config_map = config_map
-        self._run_writer = writer
         self._number_walkers = number_walkers
+
+        self.run_info = None
+
+    def reset(self, return_run_info, header):
+        super(RuninfoAccumulator, self).reset()
+        self._return_run_info = return_run_info
+        self.run_info = []
         if self._return_run_info:
-            self.run_info = []
             no_params = len(header)
             for walker_index in range(self._number_walkers):
                 self.run_info.append(pd.DataFrame(
@@ -102,8 +105,8 @@ class RuninfoAccumulator(Accumulator):
                                     "BAOAB",
                                     "CovarianceControlledAdaptiveLangevinThermostat"]:
                     run_line = self._accumulate_nth_step_line(current_step, walker_index, values)
-                if self._config_map["do_write_run_file"] and self._run_writer is not None:
-                    self._run_writer.writerow(run_line)
+                if self._config_map["do_write_run_file"] and self._writer is not None:
+                    self._writer.writerow(run_line)
                 if self._return_run_info:
                     self.run_info[walker_index].loc[self.written_row] = run_line
                 self.written_row +=1

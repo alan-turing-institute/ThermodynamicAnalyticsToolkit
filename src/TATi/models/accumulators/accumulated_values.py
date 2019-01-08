@@ -24,6 +24,9 @@ class AccumulatedValues(object):
     """
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.loss = None
         self.accuracy = None
 

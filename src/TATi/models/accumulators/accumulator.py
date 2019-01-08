@@ -22,20 +22,43 @@ import logging
 
 class Accumulator(object):
     """ This class defines the accumulator interface.
+
+    Example:
+        >> acc = AveragesAccumulator(...)
+        >> acc.reset(true, [""])
+
+        During each step of the iteration call
+
+        >> acc.accumulate_each_step(current_step)
+
+        During each nth step (to print to file or screen)
+
+        >> acc.accumulate_nth_step(current_step)
+
+        For HMC sampling you need to inform about the next acceptance criterion
+        evaluation like
+
+        >> acc.inform_next_eval_step(...)
     """
 
     output_width = 8
     output_precision = 8
 
     def __init__(self, method, max_steps, every_nth, number_walkers):
-        self._next_eval_step = []       # next step when to write buffer
-        self._last_rejected = 0         # stores the last rejected from AccumulatedValues
         self._method = method           # stores the sampling/optimization method
         self._max_steps = max_steps     # stores which total number of steps are evaluated
         self._every_nth = every_nth     # stores that only each nth output step is actually written
-        self._internal_nth = [-1]*number_walkers         # internal counting for dropping other but nth step
+        self._number_walkers = number_walkers
+
+    def reset(self):
+        self._next_eval_step = []       # next step when to write buffer
+        self._last_rejected = 0         # stores the last rejected from AccumulatedValues
+        self._internal_nth = [-1]*self._number_walkers         # internal counting for dropping other but nth step
         self.written_row = 0            # current row to append in accumulated lines
-        self._total_eval_steps = (max_steps % every_nth) + 1
+        self._total_eval_steps = (self._max_steps % self._every_nth) + 1
+
+    def init_writer(self, writer):
+        self._writer = writer
 
     def accumulate_each_step(self, current_step):
         """ Accumulate values each step internally.
