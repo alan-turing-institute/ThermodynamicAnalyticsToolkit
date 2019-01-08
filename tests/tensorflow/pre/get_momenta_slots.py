@@ -33,5 +33,5 @@ nn = model(FLAGS)
 nn.init_network(setup="sample")
 
 for v in tf.trainable_variables():
-	print(nn.sampler[0].get_slot(v, "momentum"))
+	print(nn.trajectory_sample.sampler[0].get_slot(v, "momentum"))
 
