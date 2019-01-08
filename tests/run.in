@@ -7,7 +7,7 @@
 # Darwin needs some help in figuring out where non-installed libtool
 # libraries are (on this platform libtool encodes the expected final
 # path of dependent libraries in each library).
-modpath='../.libs:@pythondir@'
+modpath="$LD_LIBRARY_PATH:../.libs:"'@pythondir@'
 
 # .. is for the *.py files, and ../.libs for the *.so.  We used to
 # rely on a module called ltihooks.py to teach the import function how
