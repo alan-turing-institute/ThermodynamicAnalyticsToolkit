@@ -48,7 +48,7 @@ AT_CHECK([../../../TATiExplorer \
 ], 0, [stdout], [stderr])
 
 AT_CHECK([../../../NumericalDiff \
-    --general_threshold 1e-6 absolute \
+    --general_threshold `echo 10 $threshold | $awk '{print $1*$2}'` absolute \
     --column_drop time_per_nth_step -- \
     run-single.csv ${abs_top_srcdir}/tests/regression/DataDrivenExplorer/SingleTrajectory/post/run-single.csv], 0, [ignore], [ignore])
 colname="num_negative_ev"

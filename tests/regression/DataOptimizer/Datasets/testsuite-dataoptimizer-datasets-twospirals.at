@@ -42,7 +42,7 @@ AT_CHECK([../../../TATiOptimizer \
 # TF1.9: Probably due to MKL introduction (anaconda has it by default), we
 # need to degrade from 2e-7 to 4e-7
 AT_CHECK([../../../NumericalDiff \
-    --general_threshold 4e-7 absolute \
+    --general_threshold `echo 4 $threshold | $awk '{print $1*$2}'` absolute \
     --column_drop time_per_nth_step id -- \
     run-twospirals.csv ${abs_top_srcdir}/tests/regression/DataOptimizer/Datasets/post/run-twospirals.csv], 0, [ignore], [ignore])
 

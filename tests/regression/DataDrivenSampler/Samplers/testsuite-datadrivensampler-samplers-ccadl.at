@@ -42,11 +42,11 @@ AT_CHECK([../../../TATiSampler \
 
 # now compare (exclude time_per_nth_step column)
 AT_CHECK([../../../NumericalDiff \
-    --general_threshold 1e-7 absolute \
+    --general_threshold $threshold absolute \
     --column_drop time_per_nth_step id -- \
     run-CCAdL.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/run-CCAdL.csv], 0, [ignore], [ignore])
 AT_CHECK([../../../NumericalDiff \
-    --general_threshold 1e-7 absolute \
+    --general_threshold $threshold absolute \
     --column_drop id -- \
     trajectory-CCAdL.csv ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/post/trajectory-CCAdL.csv], 0, [ignore], [ignore])
 
