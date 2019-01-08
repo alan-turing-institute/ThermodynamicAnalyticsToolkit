@@ -1195,31 +1195,35 @@ class model:
                            for walker_index in range(self.FLAGS.number_walkers)]
         all_weights, all_biases = self._get_all_parameters()
 
-        averages = AveragesAccumulator(return_averages, self.FLAGS.sampler,
+        averages = AveragesAccumulator(self.FLAGS.sampler,
                                        self.config_map,
-                                       self.averages_writer,
-                                       header=self.get_averages_header(setup="sample"),
                                        max_steps=self.FLAGS.max_steps,
                                        every_nth=self.FLAGS.every_nth,
-                                       inverse_temperature=self.FLAGS.inverse_temperature,
                                        burn_in_steps=self.FLAGS.burn_in_steps,
                                        number_walkers=self.FLAGS.number_walkers)
-        run_info = RuninfoAccumulator(return_run_info, self.FLAGS.sampler,
+        averages.reset(return_averages=return_averages,
+                       header=self.get_averages_header(setup="sample"))
+        averages.init_writer(self.averages_writer)
+        averages._inverse_temperature = self.FLAGS.inverse_temperature
+        run_info = RuninfoAccumulator(self.FLAGS.sampler,
                                       self.config_map,
-                                      self.run_writer,
-                                      header=self.get_sample_header(),
                                       max_steps=self.FLAGS.max_steps,
                                       every_nth=self.FLAGS.every_nth,
                                       number_walkers=self.FLAGS.number_walkers)
-        trajectory = TrajectoryAccumulator(return_trajectories, self.FLAGS.sampler,
+        run_info.reset(return_run_info=return_run_info,
+                       header=self.get_sample_header())
+        run_info.init_writer(self.run_writer)
+        trajectory = TrajectoryAccumulator(self.FLAGS.sampler,
                                            self.config_map,
-                                           self.trajectory_writer,
-                                           header=self._get_trajectory_header(),
                                            max_steps=self.FLAGS.max_steps,
                                            every_nth=self.FLAGS.every_nth,
                                            number_walkers=self.FLAGS.number_walkers,
                                            directions=self.directions)
+        trajectory.reset(return_trajectories=return_trajectories,
+                         header=self._get_trajectory_header())
+        trajectory.init_writer(self.trajectory_writer)
         accumulated_values = AccumulatedValues()
+        accumulated_values.reset()
 
         # place in feed dict: We have to supply all placeholders (regardless of
         # which the employed sampler actually requires) because of the evaluated
@@ -1427,31 +1431,35 @@ class model:
                            for walker_index in range(self.FLAGS.number_walkers)]
         all_weights, all_biases = self._get_all_parameters()
 
-        averages = AveragesAccumulator(return_averages, self.FLAGS.sampler,
+        averages = AveragesAccumulator(self.FLAGS.sampler,
                                        self.config_map,
-                                       self.averages_writer,
-                                       header=self.get_averages_header(setup="sample"),
                                        max_steps=self.FLAGS.max_steps,
                                        every_nth=self.FLAGS.every_nth,
-                                       inverse_temperature=self.FLAGS.inverse_temperature,
                                        burn_in_steps=self.FLAGS.burn_in_steps,
                                        number_walkers=self.FLAGS.number_walkers)
-        run_info = RuninfoAccumulator(return_run_info, self.FLAGS.sampler,
+        averages.reset(return_averages=return_averages,
+                       header=self.get_averages_header(setup="sample"))
+        averages.init_writer(self.averages_writer)
+        averages._inverse_temperature = self.FLAGS.inverse_temperature
+        run_info = RuninfoAccumulator(self.FLAGS.sampler,
                                       self.config_map,
-                                      self.run_writer,
-                                      header=self.get_sample_header(),
                                       max_steps=self.FLAGS.max_steps,
                                       every_nth=self.FLAGS.every_nth,
                                       number_walkers=self.FLAGS.number_walkers)
-        trajectory = TrajectoryAccumulator(return_trajectories, self.FLAGS.sampler,
+        run_info.reset(return_run_info=return_run_info,
+                       header=self.get_sample_header())
+        run_info.init_writer(self.run_writer)
+        trajectory = TrajectoryAccumulator(self.FLAGS.sampler,
                                            self.config_map,
-                                           self.trajectory_writer,
-                                           header=self._get_trajectory_header(),
                                            max_steps=self.FLAGS.max_steps,
                                            every_nth=self.FLAGS.every_nth,
                                            number_walkers=self.FLAGS.number_walkers,
                                            directions=self.directions)
+        trajectory.reset(return_trajectories=return_trajectories,
+                         header=self._get_trajectory_header())
+        trajectory.init_writer(self.trajectory_writer)
         accumulated_values = AccumulatedValues()
+        accumulated_values.reset()
 
         # place in feed dict: We have to supply all placeholders (regardless of
         # which the employed sampler actually requires) because of the evaluated
@@ -1634,30 +1642,34 @@ class model:
                            for walker_index in range(self.FLAGS.number_walkers)]
         all_weights, all_biases = self._get_all_parameters()
 
-        averages = AveragesAccumulator(return_averages, self.FLAGS.optimizer,
+        averages = AveragesAccumulator(self.FLAGS.optimizer,
                                        self.config_map,
-                                       self.averages_writer,
-                                       header=self.get_averages_header(setup="train"),
                                        max_steps=self.FLAGS.max_steps,
                                        every_nth=self.FLAGS.every_nth,
                                        burn_in_steps=self.FLAGS.burn_in_steps,
                                        number_walkers=self.FLAGS.number_walkers)
-        run_info = RuninfoAccumulator(return_run_info, self.FLAGS.optimizer,
+        averages.reset(return_averages=return_averages,
+                       header=self.get_averages_header(setup="train"))
+        averages.init_writer(self.averages_writer)
+        run_info = RuninfoAccumulator(self.FLAGS.optimizer,
                                       self.config_map,
-                                      self.run_writer,
-                                      header=self.get_train_header(),
                                       max_steps=self.FLAGS.max_steps,
                                       every_nth=self.FLAGS.every_nth,
                                       number_walkers=self.FLAGS.number_walkers)
-        trajectory = TrajectoryAccumulator(return_trajectories, self.FLAGS.optimizer,
+        run_info.reset(return_run_info=return_run_info,
+                       header=self.get_train_header())
+        run_info.init_writer(self.run_writer)
+        trajectory = TrajectoryAccumulator(self.FLAGS.optimizer,
                                            self.config_map,
-                                           self.trajectory_writer,
-                                           header=self._get_trajectory_header(),
                                            max_steps=self.FLAGS.max_steps,
                                            every_nth=self.FLAGS.every_nth,
                                            number_walkers=self.FLAGS.number_walkers,
                                            directions=self.directions)
+        trajectory.reset(return_trajectories=return_trajectories,
+                         header=self._get_trajectory_header())
+        trajectory.init_writer(self.trajectory_writer)
         accumulated_values = AccumulatedValues()
+        accumulated_values.reset()
 
         # place in feed dict: We have to supply all placeholders (regardless of
         # which the employed optimizer actually requires) because of the evaluated
@@ -1748,11 +1760,11 @@ class model:
 
         # get rid of possile arrays (because of multiple walkers) in return arrays
         ret_vals = [None, None, None]
-        if run_info.run_info is not None:
+        if len(run_info.run_info) != 0:
             ret_vals[0] = run_info.run_info[0]
-        if trajectory.trajectory is not None:
+        if len(trajectory.trajectory) != 0:
             ret_vals[1] = trajectory.trajectory[0]
-        if averages.averages is not None:
+        if len(averages.averages) != 0:
             ret_vals[2] = averages.averages[0]
         return ret_vals
 

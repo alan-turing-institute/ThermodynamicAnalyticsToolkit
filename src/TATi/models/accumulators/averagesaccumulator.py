@@ -29,29 +29,31 @@ class AveragesAccumulator(Accumulator):
 
     """
 
-    def __init__(self, return_averages, method, config_map, writer,
-                 header, max_steps, every_nth, number_walkers,
-                 inverse_temperature=1., burn_in_steps=0):
+    def __init__(self, method, config_map,
+                 max_steps, every_nth, number_walkers,
+                 burn_in_steps=0):
         super(AveragesAccumulator, self).__init__(method, max_steps, every_nth, number_walkers)
-        self.accumulated_kinetic_energy = [0.]*number_walkers
-        self.accumulated_loss_nominator = [0.]*number_walkers
-        self.accumulated_loss_denominator = [0.]*number_walkers
-        self.accumulated_virials = [0.]*number_walkers
-        self.accumulated_inertia = [0.]*number_walkers
-        self.last_inertia = [0.]*number_walkers
-        self.averages = None
-        self._return_averages = return_averages
         self._config_map = config_map
-        self._averages_writer = writer
-
         self._number_walkers = number_walkers
         self._burn_in_steps = burn_in_steps
-        self._inverse_temperature = inverse_temperature
+        self._inverse_temperature = 1.
 
+        self.averages = None
+
+    def reset(self, return_averages, header):
+        super(AveragesAccumulator, self).reset()
+        self._return_averages = return_averages
+        self.accumulated_kinetic_energy = [0.]*self._number_walkers
+        self.accumulated_loss_nominator = [0.]*self._number_walkers
+        self.accumulated_loss_denominator = [0.]*self._number_walkers
+        self.accumulated_virials = [0.]*self._number_walkers
+        self.accumulated_inertia = [0.]*self._number_walkers
+        self.last_inertia = [0.]*self._number_walkers
+        self.averages = None
         self.accumulated_steps = 0
 
+        self.averages = []
         if self._return_averages:
-            self.averages = []
             no_params = len(header)
             for walker_index in range(self._number_walkers):
                 self.averages.append(pd.DataFrame(
@@ -121,8 +123,8 @@ class AveragesAccumulator(Accumulator):
         if super(AveragesAccumulator, self).accumulate_nth_step(current_step, walker_index):
             if self._config_map["do_write_averages_file"] or self._return_averages:
                 averages_line = self._accumulate_nth_step_line(current_step, walker_index, values)
-                if self._config_map["do_write_averages_file"] and self._averages_writer is not None:
-                    self._averages_writer.writerow(averages_line)
+                if self._config_map["do_write_averages_file"] and self._writer is not None:
+                    self._writer.writerow(averages_line)
                 if self._return_averages:
                     self.averages[walker_index].loc[self.written_row] = averages_line
                 self.written_row +=1

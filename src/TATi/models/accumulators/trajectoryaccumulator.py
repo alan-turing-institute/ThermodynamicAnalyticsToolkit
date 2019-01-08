@@ -30,17 +30,20 @@ class TrajectoryAccumulator(Accumulator):
 
     """
 
-    def __init__(self, return_trajectories, method, config_map, writer,
-                 header, max_steps, every_nth, number_walkers, directions):
+    def __init__(self, method, config_map,
+                 max_steps, every_nth, number_walkers, directions):
         super(TrajectoryAccumulator, self).__init__(method, max_steps, every_nth, number_walkers)
-        self.trajectory = None
-        self._return_trajectories = return_trajectories
         self._config_map = config_map
-        self._trajectory_writer = writer
         self._number_walkers = number_walkers
         self._directions = directions
+
+        self.trajectory = None
+
+    def reset(self, return_trajectories, header):
+        super(TrajectoryAccumulator, self).reset()
+        self._return_trajectories = return_trajectories
+        self.trajectory = []
         if self._return_trajectories:
-            self.trajectory = []
             no_params = len(header)
             for walker_index in range(self._number_walkers):
                 self.trajectory.append(pd.DataFrame(
@@ -73,8 +76,8 @@ class TrajectoryAccumulator(Accumulator):
         if super(TrajectoryAccumulator, self).accumulate_nth_step(current_step, walker_index):
             if self._config_map["do_write_trajectory_file"] or self._return_trajectories:
                 trajectory_line = self._accumulate_nth_step_line(current_step, walker_index, values)
-                if self._config_map["do_write_trajectory_file"] and self._trajectory_writer is not None:
-                    self._trajectory_writer.writerow(trajectory_line)
+                if self._config_map["do_write_trajectory_file"] and self._writer is not None:
+                    self._writer.writerow(trajectory_line)
                 if self._return_trajectories:
                     self.trajectory[walker_index].loc[self.written_row] = trajectory_line
                 self.written_row +=1
