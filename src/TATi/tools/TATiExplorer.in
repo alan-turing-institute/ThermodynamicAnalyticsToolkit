@@ -16,7 +16,7 @@ from TATi.common import get_filename_from_fullpath, get_trajectory_header,\
 from TATi.exploration.explorer import Explorer
 from TATi.exploration.trajectorydatacontainer import TrajectoryDataContainer
 from TATi.exploration.trajectoryjobid import TrajectoryJobId
-from TATi.models.model import model
+from TATi.model import Model
 from TATi.options.commandlineoptions import CommandlineOptions, str2bool
 from TATi.runtime.runtime import runtime
 
@@ -25,7 +25,7 @@ from multiprocessing.managers import BaseManager
 class MyManager(BaseManager):
     pass
 
-MyManager.register('network_model', model)
+MyManager.register('network_model', Model)
 MyManager.register('list', list)
 MyManager.register('TrajectoryDataContainer', TrajectoryDataContainer)
 MyManager.register('TrajectoryJobId', TrajectoryJobId)
@@ -79,7 +79,7 @@ def main(_):
 
     # setup neural network
     if options.number_processes == 0:
-        network_model = model(options)
+        network_model = Model(options)
         manager=None
     else:
         manager = MyManager()

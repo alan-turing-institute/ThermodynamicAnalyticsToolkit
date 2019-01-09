@@ -20,12 +20,12 @@
 
 import tensorflow as tf
 
-from TATi.models.model import model
+from TATi.model import Model as tati
 
 import numpy as np
 import sys
 
-FLAGS = model.setup_parameters(
+FLAGS = tati.setup_parameters(
     batch_data_files=[sys.argv[1]],
     batch_size=500,
     max_steps=1000,
@@ -42,7 +42,7 @@ print(FLAGS)
 print(FLAGS2)
 
 
-nn1 = model(FLAGS)
+nn1 = tati(FLAGS)
 nn1.init_network(None, setup="sample")
 nn1.init_input_pipeline()
 run_info, trajectory, averages = nn1.sample(return_run_info=True, \
@@ -55,7 +55,7 @@ print(np.asarray(averages[0:10]))
 
 tf.reset_default_graph()
 
-nn2 = model(FLAGS)
+nn2 = tati(FLAGS)
 nn2.init_network(None, setup="sample")
 nn2.init_input_pipeline()
 run_info, trajectory, averages = nn2.sample(return_run_info=True, \

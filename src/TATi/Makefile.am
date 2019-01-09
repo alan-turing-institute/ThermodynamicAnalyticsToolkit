@@ -15,6 +15,7 @@ SUBDIRS = \
 
 TATI_PYTHON = \
 	common.py \
+	model.py \
 	simulation.py \
 	$(srcdir)/version.py \
 	__init__.py

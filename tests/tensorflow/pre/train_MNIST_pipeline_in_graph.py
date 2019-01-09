@@ -23,7 +23,7 @@
 # extracts the maximum diffusion length for a given diffusion map eigenvector
 # file and adds it to an sql database
 
-from TATi.models.model import model
+from TATi.model import Model as tati
 from TATi.models.basetype import dds_basetype
 
 import argparse
@@ -52,7 +52,7 @@ if params.version:
 	sys.exit(0)
 
 # setup test pipeline
-FLAGS = model.setup_parameters(
+FLAGS = tati.setup_parameters(
     batch_data_files=[params.batch_data_files],
     batch_data_file_type="tfrecord",
     batch_size=100,
@@ -68,7 +68,7 @@ FLAGS = model.setup_parameters(
     seed=params.seed,
     step_width=5e-2
 )
-nn = model(FLAGS)
+nn = tati(FLAGS)
 nn.init_input_pipeline()
 nn.init_network(None, setup="train")
 

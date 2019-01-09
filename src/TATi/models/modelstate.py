@@ -32,7 +32,9 @@ from tensorflow.python.ops import variables
 
 from TATi.common import create_input_layer, file_length, get_list_from_string, \
     initialize_config_map
-from TATi.models.helpers import get_dimension_from_tfrecord
+from TATi.models.helpers import check_column_names_in_order, \
+    get_dimension_from_tfrecord, get_start_index_in_dataframe_columns, \
+    get_weight_and_bias_column_numbers
 from TATi.models.input.datasetpipeline import DatasetPipeline
 from TATi.models.input.inmemorypipeline import InMemoryPipeline
 from TATi.models.neuralnetwork import NeuralNetwork
@@ -45,35 +47,35 @@ from TATi.models.trajectories.trajectorystate import TrajectoryState
 from TATi.options.pythonoptions import PythonOptions
 
 
-class model:
-    """ This class combines the whole setup for creating a neural network.
+class ModelState:
+    """ Captures all of the state of the neural network model.
 
-    Moreover, it contains functions to either train or sample the loss function.
+    This contains all ingredients such as input pipeline, network, trajectory,
+    and so on. It is abstracted away from the actual interface to make the
+    interface class as light-weight and simple to understand as possible.
 
     """
     def __init__(self, FLAGS):
+        self.reset()
+        self.reset_parameters(FLAGS)
+
+    def reset(self):
         # for allowing just reusing a new instance of this class, make sure
         # that we also reset the default graph before we start setting up
         # the neural network
         tf.reset_default_graph()
 
-        self.FLAGS = FLAGS
+        # reset options dict
+        self.FLAGS = None
 
         # reset trajectory instances
-        self.trajectorystate = TrajectoryState(self)
+        self.trajectorystate = None
         self.trajectory_sample = None
         self.trajectory_train = None
-        self.reset_parameters(FLAGS)
-        if "sampler" in self.FLAGS:
-            self.trajectory_sample = TrajectorySamplingFactory.create(
-                self.FLAGS.sampler, self.trajectorystate)
-        if "optimizer" in self.FLAGS:
-            self.trajectory_train = TrajectoryTraining(self.trajectorystate)
 
         self.number_of_parameters = 0  # number of biases and weights
 
         self.output_type = None
-        self.scan_dataset_dimension()
 
         # mark input layer as to be created
         self.xinput = None
@@ -99,6 +101,26 @@ class model:
         self.gradients = None
         self.hessians = None
 
+    def reset_parameters(self, FLAGS):
+        """ Use to pass a different set of FLAGS controlling training or sampling.
+
+        :param FLAGS: new set of parameters
+        """
+        self.FLAGS = FLAGS
+        self.scan_dataset_dimension()
+        if self.trajectory_sample is not None:
+            self.trajectory_sample.config_map = initialize_config_map()
+        if self.trajectory_train is not None:
+            self.trajectory_train.config_map = initialize_config_map()
+
+        try:
+            self.FLAGS.max_steps
+        except KeyError:
+            self.FLAGS.add("max_steps")
+            self.FLAGS.max_steps = 1
+        if self.trajectorystate is not None:
+            self.trajectorystate.FLAGS = FLAGS
+
     def scan_dataset_dimension(self):
         if len(self.FLAGS.batch_data_files) > 0:
             self.input_dimension = self.FLAGS.input_dimension
@@ -122,7 +144,7 @@ class model:
             else:
                 logging.info("Unknown file type")
                 assert(0)
-            self._check_valid_batch_size()
+            self.check_valid_batch_size()
 
             logging.info("Parsing "+str(self.FLAGS.batch_data_files))
 
@@ -132,7 +154,7 @@ class model:
         self.batch_next = self.create_input_pipeline(self.FLAGS)
         #self.input_pipeline.reset(self.sess)
 
-    def _check_valid_batch_size(self):
+    def check_valid_batch_size(self):
         ''' helper function to check that batch_size does not exceed dimension
         of dataset. After which it will be valid.
 
@@ -148,33 +170,6 @@ class model:
             return False
         else:
             return True
-
-    def provide_data(self, features, labels, shuffle=False):
-        ''' This function allows to provide an in-memory dataset using the Python
-        API.
-
-        :param features: feature part of dataset
-        :param labels: label part of dataset
-        :param shuffle: whether to shuffle the dataset initially or not
-        '''
-        logging.info("Using in-memory pipeline")
-        self.input_dimension = len(features[0])
-        self.output_dimension = len(labels[0])
-        if self.output_dimension == 1:
-            self.output_type = "binary_classification"  # labels in {-1,1}
-        else:
-            self.output_type = "onehot_multi_classification"
-        assert( len(features) == len(labels) )
-        try:
-            self.FLAGS.dimension
-        except AttributeError:
-            self.FLAGS.add("dimension")
-        self.FLAGS.dimension = len(features)
-        self._check_valid_batch_size()
-        self.input_pipeline = InMemoryPipeline(dataset=[features, labels],
-                                               batch_size=self.FLAGS.batch_size,
-                                               max_steps=self.FLAGS.max_steps,
-                                               shuffle=shuffle, seed=self.FLAGS.seed)
 
     def create_input_pipeline(self, FLAGS, shuffle=False):
         """ This creates an input pipeline using the tf.Dataset module.
@@ -203,57 +198,6 @@ class model:
                                                   batch_size=FLAGS.batch_size, dimension=FLAGS.dimension, max_steps=FLAGS.max_steps,
                                                   input_dimension=self.input_dimension, output_dimension=self.output_dimension,
                                                   shuffle=shuffle, seed=FLAGS.seed)
-
-    def get_averages_header(self, setup):
-        if setup == "sample":
-            return self.trajectory_sample.get_averages_header()
-        elif setup == "train":
-            return self.trajectory_train.get_averages_header()
-
-    def get_run_header(self, setup):
-        if setup == "sample":
-            return self.trajectory_sample.get_run_header()
-        elif setup == "train":
-            return self.trajectory_train.get_run_header()
-
-    def get_parameters(self):
-        """ Getter for the internal set oF FLAGS controlling training and sampling.
-
-        :return: FLAGS parameter set
-        """
-        return self.FLAGS
-
-    def reset_parameters(self, FLAGS):
-        """ Use to pass a different set of FLAGS controlling training or sampling.
-
-        :param FLAGS: new set of parameters
-        """
-        self.FLAGS = FLAGS
-        if self.trajectory_sample is not None:
-            self.trajectory_sample.config_map = initialize_config_map()
-        if self.trajectory_train is not None:
-            self.trajectory_train.config_map = initialize_config_map()
-
-        try:
-            self.FLAGS.max_steps
-        except KeyError:
-            self.FLAGS.add("max_steps")
-            self.FLAGS.max_steps = 1
-        self.trajectorystate.FLAGS = FLAGS
-
-    def create_model_file(self, initial_step, parameters, model_filename):
-        self.assign_current_step(initial_step)
-        self.assign_neural_network_parameters(parameters)
-        self.save_model(model_filename)
-
-    @staticmethod
-    def setup_parameters(*args, **kwargs):
-            return PythonOptions(add_keys=True, value_dict=kwargs)
-
-    def reset_dataset(self):
-        """ Re-initializes the dataset for a new run
-        """
-        self.input_pipeline.reset(self.sess)
 
     def init_input_layer(self):
         # create input layer
@@ -433,7 +377,7 @@ class model:
             assert( len(split_weights) == self.FLAGS.number_walkers )
             for i in range(self.FLAGS.number_walkers):
                 self.weights.append(neuralnet_parameters(split_weights[i]))
-                assert( self.weights[i].get_total_dof() == self.get_total_weight_dof() )
+                assert( self.weights[i].get_total_dof() == self.weights[0].get_total_dof() )
 
     def init_weights_momenta_access(self, setup, split_weights):
         if len(self.momenta_weights) == 0:
@@ -463,7 +407,7 @@ class model:
             assert( len(split_biases) == self.FLAGS.number_walkers )
             for i in range(self.FLAGS.number_walkers):
                 self.biases.append(neuralnet_parameters(split_biases[i]))
-                assert (self.biases[i].get_total_dof() == self.get_total_bias_dof())
+                assert (self.biases[i].get_total_dof() == self.biases[0].get_total_dof())
 
     def init_biases_momenta_access(self, setup, split_biases):
         if len(self.momenta_biases) == 0:
@@ -505,18 +449,6 @@ class model:
             fix_parameter_assigns = self.create_assign_parameters(all_variables, all_values)
         return fix_parameter_assigns
 
-
-    def restore_model(self, filename):
-        # assign state of model from file if given
-        if filename is not None:
-            # Tensorflow DOCU says: initializing is not needed when restoring
-            # however, global_variables are missing otherwise for storing kinetic, ...
-            # tf.reset_default_graph()
-
-            restore_path = filename.replace('.meta', '')
-            self.saver.restore(self.sess, restore_path)
-            logging.info("Model restored from file: %s" % restore_path)
-
     def assign_parse_parameter_file(self):
         # assign parameters of NN from step in given file
         if self.FLAGS.parse_parameters_file is not None \
@@ -525,6 +457,24 @@ class model:
             for i in range(self.FLAGS.number_walkers):
                 self.assign_weights_and_biases_from_file(self.FLAGS.parse_parameters_file, step,
                                                          walker_index=i, do_check=True)
+
+    def init_trajectories(self):
+        if self.trajectorystate is None:
+            self.trajectorystate = TrajectoryState(self)
+        if "sampler" in self.FLAGS and self.trajectory_sample is None:
+            self.trajectory_sample = TrajectorySamplingFactory.create(
+                self.FLAGS.sampler, self.trajectorystate)
+        if "optimizer" in self.FLAGS and self.trajectory_train is None:
+            self.trajectory_train = TrajectoryTraining(self.trajectorystate)
+
+    def setup_trajectories(self, setup, prior):
+        self.trajectorystate.init_trajectory(self)
+        if setup is not None and "sample" in setup:
+            self.trajectory_sample.init_trajectory(prior, self)
+        if setup is not None and "train" in setup:
+            self.trajectory_train.init_trajectory(prior, self)
+        self.trajectorystate.init_step_placeholder()
+        self.trajectorystate.init_parse_directions()
 
     def init_network(self, filename=None, setup=None,
                      add_vectorized_gradients=False):
@@ -554,13 +504,8 @@ class model:
         split_weights, split_biases = self.get_split_weights_and_biases()
 
         prior = self.init_prior()
-        self.trajectorystate.init_trajectory(self)
-        if setup is not None and "sample" in setup:
-            self.trajectory_sample.init_trajectory(prior, self)
-        if setup is not None and "train" in setup:
-            self.trajectory_train.init_trajectory(prior, self)
-        self.trajectorystate.init_step_placeholder()
-        self.trajectorystate.init_parse_directions()
+        self.init_trajectories()
+        self.setup_trajectories(setup, prior)
 
         self.init_model_save_restore()
 
@@ -592,42 +537,34 @@ class model:
 
         self.assign_parse_parameter_file()
 
-    def get_total_weight_dof(self):
-        return self.weights[0].get_total_dof()
-
-    def get_total_bias_dof(self):
-        return self.biases[0].get_total_dof()
-
-    def compute_optimal_stepwidth(self, walker_index=0):
-        assert( walker_index < self.FLAGS.number_walkers )
-        placeholder_nodes = self.nn[walker_index].get_dict_of_nodes(["learning_rate", "y_"])
-
-        # get first batch of data
-        self.reset_dataset()
-        features, labels = self.input_pipeline.next_batch(self.sess)
-
-        # place in feed dict
-        feed_dict = {
-            self.xinput: features,
-            placeholder_nodes["y_"]: labels,
-            placeholder_nodes["learning_rate"]: self.FLAGS.learning_rate
-        }
-        if self.FLAGS.dropout is not None:
-            feed_dict.update({placeholder_nodes["keep_prob"] : self.FLAGS.dropout})
-
-        hessian_eval = self.sess.run(self.hessians[walker_index], feed_dict=feed_dict)
-        lambdas, _ = sps.linalg.eigs(hessian_eval, k=1)
-        optimal_step_width = 2/sqrt(lambdas[0])
-        logging.info("Optimal step width would be "+str(optimal_step_width))
-
     def save_model(self, filename):
         """ Saves the current neural network model to a set of files,
         whose prefix is given by filename.
 
+        See also `model.restore_model()`.
+
         :param filename: prefix of set of model files
         :return: path where model was saved
         """
+        print("Saving model in" + filename)
         return self.saver.save(self.sess, filename)
+
+    def restore_model(self, filename):
+        """ Restores the model from a tensorflow checkpoint file.
+
+        Compare to `model.save_model()`.
+
+        :param filename: prefix of set of model files
+        """
+        # assign state of model from file if given
+        if filename is not None:
+            # Tensorflow DOCU says: initializing is not needed when restoring
+            # however, global_variables are missing otherwise for storing kinetic, ...
+            # tf.reset_default_graph()
+
+            restore_path = filename.replace('.meta', '')
+            self.saver.restore(self.sess, restore_path)
+            logging.info("Model restored from file: %s" % restore_path)
 
     def finish(self):
         """ Closes all open files and saves the model if desired
@@ -664,173 +601,6 @@ class model:
                     retlist.append(None)
         return retlist
 
-    def assign_current_step(self, step, walker_index=0):
-        assert( walker_index < self.FLAGS.number_walkers )
-        # set step
-        if ('global_step' in self.nn[walker_index].summary_nodes.keys()):
-            sample_step_placeholder = self.trajectorystate.step_placeholder[walker_index]
-            feed_dict = {sample_step_placeholder: step}
-            set_step = self.sess.run(self.trajectorystate.global_step_assign_t[walker_index], feed_dict=feed_dict)
-            assert (set_step == step)
-
-    def assign_neural_network_parameters(self, parameters, walker_index=0):
-        """ Assigns the parameters of the neural network from
-        the given array.
-
-        :param parameters: list of values, one for each weight and bias
-        :param walker_index: index of the replicated network (in the graph)
-        """
-        weights_dof = self.weights[walker_index].get_total_dof()
-        self.weights[walker_index].assign(self.sess, parameters[0:weights_dof])
-        self.biases[walker_index].assign(self.sess, parameters[weights_dof:])
-
-    def assign_weights_and_biases(self, weights_vals, biases_vals, walker_index=0, do_check=False):
-        """ Assigns weights and biases of a neural network.
-
-        :param weights_vals: flat weights parameters
-        :param biases_vals: flat bias parameters
-        :param walker_index: index of the replicated network (in the graph)
-        :param do_check: whether to check set values (and print) or not
-        :return evaluated weights and bias on do_check or None otherwise
-        """
-        if weights_vals.size > 0:
-            self.weights[walker_index].assign(self.sess, weights_vals)
-        if biases_vals.size > 0:
-            self.biases[walker_index].assign(self.sess, biases_vals)
-
-        # get the input and biases to check against what we set
-        if do_check:
-            weights_eval = self.weights[walker_index].evaluate(self.sess)
-            biases_eval = self.biases[walker_index].evaluate(self.sess)
-            logging.info("Evaluating walker #"+str(walker_index) \
-                         +" at weights " + str(weights_eval[0:10]) \
-                         + ", biases " + str(biases_eval[0:10]))
-            assert( np.allclose(weights_eval, weights_vals, atol=1e-7) )
-            assert( np.allclose(biases_eval, biases_vals, atol=1e-7) )
-            return weights_eval, biases_eval
-        return None
-
-    def assign_weights_and_biases_from_dataframe(self, df_parameters, rownr, walker_index=0, do_check=False):
-        """ Parse weight and bias values from a dataframe given a specific step
-        to set the neural network's parameters.
-
-        :param df_parameters: pandas dataframe
-        :param rownr: rownr to set
-        :param walker_index: index of the replicated network (in the graph)
-        :param do_check: whether to evaluate (and print) set parameters
-        :return evaluated weights and bias on do_check or None otherwise
-        """
-        # check that column names are in order
-        weight_numbers = []
-        bias_numbers = []
-        for keyname in df_parameters.columns:
-            if (keyname[1] >= "0" and keyname[1] <= "9"):
-                if ("w" == keyname[0]):
-                    weight_numbers.append(int(keyname[1:]))
-                elif "b" == keyname[0]:
-                    bias_numbers.append(int(keyname[1:]))
-            else:
-                if ("weight" in keyname):
-                    weight_numbers.append(int(keyname[6:]))
-                elif ("bias" in keyname):
-                    bias_numbers.append(int(keyname[4:]))
-
-        def get_start_index(numbers, df, paramlist):
-            start_index = -1
-            if len(numbers) > 0:
-                for param in paramlist:
-                    try:
-                        start_index = df.columns.get_loc("%s%d" % (param, numbers[0]))
-                        break
-                    except KeyError:
-                        pass
-            return start_index
-
-        weights_start = get_start_index(weight_numbers, df_parameters, ["weight", "w"])
-        biases_start = get_start_index(bias_numbers, df_parameters, ["bias", "b"])
-
-        def check_aligned(numbers):
-            lastnr = None
-            for nr in numbers:
-                if lastnr is not None:
-                    if lastnr >= nr:
-                        break
-                lastnr = nr
-            return lastnr
-
-        weights_aligned = (len(weight_numbers) > 0) and (check_aligned(weight_numbers) == weight_numbers[-1])
-        biases_aligned = (len(bias_numbers) > 0) and (check_aligned(bias_numbers) == bias_numbers[-1])
-        values_aligned = weights_aligned and biases_aligned and weights_start < biases_start
-
-        if values_aligned:
-            # copy values in one go
-            weights_vals = df_parameters.iloc[rownr, weights_start:biases_start].values
-            biases_vals = df_parameters.iloc[rownr, biases_start:].values
-        else:
-            # singly pick each value
-
-            # create internal array to store parameters
-            weights_vals = self.weights[walker_index].create_flat_vector()
-            biases_vals = self.biases[walker_index].create_flat_vector()
-            for keyname in df_parameters.columns:
-                if (keyname[1] >= "0" and keyname[1] <= "9"):
-                    if ("w" == keyname[0]):
-                        weights_vals[int(keyname[1:])] = df_parameters.loc[rownr, [keyname]].values[0]
-                    elif "b" == keyname[0]:
-                        biases_vals[int(keyname[1:])] = df_parameters.loc[rownr, [keyname]].values[0]
-                    else:
-                        # not a parameter column
-                        continue
-                else:
-                    if ("weight" in keyname):
-                        weights_vals[int(keyname[6:])] = df_parameters.loc[rownr, [keyname]].values[0]
-                    elif ("bias" in keyname):
-                        biases_vals[int(keyname[4:])] = df_parameters.loc[rownr, [keyname]].values[0]
-
-        logging.debug("Read row (first three weights and biases) "+str(rownr)+":"+str(weights_vals[:5]) \
-                      +"..."+str(biases_vals[:5]))
-
-        return self.assign_weights_and_biases(weights_vals, biases_vals, walker_index, do_check)
-
-    def assign_weights_and_biases_from_file(self, filename, step, walker_index=0, do_check=False):
-        """ Parse weight and bias values from a CSV file given a specific step
-        to set the neural network's parameters.
-
-        :param filename: filename to parse
-        :param step: step to set (i.e. value in "step" column designates row)
-        :param walker_index: index of the replicated network (in the graph)
-        :param do_check: whether to evaluate (and print) set parameters
-        :return evaluated weights and bias on do_check or None otherwise
-        """
-        # parse csv file
-        df_parameters = pd.read_csv(filename, sep=',', header=0)
-        if step in df_parameters.loc[:, 'step'].values:
-            rowlist = np.where((df_parameters.loc[:, 'step'].values == step))[0]
-            if self.FLAGS.number_walkers > 1:
-                # check whether param files contains entries for multiple walkers
-                id_idx = df_parameters.columns.get_loc("id")
-                num_ids = df_parameters.iloc[rowlist,id_idx].max() - \
-                          df_parameters.iloc[rowlist,id_idx].min() +1
-                if num_ids >= self.FLAGS.number_walkers:
-                    rowlist = np.where((df_parameters.iloc[rowlist,id_idx].values == walker_index))
-                else:
-                    logging.info("Not enough values in parse_parameters_file for all walkers, using first for all.")
-            if len(rowlist) > 1:
-                logging.warning("Found multiple matching entries to step "+str(step) \
-                                +" and walker #"+str(walker_index))
-            elif len(rowlist) == 0:
-                raise ValueError("Step "+str(step)+" and walker #"+str(walker_index)+" not found.")
-            rownr = rowlist[0]
-            self.assign_current_step(step, walker_index=walker_index)
-            return self.assign_weights_and_biases_from_dataframe(
-                df_parameters=df_parameters,
-                rownr=rownr,
-                walker_index=walker_index,
-                do_check=do_check
-            )
-        else:
-            logging.debug("Step " + str(step) + " not found in file.")
-            return None
 
     def create_assign_parameters(self, variables, values):
         """ Creates assignment operation for multiple parameters at once.
@@ -868,40 +638,8 @@ class model:
             values.append(np.fromstring(b[1], dtype=float, sep=","))
         return names, values
 
-    def sample(self, return_run_info = False, return_trajectories = False, return_averages = False):
-        """ Performs the actual sampling of the neural network `nn` given a dataset `ds` and a
-        Session `session`.
-
-        :param return_run_info: if set to true, run information will be accumulated
-                inside a numpy array and returned
-        :param return_trajectories: if set to true, trajectories will be accumulated
-                inside a numpy array and returned (adhering to FLAGS.every_nth)
-        :param return_averages: if set to true, accumulated average values will be
-                returned as numpy array
-        :return: either thrice None or lists (per walker) of pandas dataframes
-                depending on whether either parameter has evaluated to True
-        """
-        return self._execute_trajectory_run(self.trajectory_sample, self.sess,
-                                     return_run_info, return_trajectories, return_averages)
-
-    def train(self, return_run_info = False, return_trajectories = False, return_averages=False):
-        """ Performs the actual training of the neural network `nn` given a dataset `ds` and a
-        Session `session`.
-
-        :param return_run_info: if set to true, run information will be accumulated
-                inside a numpy array and returned
-        :param return_trajectories: if set to true, trajectories will be accumulated
-                inside a numpy array and returned (adhering to FLAGS.every_nth)
-        :param return_averages: if set to true, accumulated average values will be
-                returned as numpy array
-        :return: either twice None or a pandas dataframe depending on whether either
-                parameter has evaluated to True
-        """
-        return self._execute_trajectory_run(self.trajectory_train, self.sess,
-                                     return_run_info, return_trajectories, return_averages)
-
-    def _execute_trajectory_run(self, trajectory, session, return_run_info = False, return_trajectories = False, return_averages=False):
-        retvals = trajectory.execute(session,
+    def execute_trajectory_run(self, trajectory, return_run_info = False, return_trajectories = False, return_averages=False):
+        retvals = trajectory.execute(self.sess,
             { "input_pipeline": self.input_pipeline,
               "xinput": self.xinput,
               "true_labels": self.true_labels},
@@ -909,12 +647,148 @@ class model:
         self.finish()
         return retvals
 
-    def deactivate_file_writing(self):
-        """ Deactivates writing of average, run info and trajectory files.
 
+    def assign_current_step(self, step, walker_index=0):
+        """ Allows to set the current step number of the iteration.
+
+        :param step: step number to set
+        :param walker_index: walker for which to set step
         """
-        for entity in [self.trajectory_train, self.trajectory_sample]:
-            if entity is not None:
-                entity.set_config_map("do_write_averages_file", False)
-                entity.set_config_map("do_write_run_file", False)
-                entity.set_config_map("do_write_trajectory_file", False)
+        assert(walker_index < self.FLAGS.number_walkers)
+        # set step
+        if 'global_step' in self.nn[walker_index].summary_nodes.keys():
+            sample_step_placeholder = self.trajectorystate.step_placeholder[walker_index]
+            feed_dict = {sample_step_placeholder: step}
+            set_step = self.sess.run(
+                self.trajectorystate.global_step_assign_t[walker_index],
+                feed_dict=feed_dict)
+            assert (set_step == step)
+
+    def assign_neural_network_parameters(self, parameters, walker_index=0, do_check=False):
+        """ Assigns the parameters of the neural network from
+        the given array.
+
+        :param parameters: list of values, one for each weight and bias
+        :param walker_index: index of the replicated network (in the graph)
+        :param do_check: whether to check set values (and print) or not
+        :return evaluated weights and bias on do_check or None otherwise
+        """
+        weights_dof = self.weights[walker_index].get_total_dof()
+        return self.assign_weights_and_biases(weights_vals=parameters[0:weights_dof],
+                                              biases_vals=parameters[weights_dof:],
+                                              walker_index=walker_index, do_check=do_check)
+
+    def assign_weights_and_biases(self, weights_vals, biases_vals, walker_index=0, do_check=False):
+        """ Assigns weights and biases of a neural network.
+
+        :param weights_vals: flat weights parameters
+        :param biases_vals: flat bias parameters
+        :param walker_index: index of the replicated network (in the graph)
+        :param do_check: whether to check set values (and print) or not
+        :return evaluated weights and bias on do_check or None otherwise
+        """
+        if weights_vals.size > 0:
+            self.weights[walker_index].assign(self.sess, weights_vals)
+        if biases_vals.size > 0:
+            self.biases[walker_index].assign(self.sess, biases_vals)
+
+        # get the input and biases to check against what we set
+        if do_check:
+            weights_eval = self.weights[walker_index].evaluate(self.sess)
+            biases_eval = self.biases[walker_index].evaluate(self.sess)
+            logging.info("Evaluating walker #"+str(walker_index)
+                         + " at weights " + str(weights_eval[0:10])
+                         + ", biases " + str(biases_eval[0:10]))
+            assert(np.allclose(weights_eval, weights_vals, atol=1e-7))
+            assert(np.allclose(biases_eval, biases_vals, atol=1e-7))
+            return weights_eval, biases_eval
+        return None
+
+    def assign_weights_and_biases_from_dataframe(self, df_parameters, rownr, walker_index=0, do_check=False):
+        """ Parse weight and bias values from a dataframe given a specific step
+        to set the neural network's parameters.
+
+        :param df_parameters: pandas dataframe
+        :param rownr: rownr to set
+        :param walker_index: index of the replicated network (in the graph)
+        :param do_check: whether to evaluate (and print) set parameters
+        :return evaluated weights and bias on do_check or None otherwise
+        """
+        # check that column names are in order
+        weight_numbers, bias_numbers = get_weight_and_bias_column_numbers(df_parameters)
+        values_aligned, _, _ = check_column_names_in_order(df_parameters,
+                                                     weight_numbers, bias_numbers)
+
+        if values_aligned:
+            weights_start = get_start_index_in_dataframe_columns(
+                weight_numbers, df_parameters, ["weight", "w"])
+            biases_start = get_start_index_in_dataframe_columns(
+                bias_numbers, df_parameters, ["bias", "b"])
+            # copy values in one go
+            weights_vals = df_parameters.iloc[rownr, weights_start:biases_start].values
+            biases_vals = df_parameters.iloc[rownr, biases_start:].values
+        else:
+            # singly pick each value
+
+            # create internal array to store parameters
+            weights_vals = self.weights[walker_index].create_flat_vector()
+            biases_vals = self.biases[walker_index].create_flat_vector()
+            for keyname in df_parameters.columns:
+                if "0" <= keyname[1] <= "9":
+                    if "w" == keyname[0]:
+                        weights_vals[int(keyname[1:])] = df_parameters.loc[rownr, [keyname]].values[0]
+                    elif "b" == keyname[0]:
+                        biases_vals[int(keyname[1:])] = df_parameters.loc[rownr, [keyname]].values[0]
+                    else:
+                        # not a parameter column
+                        continue
+                else:
+                    if "weight" in keyname:
+                        weights_vals[int(keyname[6:])] = df_parameters.loc[rownr, [keyname]].values[0]
+                    elif "bias" in keyname:
+                        biases_vals[int(keyname[4:])] = df_parameters.loc[rownr, [keyname]].values[0]
+
+        logging.debug("Read row (first three weights and biases) " + str(rownr) + ":" + str(weights_vals[:5])
+                      + "..." + str(biases_vals[:5]))
+
+        return self.assign_weights_and_biases(weights_vals, biases_vals, walker_index, do_check)
+
+    def assign_weights_and_biases_from_file(self, filename, step, walker_index=0, do_check=False):
+        """ Parse weight and bias values from a CSV file given a specific step
+        to set the neural network's parameters.
+
+        :param filename: filename to parse
+        :param step: step to set (i.e. value in "step" column designates row)
+        :param walker_index: index of the replicated network (in the graph)
+        :param do_check: whether to evaluate (and print) set parameters
+        :return evaluated weights and bias on do_check or None otherwise
+        """
+        # parse csv file
+        df_parameters = pd.read_csv(filename, sep=',', header=0)
+        if step in df_parameters.loc[:, 'step'].values:
+            rowlist = np.where((df_parameters.loc[:, 'step'].values == step))[0]
+            if self.FLAGS.number_walkers > 1:
+                # check whether param files contains entries for multiple walkers
+                id_idx = df_parameters.columns.get_loc("id")
+                num_ids = df_parameters.iloc[rowlist, id_idx].max() - df_parameters.iloc[rowlist, id_idx].min() + 1
+                if num_ids >= self.FLAGS.number_walkers:
+                    rowlist = np.where((df_parameters.iloc[rowlist, id_idx].values == walker_index))
+                else:
+                    logging.info("Not enough values in parse_parameters_file for all walkers, using first for all.")
+            if len(rowlist) > 1:
+                logging.warning("Found multiple matching entries to step " + str(step)
+                                + " and walker #" + str(walker_index))
+            elif len(rowlist) == 0:
+                raise ValueError("Step " + str(step) + " and walker #" + str(walker_index)
+                                 + " not found.")
+            rownr = rowlist[0]
+            self.assign_current_step(step, walker_index=walker_index)
+            return self.assign_weights_and_biases_from_dataframe(
+                df_parameters=df_parameters,
+                rownr=rownr,
+                walker_index=walker_index,
+                do_check=do_check
+            )
+        else:
+            logging.debug("Step " + str(step) + " not found in file.")
+            return None

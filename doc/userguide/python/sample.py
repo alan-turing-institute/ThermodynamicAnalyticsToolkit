@@ -1,8 +1,8 @@
-from TATi.models.model import model
+from TATi.model import Model as tati
 
 import numpy as np
 
-FLAGS = model.setup_parameters(
+FLAGS = tati.setup_parameters(
     batch_data_files=["dataset-twoclusters.csv"],
     batch_size=500,
     max_steps=1000,
@@ -11,7 +11,7 @@ FLAGS = model.setup_parameters(
     seed=426,
     step_width=1e-2
 )
-nn = model(FLAGS)
+nn = tati(FLAGS)
 nn.init_input_pipeline()
 nn.init_network(None, setup="sample")
 nn.reset_dataset()

@@ -9,7 +9,7 @@ import numpy as np
 import tensorflow as tf
 import time
 
-from TATi.models.model import model
+from TATi.model import Model
 from TATi.options.commandlineoptions import CommandlineOptions
 from TATi.runtime.runtime import runtime
 
@@ -35,7 +35,7 @@ def main(_):
 
     time_zero = time.process_time()
 
-    network_model = model(options)
+    network_model = Model(options)
 
     time_init_network_zero = time.process_time()
 

@@ -56,10 +56,10 @@ class TrajectoryJob_sample(TrajectoryJob):
     def _set_initial_step(self):
         # set step
         for walker_index in range(self.network_model.FLAGS.number_walkers):
-            sample_step_placeholder = self.network_model.trajectorystate.step_placeholder[walker_index]
+            sample_step_placeholder = self.network_model.state.trajectorystate.step_placeholder[walker_index]
             feed_dict = {sample_step_placeholder: self.initial_step}
             set_step = self.network_model.sess.run(
-                self.network_model.trajectorystate.global_step_assign_t[walker_index], feed_dict=feed_dict)
+                self.network_model.state.trajectorystate.global_step_assign_t[walker_index], feed_dict=feed_dict)
             logging.debug("Set initial step for walker #"+str(walker_index) \
                           +" to " + str(set_step))
 

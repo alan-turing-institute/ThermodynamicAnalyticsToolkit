@@ -14,7 +14,7 @@ import tensorflow as tf
 
 from TATi.common import setup_csv_file
 from TATi.datasets.classificationdatasets import ClassificationDatasets
-from TATi.models.model import model
+from TATi.model import Model
 from TATi.models.parameters.neuralnet_parameters import neuralnet_parameters
 from TATi.options.commandlineoptions import CommandlineOptions
 
@@ -122,7 +122,7 @@ def main(_):
     options.max_steps=input_total_vals
     options.add("number_walkers")
     options.number_walkers=1
-    network_model = model(options)
+    network_model = Model(options)
     network_model.init_input_pipeline()
     network_model.init_network(options.restore_model, setup=None)
     network_model.reset_dataset()
