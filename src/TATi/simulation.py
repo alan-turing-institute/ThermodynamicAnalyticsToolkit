@@ -27,9 +27,9 @@ import logging
 
 import numpy as np
 
-from TATi.models.evaluationcache import EvaluationCache
 from TATi.model import Model
-from TATi.models.networkparameter_adapter import NetworkParameterAdapter
+from TATi.models.evaluationcache import EvaluationCache
+from TATi.models.parameters.networkparameter_adapter import NetworkParameterAdapter
 from TATi.models.parameters.parameters import Parameters
 from TATi.models.trajectorydata import TrajectoryData
 from TATi.options.pythonoptions import PythonOptions
