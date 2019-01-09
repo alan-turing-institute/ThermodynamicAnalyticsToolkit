@@ -30,6 +30,7 @@ FLAGS = tati.setup_parameters( \
 	step_width=1e-1,
 	hidden_dimension=[6,6])
 nn = tati(FLAGS)
+nn.init_input_pipeline()
 nn.init_network(setup="sample")
 
 for v in tf.trainable_variables():
