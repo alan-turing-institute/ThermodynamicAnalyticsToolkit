@@ -20,7 +20,7 @@
 AT_SETUP([Examples cmdline - writing dataset])
 AT_KEYWORDS([example cmdline tatidatasetwriter write_dataset])
 
-AT_CHECK([env - PATH=${AUTOTEST_PATH}/TATi/tools /bin/bash \
+AT_CHECK([env PATH=${AUTOTEST_PATH}/TATi/tools /bin/bash \
 	${abs_top_srcdir}/doc/userguide/cmdline/write_dataset.sh
 ], 0, [stdout], [stderr])
 AT_CHECK([grep "x1,x2,label" testset-twoclusters.csv], 0, [ignore], [ignore])
