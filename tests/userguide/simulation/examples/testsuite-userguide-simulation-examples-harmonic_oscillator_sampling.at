@@ -30,11 +30,11 @@ AT_CHECK([../../../run \
 
 # now compare (exclude time_per_nth_step column)
 AT_CHECK([../../../NumericalDiff \
-    --general_threshold 1e-5 relative \
+    --general_threshold `echo 100 $threshold | $awk '{print $1*$2}'` relative \
     --column_drop time_per_nth_step id -- \
     run_ho.csv ${abs_top_srcdir}/tests/userguide/simulation/examples/post/run_ho.csv], 0, [ignore], [ignore])
 AT_CHECK([../../../NumericalDiff \
-    --general_threshold 1e-5 relative \
+    --general_threshold `echo 100 $threshold | $awk '{print $1*$2}'` relative \
     --column_drop id -- \
     trajectory_ho.csv ${abs_top_srcdir}/tests/userguide/simulation/examples/post/trajectory_ho.csv], 0, [ignore], [ignore])
 
