@@ -1,4 +1,5 @@
 TATI_models_parameters_PYTHON = \
+    helpers.py \
     parameters.py \
     neuralnet_parameters.py \
     __init__.py
