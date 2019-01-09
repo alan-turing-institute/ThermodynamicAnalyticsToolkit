@@ -18,7 +18,7 @@
 #
 ### 
 
-from TATi.models.model import model
+from TATi.model import Model as tati
 
 import logging
 import numpy as np
@@ -26,7 +26,7 @@ import sys
 
 import tensorflow as tf
 
-FLAGS = model.setup_parameters(
+FLAGS = tati.setup_parameters(
     batch_data_files=[sys.argv[1]],
     batch_data_file_type="tfrecord",
     batch_size=500,
@@ -57,7 +57,7 @@ print(FLAGS.input_columns)
 #
 # sys.exit(0)
 
-nn = model(FLAGS)
+nn = tati(FLAGS)
 nn.init_input_pipeline()
 nn.init_network(None, setup="none")
 nn.reset_dataset()

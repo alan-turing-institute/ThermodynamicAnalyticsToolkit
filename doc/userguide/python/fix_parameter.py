@@ -1,15 +1,15 @@
-from TATi.models.model import model
+from TATi.model import Model as tati
 
 import numpy as np
 
-FLAGS = model.setup_parameters(
+FLAGS = tati.setup_parameters(
     batch_data_files=["dataset-twoclusters-small.csv"],
     fix_parameters="output/biases/Variable:0=2.",
     max_steps=5,
     seed=426,
 )
 
-nn = model(FLAGS)
+nn = tati(FLAGS)
 nn.init_input_pipeline()
 nn.init_network(None, setup="train")
 nn.reset_dataset()

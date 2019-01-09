@@ -1,9 +1,9 @@
-from TATi.models.model import model
+from TATi.model import Model as tati
 
 import numpy as np
 import pandas as pd
 
-FLAGS = model.setup_parameters(
+FLAGS = tati.setup_parameters(
     batch_size=500,
     max_steps=1000,
     output_activation="linear",
@@ -25,7 +25,7 @@ labels = np.asarray(\
                         + output_dimension])
 
 # create network model
-nn = model(FLAGS)
+nn = tati(FLAGS)
 # supply dataset (this creates the input layer)
 nn.provide_data(features, labels)
 # create the network

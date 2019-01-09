@@ -28,7 +28,7 @@ import logging
 import numpy as np
 
 from TATi.models.evaluationcache import EvaluationCache
-from TATi.models.model import model
+from TATi.model import Model
 from TATi.models.networkparameter_adapter import NetworkParameterAdapter
 from TATi.models.parameters.parameters import Parameters
 from TATi.models.trajectorydata import TrajectoryData
@@ -122,7 +122,7 @@ class Simulation(object):
         # construct options object and initialize neuralnetwork
         self._options = PythonOptions(add_keys=True, value_dict=kwargs)
         logging.info(self._options)
-        self._nn = model(self._options)
+        self._nn = Model(self._options)
 
         # if this assert triggers, then a new option has been added and its not
         # yet been stated what parts of the internal state of simulation
@@ -205,7 +205,7 @@ class Simulation(object):
             old_dimensions = [self._nn.FLAGS.input_dimension,
                               self._nn.FLAGS.hidden_dimension, self._nn.FLAGS.output_dimension]
             # reset the network and tensorflow's default graph
-            self._nn = model(self._options)
+            self._nn = Model(self._options)
         if "input" in affected_parts:
             if self._options._option_map["in_memory_pipeline"]:
                 features = self._nn.input_pipeline.features
@@ -452,8 +452,8 @@ class Simulation(object):
                 self._nn.FLAGS.batch_data_files = [value]
             else:
                 self._nn.FLAGS.batch_data_files = value
-            self._nn.scan_dataset_dimension()
-            self._nn.create_input_pipeline(self._nn.FLAGS)
+            self._nn.state.scan_dataset_dimension()
+            self._nn.state.create_input_pipeline(self._nn.FLAGS)
         elif isinstance(value, list):
             # is list of [features, labels]
             if len(value) != 2:
