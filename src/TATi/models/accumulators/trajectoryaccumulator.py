@@ -18,12 +18,12 @@
 #
 ### 
 
-from TATi.common import get_trajectory_header
-from TATi.models.accumulators.accumulator import Accumulator
-from TATi.models.neuralnet_parameters import neuralnet_parameters
-
 import numpy as np
 import pandas as pd
+
+from TATi.models.accumulators.accumulator import Accumulator
+from TATi.models.parameters.neuralnet_parameters import neuralnet_parameters
+
 
 class TrajectoryAccumulator(Accumulator):
     """ This class accumulates trajectory lines.

@@ -15,7 +15,7 @@ import tensorflow as tf
 from TATi.common import setup_csv_file
 from TATi.datasets.classificationdatasets import ClassificationDatasets
 from TATi.models.model import model
-from TATi.models.neuralnet_parameters import neuralnet_parameters
+from TATi.models.parameters.neuralnet_parameters import neuralnet_parameters
 from TATi.options.commandlineoptions import CommandlineOptions
 
 options = CommandlineOptions()
