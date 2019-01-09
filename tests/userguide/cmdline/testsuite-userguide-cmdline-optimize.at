@@ -24,7 +24,7 @@ AT_KEYWORDS([example cmdline tatioptimizer])
 # TATiDatasetWriter --data_type 2 --dimension 500 --seed 426 --noise 0.1 --train_test_ratio 0 --test_data_files dataset-twoclusters.csv
 AT_CHECK([cp -f ${abs_top_srcdir}/tests/userguide/cmdline/pre/dataset-twoclusters.csv .], 0, [ignore], [ignore])
 
-AT_CHECK([env - PATH=${AUTOTEST_PATH}/TATi/tools /bin/bash \
+AT_CHECK([env PATH=${AUTOTEST_PATH}/TATi/tools /bin/bash \
 	${abs_top_srcdir}/doc/userguide/cmdline/optimize.sh
 ], 0, [stdout], [stderr])
 AT_CHECK([grep "loss 0.0018" stdout], 0, [ignore], [ignore])
