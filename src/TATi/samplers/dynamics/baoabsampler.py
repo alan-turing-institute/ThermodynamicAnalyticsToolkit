@@ -201,7 +201,7 @@ class BAOABSampler(GeometricLangevinAlgorithmFirstOrderSampler):
         """ Adds nodes to TensorFlow's computational graph in the case of densely
         occupied tensors to perform the actual sampling using BAOAB.
 
-        BAOAB:                                       current_step, covariance_after_steps,
+        BAOAB:
 
             --- force calc
             next_pn = B(tilde_half_pn, next_gn, h/2)

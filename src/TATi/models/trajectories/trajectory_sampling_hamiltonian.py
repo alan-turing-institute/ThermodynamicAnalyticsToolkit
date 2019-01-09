@@ -38,247 +38,25 @@ from TATi.models.trajectories.trajectory_sampling import TrajectorySampling
 class TrajectorySamplingHamiltonian(TrajectorySampling):
     """ This implements sampling of a trajectory using Hamiltonian dynamics.
 
+    Due to the Metropolis-Hastings criterion it behaves quite differently
+    compared to a Langevin dynamics based sampler. Therefore a number
+    of extra functions are needed for the book-keeping of all values
+    associated with the criterion evaluation.
+
     """
     def __init__(self, trajectory_state):
         super(TrajectorySamplingHamiltonian, self).__init__(trajectory_state)
 
-    def execute(self, session, dataset_dict, return_run_info=False, return_trajectories=False, return_averages=False):
-        """ Performs the actual sampling of the neural network `nn` given a dataset `ds` and a
-        Session `session`.
-
-        :param dataset_dict: contains input_pipeline, placeholders for x and y
-        :param return_run_info: if set to true, run information will be accumulated
-                inside a numpy array and returned
-        :param return_trajectories: if set to true, trajectories will be accumulated
-                inside a numpy array and returned (adhering to FLAGS.every_nth)
-        :param return_averages: if set to true, accumulated average values will be
-                returned as numpy array
-        :return: either thrice None or lists (per walker) of pandas dataframes
-                depending on whether either parameter has evaluated to True
-        """
-
-        self.init_files()
-
-        HMC_placeholder_nodes = [self.state.nn[walker_index].get_dict_of_nodes(
-            ["current_step", "next_eval_step", "step_width", "hamiltonian_dynamics_steps"])
-            for walker_index in range(self.state.FLAGS.number_walkers)]
-
-        test_nodes = self._get_test_nodes()
-        EQN_nodes =[self.state.nn[walker_index].get("EQN_step") \
-                           for walker_index in range(self.state.FLAGS.number_walkers)]
-        all_weights, all_biases = self.state._get_all_parameters()
-
-        self.averages.reset(return_averages=return_averages,
-                            header=self.get_averages_header())
-        self.averages.init_writer(self.averages_writer)
-        self.averages._inverse_temperature = self.state.FLAGS.inverse_temperature
-        self.run_info.reset(return_run_info=return_run_info,
-                            header=self.get_run_header())
-        self.run_info.init_writer(self.run_writer)
-        self.trajectory.reset(return_trajectories=return_trajectories,
-                              header=self._get_trajectory_header())
-        self.trajectory.init_writer(self.trajectory_writer)
-        self.accumulated_values.reset()
-
-        # place in feed dict: We have to supply all placeholders (regardless of
-        # which the employed sampler actually requires) because of the evaluated
-        # summary! All of the placeholder nodes are also summary nodes.
-        feed_dict = {}
-        for walker_index in range(self.state.FLAGS.number_walkers):
-            feed_dict.update(self.state._create_default_feed_dict_with_constants(walker_index))
-
-        # zero extra nodes for HMC
-        self._prepare_HMC_nodes(session)
-
-        # check that sampler's parameters are actually used
-        self._print_parameters(session, feed_dict)
-
-        # prepare summaries for TensorBoard
-        summary_writer = self.state._prepare_summaries(session)
-
-        # prepare some loop variables
-        logging.info("Starting to sample")
-        logging.info_intervals = max(1, int(self.state.FLAGS.max_steps / 100))
-        self.state.last_time = time.time()
-        self.state.elapsed_time = 0.
-        HD_steps = [-2]*self.state.FLAGS.number_walkers        # number of hamiltonian dynamics steps
-        HMC_steps = [0]*self.state.FLAGS.number_walkers       # next step where to evaluate criterion
-        HMC_old_steps = [0]*self.state.FLAGS.number_walkers   # last step where criterion was evaluated
-        # we need to randomly vary the step widths to avoid (quasi-)periodicities
-        step_widths = [self.state.FLAGS.step_width] * self.state.FLAGS.number_walkers
-        self._set_HMC_placeholders(HMC_placeholder_nodes,
-                                   1, step_widths, HD_steps, HMC_steps, feed_dict)
-        if tqdm_present and self.state.FLAGS.progress:
-            step_range = tqdm(range(self.state.FLAGS.max_steps))
-        else:
-            step_range = range(self.state.FLAGS.max_steps)
-
-        # backup gradients and virials of each initial state to avoid recalculation
-        initial_state_gradients = [None]*self.state.FLAGS.number_walkers
-        initial_state_virials = [None]*self.state.FLAGS.number_walkers
-        initial_state_inertia = [None]*self.state.FLAGS.number_walkers
-        initial_state_momenta = [None]*self.state.FLAGS.number_walkers
-
-        last_rejected = session.run(self.state.static_vars["rejected"])   # temporary to see whether last evaluation was a rejection
-        for current_step in step_range:
-            # get next batch of data
-            features, labels = dataset_dict["input_pipeline"].next_batch(session)
-            # logging.debug("batch is x: "+str(features[:])+", y: "+str(labels[:]))
-
-            # update feed_dict for this step
-            feed_dict.update({
-                dataset_dict["xinput"]: features,
-                dataset_dict["true_labels"]: labels
-            })
-
-            # get energies for acceptance evaluation in very first step
-            if current_step == 0:
-                self.accumulated_values.loss, self.accumulated_values.kinetic_energy = \
-                    session.run([test_nodes[3], self.state.static_vars["kinetic_energy"]], feed_dict=feed_dict)
-
-            # set global variable used in HMC sampler for criterion to initial loss
-            self._set_HMC_eval_variables(session, current_step, HMC_steps, self.accumulated_values)
-
-            # zero kinetic energy and other variables
-            self.state._zero_state_variables(session, self.state.FLAGS.sampler)
-
-            # tell accumulators about next evaluation step (delayed by one)
-            self.run_info.inform_next_eval_step(HMC_steps, self.accumulated_values.rejected)
-            self.trajectory.inform_next_eval_step(HMC_steps, self.accumulated_values.rejected)
-            self.averages.inform_next_eval_step(HMC_steps, self.accumulated_values.rejected)
-
-            # set next criterion evaluation step
-            # needs to be after `_set_HMC_eval_variables()`
-            # needs to be before `_perform_step()`
-            HMC_old_steps[:] = HMC_steps
-            HD_steps, HMC_steps = self._set_HMC_next_eval_step(
-                current_step, step_widths, HD_steps, HMC_steps)
-            feed_dict = self._set_HMC_placeholders(HMC_placeholder_nodes,
-                                                   current_step, step_widths,
-                                                   HD_steps, HMC_steps, feed_dict)
-
-            # get the weights and biases as otherwise the loss won't match
-            # tf first computes loss, then gradient, then performs variable update
-            # hence after the sample step, we would have updated variables but old loss
-            if current_step % self.state.FLAGS.every_nth == 0:
-                self.accumulated_values.weights, self.accumulated_values.biases = \
-                    self._get_parameters(session, return_trajectories, all_weights, all_biases)
-
-            # perform the EQN update step
-            if self.state.FLAGS.covariance_blending != 0. and \
-                    current_step % self.state.FLAGS.covariance_after_steps == 0:
-                session.run(EQN_nodes, feed_dict=feed_dict)
-
-            # perform the sampling step
-            step_success = False
-            blending_key = [self.state.nn[walker_index].placeholder_nodes["covariance_blending"]
-                            for walker_index in range(self.state.FLAGS.number_walkers)]
-            old_eta = [feed_dict[blending_key[walker_index]] for walker_index in range(self.state.FLAGS.number_walkers)]
-            while not step_success:
-                for walker_index in range(self.state.FLAGS.number_walkers):
-                    if feed_dict[blending_key[walker_index]] > 0. \
-                            and feed_dict[blending_key[walker_index]] < 1e-12:
-                        logging.warning("Possible NaNs or Infs in covariance matrix, setting eta to 0 temporarily.")
-                        feed_dict[blending_key[walker_index]] = 0.
-                try:
-                    summary, self.accumulated_values.accuracy, \
-                    self.accumulated_values.global_step, self.accumulated_values.loss = \
-                        self.state._perform_step(session, test_nodes, feed_dict)
-                    step_success = True
-                except tf.errors.InvalidArgumentError as err:
-                    # Cholesky failed, try again with smaller eta
-                    for walker_index in range(self.state.FLAGS.number_walkers):
-                        feed_dict[blending_key[walker_index]] = feed_dict[blending_key[walker_index]]/2.
-                    logging.warning(str(err.op) + " FAILED at step %d, using %lg as eta." \
-                                    % (current_step, feed_dict[blending_key[0]]))
-            for walker_index in range(self.state.FLAGS.number_walkers):
-                feed_dict[blending_key[walker_index]] = old_eta[walker_index]
-
-            # get updated state variables
-                self.accumulated_values.evaluate(session, self.state.FLAGS.sampler, self.state.static_vars)
-
-            def print_energies():
-                if self.state.FLAGS.verbose > 1:
-                    for walker_index in range(self.state.FLAGS.number_walkers):
-                        loss_subtext = "n" if self.accumulated_values.rejected[walker_index] != last_rejected[walker_index] else "n-1"
-                        kinetic_subtext = "n-1" if "HamiltonianMonteCarlo_2ndOrder" in self.state.FLAGS.sampler \
-                                and current_step != HMC_old_steps[walker_index] else "n"
-                        logging.debug("walker #%d, #%d: L(x_{%s})=%lg, total is %lg, T(p_{%s})=%lg, sum is %lg" \
-                                  % (walker_index, current_step, loss_subtext,
-                                     # to emphasize updated loss
-                                     self.accumulated_values.loss[walker_index],
-                                     self.accumulated_values.old_total_energy[walker_index],
-                                     kinetic_subtext, # for HMC_2nd
-                                     self.accumulated_values.kinetic_energy[walker_index],
-                                     self.accumulated_values.loss[walker_index] + self.accumulated_values.kinetic_energy[
-                                         walker_index]))
-
-            # give output on debug mode
-            print_energies()
-
-            # if last step was rejection, re-evaluate loss and weights as state changed
-            if self.accumulated_values.rejected != last_rejected:
-                # recalculate loss and get kinetic energy
-                self.accumulated_values.loss, self.accumulated_values.kinetic_energy = \
-                    session.run([test_nodes[3], self.state.static_vars["kinetic_energy"]], feed_dict=feed_dict)
-                # get restored weights and biases
-                self.accumulated_values.weights, self.accumulated_values.biases = \
-                    self._get_parameters(session, return_trajectories, all_weights, all_biases)
-                logging.info("Last state REJECTed.")
-                print_energies()
-
-            # reset gradients and virials to initial state's if rejected
-            for walker_index in range(self.state.FLAGS.number_walkers):
-                if current_step == HMC_old_steps[walker_index]:
-                    # restore gradients and virials
-                    if self.accumulated_values.rejected[walker_index] != last_rejected[walker_index]:
-                        self.accumulated_values.gradients[walker_index] = initial_state_gradients[walker_index]
-                        self.accumulated_values.virials[walker_index] = initial_state_virials[walker_index]
-                        self.accumulated_values.inertia[walker_index] = initial_state_inertia[walker_index]
-                        self.accumulated_values.momenta[walker_index] = initial_state_momenta[walker_index]
-                    else:
-                        initial_state_gradients[walker_index] = self.accumulated_values.gradients[walker_index]
-                        initial_state_virials[walker_index] = self.accumulated_values.virials[walker_index]
-                        initial_state_inertia[walker_index] = self.accumulated_values.inertia[walker_index]
-                        initial_state_momenta[walker_index] = self.accumulated_values.momenta[walker_index]
-                    # accumulate averages and other information
-                    if current_step >= self.state.FLAGS.burn_in_steps:
-                        self.averages.accumulate_each_step(current_step, walker_index, self.accumulated_values)
-
-            # write summaries for tensorboard
-            self.state._write_summaries(summary_writer, summary, current_step)
-
-            if current_step % self.state.FLAGS.every_nth == 0:
-                self.accumulated_values.time_elapsed_per_nth_step = self.state._get_elapsed_time_per_nth_step(current_step)
-
-            for walker_index in range(self.state.FLAGS.number_walkers):
-                self.run_info.accumulate_nth_step(current_step, walker_index,
-                                                  self.accumulated_values)
-                self.trajectory.accumulate_nth_step(current_step, walker_index,
-                                                    self.accumulated_values)
-                self.averages.accumulate_nth_step(current_step, walker_index,
-                                                  self.accumulated_values)
-
-            # update temporary rejected
-            last_rejected = self.accumulated_values.rejected
-
-            #if (i % logging.info_intervals) == 0:
-                #logging.debug('Accuracy at step %s (%s): %s' % (i, global_step, acc))
-                #logging.debug('Loss at step %s: %s' % (i, loss_eval))
-
-            self.state._decide_collapse_walkers(session, current_step)
-
-        logging.info("SAMPLED.")
-
-        # close summaries file
-        if self.state.FLAGS.summaries_path is not None:
-            summary_writer.close()
-
-        self.close_files()
-
-        return self.run_info.run_info, self.trajectory.trajectory, self.averages.averages
-
     def _set_HMC_placeholders(self, HMC_placeholder_nodes, current_step, step_widths, HD_steps, HMC_steps, feed_dict):
+        """ Updates feed_dict with extra values for HMC
+
+        :param HMC_placeholder_nodes: keys to extra values
+        :param current_step: current step
+        :param step_widths: step widths per walker
+        :param HD_steps: current number of Hamiltonian Dynamics steps per walker
+        :param HMC_steps: current step numbers (one per walker) when to evaluate criterion
+        :param feed_dict: feed dict for `tf.Session.run()`
+        """
         if "HamiltonianMonteCarlo" in self.state.FLAGS.sampler:
             for walker_index in range(self.state.FLAGS.number_walkers):
                 feed_dict.update({
@@ -289,9 +67,21 @@ class TrajectorySamplingHamiltonian(TrajectorySampling):
                 feed_dict.update({
                     HMC_placeholder_nodes[walker_index]["current_step"]: current_step
                 })
-        return feed_dict
 
     def _set_HMC_next_eval_step(self, current_step, step_widths, HD_steps, HMC_steps):
+        """ Compute when next to evaluate HMC acceptance criterion
+
+        In order to avoid correlations between different walkers, it is
+        recommended [Neal, 2011] to randomly vary the step widths and
+        the exact step when to evaluate the criterion. This is done
+        here for `step_widths`, `HD_steps`, and `HMC_steps`.
+
+
+        :param current_step: current step
+        :param step_widths: step widths per walker
+        :param HD_steps: current number of Hamiltonian Dynamics steps per walker
+        :param HMC_steps: current step numbers (one per walker) when to evaluate criterion
+        """
         if "HamiltonianMonteCarlo" in self.state.FLAGS.sampler:
             for walker_index in range(self.state.FLAGS.number_walkers):
                 if current_step > HMC_steps[walker_index]:
@@ -320,9 +110,21 @@ class TrajectorySamplingHamiltonian(TrajectorySampling):
         else:
             for walker_index in range(self.state.FLAGS.number_walkers):
                 HMC_steps[walker_index] = current_step
-        return HD_steps, HMC_steps
 
     def _set_HMC_eval_variables(self, session, current_step, HMC_steps, values):
+        """ Set values in feed_dict needed for HMC's criterion evaluation.
+
+        Some values are accumulated outside tensorflow's computational graph
+        and need to be piped back into the graph through placeholder nodes.
+
+        However, we need to update them only right after the evaluation
+        criterion has been computed.
+
+        :param session: `tf.Session` object
+        :param current_step:
+        :param HMC_steps: step numbers (one per walker) when to evaluate criterion
+        :param values: accumulated values with updated energies
+        """
         if "HamiltonianMonteCarlo" in self.state.FLAGS.sampler:
             # set current kinetic as it is accumulated outside of tensorflow
             kin_eval = session.run(self.state.static_vars["kinetic_energy"])
@@ -357,7 +159,11 @@ class TrajectorySamplingHamiltonian(TrajectorySampling):
                     total_eval = session.run(HMC_set_total_energy, feed_dict=energy_placeholders)
                     logging.debug("New total energies are "+str(total_eval))
 
-    def _prepare_HMC_nodes(self, session):
+    def zero_extra_nodes(self, session):
+        """ Zero accepted and rejected counters before the actual iteration.
+
+        :param session: `tf.Session` object
+        """
         if "HamiltonianMonteCarlo" in self.state.FLAGS.sampler:
             # zero rejection rate before sampling start
             check_accepted, check_rejected = session.run([
@@ -366,4 +172,165 @@ class TrajectorySamplingHamiltonian(TrajectorySampling):
                 assert(check_accepted[walker_index] == 0)
                 assert(check_rejected[walker_index] == 0)
 
+    def get_placeholder_nodes(self):
+        """ Get HMC specific nodes needed as keys in feed_dict.
 
+        :return: list of extra nodes
+        """
+        retlist = super(TrajectorySamplingHamiltonian, self).get_placeholder_nodes()
+        retlist.extend( [self.state.nn[walker_index].get_dict_of_nodes(
+            ["current_step", "next_eval_step", "step_width", "hamiltonian_dynamics_steps"])
+            for walker_index in range(self.state.FLAGS.number_walkers)])
+        return retlist
+
+    def prepare_extra_values(self, placeholder_nodes, session, feed_dict):
+        """ Prepare a set of temporary values in a dict.
+
+        :param placeholder_nodes: extra HMC nodes, used as keys to update in `feed_dict`
+        :param session: `tf.Session` object
+        :param feed_dict: feed dict for `tf.Session.run()`
+        :return: dict with the extra values
+        """
+        array = {}
+        array["HD_steps"] = [-2]*self.state.FLAGS.number_walkers        # number of hamiltonian dynamics steps
+        array["HMC_steps"] = [0]*self.state.FLAGS.number_walkers       # next step where to evaluate criterion
+        array["HMC_old_steps"] = [0]*self.state.FLAGS.number_walkers   # last step where criterion was evaluated
+        # we need to randomly vary the step widths to avoid (quasi-)periodicities
+        array["step_widths"] = [self.state.FLAGS.step_width] * self.state.FLAGS.number_walkers
+        self._set_HMC_placeholders(placeholder_nodes,
+                                   1, array["step_widths"], array["HD_steps"],
+                                   array["HMC_steps"], feed_dict)
+
+        # backup gradients and virials of each initial state to avoid recalculation
+        array["initial_state_gradients"] = [None]*self.state.FLAGS.number_walkers
+        array["initial_state_virials"] = [None]*self.state.FLAGS.number_walkers
+        array["initial_state_inertia"] = [None]*self.state.FLAGS.number_walkers
+        array["initial_state_momenta"] = [None]*self.state.FLAGS.number_walkers
+
+        # remember rejected whose change indicates when to reset state
+        array["last_rejected"] = session.run(self.state.static_vars["rejected"])
+
+        return array
+
+    def extra_evaluation_before_step(self, current_step, session, placeholder_nodes, test_nodes, feed_dict, extra_values):
+        """ Before th actual update step, update HMC's specific variables
+
+        :param current_step: current step
+        :param session: `tf.Session` object
+        :param placeholder_nodes: extra HMC nodes, used as keys to update in `feed_dict`
+        :param test_nodes: nodes to evaluate for loss and others
+        :param feed_dict: feed dict for `tf.Session.run()`
+        :param extra_values: temporary values dict used during iteration
+        """
+        # get energies for acceptance evaluation in very first step
+        if current_step == 0:
+            self.accumulated_values.loss, self.accumulated_values.kinetic_energy = \
+                session.run([test_nodes[3], self.state.static_vars["kinetic_energy"]], feed_dict=feed_dict)
+
+        # set global variable used in HMC sampler for criterion to initial loss
+        self._set_HMC_eval_variables(session, current_step, extra_values["HMC_steps"], self.accumulated_values)
+
+        # tell accumulators about next evaluation step (delayed by one)
+        self.run_info.inform_next_eval_step(extra_values["HMC_steps"], self.accumulated_values.rejected)
+        self.trajectory.inform_next_eval_step(extra_values["HMC_steps"], self.accumulated_values.rejected)
+        self.averages.inform_next_eval_step(extra_values["HMC_steps"], self.accumulated_values.rejected)
+
+        # set next criterion evaluation step
+        # needs to be after `_set_HMC_eval_variables()`
+        # needs to be before `perform_step()`
+        extra_values["HMC_old_steps"][:] = extra_values["HMC_steps"]
+        self._set_HMC_next_eval_step(
+            current_step, extra_values["step_widths"], extra_values["HD_steps"], extra_values["HMC_steps"])
+        self._set_HMC_placeholders(
+            placeholder_nodes,
+            current_step,
+            extra_values["step_widths"],extra_values["HD_steps"], extra_values["HMC_steps"],
+            feed_dict)
+
+    def print_energies(self, current_step, extra_values):
+        """ Print HMC energies to make update step understandable
+
+        :param current_step: current step
+        :param extra_values: temporary values dict used during iteration
+        """
+        if self.state.FLAGS.verbose > 1:
+            for walker_index in range(self.state.FLAGS.number_walkers):
+                loss_subtext = "n" if self.accumulated_values.rejected[walker_index] != extra_values["last_rejected"][
+                    walker_index] else "n-1"
+                kinetic_subtext = "n-1" if "HamiltonianMonteCarlo_2ndOrder" in self.state.FLAGS.sampler \
+                                           and current_step != extra_values["HMC_old_steps"][walker_index] else "n"
+                logging.debug("walker #%d, #%d: L(x_{%s})=%lg, total is %lg, T(p_{%s})=%lg, sum is %lg" \
+                              % (walker_index, current_step, loss_subtext,
+                                 # to emphasize updated loss
+                                 self.accumulated_values.loss[walker_index],
+                                 self.accumulated_values.old_total_energy[walker_index],
+                                 kinetic_subtext,  # for HMC_2nd
+                                 self.accumulated_values.kinetic_energy[walker_index],
+                                 self.accumulated_values.loss[walker_index] + self.accumulated_values.kinetic_energy[
+                                     walker_index]))
+
+    def update_values(self, current_step, session, test_nodes, feed_dict, extra_values, parameters_list):
+        """ Extra update for HMC in order to reset state if necessary.
+
+        If this step has been a criterion evaluation, then we need to account for
+        the resetted state if the proposed one was rejected. Moreover, we need
+        to re-calculate the energies.
+
+        :param current_step: current step
+        :param session: `tf.Session` object
+        :param test_nodes: nodes to evaluate for loss and others
+        :param feed_dict: feed dict for `tf.Session.run()`
+        :param extra_values: temporary values dict used during iteration
+        :param parameters_list: parameters needed to obtained updated weights and
+                biases.
+        """
+        # if last step was rejection, re-evaluate loss and weights as state changed
+        if self.accumulated_values.rejected != extra_values["last_rejected"]:
+            # recalculate loss and get kinetic energy
+            self.accumulated_values.loss, self.accumulated_values.kinetic_energy = \
+                session.run([test_nodes[3], self.state.static_vars["kinetic_energy"]], feed_dict=feed_dict)
+            # get restored weights and biases
+            self.accumulated_values.weights, self.accumulated_values.biases = \
+                self._get_parameters(session, *parameters_list)
+            logging.info("Last state REJECTed.")
+            self.print_energies(current_step, extra_values)
+
+        # reset gradients and virials to initial state's if rejected
+        for walker_index in range(self.state.FLAGS.number_walkers):
+            if current_step == extra_values["HMC_old_steps"][walker_index]:
+                # restore gradients and virials
+                if self.accumulated_values.rejected[walker_index] != extra_values["last_rejected"][walker_index]:
+                    self.accumulated_values.gradients[walker_index] = extra_values["initial_state_gradients"][walker_index]
+                    self.accumulated_values.virials[walker_index] = extra_values["initial_state_virials"][walker_index]
+                    self.accumulated_values.inertia[walker_index] = extra_values["initial_state_inertia"][walker_index]
+                    self.accumulated_values.momenta[walker_index] = extra_values["initial_state_momenta"][walker_index]
+                else:
+                    extra_values["initial_state_gradients"][walker_index] = self.accumulated_values.gradients[walker_index]
+                    extra_values["initial_state_virials"][walker_index] = self.accumulated_values.virials[walker_index]
+                    extra_values["initial_state_inertia"][walker_index] = self.accumulated_values.inertia[walker_index]
+                    extra_values["initial_state_momenta"][walker_index] = self.accumulated_values.momenta[walker_index]
+                # accumulate averages and other information
+                if current_step >= self.state.FLAGS.burn_in_steps:
+                    self.averages.accumulate_each_step(current_step, walker_index, self.accumulated_values)
+
+    def update_averages(self, current_step):
+        """ Do not update averages in each step for HMC.
+
+        With HMC we are only interested in the final accepted or rejected
+        new states. We do not care about the intermediate steps obtained
+        through Hamiltonian dynamics. Therefore, we cannot simply call
+        this for every step but only for the criterion evaluation steps.,
+        see `TrajectorySamplingHamiltonian.update_values()`.
+
+        :param current_step: current step
+        """
+        pass
+
+    def update_extra_values(self, extra_values):
+        """ Store the possibly updated rejected value in our temporary
+        in `extra_values`.
+
+        :param extra_values: extra values containing temporaries used
+            during the iteration
+        """
+        extra_values["last_rejected"] = self.accumulated_values.rejected

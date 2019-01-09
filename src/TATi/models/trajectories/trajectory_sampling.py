@@ -30,6 +30,12 @@ class TrajectorySampling(TrajectoryBase):
     def __init__(self, trajectory_state):
         super(TrajectorySampling, self).__init__(trajectory_state)
         self.sampler = None
+        self.EQN_nodes = None
+
+    def get_placeholder_nodes(self):
+        self.EQN_nodes = [self.state.nn[walker_index].get("EQN_step") \
+                          for walker_index in range(self.state.FLAGS.number_walkers)]
+        return []
 
     def init_accumulator(self):
         # set inverse temperature in case of sampling (not training)
@@ -157,3 +163,54 @@ class TrajectorySampling(TrajectoryBase):
                     name=self.sampler[i].get_name())
             self.state.nn[i].summary_nodes['sample_step'] = sample_step
             self.state.nn[i].summary_nodes['EQN_step'] = self.sampler[i].EQN_update
+
+    @staticmethod
+    def get_trajectory_type():
+        return "sample"
+
+    @staticmethod
+    def print_success(_):
+        logging.info("SAMPLED.")
+
+    def get_methodname(self):
+        return self.state.FLAGS.sampler
+
+    def set_beta_for_execute(self):
+        self.averages._inverse_temperature = self.state.FLAGS.inverse_temperature
+
+    def extra_evaluation_before_step(self, current_step, session, placeholder_nodes, test_nodes, feed_dict, extra_values):
+        super(TrajectorySampling, self).extra_evaluation_before_step(
+            current_step, session, placeholder_nodes, test_nodes, feed_dict, extra_values
+        )
+        # perform the EQN update step
+        if self.state.FLAGS.covariance_blending != 0. and \
+                                current_step % self.state.FLAGS.covariance_after_steps == 0:
+            session.run(self.EQN_nodes, feed_dict=feed_dict)
+
+    def perform_step(self, current_step, session, test_nodes, feed_dict):
+        step_success = False
+        blending_key = [self.state.nn[walker_index].placeholder_nodes["covariance_blending"]
+                        for walker_index in range(self.state.FLAGS.number_walkers)]
+        old_eta = [feed_dict[blending_key[walker_index]] for walker_index in range(self.state.FLAGS.number_walkers)]
+        while not step_success:
+            for walker_index in range(self.state.FLAGS.number_walkers):
+                if feed_dict[blending_key[walker_index]] > 0. \
+                        and feed_dict[blending_key[walker_index]] < 1e-12:
+                    logging.warning("Possible NaNs or Infs in covariance matrix, setting eta to 0 temporarily.")
+                    feed_dict[blending_key[walker_index]] = 0.
+            try:
+                summary, self.accumulated_values.accuracy, \
+                self.accumulated_values.global_step, self.accumulated_values.loss = \
+                    self.state._perform_step(session, test_nodes, feed_dict)
+                step_success = True
+            except tf.errors.InvalidArgumentError as err:
+                # Cholesky failed, try again with smaller eta
+                for walker_index in range(self.state.FLAGS.number_walkers):
+                    feed_dict[blending_key[walker_index]] = feed_dict[blending_key[walker_index]] / 2.
+                logging.warning(str(err.op) + " FAILED at step %d, using %lg as eta." \
+                                % (current_step, feed_dict[blending_key[0]]))
+        for walker_index in range(self.state.FLAGS.number_walkers):
+            feed_dict[blending_key[walker_index]] = old_eta[walker_index]
+
+        return summary, self.accumulated_values.accuracy, \
+                self.accumulated_values.global_step, self.accumulated_values.loss
