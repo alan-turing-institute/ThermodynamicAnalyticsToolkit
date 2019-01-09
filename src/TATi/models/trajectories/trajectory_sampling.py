@@ -156,3 +156,45 @@ class TrajectorySampling(TrajectoryBase):
                     grads_and_vars, i, global_step=global_step,
                     name=self.sampler[i].get_name())
             self.state.nn[i].summary_nodes['sample_step'] = sample_step
+
+    @staticmethod
+    def get_trajectory_type():
+        return "sample"
+
+    @staticmethod
+    def print_success(_):
+        logging.info("SAMPLED.")
+
+    def get_methodname(self):
+        return self.state.FLAGS.sampler
+
+    def set_beta_for_execute(self):
+        self.averages._inverse_temperature = self.state.FLAGS.inverse_temperature
+
+    def perform_step(self, current_step, session, test_nodes, feed_dict):
+        step_success = False
+        blending_key = [self.state.nn[walker_index].placeholder_nodes["covariance_blending"]
+                        for walker_index in range(self.state.FLAGS.number_walkers)]
+        old_eta = [feed_dict[blending_key[walker_index]] for walker_index in range(self.state.FLAGS.number_walkers)]
+        while not step_success:
+            for walker_index in range(self.state.FLAGS.number_walkers):
+                if feed_dict[blending_key[walker_index]] > 0. \
+                        and feed_dict[blending_key[walker_index]] < 1e-12:
+                    logging.warning("Possible NaNs or Infs in covariance matrix, setting eta to 0 temporarily.")
+                    feed_dict[blending_key[walker_index]] = 0.
+            try:
+                summary, self.accumulated_values.accuracy, \
+                self.accumulated_values.global_step, self.accumulated_values.loss = \
+                    self.state._perform_step(session, test_nodes, feed_dict)
+                step_success = True
+            except tf.errors.InvalidArgumentError as err:
+                # Cholesky failed, try again with smaller eta
+                for walker_index in range(self.state.FLAGS.number_walkers):
+                    feed_dict[blending_key[walker_index]] = feed_dict[blending_key[walker_index]] / 2.
+                logging.warning(str(err.op) + " FAILED at step %d, using %lg as eta." \
+                                % (current_step, feed_dict[blending_key[0]]))
+        for walker_index in range(self.state.FLAGS.number_walkers):
+            feed_dict[blending_key[walker_index]] = old_eta[walker_index]
+
+        return summary, self.accumulated_values.accuracy, \
+                self.accumulated_values.global_step, self.accumulated_values.loss
