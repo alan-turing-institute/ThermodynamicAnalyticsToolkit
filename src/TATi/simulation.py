@@ -452,8 +452,7 @@ class Simulation(object):
                 self._nn.FLAGS.batch_data_files = [value]
             else:
                 self._nn.FLAGS.batch_data_files = value
-            self._nn.state.scan_dataset_dimension()
-            self._nn.state.create_input_pipeline(self._nn.FLAGS)
+            self._nn.init_input_pipeline()
         elif isinstance(value, list):
             # is list of [features, labels]
             if len(value) != 2:

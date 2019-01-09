@@ -19,9 +19,9 @@ FLAGS = tati.setup_parameters(
 )
 nn = tati(FLAGS)
 # init both sample and train right away
+nn.init_input_pipeline()
 nn.init_network(None, setup="sample")
 nn.init_network(None, setup="train")
-nn.init_input_pipeline()
 nn.reset_dataset()
 
 explorer = Explorer(parameters=FLAGS, max_legs=5, number_pruning=0)

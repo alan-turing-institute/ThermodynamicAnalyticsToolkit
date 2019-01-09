@@ -20,23 +20,18 @@
 
 import logging
 from builtins import staticmethod
-from math import sqrt
 
 import numpy as np
 import pandas as pd
-import scipy.sparse as sps
 import tensorflow as tf
-# scipy does not automatically import submodules
-from scipy.sparse import linalg
 from tensorflow.python.ops import variables
 
-from TATi.common import create_input_layer, file_length, get_list_from_string, \
+from TATi.common import create_input_layer, get_list_from_string, \
     initialize_config_map
 from TATi.models.helpers import check_column_names_in_order, \
-    get_dimension_from_tfrecord, get_start_index_in_dataframe_columns, \
+    get_start_index_in_dataframe_columns, \
     get_weight_and_bias_column_numbers
-from TATi.models.input.datasetpipeline import DatasetPipeline
-from TATi.models.input.inmemorypipeline import InMemoryPipeline
+from TATi.models.input.inputpipelinefactory import InputPipelineFactory
 from TATi.models.neuralnetwork import NeuralNetwork
 from TATi.models.parameters.helpers import assign_parameter, fix_parameter, \
     fix_parameter_in_collection, split_collection_per_walker
@@ -44,7 +39,6 @@ from TATi.models.parameters.neuralnet_parameters import neuralnet_parameters
 from TATi.models.trajectories.trajectory_sampling_factory import TrajectorySamplingFactory
 from TATi.models.trajectories.trajectory_training import TrajectoryTraining
 from TATi.models.trajectories.trajectorystate import TrajectoryState
-from TATi.options.pythonoptions import PythonOptions
 
 
 class ModelState:
@@ -75,8 +69,6 @@ class ModelState:
 
         self.number_of_parameters = 0  # number of biases and weights
 
-        self.output_type = None
-
         # mark input layer as to be created
         self.xinput = None
         self.x = None
@@ -85,6 +77,7 @@ class ModelState:
         self.fixed_variables = None
 
         # mark neuralnetwork, saver and session objects as to be created
+        self.input_pipeline = None
         self.nn = None
         self.trainables = None
         self.true_labels = None
@@ -107,7 +100,6 @@ class ModelState:
         :param FLAGS: new set of parameters
         """
         self.FLAGS = FLAGS
-        self.scan_dataset_dimension()
         if self.trajectory_sample is not None:
             self.trajectory_sample.config_map = initialize_config_map()
         if self.trajectory_train is not None:
@@ -121,96 +113,40 @@ class ModelState:
         if self.trajectorystate is not None:
             self.trajectorystate.FLAGS = FLAGS
 
-    def scan_dataset_dimension(self):
-        if len(self.FLAGS.batch_data_files) > 0:
-            self.input_dimension = self.FLAGS.input_dimension
-            self.output_dimension = self.FLAGS.output_dimension
-            try:
-                self.FLAGS.add("dimension")
-            except AttributeError:
-                # add only on first call
-                pass
-            if self.FLAGS.batch_data_file_type == "csv":
-                self.FLAGS.dimension = sum([file_length(filename)
-                                            for filename in self.FLAGS.batch_data_files]) \
-                                       - len(self.FLAGS.batch_data_files)
-                if self.output_dimension == 1:
-                    self.output_type = "binary_classification"  # labels in {-1,1}
-                else:
-                    self.output_type = "onehot_multi_classification"
-            elif self.FLAGS.batch_data_file_type == "tfrecord":
-                self.FLAGS.dimension = get_dimension_from_tfrecord(self.FLAGS.batch_data_files)
-                self.output_type = "onehot_multi_classification"
-            else:
-                logging.info("Unknown file type")
-                assert(0)
-            self.check_valid_batch_size()
+    def reset_dataset(self):
+        """ Re-initializes the dataset for a new run
+        """
+        if self.input_pipeline is not None:
+            self.input_pipeline.reset(self.sess)
 
-            logging.info("Parsing "+str(self.FLAGS.batch_data_files))
+    def provide_data(self, features, labels, shuffle=False):
+        """ Use to provide an in-memory dataset, i.e., numpy arrays with
+        `features` and `labels`.
 
-            self.number_of_parameters = 0 # number of biases and weights
+        :param features: feature part of dataset
+        :param labels: label part of dataset
+        :param shuffle: whether to shuffle the dataset initially or not
+        """
+        self.input_pipeline = InputPipelineFactory.provide_data(
+            self.FLAGS, features=features, labels=labels, shuffle=shuffle)
 
     def init_input_pipeline(self):
-        self.batch_next = self.create_input_pipeline(self.FLAGS)
+        InputPipelineFactory.scan_dataset_dimension_from_files(self.FLAGS)
+        self.input_pipeline = InputPipelineFactory.create(self.FLAGS)
         #self.input_pipeline.reset(self.sess)
-
-    def check_valid_batch_size(self):
-        ''' helper function to check that batch_size does not exceed dimension
-        of dataset. After which it will be valid.
-
-        :return: True - is smaller or equal, False - exceeded and capped batch_size
-        '''
-        if self.FLAGS.batch_size is None:
-            logging.info("batch_size not set, setting to dimension of dataset.")
-            self.FLAGS.batch_size = self.FLAGS.dimension
-            return True
-        if self.FLAGS.batch_size > self.FLAGS.dimension:
-            logging.warning(" batch_size exceeds number of data items, capping.")
-            self.FLAGS.batch_size = self.FLAGS.dimension
-            return False
-        else:
-            return True
-
-    def create_input_pipeline(self, FLAGS, shuffle=False):
-        """ This creates an input pipeline using the tf.Dataset module.
-
-        :param FLAGS: parameters
-        :param shuffle: whether to shuffle dataset or not
-        """
-        if FLAGS.in_memory_pipeline:
-            logging.debug("Using in-memory pipeline")
-            # create a session, parse the tfrecords with batch_size equal to dimension
-            input_pipeline = DatasetPipeline(
-                filenames=FLAGS.batch_data_files, filetype=FLAGS.batch_data_file_type,
-                batch_size=FLAGS.dimension, dimension=FLAGS.dimension, max_steps=1,
-                input_dimension=FLAGS.input_dimension, output_dimension=FLAGS.output_dimension,
-                shuffle=shuffle, seed=FLAGS.seed)
-            with tf.Session() as session:
-                session.run(input_pipeline.iterator.initializer)
-                xs, ys = input_pipeline.next_batch(session)
-
-            self.input_pipeline = InMemoryPipeline(dataset=[xs,ys], batch_size=FLAGS.batch_size,
-                                                   max_steps=FLAGS.max_steps,
-                                                   shuffle=shuffle, seed=FLAGS.seed)
-        else:
-            logging.debug("Using tf.Dataset pipeline")
-            self.input_pipeline = DatasetPipeline(filenames=FLAGS.batch_data_files, filetype=FLAGS.batch_data_file_type,
-                                                  batch_size=FLAGS.batch_size, dimension=FLAGS.dimension, max_steps=FLAGS.max_steps,
-                                                  input_dimension=self.input_dimension, output_dimension=self.output_dimension,
-                                                  shuffle=shuffle, seed=FLAGS.seed)
 
     def init_input_layer(self):
         # create input layer
         if self.xinput is None or self.x is None:
             input_columns = get_list_from_string(self.FLAGS.input_columns)
-            self.xinput, self.x = create_input_layer(self.input_dimension, input_columns)
+            self.xinput, self.x = create_input_layer(self.FLAGS.input_dimension, input_columns)
 
     def init_neural_network(self):
         if self.nn is None:
             self.nn = []
             self.loss = []
             self.trainables = []
-            self.true_labels = NeuralNetwork.add_true_labels(self.output_dimension)
+            self.true_labels = NeuralNetwork.add_true_labels(self.FLAGS.output_dimension)
 
             # construct network per walker
             for i in range(self.FLAGS.number_walkers):
@@ -226,7 +162,7 @@ class ModelState:
                     else:
                         walker_seed = self.FLAGS.seed
                     self.loss.append(self.nn[-1].create(
-                        self.x, self.FLAGS.hidden_dimension, self.output_dimension,
+                        self.x, self.FLAGS.hidden_dimension, self.FLAGS.output_dimension,
                         labels=self.true_labels,
                         trainables_collection=self.trainables[-1],
                         seed=walker_seed,
@@ -238,7 +174,7 @@ class ModelState:
                     self.nn[-1].summary_nodes["accuracy"] = NeuralNetwork.add_accuracy_summary(
                         self.nn[-1].placeholder_nodes["y"],
                         self.nn[-1].placeholder_nodes["y_"],
-                        self.output_type)
+                        self.FLAGS.output_type)
         else:
             self.loss = []
             for i in range(self.FLAGS.number_walkers):
@@ -490,7 +426,7 @@ class ModelState:
                 nn_biases parameters combined, see self.gradients.
         """
         # dataset was provided
-        assert (self.input_dimension is not None)
+        assert (self.FLAGS.input_dimension is not None)
 
         self.init_input_layer()
         self.init_neural_network()

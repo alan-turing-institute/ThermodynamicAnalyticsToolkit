@@ -20,11 +20,11 @@
 
 import logging
 from math import sqrt
-import numpy as np
-import pandas as pd
+
 import scipy.sparse as sps
 from scipy.sparse import linalg
 
+from TATi.models.input.inputpipelinefactory import InputPipelineFactory
 from TATi.models.input.inmemorypipeline import InMemoryPipeline
 from TATi.models.modelstate import ModelState
 from TATi.options.pythonoptions import PythonOptions
@@ -274,7 +274,7 @@ class Model(object):
     def reset_dataset(self):
         """ Re-initializes the dataset for a new run
         """
-        self.state.input_pipeline.reset(self.state.sess)
+        self.state.reset_dataset()
 
     def get_total_weight_dof(self):
         """ Returns the total number of weight parameters or weight degrees of
@@ -357,24 +357,7 @@ class Model(object):
         :param labels: label part of dataset
         :param shuffle: whether to shuffle the dataset initially or not
         """
-        logging.info("Using in-memory pipeline")
-        self.state.input_dimension = len(features[0])
-        self.state.output_dimension = len(labels[0])
-        if self.state.output_dimension == 1:
-            self.state.output_type = "binary_classification"  # labels in {-1,1}
-        else:
-            self.state.output_type = "onehot_multi_classification"
-        assert(len(features) == len(labels))
-        try:
-            self.state.FLAGS.dimension
-        except AttributeError:
-            self.state.FLAGS.add("dimension")
-        self.state.FLAGS.dimension = len(features)
-        self.state.check_valid_batch_size()
-        self.state.input_pipeline = InMemoryPipeline(dataset=[features, labels],
-                                                     batch_size=self.state.FLAGS.batch_size,
-                                                     max_steps=self.state.FLAGS.max_steps,
-                                                     shuffle=shuffle, seed=self.state.FLAGS.seed)
+        self.state.provide_data(features=features, labels=labels, shuffle=shuffle)
 
     def create_model_file(self, initial_step, parameters, model_filename):
         """ Create a tensorflow checkpoint model file from a given step

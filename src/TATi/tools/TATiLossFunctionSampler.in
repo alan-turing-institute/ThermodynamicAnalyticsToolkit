@@ -9,6 +9,7 @@ import tensorflow as tf
 
 from TATi.common import get_list_from_string
 from TATi.model import Model
+from TATi.models.input.inputpipelinefactory import InputPipelineFactory
 from TATi.options.commandlineoptions import CommandlineOptions
 from TATi.samplers.grid.naivegridsampler import NaiveGridSampler
 from TATi.samplers.grid.subgridsampler import SubgridSampler
@@ -74,6 +75,7 @@ def main(_):
     options.max_steps = 1
 
     network_model = Model(options)
+    InputPipelineFactory.scan_dataset_dimension_from_files(options)
     network_model.init_network(options.restore_model, setup=None)
 
     options.exclude_parameters = get_list_from_string(options.exclude_parameters)
