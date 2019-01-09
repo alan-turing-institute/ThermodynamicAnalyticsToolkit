@@ -5,6 +5,7 @@ TATI_models_trajectories_PYTHON = \
     trajectory_sampling_hamiltonian.py \
     trajectory_sampling_langevin.py \
     trajectory_training.py \
+	trajectorydata.py \
     trajectorystate.py \
     __init__.py
 
