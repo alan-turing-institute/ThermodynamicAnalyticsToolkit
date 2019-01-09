@@ -19,9 +19,8 @@
 ### 
 
 import logging
-import time
 from builtins import staticmethod
-from math import sqrt, exp
+from math import sqrt
 
 import numpy as np
 import pandas as pd
@@ -29,20 +28,20 @@ import scipy.sparse as sps
 import tensorflow as tf
 # scipy does not automatically import submodules
 from scipy.sparse import linalg
-
 from tensorflow.python.ops import variables
 
 from TATi.common import create_input_layer, file_length, get_list_from_string, \
-    initialize_config_map, setup_csv_file, setup_run_file, \
-    setup_trajectory_file
+    initialize_config_map
+from TATi.models.helpers import get_dimension_from_tfrecord
 from TATi.models.input.datasetpipeline import DatasetPipeline
 from TATi.models.input.inmemorypipeline import InMemoryPipeline
-from TATi.models.basetype import dds_basetype
 from TATi.models.neuralnetwork import NeuralNetwork
-from TATi.models.trajectories.trajectorystate import TrajectoryState
+from TATi.models.parameters.helpers import assign_parameter, fix_parameter, \
+    fix_parameter_in_collection, split_collection_per_walker
 from TATi.models.parameters.neuralnet_parameters import neuralnet_parameters
 from TATi.models.trajectories.trajectory_sampling_factory import TrajectorySamplingFactory
 from TATi.models.trajectories.trajectory_training import TrajectoryTraining
+from TATi.models.trajectories.trajectorystate import TrajectoryState
 from TATi.options.pythonoptions import PythonOptions
 
 
@@ -118,7 +117,7 @@ class model:
                 else:
                     self.output_type = "onehot_multi_classification"
             elif self.FLAGS.batch_data_file_type == "tfrecord":
-                self.FLAGS.dimension = self._get_dimension_from_tfrecord(self.FLAGS.batch_data_files)
+                self.FLAGS.dimension = get_dimension_from_tfrecord(self.FLAGS.batch_data_files)
                 self.output_type = "onehot_multi_classification"
             else:
                 logging.info("Unknown file type")
@@ -132,34 +131,6 @@ class model:
     def init_input_pipeline(self):
         self.batch_next = self.create_input_pipeline(self.FLAGS)
         #self.input_pipeline.reset(self.sess)
-
-    @staticmethod
-    def _get_dimension_from_tfrecord(filenames):
-        ''' Helper function to get the size of the dataset contained in a TFRecord.
-
-        :param filenames: list of tfrecord files
-        :return: total size of dataset
-        '''
-        dimension  = 0
-        for filename in filenames:
-            record_iterator = tf.python_io.tf_record_iterator(path=filename)
-            for string_record in record_iterator:
-                if logging.getLogger(__name__).isEnabledFor(logging.DEBUG):
-                    example = tf.train.Example()
-                    example.ParseFromString(string_record)
-                    height = int(example.features.feature['height']
-                                 .int64_list
-                                 .value[0])
-
-                    width = int(example.features.feature['width']
-                                .int64_list
-                                .value[0])
-                    #logging.debug("height is "+str(height)+" and width is "+str(width))
-                dimension += 1
-
-        logging.info("Scanned " + str(dimension) + " records in tfrecord file.")
-
-        return dimension
 
     def _check_valid_batch_size(self):
         ''' helper function to check that batch_size does not exceed dimension
@@ -284,24 +255,6 @@ class model:
         """
         self.input_pipeline.reset(self.sess)
 
-    @staticmethod
-    def _split_collection_per_walker(_collection, number_walkers):
-        """ Helper function to split WEIGHTS and BIASES collection from
-        tensorflow into weights and biases per walker.
-
-        :param _collection: collection to split
-        :param number_walkers: number of walkers to look for
-        :return: list of split up collections
-        """
-        split_collection = []
-        for i in range(number_walkers):
-            split_collection.append([])
-            scope_name = 'walker'+str(i+1)+'/'
-            for var in _collection:
-                if scope_name in var.name:
-                    split_collection[-1].append(var)
-        return split_collection
-
     def init_input_layer(self):
         # create input layer
         if self.xinput is None or self.x is None:
@@ -365,7 +318,7 @@ class model:
                     with tf.name_scope(name_scope):
                         trainables = tf.get_collection_ref(self.trainables[i])
                         for var in fixed_variables:
-                            removed_vars = model._fix_parameter_in_collection(trainables, var, name_scope+"'s trainables")
+                            removed_vars = fix_parameter_in_collection(trainables, var, name_scope+"'s trainables")
                             # make sure we remove one per walker
                             if len(removed_vars) != 1:
                                 raise ValueError(
@@ -430,9 +383,9 @@ class model:
 
     def get_split_weights_and_biases(self):
         # set number of degrees of freedom
-        split_weights = self._split_collection_per_walker(
+        split_weights = split_collection_per_walker(
             tf.get_collection_ref(tf.GraphKeys.WEIGHTS), self.FLAGS.number_walkers)
-        split_biases = self._split_collection_per_walker(
+        split_biases = split_collection_per_walker(
             tf.get_collection_ref(tf.GraphKeys.BIASES), self.FLAGS.number_walkers)
         self.number_of_parameters = \
             neuralnet_parameters.get_total_dof_from_list(split_weights[0]) \
@@ -686,103 +639,6 @@ class model:
         except AttributeError:
             pass
 
-    @staticmethod
-    def _find_all_in_collections(_collection, _name):
-        """ Helper function to return all indices of variables in a collection
-         that match with the given `_name`. Note that this removes possible
-         walker name scopes.
-
-        :param _collection: collection to search through
-        :param _name: tensor/variable name to look for
-        :return: list of matching indices
-        """
-        variable_indices = []
-        for i in range(len(_collection)):
-            target_name = _collection[i].name
-            walker_target_name = target_name[target_name.find("/")+1:]
-            logging.debug("Comparing %s to %s and %s" % (_name, target_name, walker_target_name))
-            if target_name == _name or walker_target_name == _name:
-                variable_indices.append(i)
-        return variable_indices
-
-    @staticmethod
-    def _extract_from_collections(_collection, _indices):
-        """ Helper function to remove all elements associated to each index
-        in `indices` from `collections`, gathering them in a list that is
-        returned
-
-        :param _collection: collection to remove elements from
-        :param _indices: list of indices to extract
-        :return: list of elements removed from collection
-        """
-        variables = []
-        _indices.sort(reverse=True)
-        for i in _indices:
-            variables.append(_collection[i])
-            del _collection[i]
-        return variables
-
-    @staticmethod
-    def _fix_parameter_in_collection(_collection, _name, _collection_name="collection"):
-        """ Allows to fix a parameter (not modified during optimization
-        or sampling) by removing the first instance named _name from trainables.
-
-        :param _collection: (trainables or other) collection to remove parameter from
-        :param _name: name of parameter to fix
-        :return: None or Variable ref that was fixed
-        """
-        variable_indices = model._find_all_in_collections(_collection, _name)
-        logging.debug("Indices matching in "+_collection_name+" with "
-                     +_name+": "+str(variable_indices))
-        fixed_variable = model._extract_from_collections(_collection, variable_indices)
-        return fixed_variable
-
-    @staticmethod
-    def _fix_parameter(_name):
-        """ Allows to fix a parameter (not modified during optimization
-        or sampling) by removing the first instance named _name from trainables.
-
-        :param _name: name of parameter to fix
-        :return: None or Variable ref that was fixed
-        """
-        variable = None
-        trainable_collection = tf.get_collection_ref(tf.GraphKeys.TRAINABLE_VARIABLES)
-        if "weight" in _name:
-            other_collection = tf.get_collection_ref(tf.GraphKeys.WEIGHTS)
-            other_collection_name = "weights"
-        elif "bias" in _name:
-            other_collection = tf.get_collection_ref(tf.GraphKeys.BIASES)
-            other_collection_name = "biases"
-        else:
-            logging.warning("Unknown parameter category for "+str(_name) \
-                            +"), removing only from trainables.")
-
-        trainable_variable = model._fix_parameter_in_collection(trainable_collection, _name, "trainables")
-        variable = model._fix_parameter_in_collection(other_collection, _name, other_collection_name)
-
-        #print(tf.get_collection_ref(tf.GraphKeys.TRAINABLE_VARIABLES))
-        #if "weight" in _name:
-        #    print(tf.get_collection_ref(tf.GraphKeys.WEIGHTS))
-        #else:
-        #    print(tf.get_collection_ref(tf.GraphKeys.BIASES))
-
-        if trainable_variable == variable:
-            return variable
-        else:
-            return None
-
-    @staticmethod
-    def _assign_parameter(_var, _value):
-        """ Creates an assignment node, adding it to the graph.
-
-        :param _var: tensorflow variable ref
-        :param _value: value to assign to it, must have same shape
-        :return: constant value node and assignment node
-        """
-        value_t = tf.constant(_value, dtype=_var.dtype)
-        assign_t = _var.assign(value_t)
-        return value_t, assign_t
-
     def fix_parameters(self, names):
         """ Fixes the parameters given by their names
 
@@ -794,7 +650,7 @@ class model:
             logging.debug("Looking for variable %s to fix." % (name))
             # look for tensor in already fixed variables
             variable_list = None
-            retvariable_list = self._fix_parameter(name)
+            retvariable_list = fix_parameter(name)
             logging.debug("Updated fixed parameters by: "+str(retvariable_list))
             if retvariable_list is not None:
                 for retvariable in retvariable_list:
@@ -988,7 +844,7 @@ class model:
         assert( len(variables) == len(values) )
         assigns=[]
         for i in range(len(variables)):
-            value_t, assign_t = self._assign_parameter(
+            value_t, assign_t = assign_parameter(
                 variables[i],
                 np.reshape(values[i], newshape=variables[i].shape))
             assigns.append(assign_t)
