@@ -6,6 +6,7 @@ SUBDIRS = \
     models \
     models/accumulators \
     models/input \
+    models/networks \
     models/parameters \
     models/trajectories \
     options \
