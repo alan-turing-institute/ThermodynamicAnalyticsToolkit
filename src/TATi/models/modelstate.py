@@ -32,7 +32,7 @@ from TATi.models.helpers import check_column_names_in_order, \
     get_start_index_in_dataframe_columns, \
     get_weight_and_bias_column_numbers
 from TATi.models.input.inputpipelinefactory import InputPipelineFactory
-from TATi.models.neuralnetwork import NeuralNetwork
+from TATi.models.networks.neuralnetwork import NeuralNetwork
 from TATi.models.parameters.helpers import assign_parameter, fix_parameter, \
     fix_parameter_in_collection, split_collection_per_walker
 from TATi.models.parameters.neuralnet_parameters import neuralnet_parameters
