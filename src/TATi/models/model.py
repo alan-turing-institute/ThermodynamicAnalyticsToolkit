@@ -38,12 +38,13 @@ from TATi.common import create_input_layer, file_length, get_list_from_string, \
 from TATi.models.input.datasetpipeline import DatasetPipeline
 from TATi.models.input.inmemorypipeline import InMemoryPipeline
 from TATi.models.basetype import dds_basetype
-from TATi.models.neuralnet_parameters import neuralnet_parameters
 from TATi.models.neuralnetwork import NeuralNetwork
 from TATi.models.trajectories.trajectorystate import TrajectoryState
+from TATi.models.parameters.neuralnet_parameters import neuralnet_parameters
 from TATi.models.trajectories.trajectory_sampling_factory import TrajectorySamplingFactory
 from TATi.models.trajectories.trajectory_training import TrajectoryTraining
 from TATi.options.pythonoptions import PythonOptions
+
 
 class model:
     """ This class combines the whole setup for creating a neural network.
