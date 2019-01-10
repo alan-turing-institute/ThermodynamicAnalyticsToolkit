@@ -103,7 +103,7 @@ DX_PS_GOAL = doxygen-ps
 doxygen-ps: @DX_DOCDIR@/@PACKAGE@.ps
 
 @DX_DOCDIR@/@PACKAGE@.ps: @DX_DOCDIR@/@PACKAGE@.tag
-	cd @DX_DOCDIR@/latex; \
+	cd latex; \
 	rm -f *.aux *.toc *.idx *.ind *.ilg *.log *.out; \
 	$(DX_LATEX) refman.tex; \
 	$(MAKEINDEX_PATH) refman.idx; \
@@ -125,13 +125,13 @@ endif DX_COND_ps
 
 if DX_COND_pdf
 
-DX_CLEAN_PDF = @DX_DOCDIR@/@PACKAGE@.pdf
+DX_CLEAN_PDF = @DX_DOCDIR@/@PACKAGE@-API-reference.pdf
 
 DX_PDF_GOAL = doxygen-pdf
 
-doxygen-pdf: @DX_DOCDIR@/@PACKAGE@.pdf
+doxygen-pdf: @DX_DOCDIR@/@PACKAGE@-API-reference.pdf
 
-@DX_DOCDIR@/@PACKAGE@.pdf: @DX_DOCDIR@/@PACKAGE@.tag
+@PACKAGE@-API-reference.pdf: @DX_DOCDIR@/@PACKAGE@.tag
 	cd @DX_DOCDIR@/latex; \
 	rm -f *.aux *.toc *.idx *.ind *.ilg *.log *.out; \
 	$(DX_PDFLATEX) refman.tex; \
@@ -144,7 +144,10 @@ doxygen-pdf: @DX_DOCDIR@/@PACKAGE@.pdf
 	    $(DX_PDFLATEX) refman.tex; \
 	    countdown=`expr $$countdown - 1`; \
 	done; \
-	mv refman.pdf ../@PACKAGE@.pdf
+	mv refman.pdf ${abs_top_builddir}/doc/@PACKAGE@-API-reference.pdf
+
+@DX_DOCDIR@/@PACKAGE@-API-reference.pdf: @PACKAGE@-API-reference.pdf
+	cp -f ${abs_top_builddir}/doc/@PACKAGE@-API-reference.pdf @DX_DOCDIR@/@PACKAGE@-API-reference.pdf
 
 endif DX_COND_pdf
 
@@ -162,12 +165,16 @@ endif DX_COND_latex
 
 .INTERMEDIATE: doxygen-run $(DX_PS_GOAL) $(DX_PDF_GOAL)
 
+install-clean: $(DX_PS_GOAL) $(DX_PDF_GOAL)
+	rm -rf @DX_DOCDIR@/latex
+
 doxygen-run: @DX_DOCDIR@/@PACKAGE@.tag
 
 doxygen-doc: precusor-doxygen-doc doxygen-run $(DX_PS_GOAL) $(DX_PDF_GOAL)
 
 @DX_DOCDIR@/@PACKAGE@.tag: $(DX_CONFIG) $(pkginclude_HEADERS)
-	rm -rf @DX_DOCDIR@
+	rm -rf @DX_DOCDIR@/latex
+	rm -rf @DX_DOCDIR@/html
 	$(DX_ENV) $(DX_DOXYGEN) $(srcdir)/$(DX_CONFIG)
 
 DX_CLEANFILES = \
