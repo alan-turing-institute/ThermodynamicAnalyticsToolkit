@@ -13,7 +13,7 @@ AM_PATH_PYTHON([2.5])
 # use doxygen
 DX_HTML_FEATURE(ON)
 DX_PS_FEATURE(OFF)
-DX_PDF_FEATURE(OFF)
+DX_PDF_FEATURE(ON)
 DX_INIT_DOXYGEN(ThermodynamicAnalyticsToolkit, Doxyfile, ${docdir})
 
 # asciidoc and dblatex
