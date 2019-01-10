@@ -1,0 +1,4 @@
+#!/bin/bash
+
+# take the same path where PYTHON is located
+`dirname @pythonbindir@`/doxypypy -a -c $1
