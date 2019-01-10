@@ -77,7 +77,7 @@ def get_argparse_option_name(parser, *args, **kwargs):
       args: arguments to `argparse.ArgumentParser.add_argument()`
       kwargs: keyword arguments to `argparse.ArgumentParser.add_argument()`
       *args: 
-      **kwargs: 
+      kwargs: 
 
     Returns:
       string name of option
@@ -116,8 +116,6 @@ class CommandlineOptions(PythonOptions):
         Args:
           args: arguments to `argparse.ArgumentParser.add_argument()`
           kwargs: keyword arguments to `argparse.ArgumentParser.add_argument()`
-          *args: 
-          **kwargs: 
 
         Returns:
 
@@ -135,8 +133,6 @@ class CommandlineOptions(PythonOptions):
         Args:
           args: arguments to `argparse.ArgumentParser.add_argument()`
           kwargs: keyword arguments to `argparse.ArgumentParser.add_argument()`
-          *args: 
-          **kwargs: 
 
         Returns:
 

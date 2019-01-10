@@ -47,13 +47,32 @@ class Simulation(object):
     implicitly on the dataset and both use the set of parameters of the
     neural network.
 
-    Args:
+    The whole setup is steered through an extensive options dict, typically
+    called *FLAGS* or
 
-    Returns:
+  Let us give a brief example of how to use the class. For more
+  extensive use cases we refer to the userguide that accompanies this
+  software package.
 
+  Here, we use a dataset contained in the CSV file `dataset.cvs`
+  which contains feature columns ["x1", "x2", ...] and label
+  columns ["label1", "label2", ...]. We use the `GradientDescent`
+  optimizer for 1000 steps with a learning rate of 0.1. The
+  call to `fit()` runs the actual training. Once done, we have
+  a look at the resulting loss and the parameters of the network.
+
+    Example:
+      from TATi.simulation import Simulation
+      nn = Simulation(
+        batch_data_files="dataset.csv",
+        max_steps=1000,
+        optimizer="GradientDescent",
+      learning_rate=0.1)
+      nn.fit()
+      print("Loss: " + str(nn.loss()) + " for parameter set: " + str(nn.parameters))
     """
 
-    ### gives which parts of the interal state are affected by each option
+    ## gives which parts of the interal state are affected by each option.
     _affects_map = {
         "averages_file": ["network"],
         "batch_data_files": ["input", "network"],
@@ -113,12 +132,13 @@ class Simulation(object):
         """Initializes the internal neural network and everything.
 
         Args:
-          **kwargs: 
+          kwargs: for full options, see `PythonOptions._description_map`.
 
         Returns:
 
         """
         super(Simulation, self).__init__()
+        ## internal ref to the network model
         self._nn = None
 
         # remove extra option dataset
@@ -128,7 +148,7 @@ class Simulation(object):
             labels=kwargs["dataset"][1]
             del kwargs["dataset"]
 
-        # construct options object and initialize neuralnetwork
+        ## Options dict controlling all options of the network, sampling, ...
         self._options = PythonOptions(add_keys=True, value_dict=kwargs)
         logging.info(self._options)
         self._nn = Model(self._options)
@@ -141,6 +161,11 @@ class Simulation(object):
 
         if features is not None:
             self._nn.provide_data(features=features, labels=labels)
+            ## States whether neural network construction is done lazily or not.
+            #
+            # If False, then it we have supplied a dataset already. if True,
+            # then we still need to provide the actual dataset (upon which
+            # for example the input and output layer sizes hinge).
             self._lazy_nn_construction = False
         elif "batch_data_files" in kwargs.keys() \
                 and (len(kwargs["batch_data_files"]) != 0):
@@ -151,14 +176,28 @@ class Simulation(object):
 
         # we need to evaluate loss, gradients, hessian, accuracy, ... on the 
         # same batch. Hence, we cache the results here for one-time gets
+        ## internal cache to ascertain that loss, gradient, .. when requested
+        # one after the other still belong to the same dataset batch.
         self._cache = EvaluationCache(self._nn)
 
         # construct nn if dataset has been provided
         self._construct_nn()
 
+        ## internal `Parameters` struct for weights and biases
         self._parameters = Parameters(self._nn, ["weights", "biases"], self._cache)
+        ## internal `Parameters` struct for momenta of weights and biases
         self._momenta = Parameters(self._nn, ["momenta_weights", "momenta_biases"])
 
+        ## Whether to access to parameters directly or simplified.
+        #
+        # If only a single walker is used, `nn.parameters` will directly
+        # return the corresponding numpy array. If access is not simplified,
+        # one has to use `nn.parameters[0]` for accessing the first numpy
+        # array in the returned list. For multiple walkers the non simplified
+        # access may be advantageous. This is especially true for scripts
+        # where one wants to switch between single and multiple walkers and
+        # both cases need to covered by the same code.
+        ##
         self.non_simplified_access = False
 
     @staticmethod
@@ -174,7 +213,7 @@ class Simulation(object):
         PythonOptions.help(key)
 
     def _construct_nn(self):
-        """Constructs the neural network is dataset is present."""
+        """Constructs the neural network if the dataset is present."""
         if not self._lazy_nn_construction:
             self._nn.init_network(None, setup="trainsample", add_vectorized_gradients=True)
             self._nn.reset_dataset()
@@ -183,6 +222,11 @@ class Simulation(object):
             self._lazy_nn_construction = False
 
     def _check_nn(self):
+        """ Checks the internal neural network model has been instantiated.
+
+        Returns:
+          True - present, False - not
+        """
         if self._nn is None:
             raise AttributeError("Neural network has not been constructed, dataset provided?")
 
@@ -194,8 +238,8 @@ class Simulation(object):
             This may reset the dataset or even the network depending on what
             parameters are changed.
 
-        Kwargs:
-          any option listed in `Simulation.affects_map`
+        Args:
+          kwargs: any option listed in `Simulation._affects_map`
 
         Returns:
           None
@@ -420,8 +464,11 @@ class Simulation(object):
         if inverse_temperature is None:
             inverse_temperature = self._nn.FLAGS.inverse_temperature
         for i in range(len(self._parameters)):
-            self.momenta = \
-                np.random.standard_normal(size=(self.num_parameters()))*inverse_temperature
+            try:
+                self._momenta = \
+                    np.random.standard_normal(size=(self.num_parameters()))*inverse_temperature
+            except ValueError:
+                logging.error("%s does not have momenta." % (self._options.sampler))
 
     def num_parameters(self):
         """Returns the number of parameters of the neural network.
@@ -448,13 +495,14 @@ class Simulation(object):
         given dataset.
         
         Note that the parameters of the fit such as `optimizer`,
-        `learning_rate` are all set in the `__init__()` options statement.
+        `learning_rate` are all set in the `__init__()` options statement and
+        may be changed through `set_options()`.
 
         Args:
           walker_index: index of walker to use for fitting (Default value = 0)
 
         Returns:
-          TrajectoryData` containing run_info, trajectory, averages
+          `TrajectoryData` instance containing run_info, trajectory, averages
           pandas dataframes
 
         """
@@ -479,7 +527,7 @@ class Simulation(object):
             at once.
 
         Returns:
-            `TrajectoryData` containing run_info, trajectory, averages pandas
+            `TrajectoryData` instance containing run_info, trajectory, averages pandas
             dataframes
 
         """

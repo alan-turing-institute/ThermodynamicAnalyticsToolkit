@@ -351,9 +351,8 @@ class Model(object):
         """Creates a default *FLAGS* structure containing all options that
         control the network, sampling/training and so on.
 
-        Kwargs:
-          dict to override default values by keyword, value pairs, see
-          `PythonOptions._description_map`
+        Args:
+          kwargs: dict to override default values by keyword, value pairs, see `PythonOptions._description_map`
 
         Returns:
           created *FLAGS* dict
