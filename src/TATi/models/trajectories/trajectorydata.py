@@ -22,9 +22,8 @@ class TrajectoryData(object):
     """This class is a simple structure that combines three pandas dataframes
     with information on a trajectory.
 
-    Args:
-
-    Returns:
+    This class is used to simplify the access when there is just a single
+    walker.
 
     """
 

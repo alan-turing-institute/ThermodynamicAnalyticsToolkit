@@ -49,6 +49,7 @@ class PythonOptions(Options):
         ... )
     """
 
+    ## gives a description for each option.
     _description_map = {
         "averages_file": "CSV file name to write ensemble averages information "+ \
                          "such as average kinetic, potential, virial",
@@ -141,9 +142,8 @@ class PythonOptions(Options):
         "use_reweighting": "",
         "verbose": "how much (debugging) information to print",
     }
-    """ dict: gives a description for each option.
-    """
 
+    ## sets a default value for each option.
     _default_map = {
         "averages_file": None,
         "batch_data_files": [],
@@ -198,9 +198,8 @@ class PythonOptions(Options):
         "use_reweighting": False,
         "verbose": 0,
     }
-    """ dict: sets a default value for each option.
-    """
 
+    ## sets the type of each option.
     _type_map = {
         "averages_file": str,
         "batch_data_file_type": str,
@@ -251,17 +250,14 @@ class PythonOptions(Options):
         "use_reweighting": bool,
         "verbose": int,
     }
-    """ dict: sets the type of each option.
-    """
 
+    ## this denotes the type as of specific type.
     _list_type_map = {
         "batch_data_files": str,
         "hidden_dimension": int,
         "input_columns": str,
         "parse_steps": int,
     }
-    """ dict: this denotes the type as of specific type.
-    """
 
     @staticmethod
     def help(key=None):
@@ -297,7 +293,7 @@ class PythonOptions(Options):
         Args:
           add_keys: controls whether all default values are added as options
           (default value = True)
-          value_dict: keyword arguments for setting parameters different to default
+          value_keyword arguments for setting parameters different to default
           (default value = empty dict)
 
         Returns:
@@ -331,8 +327,8 @@ class PythonOptions(Options):
     def set_options(self, **kwargs):
         """Sets all options given by the keyword dictionary in `kwargs`.
 
-        Kwargs:
-          For full list see `_description_map`
+        Args:
+          kwargs: For full list see `_description_map`
 
         Returns:
 
