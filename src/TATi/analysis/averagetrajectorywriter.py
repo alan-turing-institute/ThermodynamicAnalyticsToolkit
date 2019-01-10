@@ -23,9 +23,7 @@ import numpy as np
 from TATi.common import setup_csv_file
 
 class AverageTrajectoryWriter(object):
-    """ This class writes the averaged parameters to a CSV file
-
-    """
+    """This class writes the averaged parameters to a CSV file"""
 
     output_width = 8
     output_precision = 8
@@ -40,9 +38,13 @@ class AverageTrajectoryWriter(object):
         print(str(self.variance_params[0:10]))
 
     def write(self, filename):
-        """ Write average and variance of each parameter to file.
+        """Write average and variance of each parameter to file.
 
-        :param filename: filename of file
+        Args:
+          filename: filename of file
+
+        Returns:
+
         """
         csv_writer, csv_file = setup_csv_file(filename, ['step', 'average_parameter', 'variance_parameter'])
         for step, avg,var in zip(range(self.number_dof), self.average_params, self.variance_params):

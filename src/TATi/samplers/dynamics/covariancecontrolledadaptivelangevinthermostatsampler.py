@@ -30,23 +30,31 @@ from TATi.samplers.dynamics.geometriclangevinalgorithmsecondordersampler \
 
 
 class CovarianceControlledAdaptiveLangevinThermostat(GeometricLangevinAlgorithmSecondOrderSampler):
-    """ Implements a Geometric Langevin Algorithm Momentum Sampler
+    """Implements a Geometric Langevin Algorithm Momentum Sampler
     in the form of a TensorFlow Optimizer, overriding tensorflow.python.training.Optimizer.
+
+    Args:
+
+    Returns:
 
     """
     def __init__(self, covariance_blending, step_width, inverse_temperature, friction_constant, sigma, sigmaA,
                  seed=None, use_locking=False, name='CovarianceControlledAdaptiveLangevinThermostat'):
-        """ Init function for this class.
+        """Init function for this class.
 
-        :param covariance_blending: covariance identity blending value eta to use in creating the preconditioning matrix
-        :param step_width: step width for gradient, also affects inject noise
-        :param inverse_temperature: scale for gradients
-        :param friction_constant: scales the momenta
-        :param sigma: scale of noise injected to momentum per step
-        :param sigmaA: scale of noise in convex combination
-        :param seed: seed value of the random number generator for generating reproducible runs
-        :param use_locking: whether to lock in the context of multi-threaded operations
-        :param name: internal name of optimizer
+        Args:
+          covariance_blending: covariance identity blending value eta to use in creating the preconditioning matrix
+          step_width: step width for gradient, also affects inject noise
+          inverse_temperature: scale for gradients
+          friction_constant: scales the momenta
+          sigma: scale of noise injected to momentum per step
+          sigmaA: scale of noise in convex combination
+          seed: seed value of the random number generator for generating reproducible runs (Default value = None)
+          use_locking: whether to lock in the context of multi-threaded operations (Default value = False)
+          name: internal name of optimizer (Default value = 'CovarianceControlledAdaptiveLangevinThermostat')
+
+        Returns:
+
         """
         super(CovarianceControlledAdaptiveLangevinThermostat, self).__init__(covariance_blending, step_width, inverse_temperature,
                                                                              friction_constant, seed, use_locking, name)
@@ -54,8 +62,13 @@ class CovarianceControlledAdaptiveLangevinThermostat(GeometricLangevinAlgorithmS
         self._sigmaA = sigmaA
 
     def _prepare(self):
-        """ Converts step width into a tensor, if given as a floating-point
+        """Converts step width into a tensor, if given as a floating-point
         number.
+
+        Args:
+
+        Returns:
+
         """
         super(CovarianceControlledAdaptiveLangevinThermostat, self)._prepare()
         self._sigma_t = ops.convert_to_tensor(self._sigma, name="sigma")
@@ -69,19 +82,23 @@ class CovarianceControlledAdaptiveLangevinThermostat(GeometricLangevinAlgorithmS
                                           use_resource=True, dtype=dds_basetype)
 
     def _apply_dense(self, grads_and_vars, var):
-        """ Adds nodes to TensorFlow's computational graph in the case of densely
+        """Adds nodes to TensorFlow's computational graph in the case of densely
         occupied tensors to perform the actual sampling.
-
+        
         We simply add nodes that generate normally distributed noise here, one
         for each weight.
         The norm of the injected noise is placed into the TensorFlow summary.
-
+        
         The discretization scheme is according to (1.59) in [dissertation Zofia Trstanova],
         i.e. 2nd order Geometric Langevin Algorithm.
 
-        :param grads_and_vars: gradient nodes over all walkers and all variables
-        :param var: parameters of the neural network
-        :return: a group of operations to be added to the graph
+        Args:
+          grads_and_vars: gradient nodes over all walkers and all variables
+          var: parameters of the neural network
+
+        Returns:
+          a group of operations to be added to the graph
+
         """
         # get number of parameters (for this layer)
         precondition_matrix, grad = self._pick_grad(grads_and_vars, var)

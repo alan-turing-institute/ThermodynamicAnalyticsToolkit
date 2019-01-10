@@ -45,12 +45,17 @@ from TATi.models.basetype import dds_basetype
 
 class RefVariableWalkerEnsembleProcessor(_OptimizableVariable):
     """Processor for List of WalkerEnsemble Variable.
-
+    
     This variable has multiple related gradients coming from the replicated
     versions of the neural network, each one associated to a walker in an
     ensemble of walkers, which might be used in the update scheme. This class
     overrides the default `update_op` of `tensorflow`'s `Optimzer` to allow
     for list of tensor to be passed down.
+
+    Args:
+
+    Returns:
+
     """
 
     def __init__(self, v):
@@ -78,7 +83,14 @@ class RefVariableWalkerEnsembleProcessor(_OptimizableVariable):
             return optimizer._apply_sparse_duplicate_indices(grads_and_vars, self._v)
 
 def _get_processor(v):
-    """The processor of v."""
+    """The processor of v.
+
+    Args:
+      v: 
+
+    Returns:
+
+    """
     if LooseVersion(tf.__version__) >= LooseVersion("1.7.0"):
         if context.executing_eagerly():
             if isinstance(v, ops.Tensor):
@@ -101,31 +113,46 @@ def _get_processor(v):
     raise NotImplementedError("Trying to optimize unsupported type ", v)
 
 class WalkerEnsembleOptimizer(Optimizer):
-    """ This implements a version of the optimizer that has more than one walkers
+    """This implements a version of the optimizer that has more than one walkers
     that exchange their gradients among one another.
-
+    
     We override the `Optimizer` class in `tensorflow` in order to wedge in
     functionality between computation of the gradients (i.e. adding nodes to
     the computational graph that do this) and the actual application of the
     gradients for doing the position update.
-
+    
     This way the position update may actually rely on the gradients of other
     instances (or any other information) stored in possible walkers.
-    """
-    def __init__(self, covariance_blending, use_locking=False, name='WalkerEnsembleOptimizer'):
-        """ Init function for this class.
 
-        :param covariance_blending: covariance identity blending value eta to use in creating the preconditioning matrix
-        :param use_locking: whether to lock in the context of multi-threaded operations
-        :param name: internal name of optimizer
+    Args:
+
+    Returns:
+
+    """
+    def __init__(self, covariance_blending, use_locking=False,
+                 name='WalkerEnsembleOptimizer'):
+        """Init function for this class.
+
+        Args:
+          covariance_blending: covariance identity blending value eta to use in creating the preconditioning matrix
+          use_locking: whether to lock in the context of multi-threaded operations (Default value = False)
+          name: internal name of optimizer (Default value = 'WalkerEnsembleOptimizer')
+
+        Returns:
+
         """
         super(WalkerEnsembleOptimizer, self).__init__(use_locking, name)
         self._covariance_blending = covariance_blending
         self.EQN_update = None
 
     def _prepare(self):
-        """ Converts step width into a tensor, if given as a floating-point
+        """Converts step width into a tensor, if given as a floating-point
         number.
+
+        Args:
+
+        Returns:
+
         """
         super(WalkerEnsembleOptimizer, self)._prepare()
         self._covariance_blending_t = ops.convert_to_tensor(self._covariance_blending, name="covariance_blending")
@@ -150,16 +177,21 @@ class WalkerEnsembleOptimizer(Optimizer):
 
     def apply_gradients(self, walkers_grads_and_vars, index, global_step=None, name=None):
         """Apply gradients to variables.
-
+        
         Here, we actually more gradient nodes than we require, namely addtionally
         those from all other walkers. We pick the ones associated with each
         specific variable, e.g. all gradients to each layer1 weights in all
         walkers. And these are given to the internally called `apply_dense`
         function.
 
-        :param grads_and_vars: gradients and variables as a list over all parallel
-                        walkers
-        :param index: index of this walker
+        Args:
+          walkers_grads_and_vars: gradients and variables as a list over all parallel walkers
+          index: walker index
+          global_step: global_step node for this walkers (Default value = None)
+          name: name of this operation (Default value = None)
+
+        Returns:
+
         """
         # add processor for each variable
         grads_and_vars = tuple(walkers_grads_and_vars[index])    # Make sure repeat iteration works.
@@ -277,15 +309,19 @@ class WalkerEnsembleOptimizer(Optimizer):
             precond_assign, [precond_assign], "preconditioner:", summarize=9)
 
     def _pick_grad(self, grads_and_vars, var):
-        """ Helper function to extract the gradient associated with `var` from
+        """Helper function to extract the gradient associated with `var` from
         the list containing all gradients and variables in `grads_and_vars`.
-
+        
         If `do_precondition_gradient` is true, then this will additionally
         precondition the gradient using the other walkers' gradients.
 
-        :param grads_and_vars: list of grad, var tuples over all walkers
-        :param var: current variable to associated to grad of this walker instance
-        :return: (preconditioned) grad associated to var
+        Args:
+          grads_and_vars: list of grad, var tuples over all walkers
+          var: current variable to associated to grad of this walker instance
+
+        Returns:
+          preconditioned) grad associated to var
+
         """
         #print(var.name[var.name.find("/"):])
         grad, _ = self._extract_grads(grads_and_vars, var)
@@ -338,15 +374,19 @@ class WalkerEnsembleOptimizer(Optimizer):
             return precondition_matrix, grad
 
     def _extract_grads(self, grads_and_vars, var):
-        """ Helper function to extract the gradient associated with `var` from
+        """Helper function to extract the gradient associated with `var` from
         the list containing all gradients and variables in `grads_and_vars`.
         Moreover, we return also all other gradients (in walkers) associated to
         the same var.
 
-        :param grads_and_vars: list of grad, var tuples over all walkers
-        :param var: current variable
-        :return: grad associated to `var`,
-                other grads associated to equivalent var in other walkers
+        Args:
+          grads_and_vars: list of grad, var tuples over all walkers
+          var: current variable
+
+        Returns:
+          grad associated to `var`,
+          other grads associated to equivalent var in other walkers
+
         """
         #print("var: "+str(var))
         #print("truncated var: "+str(var.name[var.name.find("/"):]))
@@ -362,14 +402,18 @@ class WalkerEnsembleOptimizer(Optimizer):
         return grad, othergrads
 
     def _extract_vars(self, grads_and_vars, var):
-        """ Helper function to extract the variable associated with `var` from
+        """Helper function to extract the variable associated with `var` from
         the list containing all gradients and variables in `grads_and_vars`.
         Moreover, we return also all other gradients (in walkers) associated to
         the same var.
 
-        :param grads_and_vars: list of grad, var tuples over all walkers
-        :param var: current variable
-        :return: other vars associated to equivalent var in other walkers
+        Args:
+          grads_and_vars: list of grad, var tuples over all walkers
+          var: current variable
+
+        Returns:
+          other vars associated to equivalent var in other walkers
+
         """
         othervars = []
         for i in range(len(grads_and_vars)):
@@ -383,11 +427,16 @@ class WalkerEnsembleOptimizer(Optimizer):
         return var, othervars
 
     def _get_covariance(self, flat_othervars, var):
-        """ Returns node for the covariance between the variables of all other
+        """Returns node for the covariance between the variables of all other
         walkers plus the identity.
 
-        :param flat_othervars: list of all other variables
-        :return: node for the stacked variables and the covariance matrix
+        Args:
+          flat_othervars: list of all other variables
+          var: variable node of the current walker
+
+        Returns:
+          node for the stacked variables and the covariance matrix
+
         """
         # we use a flat vars tensor as otherwise the index arithmetics becomes
         # very complicated for the "matrix * vector" product (covariance matrix
@@ -447,12 +496,16 @@ class WalkerEnsembleOptimizer(Optimizer):
         return rank1factors
 
     def _stack_gradients(self, grads_and_vars, var):
-        """ Stacks all (other) gradients together to compute a covariance matrix.
+        """Stacks all (other) gradients together to compute a covariance matrix.
 
-        :param grads_and_vars: list of gradients and vars from all walkers
-        :param var: this walker's variable
-        :return: stacked gradients from _other_ walkers (excluding the one
-                associated to var)
+        Args:
+          grads_and_vars: list of gradients and vars from all walkers
+          var: this walker's variable
+
+        Returns:
+          stacked gradients from _other_ walkers (excluding the one
+          associated to var)
+
         """
         grads = []
         for i in range(len(grads_and_vars)):
@@ -467,11 +520,15 @@ class WalkerEnsembleOptimizer(Optimizer):
 
     @staticmethod
     def get_covariance_component(x,y):
-        """ Calculates the covariance between two variables `x` and `y`.
--
-        :param x: first variable
-        :param y: second variable
-        :return: cov(x,y)
+        """Calculates the covariance between two variables `x` and `y`.
+
+        Args:
+          x: first variable
+          y: second variable
+
+        Returns:
+          covariance between x and y
+
         """
         dim = math_ops.cast(tf.size(x), dds_basetype)
         def accept_block():

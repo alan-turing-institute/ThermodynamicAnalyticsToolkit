@@ -22,8 +22,12 @@ import logging
 import sqlite3
 
 class runtime(object):
-    """ This class contains runtime information and capability
+    """This class contains runtime information and capability
     to write these to an sqlite file.
+
+    Args:
+
+    Returns:
 
     """
 

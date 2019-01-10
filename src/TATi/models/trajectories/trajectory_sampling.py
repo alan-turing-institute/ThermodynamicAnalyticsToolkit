@@ -24,9 +24,7 @@ import tensorflow as tf
 from TATi.models.trajectories.trajectory_base import TrajectoryBase
 
 class TrajectorySampling(TrajectoryBase):
-    """ Refines the Trajectory class to perform a sampling trajectory.
-
-    """
+    """Refines the Trajectory class to perform a sampling trajectory."""
     def __init__(self, trajectory_state):
         super(TrajectorySampling, self).__init__(trajectory_state)
         self.sampler = None
@@ -68,10 +66,11 @@ class TrajectorySampling(TrajectoryBase):
                 raise NotImplementedError("The sampler method %s is unknown" % (self.state.FLAGS.sampler))
 
     def get_averages_header(self):
-        """ Prepares the distinct header for the averages file for sampling
+        """Prepares the distinct header for the averages file for sampling
 
+        Args:
 
-        :param setup: sample, train or None
+        Returns:
 
         """
         header = super(TrajectorySampling, self).get_averages_header()
@@ -88,8 +87,7 @@ class TrajectorySampling(TrajectoryBase):
         return header
 
     def get_run_header(self):
-        """ Prepares the distinct header for the run file for sampling
-        """
+        """Prepares the distinct header for the run file for sampling"""
         header = ['id', 'step', 'epoch', 'accuracy', 'loss', 'time_per_nth_step']
         if self.state.FLAGS.sampler == "StochasticGradientLangevinDynamics":
             header += ['scaled_gradient', 'virial', 'scaled_noise']
@@ -108,14 +106,14 @@ class TrajectorySampling(TrajectoryBase):
         return ["sample_step"]
 
     def init_trajectory(self, prior, model):
-        """ Initialize the samplers for this trajectory.
-
+        """Initialize the samplers for this trajectory.
+        
         Note:
             Because of the multiple walkers that may share
             gradient and position information, we need to split
             up the typical `NeuralNetwork.add_sample_method()`
             approach.
-
+        
             1. Prepare the samplers by adding required placeholders
             nodes and the samplers itself
             2. Prepare the gradient evaluation nodes such that
@@ -124,8 +122,12 @@ class TrajectorySampling(TrajectoryBase):
             to complete the position update nodes of the sampling
             method.
 
-        :param prior: prior for the sampler
-        :param model: ref to the full model
+        Args:
+          prior: prior for the sampler
+          model: ref to the full model
+
+        Returns:
+
         """
         # prepare samplers
         self.sampler = []

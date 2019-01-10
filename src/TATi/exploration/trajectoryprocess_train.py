@@ -29,10 +29,14 @@ from TATi.exploration.get_executables import get_install_path
 
 
 class TrajectoryProcess_train(TrajectoryProcess):
-    ''' This implements a job that runs a new leg of a given trajectory
+    """This implements a job that runs a new leg of a given trajectory
     using an Optimizer.
 
-    '''
+    Args:
+
+    Returns:
+
+    """
 
     INDEX_RUN_FILENAME = 0          # index of run_file in temp_filenames
     INDEX_TRAJECTORY_FILENAME = 1   # index of trajectory in temp_filenames
@@ -41,14 +45,19 @@ class TrajectoryProcess_train(TrajectoryProcess):
     LEARNING_RATE = 3e-2 # use larger learning rate as we are close to minimum
 
     def __init__(self, data_id, network_model, FLAGS, temp_filenames, restore_model, save_model=None, continue_flag = True):
-        """ Initializes a run job.
+        """Initializes a run job.
 
-        :param data_id: id associated with data object
-        :param run_flags: FLAGS structure with run parameters
-        :param temp_filenames: temporary (unique) filenames for run_info, trajectory, and averages
-        :param restore_model: file of the model to restore from
-        :param save_model: file of the model to save last step to
-        :param continue_flag: flag allowing to override spawning of subsequent job
+        Args:
+          data_id: id associated with data object
+          network_model: network_model containing the neural network's whole state
+          FLAGS: FLAGS structure with run parameters
+          temp_filenames: temporary (unique) filenames for run_info, trajectory, and averages
+          restore_model: file of the model to restore from
+          save_model: file of the model to save last step to (Default value = None)
+          continue_flag: flag allowing to override spawning of subsequent job (Default value = True)
+
+        Returns:
+
         """
         super(TrajectoryProcess_train, self).__init__(data_id, network_model)
         self.job_type = "train"
@@ -61,11 +70,15 @@ class TrajectoryProcess_train(TrajectoryProcess):
         self.continue_flag = continue_flag
 
     def run(self, _data):
-        """ This implements running a new leg of a given trajectory stored
+        """This implements running a new leg of a given trajectory stored
         in a data object.
 
-        :param _data: data object to use
-        :return: updated data object
+        Args:
+          _data: data object to use
+
+        Returns:
+          updated data object
+
         """
         # construct flags for TATiOptimizer
         optimizing_flags = self.get_options_from_flags(self.FLAGS,

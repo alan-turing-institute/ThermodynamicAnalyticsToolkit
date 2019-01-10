@@ -27,9 +27,13 @@ from TATi.analysis.parsedtrajectory import ParsedTrajectory
 from TATi.samplers.grid.naivegridsampler import NaiveGridSampler
 
 class SubgridSampler(NaiveGridSampler):
-    """ This class constrains the naive full grid sampling approach to a
+    """This class constrains the naive full grid sampling approach to a
     subspace of the space of all degrees of freedom by a given set of
     directions that span the subspace.
+
+    Args:
+
+    Returns:
 
     """
     def __init__(self, network_model, exclude_parameters, samples_weights, degrees, directions):

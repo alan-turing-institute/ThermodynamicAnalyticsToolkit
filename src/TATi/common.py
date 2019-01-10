@@ -27,18 +27,26 @@ import tensorflow as tf
 from TATi.models.basetype import dds_basetype
 
 def get_filename_from_fullpath(fullpath):
-    """ Returns the filename for any given full path
+    """Returns the filename for any given full path
 
-    :param fullpath: string containing filename and folders
-    :return: just the filename
+    Args:
+      fullpath: string containing filename and folders
+
+    Returns:
+      just the filename
+
     """
     return os.path.basename(fullpath)
 
 def get_list_from_string(str_or_list_of_str):
-    """ Extracts list of strings from any string (or list of strings).
+    """Extracts list of strings from any string (or list of strings).
 
-    :param str_or_list_of_str: string
-    :return: list of str
+    Args:
+      str_or_list_of_str: string
+
+    Returns:
+      list of str
+
     """
     tmpstr=str_or_list_of_str
     if str_or_list_of_str is not str:
@@ -50,9 +58,12 @@ def get_list_from_string(str_or_list_of_str):
 
 
 def initialize_config_map():
-    """ This initialize the configuration dictionary with default values
+    """This initialize the configuration dictionary with default values
+    
+    Args:
 
-    :return:
+    Returns:
+
     """
     # output files
     config_map = {
@@ -68,11 +79,15 @@ def initialize_config_map():
 
 
 def setup_csv_file(filename, header):
-    """ Opens a new CSV file and writes the given `header` to it.
+    """Opens a new CSV file and writes the given `header` to it.
 
-    :param filename: filename of CSV file
-    :param header: header to write as first row
-    :return: csv writer, csv file
+    Args:
+      filename: filename of CSV file
+      header: header to write as first row
+
+    Returns:
+      csv writer, csv file
+
     """
     csv_file = open(filename, 'w', newline='')
     csv_writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
@@ -81,12 +96,16 @@ def setup_csv_file(filename, header):
 
 
 def setup_run_file(filename, header, config_map):
-    """ Opens the run CSV file if a proper `filename` is given.
+    """Opens the run CSV file if a proper `filename` is given.
 
-    :param filename: filename of run CSV file or None
-    :param header: list of strings as header for each column
-    :param config_map: configuration dictionary
-    :return: CSV writer or None
+    Args:
+      filename: filename of run CSV file or None
+      header: list of strings as header for each column
+      config_map: configuration dictionary
+
+    Returns:
+      CSV writer or None
+
     """
     if filename is not None:
         config_map["do_write_run_file"] = True
@@ -97,12 +116,16 @@ def setup_run_file(filename, header, config_map):
 
 
 def get_trajectory_header(no_weights, no_biases):
-    """ Returns the header for CSV trajectory file based on the given number
+    """Returns the header for CSV trajectory file based on the given number
     of weights and biases.
 
-    :param no_weights: number of weights of the network
-    :param no_biases: number of biases of the network
-    :return: list of strings with column names
+    Args:
+      no_weights: number of weights of the network
+      no_biases: number of biases of the network
+
+    Returns:
+      list of strings with column names
+
     """
     return ['id', 'step', 'loss']\
            + [str("weight")+str(i) for i in range(0,no_weights)]\
@@ -110,11 +133,17 @@ def get_trajectory_header(no_weights, no_biases):
 
 
 def setup_trajectory_file(filename, no_weights, no_biases, config_map):
-    """ Opens the trajectory file if a proper `filename` is given.
+    """Opens the trajectory file if a proper `filename` is given.
 
-    :param filename: filename of trajectory file or None
-    :param config_map: configuration dictionary
-    :return: CSV writer or None
+    Args:
+      filename: filename of trajectory file or None
+      no_weights: number of weights of network
+      no_biases: number of biases of network
+      config_map: configuration dictionary
+
+    Returns:
+      CSV writer or None
+
     """
     if filename is not None:
         config_map["do_write_trajectory_file"] = True
@@ -126,10 +155,14 @@ def setup_trajectory_file(filename, no_weights, no_biases, config_map):
 
 
 def file_length(filename):
-    """ Determines the length of the file designated by `filename`.
+    """Determines the length of the file designated by `filename`.
 
-    :param filename: name of file
-    :return: length
+    Args:
+      filename: name of file
+
+    Returns:
+      length
+
     """
     with open(filename) as f:
         for i, l in enumerate(f):
@@ -138,10 +171,14 @@ def file_length(filename):
 
 
 def number_lines_in_file(filename):
-    """ Determines the lines in the file designated by `filename`.
+    """Determines the lines in the file designated by `filename`.
 
-    :param filename: name of file
-    :return: number of, lines
+    Args:
+      filename: name of file
+
+    Returns:
+      number of, lines
+
     """
     with open(filename) as f:
         for i, l in enumerate(f):
@@ -150,10 +187,14 @@ def number_lines_in_file(filename):
 
 
 def read_from_csv(filename_queue):
-    """ Reads a set of records/data from a CSV file into a tensorflow tensor.
+    """Reads a set of records/data from a CSV file into a tensorflow tensor.
 
-    :param filename_queue: filename
-    :return: features and labels (i.e. x,y)
+    Args:
+      filename_queue: filename
+
+    Returns:
+      list of two arrays - features or x, labels or y
+
     """
     reader = tf.TextLineReader(skip_header_lines=1)
     _, csv_row = reader.read(filename_queue)
@@ -198,7 +239,17 @@ def read_and_decode_image(serialized_example, num_pixels, num_classes):
 
 
 def decode_csv_line(line, defaults, input_dimension, output_dimension):
-    """Convert a csv line into a (features_dict,label) pair."""
+    """Convert a csv line into a (features_dict,label) pair.
+
+    Args:
+      line: 
+      defaults: 
+      input_dimension: 
+      output_dimension: 
+
+    Returns:
+
+    """
     # Decode the line to a tuple of items based on the types of
     # csv_header.values().
     items = tf.decode_csv(line, list(defaults.values()))
@@ -212,10 +263,14 @@ def decode_csv_line(line, defaults, input_dimension, output_dimension):
 
 
 def get_csv_defaults(input_dimension, output_dimension=1):
-    """ Return the defaults for a csv line with input features and output labels.
+    """Return the defaults for a csv line with input features and output labels.
 
-    :param input_dimension: number of features
-    :param output_dimension: number of labels
+    Args:
+      input_dimension: number of features
+      output_dimension: number of labels (Default value = 1)
+
+    Returns:
+
     """
     defaults = collections.OrderedDict([])
     for i in range(input_dimension):
@@ -229,21 +284,25 @@ def get_csv_defaults(input_dimension, output_dimension=1):
 
 
 def create_input_layer(input_dimension, input_list):
-    """ Creates the input layer of TensorFlow's neural network.
-
+    """Creates the input layer of TensorFlow's neural network.
+    
     As the input nodes are directly connected to the type of data we feed
      into the network, the function is associated with the dataset generator
      class.
-
+    
     For arbitrary input dimension we support taking powers, sine or cosine
      of the argument.
-
+    
     All data resides in the domain [-r,r]^2.
 
-    :param input_dimension: number of nodes for the input layer
-    :param input_list: Pick of derived arguments to
-            actually feed into the net
-    :returns: generated nodes for direct input and derived input
+    Args:
+      input_dimension: number of nodes for the input layer
+      input_list: Pick of derived arguments to
+    actually feed into the net
+
+    Returns:
+      generated nodes for direct input and derived input
+
     """
     # Input placeholders
     with tf.name_scope('input'):
@@ -291,11 +350,18 @@ def create_input_layer(input_dimension, input_list):
 
 
 def data_numpy_to_csv(dataset, labels, fileName):
-    """ Save data in numpy format into .csv file
-
+    """Save data in numpy format into .csv file
+    
     params: dataset (numpy.ndarray) with all the points and features
     params: labels (numpy.ndarray) with all the labels
-    params: fileName (string) file name with .csv, example: 'filename.csv'
+
+    Args:
+      dataset: 
+      labels: 
+      fileName: 
+
+    Returns:
+
     """
     from TATi.datasets.classificationdatasets \
         import ClassificationDatasets as DatasetGenerator

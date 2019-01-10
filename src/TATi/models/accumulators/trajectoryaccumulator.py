@@ -26,9 +26,7 @@ from TATi.models.parameters.neuralnet_parameters import neuralnet_parameters
 
 
 class TrajectoryAccumulator(Accumulator):
-    """ This class accumulates trajectory lines.
-
-    """
+    """This class accumulates trajectory lines."""
 
     def __init__(self, method, config_map,
                  max_steps, every_nth, number_walkers, directions):

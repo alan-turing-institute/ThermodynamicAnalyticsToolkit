@@ -27,17 +27,21 @@ import time
 from TATi.models.basetype import dds_basetype
 
 class TrajectoryState(object):
-    """ TrajectoryState contains the *unique* state of all trajectories.
-
+    """TrajectoryState contains the *unique* state of all trajectories.
+    
     `TrajectoryState` needs to be unique and is shared as ref among
     Trajectory classes through their base class `TrajectoryBase`.
-
+    
     Here, we create all (unique) objects required to perform the evaluate
     a trajectory through training or sampling the loss.
-
+    
     More generally, all functionality for adding of nodes to and evaluation
     of nodes in the computational graph in the course of extracting
     trajectories is contained here.
+
+    Args:
+
+    Returns:
 
     """
     def __init__(self, model):
@@ -65,8 +69,13 @@ class TrajectoryState(object):
         return all_weights, all_biases
 
     def create_resource_variables(self):
-        """ Creates some global resource variables to hold statistical quantities
+        """Creates some global resource variables to hold statistical quantities
         during sampling.
+
+        Args:
+
+        Returns:
+
         """
         static_vars_float = ["current_kinetic", "kinetic_energy", \
                              "old_total_energy", "inertia", "momenta", "gradients", "virials", "noise"]
@@ -119,16 +128,20 @@ class TrajectoryState(object):
             _dict[_key] = [_item]
 
     def _create_static_variable_dict(self, number_replicated_graphs):
-        """ Instantiate all sampler's resource variables. Also create
+        """Instantiate all sampler's resource variables. Also create
         assign zero nodes.
-
+        
         This returns a dictionary with lists as values where the lists contain
         the created variable for each replicated graph associated to a walker.
 
-        :param number_replicated_graphs: number of replicated graphs to instantiate for
-        :return: dict with static_var lists (one per walker), equivalent dict
-                for zero assigners, dict with assigners (required for HMC), and dict
-                with placeholders for assigners (required for HMC)
+        Args:
+          number_replicated_graphs: number of replicated graphs to instantiate for
+
+        Returns:
+          dict with static_var lists (one per walker), equivalent dict
+          for zero assigners, dict with assigners (required for HMC), and dict
+          with placeholders for assigners (required for HMC)
+
         """
         static_vars_float = ["current_kinetic", "kinetic_energy", \
                              "old_total_energy", "inertia", "momenta", "gradients", "virials", "noise"]
@@ -216,19 +229,23 @@ class TrajectoryState(object):
 
 
     def _create_default_feed_dict_with_constants(self, walker_index=0):
-        """ Construct an initial feed dict from all constant parameters
+        """Construct an initial feed dict from all constant parameters
         such as step width, ...
-
+        
         Here, we check whether the respective placeholder node is contained
         in the neural network and only in that case add the value to the
         feed_dict.
-
+        
         Basically, we connect entries in the "FLAGS" structure that is parsed
         from cmd-line or created through `setup_parameters()` with the slew of
         placeholders in tensorflow's neural network.
 
-        :param walker_index: index of walker whose placeholders to feed
-        :return: feed_dict with constant parameters
+        Args:
+          walker_index: index of walker whose placeholders to feed (Default value = 0)
+
+        Returns:
+          feed_dict with constant parameters
+
         """
 
         # add sampler options only when they are present in parameter struct

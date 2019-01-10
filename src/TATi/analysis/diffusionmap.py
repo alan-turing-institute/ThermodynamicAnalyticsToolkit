@@ -33,8 +33,12 @@ except ImportError:
     can_use_pydiffmap = False
 
 class DiffusionMap(object):
-    """ This class contains eigenvectors and values resulting from
+    """This class contains eigenvectors and values resulting from
     the diffusion map analysis.
+
+    Args:
+
+    Returns:
 
     """
     def __init__(self, trajectory, loss):

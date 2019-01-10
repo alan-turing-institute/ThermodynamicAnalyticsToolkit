@@ -30,25 +30,35 @@ from TATi.samplers.dynamics.hamiltonianmontecarlosamplerfirstordersampler import
 
 
 class HamiltonianMonteCarloSamplerSecondOrderSampler(HamiltonianMonteCarloSamplerFirstOrderSampler):
-    """ Implements a Hamiltonian Monte Carlo Sampler
+    """Implements a Hamiltonian Monte Carlo Sampler
     in the form of a TensorFlow Optimizer, overriding tensorflow.python.training.Optimizer.
+
+    Args:
+
+    Returns:
 
     """
     def __init__(self,
                  covariance_blending, step_width, inverse_temperature,
                  loss, current_step, next_eval_step, hd_steps, accept_seed,
                  seed=None, use_locking=False, name='HamiltonianMonteCarlo_2ndOrder'):
-        """ Init function for this class.
+        """Init function for this class.
 
-        :param covariance_blending: covariance identity blending value eta to use in creating the preconditioning matrix
-        :param step_width: step width for gradient
-        :param inverse_temperature: scale for noise
-        :param loss: loss value of the current state for evaluating acceptance
-        :param current_step: current step
-        :param next_eval_step: step number at which accept/reject is evaluated next
-        :param seed: seed value of the random number generator for generating reproducible runs
-        :param use_locking: whether to lock in the context of multi-threaded operations
-        :param name: internal name of optimizer
+        Args:
+          covariance_blending: covariance identity blending value eta to use in creating the preconditioning matrix
+          step_width: placeholder for step width for gradient
+          inverse_temperature: placeholder for scale for noise
+          loss: placeholder for loss value of the current state for evaluating acceptance
+          current_step: placeholder for current step
+          next_eval_step: placeholder for step number at which accept/reject is evaluated next
+          hd_steps: placeholder with number of hamilton dynamics steps
+          accept_seed: extra seed value for random numbers used for acceptance evaluation
+          seed: seed value of the random number generator for generating reproducible runs (Default value = None)
+          use_locking: whether to lock in the context of multi-threaded operations (Default value = False)
+          name: internal name of optimizer (Default value = 'HamiltonianMonteCarlo_2ndOrder')
+
+        Returns:
+
         """
         super(HamiltonianMonteCarloSamplerSecondOrderSampler, self).__init__(
             covariance_blending, step_width, inverse_temperature,
@@ -57,8 +67,13 @@ class HamiltonianMonteCarloSamplerSecondOrderSampler(HamiltonianMonteCarloSample
         self._hd_steps = hd_steps
 
     def _prepare(self):
-        """ Converts step width into a tensor, if given as a floating-point
+        """Converts step width into a tensor, if given as a floating-point
         number.
+
+        Args:
+
+        Returns:
+
         """
         super(HamiltonianMonteCarloSamplerSecondOrderSampler, self)._prepare()
         self._hd_steps_t = ops.convert_to_tensor(self._hd_steps, name="hd_steps")
@@ -179,14 +194,14 @@ class HamiltonianMonteCarloSamplerSecondOrderSampler(HamiltonianMonteCarloSample
         return criterion_block_t
 
     def _apply_dense(self, grads_and_vars, var):
-        """ Adds nodes to TensorFlow's computational graph in the case of densely
+        """Adds nodes to TensorFlow's computational graph in the case of densely
         occupied tensors to perform the actual sampling.
-
+        
         We perform a number of Leapfrog steps on a hamiltonian (loss+kinetic energy)
         and at step number next_eval_step we check the acceptance criterion,
         either resetting back to the initial parameters or resetting the
         initial parameters to the current ones.
-
+        
         NOTE:
             Due to Tensorflow enforcing loss and gradient evaluation at
             the begin of the sampling step, we need to cyclically permute the
@@ -196,13 +211,17 @@ class HamiltonianMonteCarloSamplerSecondOrderSampler(HamiltonianMonteCarloSample
             step to compute the delayed "B" for the last time integration and
             subsequently to compute the kinetic energy before the criterion
             evaluation.
-
+        
             Effectively, we compute L+2 steps if L is the number of Hamiltonian
             dynamics steps.
 
-        :param grads_and_vars: gradient nodes over all walkers and all variables
-        :param var: parameters of the neural network
-        :return: a group of operations to be added to the graph
+        Args:
+          grads_and_vars: gradient nodes over all walkers and all variables
+          var: parameters of the neural network
+
+        Returns:
+          a group of operations to be added to the graph
+
         """
         _, grad = self._pick_grad(grads_and_vars, var)
         step_width_t, inverse_temperature_t, current_step_t, next_eval_step_t, random_noise_t, uniform_random_t = \
@@ -245,13 +264,17 @@ class HamiltonianMonteCarloSamplerSecondOrderSampler(HamiltonianMonteCarloSample
                                          momentum_global_t, kinetic_energy_t]))
 
     def _apply_sparse(self, grad, var):
-        """ Adds nodes to TensorFlow's computational graph in the case of sparsely
+        """Adds nodes to TensorFlow's computational graph in the case of sparsely
         occupied tensors to perform the actual sampling.
-
+        
         Note that this is not implemented so far.
 
-        :param grad: gradient nodes, i.e. they contain the gradient per parameter in `var`
-        :param var: parameters of the neural network
-        :return: a group of operations to be added to the graph
+        Args:
+          grad: gradient nodes, i.e. they contain the gradient per parameter in `var`
+          var: parameters of the neural network
+
+        Returns:
+          a group of operations to be added to the graph
+
         """
         raise NotImplementedError("Sparse gradient updates are not supported.")

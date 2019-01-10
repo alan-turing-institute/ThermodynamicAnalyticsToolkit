@@ -27,20 +27,22 @@ import tensorflow as tf
 from TATi.exploration.trajectoryjob_sample import TrajectoryJob_sample
 
 class TrajectoryJob_train(TrajectoryJob_sample):
-    ''' This implements a job that runs a new leg of a given trajectory.
-
-    '''
+    """This implements a job that runs a new leg of a given trajectory."""
 
     LEARNING_RATE = 3e-2 # use larger learning rate as we are close to minimum
 
     def __init__(self, data_id, network_model, initial_step, parameters=None, continue_flag = True):
-        """ Initializes a run job.
+        """Initializes a run job.
 
-        :param data_id: id associated with data object
-        :param network_model: network model containing the computational graph and session
-        :param initial_step: number of first step (for continuing a trajectory)
-        :param parameters: parameters of the neural net to set. If None, keep random ones
-        :param continue_flag: flag allowing to override spawning of subsequent job
+        Args:
+          data_id: id associated with data object
+          network_model: network model containing the computational graph and session
+          initial_step: number of first step (for continuing a trajectory)
+          parameters: parameters of the neural net to set. If None, keep random ones (Default value = None)
+          continue_flag: flag allowing to override spawning of subsequent job (Default value = True)
+
+        Returns:
+
         """
         super(TrajectoryJob_train, self).__init__(
             data_id=data_id,
@@ -73,11 +75,15 @@ class TrajectoryJob_train(TrajectoryJob_sample):
                                _trajectory_lines=trajectory)
 
     def run(self, _data):
-        """ This implements running a new leg of a given trajectory stored
+        """This implements running a new leg of a given trajectory stored
         in a data object.
 
-        :param _data: data object to use
-        :return: updated data object
+        Args:
+          _data: data object to use
+
+        Returns:
+          updated data object
+
         """
         # modify max_steps for optimization
         FLAGS = self.network_model.FLAGS

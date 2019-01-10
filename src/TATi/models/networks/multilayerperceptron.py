@@ -25,15 +25,17 @@ from TATi.models.basetype import dds_basetype
 
 
 class MultiLayerPerceptron(object):
-    """ This class adds nodes to the graph to create a multi-layer perceptron.
-
-    """
+    """This class adds nodes to the graph to create a multi-layer perceptron."""
     @staticmethod
     def weight_variable(shape, seed=None):
         """Create a weight variable, uniform randomly initialized in [-0.5, 0.5].
 
-        :param shape: shape of the weight tensor to create
-        :param seed: seed used for initializing the weights
+        Args:
+          shape: shape of the weight tensor to create
+          seed: seed used for initializing the weights (Default value = None)
+
+        Returns:
+
         """
         initial = tf.random_uniform(shape, minval=-0.5, maxval=0.5, seed=seed, dtype=dds_basetype)
         return tf.Variable(initial, dtype=dds_basetype)
@@ -42,7 +44,11 @@ class MultiLayerPerceptron(object):
     def bias_variable(shape):
         """Create a bias variable with appropriate initialization.
 
-        :param shape: shape of the weight tensor to create
+        Args:
+          shape: shape of the weight tensor to create
+
+        Returns:
+
         """
         initial = tf.constant(0.1, shape=shape, dtype=dds_basetype)
         return tf.Variable(initial, dtype=dds_basetype)
@@ -57,14 +63,18 @@ class MultiLayerPerceptron(object):
         It also sets up name scoping so that the resultant graph is easy to read,
         and adds a number of summary ops.
 
-        :param input_tensor: reference to input layer for this layer
-        :param input_dim: number of nodes in `input_layer`
-        :param output_dim: number of nodes in the created layer
-        :param layer_name: created layer's name
-        :param act: activation function to use for the nodes in the created layer
-        :param trainables_collection: specific collection to gather all weights of this layer
-        :param seed: random number seed for initializing weights
-        :return: reference to the created layer
+        Args:
+          input_tensor: reference to input layer for this layer
+          input_dim: number of nodes in `input_layer`
+          output_dim: number of nodes in the created layer
+          layer_name: created layer's name
+          act: activation function to use for the nodes in the created layer (Default value = tf.nn.relu)
+          trainables_collection: specific collection to gather all weights of this layer (Default value = None)
+          seed: random number seed for initializing weights (Default value = None)
+
+        Returns:
+          reference to the created layer
+
         """
         scope_name = tf.get_default_graph().get_name_scope()
         logging.info("Creating nn layer %s in scope %s with %d, %d"
@@ -95,22 +105,26 @@ class MultiLayerPerceptron(object):
     @staticmethod
     def add_hidden_layers(input_layer, input_dimension, layer_dimensions, keep_prob=None,
                           activation=tf.nn.relu, trainables_collection=None, seed=None):
-        """ Add fully connected hidden layers each with an additional dropout layer
+        """Add fully connected hidden layers each with an additional dropout layer
          (makes the network robust against overfitting).
-
+        
         The additional dropped layer will randomly drop samples according to the
          keep probability, i.e. 1 means all samples are keppt, 0 means all samples
          are dropped.
 
-        :param input_layer: reference to the input layer
-        :param input_dimension: number of nodes in `input_layer`
-        :param keep_prob: reference to the placeholder with the *keep probability* for the dropped layer
-        :param layer_dimensions: list of ints giving the number of nodes of each hidden layer,
-                entries with dim 0 are skipped entirely
-        :param activation: activation function of the hidden layers
-        :param trainables_collection: specific collection to gather all weights of this layer
-        :param seed: random number see to use for weights (seed is increased by one per layer)
-        :return: reference to the last layer created
+        Args:
+          input_layer: reference to the input layer
+          input_dimension: number of nodes in `input_layer`
+          keep_prob: reference to the placeholder with the *keep probability* for the dropped layer (Default value = None)
+          layer_dimensions: list of ints giving the number of nodes of each hidden layer,
+        entries with dim 0 are skipped entirely
+          activation: activation function of the hidden layers (Default value = tf.nn.relu)
+          trainables_collection: specific collection to gather all weights of this layer (Default value = None)
+          seed: random number see to use for weights (seed is increased by one per layer) (Default value = None)
+
+        Returns:
+          reference to the last layer created
+
         """
         current_seed = seed
         last_layer = input_layer
@@ -142,15 +156,19 @@ class MultiLayerPerceptron(object):
     def add_output_layer(current_hidden_layer, hidden_out_dimension,
                          output_dimension, activation, trainables_collection=None,
                          seed=None):
-        """ Add the output layer giving the predicted values.
+        """Add the output layer giving the predicted values.
 
-        :param current_hidden_layer: last hidden layer which is to be connected to the output layer
-        :param hidden_out_dimension: number of nodes in `current_hidden_layer`
-        :param output_dimension: number of output nodes
-        :param activation: activation function
-        :param trainables_collection: specific collection to gather all weights of this layer
-        :param seed: random number see to use for weights
-        :return: reference to the output layer
+        Args:
+          current_hidden_layer: last hidden layer which is to be connected to the output layer
+          hidden_out_dimension: number of nodes in `current_hidden_layer`
+          output_dimension: number of output nodes
+          activation: activation function
+          trainables_collection: specific collection to gather all weights of this layer (Default value = None)
+          seed: random number see to use for weights (Default value = None)
+
+        Returns:
+          reference to the output layer
+
         """
         y = MultiLayerPerceptron._nn_layer(
             current_hidden_layer, hidden_out_dimension, output_dimension, 'output',
@@ -166,22 +184,26 @@ class MultiLayerPerceptron(object):
                keep_prob=None,
                hidden_activation=tf.nn.relu,
                output_activation=tf.nn.tanh):
-        """ Creates the neural network model according to the specifications.
-
+        """Creates the neural network model according to the specifications.
+        
         The `input_layer` needs to be given along with its input_dimension.
         The output_layer needs to be specified here as the summaries and
         loss functions depend on them.
 
-        :param input_layer: the input_layer to connect this MLP to
-        :param layer_dimensions: a list of ints giving the number of nodes for
-            each hidden layer.
-        :param output_dimension: the number of nodes in the output layer
-        :param trainables_collection: specific collection to gather all weights of this layer
-        :param seed: seed for reproducible random values
-        :param keep_prob: ref to placeholder for keep probability or None
-        :param hidden_activation: activation function for the hidden layer
-        :param output_activation: activation function for the output layer
-        :return: output layer
+        Args:
+          input_layer: the input_layer to connect this MLP to
+          layer_dimensions: a list of ints giving the number of nodes for
+        each hidden layer.
+          output_dimension: the number of nodes in the output layer
+          trainables_collection: specific collection to gather all weights of this layer (Default value = None)
+          seed: seed for reproducible random values (Default value = None)
+          keep_prob: ref to placeholder for keep probability or None (Default value = None)
+          hidden_activation: activation function for the hidden layer (Default value = tf.nn.relu)
+          output_activation: activation function for the output layer (Default value = tf.nn.tanh)
+
+        Returns:
+          output layer
+
         """
         # Mind to only set op-level seeds! As global seed setting depends on the
         # numbering of the nodes in the computational graph which changes when

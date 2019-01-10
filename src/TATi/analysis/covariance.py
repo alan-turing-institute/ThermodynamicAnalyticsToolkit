@@ -24,8 +24,12 @@ import scipy.sparse as sps
 from TATi.analysis.parsedtrajectory import ParsedTrajectory
 
 class Covariance(object):
-    """  This class wraps the capability to perform a covariance analysis
+    """This class wraps the capability to perform a covariance analysis
     for a given trajectory.
+
+    Args:
+
+    Returns:
 
     """
     def __init__(self, trajectory):

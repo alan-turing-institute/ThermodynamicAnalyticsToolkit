@@ -30,22 +30,31 @@ from TATi.samplers.dynamics.stochasticgradientlangevindynamicssampler import Sto
 
 
 class HamiltonianMonteCarloSamplerFirstOrderSampler(StochasticGradientLangevinDynamicsSampler):
-    """ Implements a Hamiltonian Monte Carlo Sampler
+    """Implements a Hamiltonian Monte Carlo Sampler
     in the form of a TensorFlow Optimizer, overriding tensorflow.python.training.Optimizer.
+
+    Args:
+
+    Returns:
 
     """
     def __init__(self, covariance_blending, step_width, inverse_temperature, loss, current_step, next_eval_step, accept_seed, seed=None, use_locking=False, name='HamiltonianMonteCarlo_1stOrder'):
-        """ Init function for this class.
+        """Init function for this class.
 
-        :param covariance_blending: covariance identity blending value eta to use in creating the preconditioning matrix
-        :param step_width: step width for gradient
-        :param inverse_temperature: scale for noise
-        :param loss: loss value of the current state for evaluating acceptance
-        :param current_step: current step
-        :param next_eval_step: step number at which accept/reject is evaluated next
-        :param seed: seed value of the random number generator for generating reproducible runs
-        :param use_locking: whether to lock in the context of multi-threaded operations
-        :param name: internal name of optimizer
+        Args:
+          covariance_blending: covariance identity blending value eta to use in creating the preconditioning matrix
+          step_width: step width for gradient
+          inverse_temperature: scale for noise
+          loss: loss value of the current state for evaluating acceptance
+          current_step: current step
+          next_eval_step: step number at which accept/reject is evaluated next
+          accept_seed: extra seed value for random numbers used for acceptance evaluation
+          seed: seed value of the random number generator for generating reproducible runs (Default value = None)
+          use_locking: whether to lock in the context of multi-threaded operations (Default value = False)
+          name: internal name of optimizer (Default value = 'HamiltonianMonteCarlo_1stOrder')
+
+        Returns:
+
         """
         super(HamiltonianMonteCarloSamplerFirstOrderSampler, self).__init__(covariance_blending,
                                                                             step_width, inverse_temperature,
@@ -56,21 +65,30 @@ class HamiltonianMonteCarloSamplerFirstOrderSampler(StochasticGradientLangevinDy
         self._current_loss = loss
 
     def _prepare(self):
-        """ Converts step width into a tensor, if given as a floating-point
+        """Converts step width into a tensor, if given as a floating-point
         number.
+
+        Args:
+
+        Returns:
+
         """
         super(HamiltonianMonteCarloSamplerFirstOrderSampler, self)._prepare()
         self._current_step_t = ops.convert_to_tensor(self._current_step, name="current_step")
         self._next_eval_step_t = ops.convert_to_tensor(self._next_eval_step, name="next_eval_step")
 
     def _create_slots(self, var_list):
-        """ Slots are internal resources for the Optimizer to store values
+        """Slots are internal resources for the Optimizer to store values
         that are required and modified during each iteration.
-
+        
         Here, we need a slot to store the parameters for the starting step of
         the short reject/accept trajectory run.
 
-        :param var_list: list of variables
+        Args:
+          var_list: list of variables
+
+        Returns:
+
         """
         for v in var_list:
             self._zeros_slot(v, "initial_parameters", self._name)
@@ -88,11 +106,15 @@ class HamiltonianMonteCarloSamplerFirstOrderSampler(StochasticGradientLangevinDy
             #                                         op_name=self._name)
 
     def _prepare_dense(self, grad, var):
-        """ Stuff common to all Langevin samplers.
+        """Stuff common to all Langevin samplers.
 
-        :param grad: gradient nodes, i.e. they contain the gradient per parameter in `var`
-        :param var: parameters of the neural network
-        :return: step_width, inverse_temperature, and noise tensors
+        Args:
+          grad: gradient nodes, i.e. they contain the gradient per parameter in `var`
+          var: parameters of the neural network
+
+        Returns:
+          step_width, inverse_temperature, and noise tensors
+
         """
         step_width_t, inverse_temperature_t, random_noise_t = \
             super(HamiltonianMonteCarloSamplerFirstOrderSampler, self)._prepare_dense(grad, var)
@@ -103,14 +125,18 @@ class HamiltonianMonteCarloSamplerFirstOrderSampler(StochasticGradientLangevinDy
         return step_width_t, inverse_temperature_t, current_step_t, next_eval_step_t, random_noise_t, uniform_random_t
 
     def set_prior(self, prior):
-        """ Override method from base class to rais exception when used.
-
+        """Override method from base class to rais exception when used.
+        
         NOTE:
             Priors would enforce to use their energy in the acceptance
             evaluation, too. This is currently not implemented.
 
-        :param prior: dict with keys factor, lower_boundary and upper_boundary that
-                specifies a wall-repelling force to ensure a prior on the parameters
+        Args:
+          prior: dict with keys factor, lower_boundary and upper_boundary that
+        specifies a wall-repelling force to ensure a prior on the parameters
+
+        Returns:
+
         """
         if "lower_boundary" in prior or "upper_boundary" in prior:
             raise NotImplementedError("HMC does not support priors in its current state")
@@ -251,17 +277,21 @@ class HamiltonianMonteCarloSamplerFirstOrderSampler(StochasticGradientLangevinDy
         return criterion_block_t
 
     def _apply_dense(self, grads_and_vars, var):
-        """ Adds nodes to TensorFlow's computational graph in the case of densely
+        """Adds nodes to TensorFlow's computational graph in the case of densely
         occupied tensors to perform the actual sampling.
-
+        
         We perform a modified Euler step on a hamiltonian (loss+kinetic energy)
         and at step number next_eval_step we check the acceptance criterion,
         either resetting back to the initial parameters or resetting the
         initial parameters to the current ones.
 
-        :param grads_and_vars: gradient nodes over all walkers and all variables
-        :param var: parameters of the neural network
-        :return: a group of operations to be added to the graph
+        Args:
+          grads_and_vars: gradient nodes over all walkers and all variables
+          var: parameters of the neural network
+
+        Returns:
+          a group of operations to be added to the graph
+
         """
         _, grad = self._pick_grad(grads_and_vars, var)
         step_width_t, inverse_temperature_t, current_step_t, next_eval_step_t, random_noise_t, uniform_random_t = \
@@ -312,13 +342,17 @@ class HamiltonianMonteCarloSamplerFirstOrderSampler(StochasticGradientLangevinDy
                                         momentum_global_t, kinetic_energy_t]))
 
     def _apply_sparse(self, grad, var):
-        """ Adds nodes to TensorFlow's computational graph in the case of sparsely
+        """Adds nodes to TensorFlow's computational graph in the case of sparsely
         occupied tensors to perform the actual sampling.
-
+        
         Note that this is not implemented so far.
 
-        :param grad: gradient nodes, i.e. they contain the gradient per parameter in `var`
-        :param var: parameters of the neural network
-        :return: a group of operations to be added to the graph
+        Args:
+          grad: gradient nodes, i.e. they contain the gradient per parameter in `var`
+          var: parameters of the neural network
+
+        Returns:
+          a group of operations to be added to the graph
+
         """
         raise NotImplementedError("Sparse gradient updates are not supported.")

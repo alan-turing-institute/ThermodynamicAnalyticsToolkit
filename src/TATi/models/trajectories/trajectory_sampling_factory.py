@@ -22,19 +22,28 @@ from TATi.models.trajectories.trajectory_sampling_hamiltonian import TrajectoryS
 from TATi.models.trajectories.trajectory_sampling_langevin import TrajectorySamplingLangevin
 
 class TrajectorySamplingFactory(object):
-    """ Factory class for creating the respective specialized TrajectorySampling
+    """Factory class for creating the respective specialized TrajectorySampling
     instance.
-
+    
     This is needed to avoid circular imports.
+
+    Args:
+
+    Returns:
+
     """
     @staticmethod
     def create(samplermethod, trajectory_state):
-        """ Creates a TrajectorySampling for the dynamics matching with
+        """Creates a TrajectorySampling for the dynamics matching with
         the sampler specified in `samplermethod`
 
-        :param samplermethod: sampler method
-        :param trajectory_state: unique state object of trajectory, see `TrajectoryState`
-        :return: created instance
+        Args:
+          samplermethod: sampler method
+          trajectory_state: unique state object of trajectory, see `TrajectoryState`
+
+        Returns:
+          created instance
+
         """
         if "HamiltonianMonteCarlo" in samplermethod:
             return TrajectorySamplingHamiltonian(trajectory_state)

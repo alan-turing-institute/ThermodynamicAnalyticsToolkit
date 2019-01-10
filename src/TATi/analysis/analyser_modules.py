@@ -35,15 +35,19 @@ from TATi.analysis.integratedautocorrelation import IntegratedAutoCorrelation
 from TATi.analysis.integratedautocorrelation_perwalker import IntegratedAutoCorrelationPerWalker
 
 class AnalyserModules(object):
-    """ This class contains all analyser modules with their dependencies in
+    """This class contains all analyser modules with their dependencies in
     such a way that a single string, e.g., "diffusion_map" (and information
     in \a FLAGS) is sufficient to execute this analysis on a trajectory.
-
+    
     To this end, the modules are setup hierarchically. More elaborate ones
     depend on the result of simpler ones. For example, before computing
     a diffusion map we need to parse the trajectory. Free energy computations
     depend on a diffusion map and so on. Therefore, all modules are sorted
     in a dependency graph and store their results in a dict.
+
+    Args:
+
+    Returns:
 
     """
 

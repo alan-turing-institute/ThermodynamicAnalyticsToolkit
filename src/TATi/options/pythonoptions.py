@@ -23,10 +23,15 @@ from TATi.options.options import Options
 import logging
 
 class PythonOptions(Options):
-    """ All options that the python interface understands.
+    """All options that the python interface understands.
     
     Example:
-        >>> from TATi.options.pythonoptions import PythonOptions
+
+    Args:
+
+    Returns:
+
+    >>> from TATi.options.pythonoptions import PythonOptions
         >>> PythonOptions.help()
         averages_file:             CSV file name to write ensemble averages information such as average kinetic, potential, virial
         batch_data_file_type:      type of the files to read input from
@@ -44,7 +49,6 @@ class PythonOptions(Options):
         ... )
     """
 
-    ### gives a description for each option
     _description_map = {
         "averages_file": "CSV file name to write ensemble averages information "+ \
                          "such as average kinetic, potential, virial",
@@ -137,8 +141,9 @@ class PythonOptions(Options):
         "use_reweighting": "",
         "verbose": "how much (debugging) information to print",
     }
+    """ dict: gives a description for each option.
+    """
 
-    ## sets a default value for each option
     _default_map = {
         "averages_file": None,
         "batch_data_files": [],
@@ -193,8 +198,9 @@ class PythonOptions(Options):
         "use_reweighting": False,
         "verbose": 0,
     }
+    """ dict: sets a default value for each option.
+    """
 
-    ## sets the type of each option
     _type_map = {
         "averages_file": str,
         "batch_data_file_type": str,
@@ -245,20 +251,27 @@ class PythonOptions(Options):
         "use_reweighting": bool,
         "verbose": int,
     }
+    """ dict: sets the type of each option.
+    """
 
-    # this denotes the type as of specific type
     _list_type_map = {
         "batch_data_files": str,
         "hidden_dimension": int,
         "input_columns": str,
         "parse_steps": int,
     }
+    """ dict: this denotes the type as of specific type.
+    """
 
     @staticmethod
     def help(key=None):
-        """ Prints help for each option or all option names if key is None
+        """Prints help for each option or all option names if key is None
 
-        :param key: name of option or None for list of options
+        Args:
+          key: name of option or None for list of options (Default value = None)
+
+        Returns:
+
         """
         if key is None:
             max_length = 0
@@ -278,11 +291,17 @@ class PythonOptions(Options):
                 assert(0)
             print("Default    : "+str(PythonOptions._default_map[key]))
 
-    def __init__(self, add_keys = True, value_dict = {}):
-        """ Init function to set various default values.
+    def __init__(self, add_keys=True, value_dict={}):
+        """Init function to set various default values.
 
-        :param add_keys: controls whether all default values are added as options
-        :param value_dict: keyword arguments for setting parameters different to default
+        Args:
+          add_keys: controls whether all default values are added as options
+          (default value = True)
+          value_dict: keyword arguments for setting parameters different to default
+          (default value = empty dict)
+
+        Returns:
+
         """
         # make sure all keys are described
         super(PythonOptions, self).__init__()
@@ -310,21 +329,29 @@ class PythonOptions(Options):
             self.set_options(**value_dict)
 
     def set_options(self, **kwargs):
-        """ Sets all options given by the keyword dictionary in `kwargs`.
-        
-        :param **kwargs: keyword dictonary
+        """Sets all options given by the keyword dictionary in `kwargs`.
+
+        Kwargs:
+          For full list see `_description_map`
+
+        Returns:
+
         """
         for key in kwargs.keys():
             self.set(key, kwargs[key])
 
     def set(self, key, value):
-        """ Override set to update verbosity.
-
+        """Override set to update verbosity.
+        
         Raises:
             AttributeError
 
-        :param key: name of option
-        :param value: value to set
+        Args:
+          key: name of option
+          value: value to set
+
+        Returns:
+
         """
         if key == "verbose":
             super(PythonOptions, self).set("verbose", min(3, value))

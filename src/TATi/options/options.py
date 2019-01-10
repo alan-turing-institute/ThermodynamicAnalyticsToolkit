@@ -18,13 +18,6 @@
 #
 ### 
 
-""" @package docstring
-Options contains all parameters that control runtime behavior.
-
-"""
-
-import logging
-
 class Options(object):
     """ Options is an abstract class to contain all option values.
 
@@ -70,6 +63,9 @@ class Options(object):
     def __setstate__(self, state):
         """ Override pickling's `setstate()` as otherwise the `_options_map`
         is search for the builtin function.
+
+        Args:
+            state: dict with new values.
         """
         self._option_map = state["_option_map"]
         self._excluded_keys = state["_excluded_keys"]
@@ -77,15 +73,16 @@ class Options(object):
     def add(self, key):
         """ Specifically add a new value to the set of options.
 
-        @note `set()` will fail when the option is not known, yet. This is done
+        `set()` will fail when the option is not known, yet. This is done
         deliberately to prevent errors with typos in option names.
 
-        @note Option is initially set to None.
+        Option is initially set to None.
+
+        Args:
+            key: name of new option
 
         Raises:
             AttributeError
-
-        :param key: name of new option
         """
         if key in self._option_map.keys():
             raise AttributeError("Option "+str(key)+" is already known.")
@@ -96,11 +93,13 @@ class Options(object):
     def get(self, key):
         """ Getter for the value associated with the option named `key`.
 
+        Args:
+            key: name of option
+            option value of key
+
         Raises:
             AttributeError
 
-        :param key: name of option
-        :return: option value of key
         """
         try:
             return self._option_map[str(key)]
@@ -110,8 +109,11 @@ class Options(object):
     def __contains__(self, key):
         """ Checks whether 'key` is a known key to this options class.
 
-        :param key: key name
-        :return: True - key found, False - key unknown
+        Args:
+            key: key name
+
+        Returns:
+            True - key found, False - key unknown
         """
         return str(key) in self._option_map.keys()
 
@@ -119,11 +121,15 @@ class Options(object):
         """ Override `__getattr__` to mask access to options as if they were
         member variables.
 
+        Args:
+            key: name of option
+
+        Returns:
+            value of option
+
         Raises:
             AttributeError
 
-        :param key: name of option
-        :return: value of option
         """
         #print("__getattr__:"+key)
         if (key[0] != '_') and \
@@ -134,11 +140,13 @@ class Options(object):
     def set(self, key, value):
         """ Setter for the value associated with the option named `key`.
 
+        Args:
+            key: name of option
+            value: value to set
+
         Raises:
             AttributeError
 
-        :param key: name of option
-        :param value: value to set
         """
         if key in self._option_map.keys():
             if key in self._type_map.keys():
@@ -173,9 +181,12 @@ class Options(object):
         Raises:
             AttributeError
 
-        :param key: name of option
-        :param value: value to set
-        :return: value of option
+        Args:
+            key: name of option
+            value: value to set
+
+        Returns:
+            value of option
         """
         #print("__setattr__:"+key)
         if (key[0] != '_') and \

@@ -25,10 +25,14 @@ from TATi.options.pythonoptions import PythonOptions
 
 
 def get_dimension_from_tfrecord(filenames):
-    """ Helper function to get the size of the dataset contained in a TFRecord.
+    """Helper function to get the size of the dataset contained in a TFRecord.
 
-    :param filenames: list of tfrecord files
-    :return: total size of dataset
+    Args:
+      filenames: list of tfrecord files
+
+    Returns:
+      total size of dataset
+
     """
     dimension = 0
     for filename in filenames:
@@ -37,11 +41,13 @@ def get_dimension_from_tfrecord(filenames):
             if logging.getLogger(__name__).isEnabledFor(logging.DEBUG):
                 example = tf.train.Example()
                 example.ParseFromString(string_record)
-                _ = int(example.features.feature['height']
+                #height = \
+                int(example.features.feature['height']
                              .int64_list
                              .value[0])
 
-                _ = int(example.features.feature['width']
+                #width = \
+                int(example.features.feature['width']
                             .int64_list
                             .value[0])
                 # logging.debug("height is "+str(height)+" and width is "+str(width))
@@ -53,11 +59,15 @@ def get_dimension_from_tfrecord(filenames):
 
 
 def get_weight_and_bias_column_numbers(df_parameters):
-    """ Returns two lists with all weight and bias numbers retrieved from
+    """Returns two lists with all weight and bias numbers retrieved from
     the `df_parameters`'s column names.
 
-    :param df_parameters: dataframe whose column names to inspect
-    :return: weight number list and bias number list
+    Args:
+      df_parameters: dataframe whose column names to inspect
+
+    Returns:
+      weight number list and bias number list
+
     """
     weight_numbers = []
     bias_numbers = []

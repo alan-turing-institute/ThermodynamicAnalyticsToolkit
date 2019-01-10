@@ -21,8 +21,12 @@
 
 
 class InputPipeline(object):
-    """ This class defines the interface for an input pipeline as uses by
+    """This class defines the interface for an input pipeline as uses by
     model.sample() and model.train() to obtain batches of the dataset.
+
+    Args:
+
+    Returns:
 
     """
 
@@ -35,34 +39,50 @@ class InputPipeline(object):
         pass
 
     def next_batch(self, session):
-        ''' This returns the next batch of features and labels.
+        """This returns the next batch of features and labels.
 
-        :param session: session object as input might be retrieved through the
-                computational graph
-        :return: pack of feature and label array
-        '''
+        Args:
+          session: session object as input might be retrieved through the
+        computational graph
+
+        Returns:
+          pack of feature and label array
+
+        """
         assert( False )
 
     def epochFinished(self):
-        ''' This checks whether the epoch is done, i.e. whether the dataset
+        """This checks whether the epoch is done, i.e. whether the dataset
         is depleted and needs to be reset.
+        
+        Args:
 
-        :return: True - epoch is done, False - else
-        '''
+        Returns:
+          True - epoch is done, False - else
+
+        """
         assert( False )
 
     def reset(self, session):
-        ''' This resets the dataset such that a new epoch of training or
+        """This resets the dataset such that a new epoch of training or
         sampling may commence.
 
-        :param session: session object as input might be retrieved through the
-                computational graph
-        '''
+        Args:
+          session: session object as input might be retrieved through the
+        computational graph
+
+        Returns:
+
+        """
         assert( False )
 
     def shuffle(self, seed):
-        ''' This shuffles the dataset.
+        """This shuffles the dataset.
 
-        :param seed: seed used for random shuffle to allow reproducible runs
-        '''
+        Args:
+          seed: seed used for random shuffle to allow reproducible runs
+
+        Returns:
+
+        """
         assert( False )

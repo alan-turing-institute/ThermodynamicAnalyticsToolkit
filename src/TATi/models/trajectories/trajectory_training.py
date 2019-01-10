@@ -34,9 +34,7 @@ except ImportError:
 from TATi.models.trajectories.trajectory_base import TrajectoryBase
 
 class TrajectoryTraining(TrajectoryBase):
-    """ Refines the Trajectory class to perform a training trajectory.
-
-    """
+    """Refines the Trajectory class to perform a training trajectory."""
     def __init__(self, trajectory_state):
         super(TrajectoryTraining, self).__init__(trajectory_state)
         self.optimizer = None
@@ -55,14 +53,11 @@ class TrajectoryTraining(TrajectoryBase):
         return self.state.FLAGS.optimizer
 
     def get_run_header(self):
-        """ Prepares the distinct header for the run file for training
-        """
+        """Prepares the distinct header for the run file for training"""
         return ['id', 'step', 'epoch', 'accuracy', 'loss', 'time_per_nth_step', 'scaled_gradient', 'virial']
 
     def get_averages_header(self):
-        """ Prepares the distinct header for the averages file for sampling
-
-        """
+        """Prepares the distinct header for the averages file for sampling"""
         header = super(TrajectoryTraining, self).get_averages_header()
         if self.state.FLAGS.optimizer == "GradientDescent":
             header += ['average_virials']

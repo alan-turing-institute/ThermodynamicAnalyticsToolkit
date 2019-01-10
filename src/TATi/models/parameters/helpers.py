@@ -23,13 +23,17 @@ import tensorflow as tf
 
 
 def find_all_in_collections(_collection, _name):
-    """ Helper function to return all indices of variables in a collection
+    """Helper function to return all indices of variables in a collection
      that match with the given `_name`. Note that this removes possible
      walker name scopes.
 
-    :param _collection: collection to search through
-    :param _name: tensor/variable name to look for
-    :return: list of matching indices
+    Args:
+      _collection: collection to search through
+      _name: tensor/variable name to look for
+
+    Returns:
+      list of matching indices
+
     """
     variable_indices = []
     for i in range(len(_collection)):
@@ -42,13 +46,17 @@ def find_all_in_collections(_collection, _name):
 
 
 def extract_from_collections(_collection, _indices):
-    """ Helper function to remove all elements associated to each index
+    """Helper function to remove all elements associated to each index
     in `indices` from `collections`, gathering them in a list that is
     returned
 
-    :param _collection: collection to remove elements from
-    :param _indices: list of indices to extract
-    :return: list of elements removed from collection
+    Args:
+      _collection: collection to remove elements from
+      _indices: list of indices to extract
+
+    Returns:
+      list of elements removed from collection
+
     """
     variables = []
     _indices.sort(reverse=True)
@@ -59,13 +67,17 @@ def extract_from_collections(_collection, _indices):
 
 
 def fix_parameter_in_collection(_collection, _name, _collection_name="collection"):
-    """ Allows to fix a parameter (not modified during optimization
+    """Allows to fix a parameter (not modified during optimization
     or sampling) by removing the first instance named _name from trainables.
 
-    :param _collection: (trainables or other) collection to remove parameter from
-    :param _name: name of parameter to fix
-    :param  _collection_name: name of collection for debugging
-    :return: None or Variable ref that was fixed
+    Args:
+      _collection: trainables or other) collection to remove parameter from
+      _name: name of parameter to fix
+      _collection_name: name of collection for debugging (Default value = "collection")
+
+    Returns:
+      None or Variable ref that was fixed
+
     """
     variable_indices = find_all_in_collections(_collection, _name)
     logging.debug("Indices matching in " + _collection_name + " with "
@@ -75,12 +87,16 @@ def fix_parameter_in_collection(_collection, _name, _collection_name="collection
 
 
 def split_collection_per_walker(_collection, number_walkers):
-    """ Helper function to split WEIGHTS and BIASES collection from
+    """Helper function to split WEIGHTS and BIASES collection from
     tensorflow into weights and biases per walker.
 
-    :param _collection: collection to split
-    :param number_walkers: number of walkers to look for
-    :return: list of split up collections
+    Args:
+      _collection: collection to split
+      number_walkers: number of walkers to look for
+
+    Returns:
+      list of split up collections
+
     """
     split_collection = []
     for i in range(number_walkers):
@@ -93,11 +109,15 @@ def split_collection_per_walker(_collection, number_walkers):
 
 
 def fix_parameter(_name):
-    """ Allows to fix a parameter (not modified during optimization
+    """Allows to fix a parameter (not modified during optimization
     or sampling) by removing the first instance named _name from trainables.
 
-    :param _name: name of parameter to fix
-    :return: None or Variable ref that was fixed
+    Args:
+      _name: name of parameter to fix
+
+    Returns:
+      None or Variable ref that was fixed
+
     """
     trainable_collection = tf.get_collection_ref(tf.GraphKeys.TRAINABLE_VARIABLES)
     other_collection = None
@@ -128,11 +148,15 @@ def fix_parameter(_name):
 
 
 def assign_parameter(_var, _value):
-    """ Creates an assignment node, adding it to the graph.
+    """Creates an assignment node, adding it to the graph.
 
-    :param _var: tensorflow variable ref
-    :param _value: value to assign to it, must have same shape
-    :return: constant value node and assignment node
+    Args:
+      _var: tensorflow variable ref
+      _value: value to assign to it, must have same shape
+
+    Returns:
+      constant value node and assignment node
+
     """
     value_t = tf.constant(_value, dtype=_var.dtype)
     assign_t = _var.assign(value_t)

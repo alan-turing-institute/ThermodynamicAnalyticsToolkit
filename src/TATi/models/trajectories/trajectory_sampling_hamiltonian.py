@@ -36,26 +36,34 @@ from TATi.models.trajectories.trajectory_sampling import TrajectorySampling
 
 
 class TrajectorySamplingHamiltonian(TrajectorySampling):
-    """ This implements sampling of a trajectory using Hamiltonian dynamics.
-
+    """This implements sampling of a trajectory using Hamiltonian dynamics.
+    
     Due to the Metropolis-Hastings criterion it behaves quite differently
     compared to a Langevin dynamics based sampler. Therefore a number
     of extra functions are needed for the book-keeping of all values
     associated with the criterion evaluation.
+
+    Args:
+
+    Returns:
 
     """
     def __init__(self, trajectory_state):
         super(TrajectorySamplingHamiltonian, self).__init__(trajectory_state)
 
     def _set_HMC_placeholders(self, HMC_placeholder_nodes, current_step, step_widths, HD_steps, HMC_steps, feed_dict):
-        """ Updates feed_dict with extra values for HMC
+        """Updates feed_dict with extra values for HMC
 
-        :param HMC_placeholder_nodes: keys to extra values
-        :param current_step: current step
-        :param step_widths: step widths per walker
-        :param HD_steps: current number of Hamiltonian Dynamics steps per walker
-        :param HMC_steps: current step numbers (one per walker) when to evaluate criterion
-        :param feed_dict: feed dict for `tf.Session.run()`
+        Args:
+          HMC_placeholder_nodes: keys to extra values
+          current_step: current step
+          step_widths: step widths per walker
+          HD_steps: current number of Hamiltonian Dynamics steps per walker
+          HMC_steps: current step numbers (one per walker) when to evaluate criterion
+          feed_dict: feed dict for `tf.Session.run()`
+
+        Returns:
+
         """
         if "HamiltonianMonteCarlo" in self.state.FLAGS.sampler:
             for walker_index in range(self.state.FLAGS.number_walkers):
@@ -69,18 +77,21 @@ class TrajectorySamplingHamiltonian(TrajectorySampling):
                 })
 
     def _set_HMC_next_eval_step(self, current_step, step_widths, HD_steps, HMC_steps):
-        """ Compute when next to evaluate HMC acceptance criterion
-
+        """Compute when next to evaluate HMC acceptance criterion
+        
         In order to avoid correlations between different walkers, it is
         recommended [Neal, 2011] to randomly vary the step widths and
         the exact step when to evaluate the criterion. This is done
         here for `step_widths`, `HD_steps`, and `HMC_steps`.
 
+        Args:
+          current_step: current step
+          step_widths: step widths per walker
+          HD_steps: current number of Hamiltonian Dynamics steps per walker
+          HMC_steps: current step numbers (one per walker) when to evaluate criterion
 
-        :param current_step: current step
-        :param step_widths: step widths per walker
-        :param HD_steps: current number of Hamiltonian Dynamics steps per walker
-        :param HMC_steps: current step numbers (one per walker) when to evaluate criterion
+        Returns:
+
         """
         if "HamiltonianMonteCarlo" in self.state.FLAGS.sampler:
             for walker_index in range(self.state.FLAGS.number_walkers):
@@ -112,18 +123,22 @@ class TrajectorySamplingHamiltonian(TrajectorySampling):
                 HMC_steps[walker_index] = current_step
 
     def _set_HMC_eval_variables(self, session, current_step, HMC_steps, values):
-        """ Set values in feed_dict needed for HMC's criterion evaluation.
-
+        """Set values in feed_dict needed for HMC's criterion evaluation.
+        
         Some values are accumulated outside tensorflow's computational graph
         and need to be piped back into the graph through placeholder nodes.
-
+        
         However, we need to update them only right after the evaluation
         criterion has been computed.
 
-        :param session: `tf.Session` object
-        :param current_step:
-        :param HMC_steps: step numbers (one per walker) when to evaluate criterion
-        :param values: accumulated values with updated energies
+        Args:
+          session: tf.Session` object
+          current_step: param HMC_steps: step numbers (one per walker) when to evaluate criterion
+          values: accumulated values with updated energies
+          HMC_steps: step numbers (one per walker) at which to evaluate HMC acceptance criterion
+
+        Returns:
+
         """
         if "HamiltonianMonteCarlo" in self.state.FLAGS.sampler:
             # set current kinetic as it is accumulated outside of tensorflow
@@ -160,9 +175,13 @@ class TrajectorySamplingHamiltonian(TrajectorySampling):
                     logging.debug("New total energies are "+str(total_eval))
 
     def zero_extra_nodes(self, session):
-        """ Zero accepted and rejected counters before the actual iteration.
+        """Zero accepted and rejected counters before the actual iteration.
 
-        :param session: `tf.Session` object
+        Args:
+          session: tf.Session` object
+
+        Returns:
+
         """
         if "HamiltonianMonteCarlo" in self.state.FLAGS.sampler:
             # zero rejection rate before sampling start
@@ -173,9 +192,13 @@ class TrajectorySamplingHamiltonian(TrajectorySampling):
                 assert(check_rejected[walker_index] == 0)
 
     def get_placeholder_nodes(self):
-        """ Get HMC specific nodes needed as keys in feed_dict.
+        """Get HMC specific nodes needed as keys in feed_dict.
 
-        :return: list of extra nodes
+        Args:
+
+        Returns:
+          list of extra nodes
+
         """
         retlist = super(TrajectorySamplingHamiltonian, self).get_placeholder_nodes()
         retlist.extend( [self.state.nn[walker_index].get_dict_of_nodes(
@@ -184,12 +207,16 @@ class TrajectorySamplingHamiltonian(TrajectorySampling):
         return retlist
 
     def prepare_extra_values(self, placeholder_nodes, session, feed_dict):
-        """ Prepare a set of temporary values in a dict.
+        """Prepare a set of temporary values in a dict.
 
-        :param placeholder_nodes: extra HMC nodes, used as keys to update in `feed_dict`
-        :param session: `tf.Session` object
-        :param feed_dict: feed dict for `tf.Session.run()`
-        :return: dict with the extra values
+        Args:
+          placeholder_nodes: extra HMC nodes, used as keys to update in `feed_dict`
+          session: `tf.Session` object
+          feed_dict: feed dict for `tf.Session.run()`
+
+        Returns:
+          dict with the extra values
+
         """
         array = {}
         array["HD_steps"] = [-2]*self.state.FLAGS.number_walkers        # number of hamiltonian dynamics steps
@@ -213,14 +240,18 @@ class TrajectorySamplingHamiltonian(TrajectorySampling):
         return array
 
     def extra_evaluation_before_step(self, current_step, session, placeholder_nodes, test_nodes, feed_dict, extra_values):
-        """ Before th actual update step, update HMC's specific variables
+        """Before th actual update step, update HMC's specific variables
 
-        :param current_step: current step
-        :param session: `tf.Session` object
-        :param placeholder_nodes: extra HMC nodes, used as keys to update in `feed_dict`
-        :param test_nodes: nodes to evaluate for loss and others
-        :param feed_dict: feed dict for `tf.Session.run()`
-        :param extra_values: temporary values dict used during iteration
+        Args:
+          current_step: current step
+          session: `tf.Session` object
+          placeholder_nodes: extra HMC nodes, used as keys to update in `feed_dict`
+          test_nodes: nodes to evaluate for loss and others
+          feed_dict: feed dict for `tf.Session.run()`
+          extra_values: temporary values dict used during iteration
+
+        Returns:
+
         """
         # get energies for acceptance evaluation in very first step
         if current_step == 0:
@@ -248,10 +279,14 @@ class TrajectorySamplingHamiltonian(TrajectorySampling):
             feed_dict)
 
     def print_energies(self, current_step, extra_values):
-        """ Print HMC energies to make update step understandable
+        """Print HMC energies to make update step understandable
 
-        :param current_step: current step
-        :param extra_values: temporary values dict used during iteration
+        Args:
+          current_step: current step
+          extra_values: temporary values dict used during iteration
+
+        Returns:
+
         """
         if self.state.FLAGS.verbose > 1:
             for walker_index in range(self.state.FLAGS.number_walkers):
@@ -270,19 +305,22 @@ class TrajectorySamplingHamiltonian(TrajectorySampling):
                                      walker_index]))
 
     def update_values(self, current_step, session, test_nodes, feed_dict, extra_values, parameters_list):
-        """ Extra update for HMC in order to reset state if necessary.
-
+        """Extra update for HMC in order to reset state if necessary.
+        
         If this step has been a criterion evaluation, then we need to account for
         the resetted state if the proposed one was rejected. Moreover, we need
         to re-calculate the energies.
 
-        :param current_step: current step
-        :param session: `tf.Session` object
-        :param test_nodes: nodes to evaluate for loss and others
-        :param feed_dict: feed dict for `tf.Session.run()`
-        :param extra_values: temporary values dict used during iteration
-        :param parameters_list: parameters needed to obtained updated weights and
-                biases.
+        Args:
+          current_step: current step
+          session: `tf.Session` object
+          test_nodes: nodes to evaluate for loss and others
+          feed_dict: feed dict for `tf.Session.run()`
+          extra_values: temporary values dict used during iteration
+          parameters_list: parameters needed to obtained updated weights and biases.
+
+        Returns:
+
         """
         # if last step was rejection, re-evaluate loss and weights as state changed
         if self.accumulated_values.rejected != extra_values["last_rejected"]:
@@ -314,23 +352,31 @@ class TrajectorySamplingHamiltonian(TrajectorySampling):
                     self.averages.accumulate_each_step(current_step, walker_index, self.accumulated_values)
 
     def update_averages(self, current_step):
-        """ Do not update averages in each step for HMC.
-
+        """Do not update averages in each step for HMC.
+        
         With HMC we are only interested in the final accepted or rejected
         new states. We do not care about the intermediate steps obtained
         through Hamiltonian dynamics. Therefore, we cannot simply call
         this for every step but only for the criterion evaluation steps.,
         see `TrajectorySamplingHamiltonian.update_values()`.
 
-        :param current_step: current step
+        Args:
+          current_step: current step
+
+        Returns:
+
         """
         pass
 
     def update_extra_values(self, extra_values):
-        """ Store the possibly updated rejected value in our temporary
+        """Store the possibly updated rejected value in our temporary
         in `extra_values`.
 
-        :param extra_values: extra values containing temporaries used
-            during the iteration
+        Args:
+          extra_values: extra values containing temporaries used
+        during the iteration
+
+        Returns:
+
         """
         extra_values["last_rejected"] = self.accumulated_values.rejected

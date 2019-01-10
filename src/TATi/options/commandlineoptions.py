@@ -41,11 +41,15 @@ def str2bool(v):
 
 
 def react_generally_to_options(FLAGS, unparsed):
-    """ Extracted behavior for options shared between sampler and optimizer
+    """Extracted behavior for options shared between sampler and optimizer
     here for convenience.
 
-    :param FLAGS: parsed cmd-line options as produced by argparse.parse_known_args()
-    :param unparsed: unparsed cmd-line options as produced by argparse.parse_known_args()
+    Args:
+      FLAGS: parsed cmd-line options as produced by argparse.parse_known_args()
+      unparsed: unparsed cmd-line options as produced by argparse.parse_known_args()
+
+    Returns:
+
     """
     if FLAGS.version:
         # give version and exit
@@ -66,12 +70,18 @@ def react_generally_to_options(FLAGS, unparsed):
 
 
 def get_argparse_option_name(parser, *args, **kwargs):
-    """ This is taken from `argparse.add_argument()` to extract the option name.
+    """This is taken from `argparse.add_argument()` to extract the option name.
 
-    :param parser: argparse instance
-    :param args: arguments to `argparse.ArgumentParser.add_argument()`
-    :param kwargs: keyword arguments to `argparse.ArgumentParser.add_argument()`
-    :return: string name of option
+    Args:
+      parser: argparse instance
+      args: arguments to `argparse.ArgumentParser.add_argument()`
+      kwargs: keyword arguments to `argparse.ArgumentParser.add_argument()`
+      *args: 
+      **kwargs: 
+
+    Returns:
+      string name of option
+
     """
     if not args or len(args) == 1 and args[0][0] not in parser.prefix_chars:
         pos_args = parser._get_positional_kwargs(*args, **kwargs)
@@ -82,13 +92,16 @@ def get_argparse_option_name(parser, *args, **kwargs):
 
 
 class CommandlineOptions(PythonOptions):
-    """ CommandLineOptions extends the Options class to parse command-line
+    """CommandLineOptions extends the Options class to parse command-line
     options into the internal map.
+
+    Args:
+
+    Returns:
 
     """
     def __init__(self):
-        """ Creates the internal parser.
-        """
+        """Creates the internal parser."""
         super(CommandlineOptions, self).__init__(add_keys=False)
         self._excluded_keys.append("parser")
         self.parser = argparse.ArgumentParser()
@@ -98,23 +111,35 @@ class CommandlineOptions(PythonOptions):
         self._special_keys = {}
 
     def _add_option_cmd(self, *args, **kwargs):
-        """ Adds a purely cmd-line option to the internal parser and the options map.
+        """Adds a purely cmd-line option to the internal parser and the options map.
 
-        :param args: arguments to `argparse.ArgumentParser.add_argument()`
-        :param kwargs: keyword arguments to `argparse.ArgumentParser.add_argument()`
+        Args:
+          args: arguments to `argparse.ArgumentParser.add_argument()`
+          kwargs: keyword arguments to `argparse.ArgumentParser.add_argument()`
+          *args: 
+          **kwargs: 
+
+        Returns:
+
         """
         option_name = get_argparse_option_name(self.parser, *args, **kwargs)
         self.add(option_name)
         self.parser.add_argument(*args, **kwargs)
 
     def _add_option(self, *args, **kwargs):
-        """ Adds an option to the internal parser and the options map.
-
+        """Adds an option to the internal parser and the options map.
+        
         Raises:
             KeyError (when default on `PythonOptions` has not been given.
 
-        :param args: arguments to `argparse.ArgumentParser.add_argument()`
-        :param kwargs: keyword arguments to `argparse.ArgumentParser.add_argument()`
+        Args:
+          args: arguments to `argparse.ArgumentParser.add_argument()`
+          kwargs: keyword arguments to `argparse.ArgumentParser.add_argument()`
+          *args: 
+          **kwargs: 
+
+        Returns:
+
         """
         option_name = get_argparse_option_name(self.parser, *args, **kwargs)
         self.add(option_name)
@@ -135,8 +160,13 @@ class CommandlineOptions(PythonOptions):
             self.parser.add_argument(*args, **kwargs)
 
     def add_data_options_to_parser(self):
-        """ Adding options common to both sampler and optimizer to argparse
+        """Adding options common to both sampler and optimizer to argparse
         object for specifying the data set.
+
+        Args:
+
+        Returns:
+
         """
         # please adhere to alphabetical ordering
         self._add_option('--batch_data_files', type=str, nargs='+',
@@ -149,8 +179,7 @@ class CommandlineOptions(PythonOptions):
                           help='Number of output nodes, e.g. classes in a classification problem')
 
     def add_prior_options_to_parser(self):
-        """ Adding options for setting up the prior enforcing to argparse
-        """
+        """Adding options for setting up the prior enforcing to argparse"""
         self._add_option('--prior_factor', type=float, default=None,
                           help='Enforce a prior by constraining parameters, this scales the wall repelling force')
         self._add_option('--prior_lower_boundary', type=float, default=None,
@@ -161,8 +190,13 @@ class CommandlineOptions(PythonOptions):
                           help='Enforce a prior by constraining parameters from above with a linear force')
 
     def add_model_options_to_parser(self):
-        """ Adding options common to both sampler and optimizer to argparse
+        """Adding options common to both sampler and optimizer to argparse
         object for specifying the model.
+
+        Args:
+
+        Returns:
+
         """
         # please adhere to alphabetical ordering
         self._add_option('--batch_size', type=int, default=None,
@@ -197,8 +231,13 @@ class CommandlineOptions(PythonOptions):
                           help='path to write TensorBoard summaries to')
 
     def add_common_options_to_parser(self):
-        """ Adding options common to both sampler and optimizer to argparse
+        """Adding options common to both sampler and optimizer to argparse
         object for specifying files and how to write them.
+
+        Args:
+
+        Returns:
+
         """
         # please adhere to alphabetical ordering
         self._add_option('--averages_file', type=str, default=None,
@@ -234,8 +273,7 @@ class CommandlineOptions(PythonOptions):
                           help='Gives version information')
 
     def add_train_options_to_parser(self):
-        """ Adding options common to train to argparse.
-        """
+        """Adding options common to train to argparse."""
         # please adhere to alphabetical ordering
         self._add_option('--learning_rate', type=float, default=0.03,
                          help='step width \Delta t to use during training/optimizing, e.g. 0.01')
@@ -243,8 +281,7 @@ class CommandlineOptions(PythonOptions):
                          help='Choose the optimizer to use for sampling: GradientDescent')
 
     def add_sampler_options_to_parser(self):
-        """ Adding options common to sampler to argparse.
-        """
+        """Adding options common to sampler to argparse."""
         # please adhere to alphabetical ordering
         self._add_option('--collapse_walkers', type=str2bool, default=False,
                           help='Whether to regularly collapse all dependent walkers to restart from a single position '
@@ -301,11 +338,14 @@ class CommandlineOptions(PythonOptions):
             assert (0)
 
     def set(self, key, values):
-        """ Override `set()` to enforce expected type before.
+        """Override `set()` to enforce expected type before.
 
-        :param key: option name
-        :param value: option value
-        :return:
+        Args:
+          key: option name
+          values: option values
+
+        Returns:
+
         """
         if key in self._type_map.keys():
             designated_type = self._type_map[key]
@@ -332,9 +372,13 @@ class CommandlineOptions(PythonOptions):
             super(CommandlineOptions, self).set(key, values)
 
     def parse(self):
-        """ Parses the command-line options for all known parameters.
+        """Parses the command-line options for all known parameters.
 
-        :return: unparsed (because unknown) parameters
+        Args:
+
+        Returns:
+            unparsed (because unknown) parameters
+
         """
         FLAGS, unparsed = self.parser.parse_known_args()
 
@@ -353,8 +397,12 @@ class CommandlineOptions(PythonOptions):
         return unparsed
 
     def react_to_common_options(self):
-        """ Extracted behavior for options shared between sampler and optimizer
+        """Extracted behavior for options shared between sampler and optimizer
         here for convenience.
+
+        Args:
+
+        Returns:
 
         """
         if self.number_walkers < 1:
@@ -362,9 +410,7 @@ class CommandlineOptions(PythonOptions):
             sys.exit(255)
 
     def react_to_sampler_options(self):
-        """ Extracted behavior checking validity of sampler options here for convenience.
-
-        """
+        """Extracted behavior checking validity of sampler options here for convenience."""
         if self.sampler in ["StochasticGradientLangevinDynamics",
                              "GeometricLangevinAlgorithm_1stOrder",
                              "GeometricLangevinAlgorithm_2ndOrder",

@@ -37,11 +37,15 @@ from numpy import linalg as LA
 
 
 def compute_kernel(X, epsilon):
-    """ Computes a sparse, gaussian kernel between points on a trajectory
+    """Computes a sparse, gaussian kernel between points on a trajectory
 
-    :param X: vector with trajectories
-    :param epsilon: Determines the distance cutoff in nearest neighbor search
-    :return: sparse kernel matrix
+    Args:
+      X: vector with trajectories
+      epsilon: Determines the distance cutoff in nearest neighbor search
+
+    Returns:
+      sparse kernel matrix
+
     """
 
     m = np.shape(X)[0]
@@ -64,11 +68,15 @@ def compute_kernel(X, epsilon):
 
 
 def compute_VanillaDiffusionMap(kernel, X):
-    """ Rescales the original diffusion map by looking at the sparse kernel's diagonal.
+    """Rescales the original diffusion map by looking at the sparse kernel's diagonal.
 
-    :param kernel: kernel matrix
-    :param X: trajectory vector
-    :return: rescaled kernel matrix
+    Args:
+      kernel: kernel matrix
+      X: trajectory vector
+
+    Returns:
+      rescaled kernel matrix
+
     """
     alpha = 0.5
     m = np.shape(X)[0]
@@ -86,12 +94,16 @@ def compute_VanillaDiffusionMap(kernel, X):
 
 
 def compute_target_distribution(number_of_steps, beta, loss):
-    """ Computes the target Boltzmann distribution
+    """Computes the target Boltzmann distribution
 
-    :param number_of_steps: number of trajectory steps
-    :param beta: inverse temperature parameter
-    :param loss: potential or loss function along trajectory
-    :return: target distribution (vector with number_of_steps)
+    Args:
+      number_of_steps: number of trajectory steps
+      beta: inverse temperature parameter
+      loss: potential or loss function along trajectory
+
+    Returns:
+      target distribution (vector with number_of_steps)
+
     """
     qTargetDistribution = np.zeros(number_of_steps)
 
@@ -103,12 +115,15 @@ def compute_target_distribution(number_of_steps, beta, loss):
 
 
 def compute_TMDMap(X, epsilon, qTargetDistribution):
-    """ Computes the TM diffusion map variant.
+    """Computes the TM diffusion map variant.
 
-    :param X: trajectory vector
-    :param epsilon: cutoff parameter for constructing kernel matrix
-    :param qTargetDistribution: target Boltzmann distribution
-    :return:
+    Args:
+      X: trajectory vector
+      epsilon: cutoff parameter for constructing kernel matrix
+      qTargetDistribution: target Boltzmann distribution
+
+    Returns:
+
     """
 
     m = np.shape(X)[0]
@@ -135,11 +150,15 @@ def compute_TMDMap(X, epsilon, qTargetDistribution):
 
 
 def pdist2(x,y):
-    """ Computes the euclidian distance for two vectors.
+    """Computes the euclidian distance for two vectors.
 
-    :param x: first vector
-    :param y: second vector
-    :return: euclidian distance between the two vectors
+    Args:
+      x: first vector
+      y: second vector
+
+    Returns:
+      euclidian distance between the two vectors
+
     """
     v=np.sqrt(((x-y)**2).sum())
     return v
@@ -148,12 +167,15 @@ def pdist2(x,y):
 def get_landmarks(data, K, q, V, energies):
     """
 
-    :param data: trajectory vector
-    :param K: number of landmark points to obtain
-    :param q: empirial distribution
-    :param V: eigenvector (of diffusion map) to use
-    :param energies: loss or potential function
-    :return:
+    Args:
+      data: trajectory vector
+      K: number of landmark points to obtain
+      q: empirial distribution
+      V: eigenvector (of diffusion map) to use
+      energies: loss or potential function
+
+    Returns:
+
     """
 
     m = float(q.size)
@@ -217,11 +239,15 @@ def get_landmarks(data, K, q, V, energies):
 
 
 def sort_landmarks(data, landmarks):
-    """ Sort the landmark points according to ball_tree variant of nearest neighbor search.
+    """Sort the landmark points according to ball_tree variant of nearest neighbor search.
 
-    :param data: trajectory
-    :param landmarks:  landmarks
-    :return: sorted landmarks
+    Args:
+      data: trajectory
+      landmarks: landmarks
+
+    Returns:
+      sorted landmarks
+
     """
 
     X=data[landmarks,:]
@@ -237,13 +263,17 @@ def sort_landmarks(data, landmarks):
 
 
 def get_levelsets(data, K, q, V1):
-    """ Calculates the K level set points given a trajectory.
+    """Calculates the K level set points given a trajectory.
 
-    :param data: trajectory vector
-    :param K: number of level sets to calculate
-    :param q: empirial distribution
-    :param V1: eigenvector
-    :return: indices of V1 for start of level set, level set values
+    Args:
+      data: trajectory vector
+      K: number of level sets to calculate
+      q: empirial distribution
+      V1: eigenvector
+
+    Returns:
+      indices of V1 for start of level set, level set values
+
     """
 
     m = float(q.size)
@@ -290,14 +320,18 @@ def get_levelsets(data, K, q, V1):
 def computeFreeEnergyAtEveryPoint(X, V1, width, qTarget, qEmp, method='weighted'):
     """
 
-    :param X: trajectory
-    :param V1: eigenvector
-    :param width: binning width
-    :param qTarget: target distribution
-    :param qEmp: empirial distribution
-    :param method: either weighted or raw (use weighted if sampled trajectories do
-           not follow the target distribution and need reweighting in order to do so)
-    :return: free energies calculated at all trajectory points
+    Args:
+      X: trajectory
+      V1: eigenvector
+      width: binning width
+      qTarget: target distribution
+      qEmp: empirial distribution
+      method: either weighted or raw (use weighted if sampled trajectories do
+    not follow the target distribution and need reweighting in order to do so) (Default value = 'weighted')
+
+    Returns:
+      free energies calculated at all trajectory points
+
     """
     if(method=='weighted'):
         weight, Ntilde = compute_weight_target_distribution(qTarget, qEmp)
@@ -332,12 +366,15 @@ def computeFreeEnergyAtEveryPoint(X, V1, width, qTarget, qEmp, method='weighted'
 
 
 def get_levelset_onePoint(idx, width, V1):
-    """ Return the levelset at a single point
+    """Return the levelset at a single point
 
-    :param idx: index of the desired point
-    :param width: width of the level set
-    :param V1: eigenvector
-    :return:
+    Args:
+      idx: index of the desired point
+      width: width of the level set
+      V1: eigenvector
+
+    Returns:
+
     """
     #deltaMax=2*width
 
@@ -354,10 +391,14 @@ def get_levelset_onePoint(idx, width, V1):
 
 
 def compute_weight_target_distribution(target_distribution, qImportanceSampling):
-    """ Reweight the target distribution by another as obtained by importance sampling.
+    """Reweight the target distribution by another as obtained by importance sampling.
 
-    :param target_distribution: target distribution vector
-    :param qImportanceSampling: distribution use for reweighting
+    Args:
+      target_distribution: target distribution vector
+      qImportanceSampling: distribution use for reweighting
+
+    Returns:
+
     """
 
     ModNr=1

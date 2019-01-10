@@ -19,9 +19,7 @@
 ### 
 
 class AccumulatedValues(object):
-    """ This is a simple structure holding a few values needed for accumulation.
-
-    """
+    """This is a simple structure holding a few values needed for accumulation."""
 
     def __init__(self):
         self.reset()

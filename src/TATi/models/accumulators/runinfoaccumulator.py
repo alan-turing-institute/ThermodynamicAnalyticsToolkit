@@ -25,9 +25,7 @@ import pandas as pd
 from math import sqrt
 
 class RuninfoAccumulator(Accumulator):
-    """ Here, we accumulate the run_info dataframe
-
-    """
+    """Here, we accumulate the run_info dataframe"""
 
     def __init__(self, method, config_map,
                  max_steps, every_nth, number_walkers):

@@ -29,21 +29,29 @@ from TATi.samplers.dynamics.geometriclangevinalgorithmfirstordersampler import \
 
 
 class GeometricLangevinAlgorithmSecondOrderSampler(GeometricLangevinAlgorithmFirstOrderSampler):
-    """ Implements a Geometric Langevin Algorithm Momentum Sampler
+    """Implements a Geometric Langevin Algorithm Momentum Sampler
     in the form of a TensorFlow Optimizer, overriding tensorflow.python.training.Optimizer.
+
+    Args:
+
+    Returns:
 
     """
     def __init__(self, covariance_blending, step_width, inverse_temperature, friction_constant,
                  seed=None, use_locking=False, name='GLA_2ndOrder'):
-        """ Init function for this class.
+        """Init function for this class.
 
-        :param covariance_blending: covariance identity blending value eta to use in creating the preconditioning matrix
-        :param step_width: step width for gradient, also affects inject noise
-        :param inverse_temperature: scale for gradients
-        :param friction_constant: scales the momenta
-        :param seed: seed value of the random number generator for generating reproducible runs
-        :param use_locking: whether to lock in the context of multi-threaded operations
-        :param name: internal name of optimizer
+        Args:
+          covariance_blending: covariance identity blending value eta to use in creating the preconditioning matrix
+          step_width: step width for gradient, also affects inject noise
+          inverse_temperature: scale for gradients
+          friction_constant: scales the momenta
+          seed: seed value of the random number generator for generating reproducible runs (Default value = None)
+          use_locking: whether to lock in the context of multi-threaded operations (Default value = False)
+          name: internal name of optimizer (Default value = 'GLA_2ndOrder')
+
+        Returns:
+
         """
         super(GeometricLangevinAlgorithmSecondOrderSampler, self).__init__(covariance_blending,
                                                                            step_width, inverse_temperature,
@@ -51,19 +59,23 @@ class GeometricLangevinAlgorithmSecondOrderSampler(GeometricLangevinAlgorithmFir
 
 
     def _apply_dense(self, grads_and_vars, var):
-        """ Adds nodes to TensorFlow's computational graph in the case of densely
+        """Adds nodes to TensorFlow's computational graph in the case of densely
         occupied tensors to perform the actual sampling.
-
+        
         We simply add nodes that generate normally distributed noise here, one
         for each weight.
         The norm of the injected noise is placed into the TensorFlow summary.
-
+        
         The discretization scheme is according to (1.59) in [dissertation Zofia Trstanova],
         i.e. 2nd order Geometric Langevin Algorithm.
 
-        :param grads_and_vars: gradient nodes over all walkers and all variables
-        :param var: parameters of the neural network
-        :return: a group of operations to be added to the graph
+        Args:
+          grads_and_vars: gradient nodes over all walkers and all variables
+          var: parameters of the neural network
+
+        Returns:
+          a group of operations to be added to the graph
+
         """
         precondition_matrix, grad = self._pick_grad(grads_and_vars, var)
         friction_constant_t = math_ops.cast(self._friction_constant_t, var.dtype.base_dtype)

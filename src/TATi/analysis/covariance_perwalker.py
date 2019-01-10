@@ -26,8 +26,12 @@ from TATi.analysis.parsedtrajectory import ParsedTrajectory
 from TATi.analysis.covariance import Covariance
 
 class CovariancePerWalker(Covariance):
-    """  This class wraps the capability to perform a covariance analysis
+    """This class wraps the capability to perform a covariance analysis
     for a given trajectory.
+
+    Args:
+
+    Returns:
 
     """
     def __init__(self, parsedtrajectory):
