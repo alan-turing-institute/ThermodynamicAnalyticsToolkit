@@ -24,16 +24,20 @@ import pandas as pd
 from TATi.common import setup_csv_file
 
 class Sampler(object):
-    """ This class contains general functions to access the neural network in
+    """This class contains general functions to access the neural network in
     an abstract fashion. It serves as the interface to all deriving grid-based
     samplers.
-
+    
     Samplers are executed in the following loop:
     1. `goto_start()`
     2. `set_step()`
     3. `evaluate_loss()`
     3. `write_output_line()`
     4. `goto_next_step()` (go to step 2.)
+
+    Args:
+
+    Returns:
 
     """
     def __init__(self, network_model, exclude_parameters):

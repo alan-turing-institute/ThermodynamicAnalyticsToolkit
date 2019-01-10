@@ -24,10 +24,14 @@ import numpy as np
 from TATi.samplers.grid.sampler import Sampler
 
 class NaiveGridSampler(Sampler):
-    """ This class implements the naive full grid sampler where each coordinate
+    """This class implements the naive full grid sampler where each coordinate
     axis is partitioned equidistantly, i.e. the number of sampling points
     scales as O(N^d) with the number of grid points per axis N and the number
     of degrees of freedom d.
+
+    Args:
+
+    Returns:
 
     """
     def __init__(self, network_model, exclude_parameters, samples_weights, samples_biases):

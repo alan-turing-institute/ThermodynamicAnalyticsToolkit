@@ -26,20 +26,24 @@ import TATi.diffusion_maps.diffusionmap as dm
 from TATi.common import setup_csv_file
 
 class FreeEnergy(object):
-    """ This class wraps the capability to perform a free energy calculation.
-
+    """This class wraps the capability to perform a free energy calculation.
+    
     The concept of free enery allows to make a relative comparison between
     different minima basins by taking the proportions of all minima basins
     into account.
-
+    
     Note:
         Both analysis variants - levelsets and histograms - do not yet give
         results that completely coincide. The concept of free energy still
         needs to be properly defined for neural network loss manifolds.
-
+    
     Warning:
-
+    
         THIS IS STILL EXPERIMENTAL.
+
+    Args:
+
+    Returns:
 
     """
 
@@ -85,7 +89,13 @@ class FreeEnergy(object):
         return freeEnergies, Levelsets
 
     def compute_by_histogramming(self, num_bins):
-        """ Calculate free energy by histogramming the eigenvector.
+        """Calculate free energy by histogramming the eigenvector.
+
+        Args:
+          num_bins: 
+
+        Returns:
+
         """
         logging.warning("Free energy analysis using histograms is not yet tested and probably does not give meaningful results, yet.")
         mlist = []

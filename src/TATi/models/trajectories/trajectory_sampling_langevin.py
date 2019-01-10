@@ -34,9 +34,7 @@ except ImportError:
 from TATi.models.trajectories.trajectory_sampling import TrajectorySampling
 
 class TrajectorySamplingLangevin(TrajectorySampling):
-    """ This implements sampling of a trajectory using Langevin Dynamics.
-
-    """
+    """This implements sampling of a trajectory using Langevin Dynamics."""
     def __init__(self, trajectory_state):
         super(TrajectorySamplingLangevin, self).__init__(trajectory_state)
 

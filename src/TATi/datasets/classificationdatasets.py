@@ -30,19 +30,17 @@ import matplotlib.pyplot as plt
 
 
 class ClassificationDatasets:
-    """
-    This class encapsulates all datasets from the TensorFlow playground
+    """This class encapsulates all datasets from the TensorFlow playground
     for classification tasks.
-
+    
     Example:
          dsgen=dataset_generator()
          ds = dsgen.generate(500, 0., dsgen.TWOCIRCLES)
 
-    Attributes:
-        TWOCIRCLES: two circles dataset
-        SQUARES: four squares dataset
-        TWOCLUSTERS: two normally distributed clusters dataset
-        SPIRAL: two spiral dataset
+    Args:
+
+    Returns:
+
     """
 
     TWOCIRCLES=0
@@ -51,8 +49,7 @@ class ClassificationDatasets:
     SPIRAL=3
 
     def __init__(self):
-        """ Initializes the class.
-        """
+        """Initializes the class."""
         self.xs = []
         self.ys = []
         self.r = 5
@@ -64,12 +61,16 @@ class ClassificationDatasets:
         }
 
     def generate(self, dimension, noise, data_type=SPIRAL):
-        """ Generates dataset.
+        """Generates dataset.
 
-        :param dimension: number of items in dataset
-        :param noise: noise scale in [0,1]
-        :param data_type: which dataset to generate (0,1,2,3)
-        :returns: dataset consisting of two-dimensional coordinates and labels
+        Args:
+          dimension: number of items in dataset
+          noise: noise scale in [0,1]
+          data_type: which dataset to generate (0,1,2,3) (Default value = SPIRAL)
+
+        Returns:
+          dataset consisting of two-dimensional coordinates and labels
+
         """
         # clear return instances
         self.xs[:] = []
@@ -82,14 +83,17 @@ class ClassificationDatasets:
         return self.xs, self.ys
 
     def generate_twocircles(self, dimension, noise):
-        """
-        Generates two circular distributions with the same
+        """Generates two circular distributions with the same
         center but different radii, i.e. they are mostly not
         overlapping.
 
-        :param dimension: number of items in dataset
-        :param noise: noise scale in [0,1]
-        :returns: dataset consisting of two-dimensional coordinates and labels
+        Args:
+          dimension: number of items in dataset
+          noise: noise scale in [0,1]
+
+        Returns:
+          dataset consisting of two-dimensional coordinates and labels
+
         """
         for label in [1,-1]:
             for i in range(int(dimension/2)):
@@ -106,12 +110,15 @@ class ClassificationDatasets:
                 logging.debug(str(self.xs[-1])+" with norm "+str(norm)+" and radius "+str(radius)+": "+str(self.ys[-1]))
                 
     def generate_squares(self, dimension, noise):
-        """
-        Generates distribution in each of the four quadrants of the two-dimensional domain.
+        """Generates distribution in each of the four quadrants of the two-dimensional domain.
 
-        :param dimension: number of items in dataset
-        :param noise: noise scale in [0,1]
-        :returns: dataset consisting of two-dimensional coordinates and labels
+        Args:
+          dimension: number of items in dataset
+          noise: noise scale in [0,1]
+
+        Returns:
+          dataset consisting of two-dimensional coordinates and labels
+
         """
         '''
         '''
@@ -125,12 +132,15 @@ class ClassificationDatasets:
             self.ys.append([1] if ((coords[0]+noisecoords[0])*(coords[1]+noisecoords[1]) >= 0) else [-1])
 
     def generate_twoclusters(self, dimension, noise):
-        """
-        Generates two normal distribution point clouds centered at [2,2] and [-2,-2].
+        """Generates two normal distribution point clouds centered at [2,2] and [-2,-2].
 
-        :param dimension: number of items in dataset
-        :param noise: noise scale in [0,1]
-        :returns: dataset consisting of two-dimensional coordinates and labels
+        Args:
+          dimension: number of items in dataset
+          noise: noise scale in [0,1]
+
+        Returns:
+          dataset consisting of two-dimensional coordinates and labels
+
         """
         variance = 0.5+noise*(3.5*2)
         signs=[1,-1]
@@ -142,14 +152,17 @@ class ClassificationDatasets:
                 self.ys.append(labels[i])
 
     def generate_spiral(self, dimension, noise):
-        """
-        Generates two spiral-shaped distributions each with a different label.
+        """Generates two spiral-shaped distributions each with a different label.
         This is a standard example for distributions that cannot be sensibly
         distinguished by a linear model, i.e. just a single hidden layer.
 
-        :param dimension: number of items in dataset
-        :param noise: noise scale in [0,1]
-        :returns: dataset consisting of two-dimensional coordinates and labels
+        Args:
+          dimension: number of items in dataset
+          noise: noise scale in [0,1]
+
+        Returns:
+          dataset consisting of two-dimensional coordinates and labels
+
         """
         for deltaT in [0, math.pi]:
             for i in range(int(dimension/2)):
@@ -162,14 +175,18 @@ class ClassificationDatasets:
 
     @staticmethod
     def get_plot_buf(input_data, input_labels, dimension):
-        """ Plots labelled scatter data using matplotlib and returns the created
+        """Plots labelled scatter data using matplotlib and returns the created
         PNG as a text buffer.
-
+        
         This is taken from https://stackoverflow.com/questions/41356093
 
-        :param input_data: data to plot, i.e. x
-        :param input_labels: labels to color input coordinates by, i.e. y
-        :param dimension: dimension of the dataset
+        Args:
+          input_data: data to plot, i.e. x
+          input_labels: labels to color input coordinates by, i.e. y
+          dimension: dimension of the dataset
+
+        Returns:
+
         """
         plt.figure()
         plt.scatter([val[0] for val in input_data], [val[1] for val in input_data],
@@ -183,15 +200,19 @@ class ClassificationDatasets:
         return buf
 
     def add_graphing_train(self):
-        """ Adds nodes for visualization of the dataset with predicted labels.
-
+        """Adds nodes for visualization of the dataset with predicted labels.
+        
         This can be used to visualize the current prediction of the dataset
         and thereby to assess the progress of the training. The images are
         PNGs and are stored to files, see :method:`classification_datasets.graph_truth`
         TensorBoard visualizes these under `images` if found in its logdir.
 
-        :return: placeholder for feeding in string encoded PNG image, summary
+        Args:
+
+        Returns:
+            placeholder for feeding in string encoded PNG image, summary
             node for writing image to
+
         """
         logging.debug("Adding graphing nodes")
         plot_buf_test = tf.placeholder(tf.string)
@@ -203,12 +224,16 @@ class ClassificationDatasets:
     def graph_truth(self, sess, data, labels, sample_size, log_writer):
         """
 
-        :param sess: TensorFlow session
-        :param data: input of dataset, i.e. x
-        :param labels: labels of dataset, i.e. y
-        :param sample_size: size of the dataset
-        :param log_writer: writer node for writing the images to
-        :return: plot_image_summary_truth
+        Args:
+          sess: TensorFlow session
+          data: input of dataset, i.e. x
+          labels: labels of dataset, i.e. y
+          sample_size: size of the dataset
+          log_writer: writer node for writing the images to
+
+        Returns:
+          plot_image_summary_truth
+
         """
         plot_buf_truth = tf.placeholder(tf.string)
         image_truth = tf.image.decode_png(plot_buf_truth, channels=4)

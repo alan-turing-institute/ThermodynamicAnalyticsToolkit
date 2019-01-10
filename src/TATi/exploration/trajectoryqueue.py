@@ -21,16 +21,26 @@
 import logging
 
 class TrajectoryQueue(object):
-    ''' This class is a queue of trajectory jobs of any type
+    """This class is a queue of trajectory jobs of any type
     which are executed in a FIFO fashion until the queue is empty.
 
-    '''
+    Args:
+
+    Returns:
+
+    """
 
     def __init__(self, max_legs, number_pruning, number_processes=0):
-        """ Initializes a queue of trajectory jobs.
+        """Initializes a queue of trajectory jobs.
 
-        :param .max_legs: maximum number of legs (of length max_steps) per trajectory
-        :param number_pruning: number of pruning jobs added at trajectory end
+        Args:
+          max_legs: maximum number of legs (consecutive sampling trajectories)
+          number_pruning: number of pruning runs for each trajectory, see `trajectoryjob_prune`
+          number_processes: number of processes to use (Default value = 0)
+
+        Returns:
+          None
+
         """
         self.max_legs = max_legs
         self.number_pruning = number_pruning
@@ -48,20 +58,28 @@ class TrajectoryQueue(object):
         self.used_data_ids = _list
 
     def add_sample_job(self, data_object, run_object=None, continue_flag=False):
-        """ Adds a sampling job to the queue.
+        """Adds a sampling job to the queue.
 
-        :param data_object: data object for the job
-        :param restore_model_filename: file name from where to restore model
-        :param continue_flag: flag whether job should spawn more jobs or not
+        Args:
+          data_object: data object for the job
+          run_object: network_model required for the sample job (Default value = None)
+          continue_flag: flag whether job should spawn more jobs or not (Default value = False)
+
+        Returns:
+
         """
         assert( False )
 
     def add_train_job(self, data_object, run_object=None, continue_flag=False):
-        """ Adds a training job to the queue.
+        """Adds a training job to the queue.
 
-        :param data_object: data object for the job
-        :param restore_model_filename: file name from where to restore model
-        :param continue_flag: flag whether job should spawn more jobs or not
+        Args:
+          data_object: data object for the job
+          run_object: network_model required for the train job (Default value = None)
+          continue_flag: flag whether job should spawn more jobs or not (Default value = False)
+
+        Returns:
+
         """
         assert( False )
 
@@ -72,10 +90,14 @@ class TrajectoryQueue(object):
         return data_object
 
     def _enqueue_job(self, _job):
-        """ Adds a new job to the end of the queue, also giving it a unique
+        """Adds a new job to the end of the queue, also giving it a unique
         job id.
 
-        :param _job: job to add
+        Args:
+          _job: job to add
+
+        Returns:
+
         """
         # maintain old id if the jobs has been re-queued
         if _job.job_id == -1:
@@ -86,11 +108,14 @@ class TrajectoryQueue(object):
             self.queue.put(_job)
 
     def remove_job(self, _job_id):
-        ''' Removes a job of the given id from the queue.
+        """Removes a job of the given id from the queue.
 
-        :param _job_id: id of the job
-        :return true - job found and removed, false - job id not found
-        '''
+        Args:
+          _job_id: id of the job
+
+        Returns:
+            true - job found and removed, false - job id not found
+        """
         if self.number_processes == 0:
             for job in list(self.queue):
                 if job.get_job_id() == _job_id:
@@ -99,19 +124,27 @@ class TrajectoryQueue(object):
         return False
 
     def run_next_job(self, run_object, analyze_object):
-        ''' Takes the next job from the start of the queue and runs it.
+        """Takes the next job from the start of the queue and runs it.
         Will add new jobs to queue depending on the result of the run job.
 
-        :param run_object: neural network object for run
-        :param analyze_object: parameter object for analysis
-        '''
+        Args:
+          run_object: neural network object for run
+          analyze_object: parameter object for analysis
+
+        Returns:
+
+        """
         pass
 
     def run_all_jobs(self, network_model, parameters):
-        """ Run all jobs currently found in the Trajectory queue.
+        """Run all jobs currently found in the Trajectory queue.
 
-        :param network_model: model of neural network with Session for sample and optimize jobs
-        :param parameters: parameter struct for analysis jobs
+        Args:
+          network_model: model of neural network with Session for sample and optimize jobs
+          parameters: parameter struct for analysis jobs
+
+        Returns:
+
         """
         # set whether to add train jobs or not
         try:
@@ -123,9 +156,12 @@ class TrajectoryQueue(object):
             self.run_next_job(network_model, parameters)
 
     def is_empty(self):
-        """ Returns whether the queue is empty
+        """Returns whether the queue is empty
 
-        :return: True - queue is empty, False not
+        Args:
+
+        Returns:
+            True - queue is empty, False not
         """
         if self.number_processes == 0:
             return len(self.queue) == 0

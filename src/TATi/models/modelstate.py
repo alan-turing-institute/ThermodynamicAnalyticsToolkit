@@ -42,11 +42,15 @@ from TATi.models.trajectories.trajectorystate import TrajectoryState
 
 
 class ModelState:
-    """ Captures all of the state of the neural network model.
-
+    """Captures all of the state of the neural network model.
+    
     This contains all ingredients such as input pipeline, network, trajectory,
     and so on. It is abstracted away from the actual interface to make the
     interface class as light-weight and simple to understand as possible.
+
+    Args:
+
+    Returns:
 
     """
     def __init__(self, FLAGS):
@@ -95,9 +99,13 @@ class ModelState:
         self.hessians = None
 
     def reset_parameters(self, FLAGS):
-        """ Use to pass a different set of FLAGS controlling training or sampling.
+        """Use to pass a different set of FLAGS controlling training or sampling.
 
-        :param FLAGS: new set of parameters
+        Args:
+          FLAGS: new set of parameters
+
+        Returns:
+
         """
         self.FLAGS = FLAGS
         if self.trajectory_sample is not None:
@@ -114,18 +122,21 @@ class ModelState:
             self.trajectorystate.FLAGS = FLAGS
 
     def reset_dataset(self):
-        """ Re-initializes the dataset for a new run
-        """
+        """Re-initializes the dataset for a new run"""
         if self.input_pipeline is not None:
             self.input_pipeline.reset(self.sess)
 
     def provide_data(self, features, labels, shuffle=False):
-        """ Use to provide an in-memory dataset, i.e., numpy arrays with
+        """Use to provide an in-memory dataset, i.e., numpy arrays with
         `features` and `labels`.
 
-        :param features: feature part of dataset
-        :param labels: label part of dataset
-        :param shuffle: whether to shuffle the dataset initially or not
+        Args:
+          features: feature part of dataset
+          labels: label part of dataset
+          shuffle: whether to shuffle the dataset initially or not (Default value = False)
+
+        Returns:
+
         """
         self.input_pipeline = InputPipelineFactory.provide_data(
             self.FLAGS, features=features, labels=labels, shuffle=shuffle)
@@ -414,16 +425,20 @@ class ModelState:
 
     def init_network(self, filename=None, setup=None,
                      add_vectorized_gradients=False):
-        """ Initializes the graph, from a stored model if filename is not None.
+        """Initializes the graph, from a stored model if filename is not None.
 
-        :param filename: name of file containing stored model
-        :param setup: "sample", "train" or else to add nodes that trigger a
-                single sampling or training step. Otherwise they are not added.
-                init_network() can be called consecutively with both variants
-                to add either type of node.
-        :param add_vectorized_gradients: add nodes to return gradients in fully
-                vectorized form, i.e. in the same sequence as nn_weights and
-                nn_biases parameters combined, see self.gradients.
+        Args:
+          filename: name of file containing stored model (Default value = None)
+          setup: sample", "train" or else to add nodes that trigger a
+        single sampling or training step. Otherwise they are not added.
+        init_network() can be called consecutively with both variants
+        to add either type of node. (Default value = None)
+          add_vectorized_gradients: add nodes to return gradients in fully
+        vectorized form, i.e. in the same sequence as nn_weights and
+        nn_biases parameters combined, see self.gradients. (Default value = False)
+
+        Returns:
+
         """
         # dataset was provided
         assert (self.FLAGS.input_dimension is not None)
@@ -474,23 +489,31 @@ class ModelState:
         self.assign_parse_parameter_file()
 
     def save_model(self, filename):
-        """ Saves the current neural network model to a set of files,
+        """Saves the current neural network model to a set of files,
         whose prefix is given by filename.
-
+        
         See also `model.restore_model()`.
 
-        :param filename: prefix of set of model files
-        :return: path where model was saved
+        Args:
+          filename: prefix of set of model files
+
+        Returns:
+          path where model was saved
+
         """
         print("Saving model in" + filename)
         return self.saver.save(self.sess, filename)
 
     def restore_model(self, filename):
-        """ Restores the model from a tensorflow checkpoint file.
-
+        """Restores the model from a tensorflow checkpoint file.
+        
         Compare to `model.save_model()`.
 
-        :param filename: prefix of set of model files
+        Args:
+          filename: prefix of set of model files
+
+        Returns:
+
         """
         # assign state of model from file if given
         if filename is not None:
@@ -503,8 +526,7 @@ class ModelState:
             logging.info("Model restored from file: %s" % restore_path)
 
     def finish(self):
-        """ Closes all open files and saves the model if desired
-        """
+        """Closes all open files and saves the model if desired"""
         try:
             if self.FLAGS.save_model is not None:
                 save_path = self.save_model(self.FLAGS.save_model.replace('.meta', ''))
@@ -513,10 +535,14 @@ class ModelState:
             pass
 
     def fix_parameters(self, names):
-        """ Fixes the parameters given by their names
+        """Fixes the parameters given by their names
 
-        :param names: list of names
-        :return: list of tensorflow variables that are fixed
+        Args:
+          names: list of names
+
+        Returns:
+          list of tensorflow variables that are fixed
+
         """
         retlist = []
         for name in names:
@@ -537,13 +563,15 @@ class ModelState:
                     retlist.append(None)
         return retlist
 
-
     def create_assign_parameters(self, variables, values):
-        """ Creates assignment operation for multiple parameters at once.
+        """Creates assignment operation for multiple parameters at once.
 
-        :param variables: dict of tensorflow variable names and list of variable
-                tensors
-        :param values: list of values to assign to
+        Args:
+          variables: dict of tensorflow variable names and list of variable tensors
+          values: list of values to assign to
+
+        Returns:
+
         """
         logging.debug("Assigning to vars: "+str(variables))
         logging.debug("Assigning values :"+str(values))
@@ -559,10 +587,14 @@ class ModelState:
 
     @staticmethod
     def split_parameters_as_names_values(_string):
-        """ Extracts parameter names and values from the given string in the form:
+        """Extracts parameter names and values from the given string in the form:
          name=value;name=value;...
 
-        :param _string: string to tokenize
+        Args:
+          _string: string to tokenize
+
+        Returns:
+
         """
         names=[]
         values=[]
@@ -585,10 +617,14 @@ class ModelState:
 
 
     def assign_current_step(self, step, walker_index=0):
-        """ Allows to set the current step number of the iteration.
+        """Allows to set the current step number of the iteration.
 
-        :param step: step number to set
-        :param walker_index: walker for which to set step
+        Args:
+          step: step number to set
+          walker_index: walker for which to set step (Default value = 0)
+
+        Returns:
+
         """
         assert(walker_index < self.FLAGS.number_walkers)
         # set step
@@ -601,13 +637,17 @@ class ModelState:
             assert (set_step == step)
 
     def assign_neural_network_parameters(self, parameters, walker_index=0, do_check=False):
-        """ Assigns the parameters of the neural network from
+        """Assigns the parameters of the neural network from
         the given array.
 
-        :param parameters: list of values, one for each weight and bias
-        :param walker_index: index of the replicated network (in the graph)
-        :param do_check: whether to check set values (and print) or not
-        :return evaluated weights and bias on do_check or None otherwise
+        Args:
+          parameters: list of values, one for each weight and bias
+          walker_index: index of the replicated network (in the graph) (Default value = 0)
+          do_check: whether to check set values (and print) or not
+
+        Returns:
+            evaluated weights and bias on do_check or None otherwise (Default value = False)
+
         """
         weights_dof = self.weights[walker_index].get_total_dof()
         return self.assign_weights_and_biases(weights_vals=parameters[0:weights_dof],
@@ -615,13 +655,17 @@ class ModelState:
                                               walker_index=walker_index, do_check=do_check)
 
     def assign_weights_and_biases(self, weights_vals, biases_vals, walker_index=0, do_check=False):
-        """ Assigns weights and biases of a neural network.
+        """Assigns weights and biases of a neural network.
 
-        :param weights_vals: flat weights parameters
-        :param biases_vals: flat bias parameters
-        :param walker_index: index of the replicated network (in the graph)
-        :param do_check: whether to check set values (and print) or not
-        :return evaluated weights and bias on do_check or None otherwise
+        Args:
+          weights_vals: flat weights parameters
+          biases_vals: flat bias parameters
+          walker_index: index of the replicated network (in the graph) (Default value = 0)
+          do_check: whether to check set values (and print) or not
+
+        Returns:
+            evaluated weights and bias on do_check or None otherwise (Default value = False)
+
         """
         if weights_vals.size > 0:
             self.weights[walker_index].assign(self.sess, weights_vals)
@@ -641,14 +685,18 @@ class ModelState:
         return None
 
     def assign_weights_and_biases_from_dataframe(self, df_parameters, rownr, walker_index=0, do_check=False):
-        """ Parse weight and bias values from a dataframe given a specific step
+        """Parse weight and bias values from a dataframe given a specific step
         to set the neural network's parameters.
 
-        :param df_parameters: pandas dataframe
-        :param rownr: rownr to set
-        :param walker_index: index of the replicated network (in the graph)
-        :param do_check: whether to evaluate (and print) set parameters
-        :return evaluated weights and bias on do_check or None otherwise
+        Args:
+          df_parameters: pandas dataframe
+          rownr: rownr to set
+          walker_index: index of the replicated network (in the graph) (Default value = 0)
+          do_check: whether to evaluate (and print) set parameters
+
+        Returns:
+          evaluated weights and bias on do_check or None otherwise (Default value = False)
+
         """
         # check that column names are in order
         weight_numbers, bias_numbers = get_weight_and_bias_column_numbers(df_parameters)
@@ -690,14 +738,18 @@ class ModelState:
         return self.assign_weights_and_biases(weights_vals, biases_vals, walker_index, do_check)
 
     def assign_weights_and_biases_from_file(self, filename, step, walker_index=0, do_check=False):
-        """ Parse weight and bias values from a CSV file given a specific step
+        """Parse weight and bias values from a CSV file given a specific step
         to set the neural network's parameters.
 
-        :param filename: filename to parse
-        :param step: step to set (i.e. value in "step" column designates row)
-        :param walker_index: index of the replicated network (in the graph)
-        :param do_check: whether to evaluate (and print) set parameters
-        :return evaluated weights and bias on do_check or None otherwise
+        Args:
+          filename: filename to parse
+          step: step to set (i.e. value in "step" column designates row)
+          walker_index: index of the replicated network (in the graph) (Default value = 0)
+          do_check: whether to evaluate (and print) set parameters
+
+        Returns:
+          evaluated weights and bias on do_check or None otherwise (Default value = False)
+
         """
         # parse csv file
         df_parameters = pd.read_csv(filename, sep=',', header=0)

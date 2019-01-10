@@ -24,26 +24,38 @@ import pandas as pd
 import sys
 
 class ParsedTrajectory(object):
-    """ This class encapsulates a single or multiple trajectories
+    """This class encapsulates a single or multiple trajectories
     parsed from file.
+
+    Args:
+
+    Returns:
 
     """
     def __init__(self, filename, every_nth=1):
         """
 
-        :param filename: trajectory filename to parse
-        :param every_nth: only consider every nth step
-    *    """
+        Args:
+          filename: trajectory filename to parse
+          every_nth: only consider every nth step (Default value = 1)
+
+        Returns:
+
+        """
         print("Loading trajectory file")
         self.df_trajectory = pd.read_csv(filename, sep=',', header=0)
         self.every_nth = every_nth
         self.start = 0
 
     def add_drop_burnin(self, drop_burnin):
-        """ Allows to exclude an initial selection of steps.
+        """Allows to exclude an initial selection of steps.
 
-        :param drop_burnin: up to which value in step column to exclude
-        :return:  True - excluded, False - drop_burnin is illegal
+        Args:
+          drop_burnin: up to which value in step column to exclude
+
+        Returns:
+          True - excluded, False - drop_burnin is illegal
+
         """
         steps = self.df_trajectory.loc[:,['step']].values
         if (len(steps) > 1) and (drop_burnin >= steps[1]):

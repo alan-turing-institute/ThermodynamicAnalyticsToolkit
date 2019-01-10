@@ -39,10 +39,14 @@ from TATi.models.accumulators.trajectoryaccumulator import TrajectoryAccumulator
 from TATi.models.accumulators.accumulated_values import AccumulatedValues
 
 class TrajectoryBase(object):
-    """ This is the common base class for all `Trajectory`'s.
-
+    """This is the common base class for all `Trajectory`'s.
+    
     It takes care of initializing, allowing to write lines and closing the
     average, run, and trajectory files.
+
+    Args:
+
+    Returns:
 
     """
     def __init__(self, trajectory_state):
@@ -89,9 +93,12 @@ class TrajectoryBase(object):
 
 
     def get_averages_header(self):
-        """ Prepares the distinct header for the averages file for sampling
+        """Prepares the distinct header for the averages file for sampling
 
-        :param setup: sample, train or None
+        Args:
+
+        Returns:
+
         """
         return ['id', 'step', 'epoch', 'loss']
 
@@ -108,8 +115,7 @@ class TrajectoryBase(object):
         return header
 
     def init_files(self):
-        """ Initializes the output files.
-        """
+        """Initializes the output files."""
         header = self.get_run_header()
 
         try:
@@ -149,8 +155,7 @@ class TrajectoryBase(object):
         self.averages_writer.writerow(line)
 
     def close_files(self):
-        """ Closes the output files if they have been opened.
-        """
+        """Closes the output files if they have been opened."""
         if self.config_map["do_write_averages_file"]:
             assert self.config_map["averages_file"] is not None
             self.config_map["averages_file"].close()
@@ -168,10 +173,13 @@ class TrajectoryBase(object):
             self.trajectory_writer = None
 
     def _get_test_nodes(self):
-        """ Helper function to create list of nodes for activating sampling or
+        """Helper function to create list of nodes for activating sampling or
         training step.
 
-        :param setup: sample or train
+        Args:
+
+        Returns:
+
         """
         list_of_nodes = self._get_initial_test_nodes()
         list_of_nodes.extend(["accuracy", "global_step", "loss"])
@@ -193,18 +201,23 @@ class TrajectoryBase(object):
         return weights_eval, biases_eval
 
     def execute(self, session, dataset_dict, return_run_info = False, return_trajectories = False, return_averages=False):
-        """ Performs the actual training of the neural network `nn` given a dataset `ds` and a
+        """Performs the actual training of the neural network `nn` given a dataset `ds` and a
         Session `session`.
 
-        :param dataset_dict: contains input_pipeline, placeholders for x and y
-        :param return_run_info: if set to true, run information will be accumulated
-                inside a numpy array and returned
-        :param return_trajectories: if set to true, trajectories will be accumulated
-                inside a numpy array and returned (adhering to FLAGS.every_nth)
-        :param return_averages: if set to true, accumulated average values will be
-                returned as numpy array
-        :return: either twice None or a pandas dataframe depending on whether either
-                parameter has evaluated to True
+        Args:
+          session: `tf.Session` object
+          dataset_dict: contains input_pipeline, placeholders for x and y
+          return_run_info: if set to true, run information will be accumulated
+        inside a numpy array and returned (Default value = False)
+          return_trajectories: if set to true, trajectories will be accumulated
+        inside a numpy array and returned (adhering to FLAGS.every_nth) (Default value = False)
+          return_averages: if set to true, accumulated average values will be
+        returned as numpy array (Default value = False)
+
+        Returns:
+          either twice None or a pandas dataframe depending on whether either
+          parameter has evaluated to True
+
         """
         self.init_files()
 

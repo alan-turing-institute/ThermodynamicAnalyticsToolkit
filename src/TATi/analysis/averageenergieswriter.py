@@ -23,18 +23,20 @@ import numpy as np
 from TATi.common import setup_csv_file
 
 class AverageEnergiesWriter(object):
-    """ This writes averages as CSV obtained from a parsed runfile.
-
-    """
+    """This writes averages as CSV obtained from a parsed runfile."""
 
     output_width = 8
     output_precision = 8
 
     def __init__(self, runfile, steps):
-        """ Creates internal averages from a given parsed run file
+        """Creates internal averages from a given parsed run file
 
-        :param runfile: parsed runfile instance
-        :param steps: number of steps to evaluate averages
+        Args:
+          runfile: parsed runfile instance
+          steps: number of steps to evaluate averages
+
+        Returns:
+
         """
         self.end_list = np.arange(1,steps+1)*int(runfile.number_steps()/steps)
         print("Evaluating at steps: "+str(self.end_list))

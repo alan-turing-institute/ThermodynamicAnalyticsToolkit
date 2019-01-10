@@ -26,16 +26,25 @@ import tensorflow as tf
 from TATi.models.basetype import dds_basetype
 
 class GradientDescent(tf.train.GradientDescentOptimizer):
-    """ We are extending TensorFlow's GradientDescentOptimizer to access the
+    """We are extending TensorFlow's GradientDescentOptimizer to access the
     gradient's norm.
+
+    Args:
+
+    Returns:
+
     """
 
     def __init__(self, learning_rate, use_locking=False, name='GradientDescent'):
-        """ Init function to get access to learning rate.
+        """Init function to get access to learning rate.
 
-        :param learning_rate:
-        :param use_locking:
-        :param name:
+        Args:
+          learning_rate: param use_locking:
+          name:  (Default value = 'GradientDescent')
+          use_locking:  (Default value = False)
+
+        Returns:
+
         """
         super(GradientDescent, self).__init__(learning_rate, use_locking, name)
         self._learning_rate = learning_rate
@@ -46,16 +55,19 @@ class GradientDescent(tf.train.GradientDescentOptimizer):
         self.force_power = 1.
 
     def _prepare(self):
-        """ Convert internal learning_rate to proper tensor.
-        """
+        """Convert internal learning_rate to proper tensor."""
         self._learning_rate_t = ops.convert_to_tensor(self._learning_rate, name="learning_rate")
         super(GradientDescent, self)._prepare()
 
     def set_prior(self, prior):
-        """ Sets the parameters for enforcing a prior.
+        """Sets the parameters for enforcing a prior.
 
-        :param prior: dict with keys factor, lower_boundary and upper_boundary that
-                specifies a wall-repelling force to ensure a prior on the parameters
+        Args:
+          prior: dict with keys factor, lower_boundary and upper_boundary that
+        specifies a wall-repelling force to ensure a prior on the parameters
+
+        Returns:
+
         """
         if "factor" in prior:
             self.force_factor = prior["factor"]
@@ -67,24 +79,26 @@ class GradientDescent(tf.train.GradientDescentOptimizer):
             self.upper_boundary = prior["upper_boundary"]
 
     def _apply_prior(self, var):
-        """ Returns two prior constraining force nodes that have linearly increasing
+        """Returns two prior constraining force nodes that have linearly increasing
         strength with distance to wall (and beyond).
-
+        
         Note that force is continuous,
         not smooth itself!
-
+        
         The domain is specified by the interval [upper_boundary, lower_boundary].
-
-        Cases:
-        ------
+        
+        We have the following cases:
           1. both ub and lb specified, then in 0.01 of domain length (ub-lb) the force
              begins
           2. if only ub is specified, then within 0.01 of domain length (ub) ...
           3. if only lb is specified as it negative, then within -0.01 ...
              otherwise we use a fixed relative domain length of 0.01
 
-        :param var:
-        :return:
+        Args:
+          var: return:
+
+        Returns:
+
         """
 
         def wall_force(signed_distance, wall_size):
@@ -138,10 +152,14 @@ class GradientDescent(tf.train.GradientDescentOptimizer):
         return ub_repell, lb_repell
 
     def _apply_dense(self, grad, var):
-        """ Add scaled gradient and train as usual
+        """Add scaled gradient and train as usual
 
-        :param grad: gradients
-        :param var: variables
+        Args:
+          grad: gradients
+          var: variables
+
+        Returns:
+
         """
         lr_t = math_ops.cast(self._learning_rate_t, var.dtype.base_dtype)
         scaled_gradient = lr_t * grad

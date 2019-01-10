@@ -5,20 +5,24 @@ import TATi.simulation as tati
 np.random.seed(426)
 
 def gla2_update_step(nn, momenta, old_gradients, step_width, beta, gamma):
-    """ Implementation of GLA2 update step using TATi's simulation interface.
-
+    """Implementation of GLA2 update step using TATi's simulation interface.
+    
     Note:
         Parameters are contained inside nn. For momenta we use
         python variables as the evaluation of the loss does not
         depend on them.
 
-    :param nn: ref to tati simulation instance
-    :param momenta: numpy array of parameters
-    :param old_gradients: gradients evaluated at last step
-    :param step_width: step width for sampling step
-    :param beta: inverse temperature
-    :param gamma: friction constant
-    :return: updated gradients and momenta
+    Args:
+      nn: ref to tati simulation instance
+      momenta: numpy array of parameters
+      old_gradients: gradients evaluated at last step
+      step_width: step width for sampling step
+      beta: inverse temperature
+      gamma: friction constant
+
+    Returns:
+      updated gradients and momenta
+
     """
 
     # 1. p_{n+\tfrac 1 2} = p_n - \tfrac {\lambda}{2} \nabla_x L(x_n)

@@ -28,8 +28,12 @@ from TATi.common import decode_csv_line, read_and_decode_image, get_csv_defaults
 from TATi.models.input.inputpipeline import InputPipeline
 
 class DatasetPipeline(InputPipeline):
-    """ This specific input pipeline uses the tf.Dataset module to parse CSV
+    """This specific input pipeline uses the tf.Dataset module to parse CSV
     (or other) data from file and present it to the network in batches.
+
+    Args:
+
+    Returns:
 
     """
 
@@ -37,19 +41,23 @@ class DatasetPipeline(InputPipeline):
                  batch_size, dimension, max_steps,
                  input_dimension, output_dimension,
                  shuffle, seed):
-        ''' Initializes the tf.Dataset object by supplying CSV filenames, decoding
+        """Initializes the tf.Dataset object by supplying CSV filenames, decoding
         them, and putting them into batches.
 
-        :param filenames: list of filenames to parse
-        :param filetype: type of the files to parse: csv, tfrecord
-        :param batch_size: number of datums to return
-        :param dimension: number of datums in total
-        :param max_steps: maximum number of steps
-        :param input_dimension: number of nodes in the input layer/number of features
-        :param output_dimension: number of nodes in the output layer/number of labels
-        :param shuffle: whether to shuffle dataset initially or not
-        :param seed: seed used for random shuffle to allow reproducible runs
-        '''
+        Args:
+          filenames: list of filenames to parse
+          filetype: type of the files to parse: csv, tfrecord
+          batch_size: number of datums to return
+          dimension: number of datums in total
+          max_steps: maximum number of steps
+          input_dimension: number of nodes in the input layer/number of features
+          output_dimension: number of nodes in the output layer/number of labels
+          shuffle: whether to shuffle dataset initially or not
+          seed: seed used for random shuffle to allow reproducible runs
+
+        Returns:
+
+        """
 
         self.dataset = tf.data.Dataset.from_tensor_slices(filenames)
         if filetype == "csv":
@@ -93,16 +101,20 @@ class DatasetPipeline(InputPipeline):
         self.batch_next = self.iterator.get_next()
 
     def next_batch(self, session, auto_reset = False, warn_when_reset = False):
-        ''' This returns the next batch of features and labels.
+        """This returns the next batch of features and labels.
 
-        :param session: session object as input might be retrieved through the
-                computational graph
-        :param auto_reset: whether to automatically reset the dataset iterator
-                or whether the exception tf.errors.OutOfRangeError is not caught
-        :param warn_when_reset: whether to warn when reset, requires makes
-                auto_reset set to True
-        :return: pack of feature and label array
-        '''
+        Args:
+          session: session object as input might be retrieved through the
+        computational graph
+          auto_reset: whether to automatically reset the dataset iterator
+        or whether the exception tf.errors.OutOfRangeError is not caught (Default value = False)
+          warn_when_reset: whether to warn when reset, requires makes
+        auto_reset set to True (Default value = False)
+
+        Returns:
+          pack of feature and label array
+
+        """
         # fetch next batch of data
         assert( (not warn_when_reset) or (auto_reset and warn_when_reset) ) # make sure both are activated
         if not auto_reset:
@@ -122,27 +134,39 @@ class DatasetPipeline(InputPipeline):
         return batch_data[0], batch_data[1]
 
     def epochFinished(self):
-        ''' This checks whether the epoch is done, i.e. whether the dataset
+        """This checks whether the epoch is done, i.e. whether the dataset
         is depleted and needs to be reset.
+        
+        Args:
 
-        :return: True - epoch is done, False - else
-        '''
+        Returns:
+          True - epoch is done, False - else
+
+        """
         pass
 
     def reset(self, session):
-        ''' This resets the dataset such that a new epoch of training or
+        """This resets the dataset such that a new epoch of training or
         sampling may commence.
 
-        :param session: session object as input might be retrieved through the
-                computational graph
-        '''
+        Args:
+          session: session object as input might be retrieved through the
+        computational graph
+
+        Returns:
+
+        """
         session.run(self.iterator.initializer)
 
     def shuffle(self, seed):
-        ''' This shuffles the dataset.
-
+        """This shuffles the dataset.
+        
         :warning: this may require to reset() the dataset as well.
 
-        :param seed: random number seed for shuffling to allow reproducible runs
-        '''
+        Args:
+          seed: random number seed for shuffling to allow reproducible runs
+
+        Returns:
+
+        """
         self.dataset = self.dataset.shuffle(seed=seed)

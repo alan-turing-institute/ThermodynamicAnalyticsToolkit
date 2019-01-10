@@ -172,22 +172,26 @@ if USE_TENSORFLOW_RANDOM_NUMBERS:
 
 
 def baoab_update_step(nn, momenta, new_gradients, preconditioner, step_width, beta, gamma, walker_index=0):
-    """ Implementation of BAOAB update step using TATi's simulation interface.
-
+    """Implementation of BAOAB update step using TATi's simulation interface.
+    
     Note:
         Parameters are contained inside nn. For momenta we use
         python variables as the evaluation of the loss does not
         depend on them.
 
-    :param nn: ref to tati simulation instance
-    :param momenta: numpy array of parameters
-    :param new_gradients: gradients evaluated at last step
-    :param preconditioner: preconditioner matrix
-    :param step_width: step width for sampling step
-    :param beta: inverse temperature
-    :param gamma: friction constant
-    :param walker_index: index of walker to update
-    :return: updated gradients and momenta
+    Args:
+      nn: ref to tati simulation instance
+      momenta: numpy array of parameters
+      new_gradients: gradients evaluated at last step
+      preconditioner: preconditioner matrix
+      step_width: step width for sampling step
+      beta: inverse temperature
+      gamma: friction constant
+      walker_index: index of walker to update (Default value = 0)
+
+    Returns:
+      updated gradients and momenta
+
     """
 
     def B(step_width, gradients):

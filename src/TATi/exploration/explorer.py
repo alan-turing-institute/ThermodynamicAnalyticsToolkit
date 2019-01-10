@@ -29,22 +29,30 @@ from TATi.exploration.trajectoryprocessqueue import TrajectoryProcessQueue
 
 
 class Explorer(object):
-    """ Explorer is the Python API class for performing exploration of the loss
+    """Explorer is the Python API class for performing exploration of the loss
     manifold of a neural network.
+
+    Args:
+
+    Returns:
 
     """
 
     def __init__(self, parameters, max_legs=20, use_processes=0, number_pruning=0, manager=None):
-        """ Initializes the explorer class with its internal instances.
+        """Initializes the explorer class with its internal instances.
 
-        :param parameters: parameter struct for steering exploration
-        :param max_legs: maximum number of legs per trajectory
-        :param use_processes: whether to use a single or multiple processes (using
-                multiple processes allows to explore in parallel but needs to build
-                multiple copies of the graph, one per process)
-        :param number_pruning: number of pruning jobs added after trajectory has ended
-        :param manager: multiprocessing's manager object to control shared instances
-                in case of multiple processes
+        Args:
+          parameters: parameter struct for steering exploration
+          max_legs: maximum number of legs per trajectory (Default value = 20)
+          use_processes: whether to use a single or multiple processes (using
+        multiple processes allows to explore in parallel but needs to build
+        multiple copies of the graph, one per process) (Default value = 0)
+          number_pruning: number of pruning jobs added after trajectory has ended (Default value = 0)
+          manager: multiprocessing's manager object to control shared instances
+        in case of multiple processes (Default value = None)
+
+        Returns:
+
         """
         self.use_processes = use_processes != 0
         self.parameters = parameters
@@ -54,16 +62,25 @@ class Explorer(object):
             self.queue = TrajectoryProcessQueue(parameters, number_pruning, number_processes=use_processes, manager=manager)
 
     def add_used_data_ids_list(self, _list):
-        """ Pass function through to TrajectoryQueue
+        """Pass function through to TrajectoryQueue
 
-        :param _list: list to use for storing currently used data ids
+        Args:
+          _list: list to use for storing currently used data ids
+
+        Returns:
+
         """
         self.queue.add_used_data_ids_list(_list)
 
     def spawn_starting_trajectory(self, network_model, number_trajectories=3):
-        """ Begin exploration by sampling an initial starting trajectory.
+        """Begin exploration by sampling an initial starting trajectory.
 
-        :param network_model: model of neural network with Session for sample and optimize jobs
+        Args:
+          network_model: model of neural network with Session for sample and optimize jobs
+          number_trajectories:  (Default value = 3)
+
+        Returns:
+
         """
         for i in range(1,number_trajectories+1):
             self.queue.add_sample_job(
@@ -72,14 +89,18 @@ class Explorer(object):
                 continue_flag=True)
 
     def spawn_corner_trajectories(self, steps, parameters, losses, idx_corner, network_model):
-        """ Run further trajectories for a given list of corner points.
+        """Run further trajectories for a given list of corner points.
 
-        :param steps: continuous step number per step
-        :param parameters: trajectory as parameters (i.e. weights and biases) per step
-        :param losses: loss per step
-        :param idx_corner: list of indices of all corner points w.r.t. trajectory
-        :param network_model: model of neural network with Session for sample and optimize jobs
-        :return: added cornerpoints as array
+        Args:
+          steps: continuous step number per step
+          parameters: trajectory as parameters (i.e. weights and biases) per step
+          losses: loss per step
+          idx_corner: list of indices of all corner points w.r.t. trajectory
+          network_model: model of neural network with Session for sample and optimize jobs
+
+        Returns:
+          added cornerpoints as array
+
         """
         # d. spawn new trajectories from these points
         cornerpoints = []
@@ -103,9 +124,11 @@ class Explorer(object):
         return cornerpoints
 
     def combine_sampled_trajectories(self):
-        """ Combines all trajectories contained in the internal container.
+        """Combines all trajectories contained in the internal container.
 
-        :return: combined parameters and losses for diffusion map analysis
+        Returns:
+            combined parameters and losses for diffusion map analysis
+
         """
         steps = []
         parameters = []
@@ -121,11 +144,15 @@ class Explorer(object):
 
     @staticmethod
     def find_corner_points(dmap_eigenvectors, number_corner_points):
-        """ Finds corner points given the diffusion map eigenvectors of a trajectory.
+        """Finds corner points given the diffusion map eigenvectors of a trajectory.
 
-        :param dmap_eigenvectors: diffusion map eigenvector matrix
-        :param number_corner_points: desired number of corner points
-        :return: indices of the corner points with respect to trajectory
+        Args:
+          dmap_eigenvectors: diffusion map eigenvector matrix
+          number_corner_points: desired number of corner points
+
+        Returns:
+          indices of the corner points with respect to trajectory
+
         """
         if number_corner_points == 0:
             return []
@@ -160,13 +187,17 @@ class Explorer(object):
 
     def get_corner_points(self, trajectory, losses, parameters,
                           number_of_corner_points):
-        """ Returns the corner points for a given
+        """Returns the corner points for a given
 
-        :param trajectory: trajectory as parameters (i.e. weights and biases) per step
-        :param losses: loss per step
-        :param parameters: parameter struct controlling the diffusion map analysis
-        :param number_of_corner_points: number of corner points to return
-        :return: list of indices of the corner points with respect to the given trajectory
+        Args:
+          trajectory: trajectory as parameters (i.e. weights and biases) per step
+          losses: loss per step
+          parameters: parameter struct controlling the diffusion map analysis
+          number_of_corner_points: number of corner points to return
+
+        Returns:
+          list of indices of the corner points with respect to the given trajectory
+
         """
         dmap = DiffusionMap( \
             trajectory=trajectory, \
@@ -184,21 +215,27 @@ class Explorer(object):
         return idx_corner
 
     def run_all_jobs(self, network_model, parameters):
-        """ Run all jobs currently found in the TrajectoryJob queue.
+        """Run all jobs currently found in the TrajectoryJob queue.
 
-        :param network_model: model of neural network with Session for sample and optimize jobs
-        :param parameters: parameter struct for analysis jobs
+        Args:
+          network_model: model of neural network with Session for sample and optimize jobs
+          parameters: parameter struct for analysis jobs
+
+        Returns:
+
         """
         self.queue.run_all_jobs(network_model, parameters)
 
     def get_run_info_and_trajectory(self):
-        """ This combines all stored run_info and trajectory and returns them
+        """This combines all stored run_info and trajectory and returns them
         as a single array.
-
+        
         This returns the same struct's as does thermodynamicanalyticstoolkit.model.model's
         sample() and train() functions.
 
-        :return: run_info and trajectory
+        Returns:
+            run info and trajectory arrays
+
         """
         data_container = self.queue.get_data_container()
 

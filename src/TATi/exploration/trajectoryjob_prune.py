@@ -24,21 +24,30 @@ import numpy as np
 from TATi.exploration.trajectoryjob import TrajectoryJob
 
 class TrajectoryJob_prune(TrajectoryJob):
-    ''' This implements a job that prunes the trajectory down to a reasonable size
+    """This implements a job that prunes the trajectory down to a reasonable size
     while making sure that the sampled distribution is maintained.
-
+    
     This is achieved through a metropolisation criterion, namely looking at the
     kinetic energy as an expected value which we know as we enforce the temperature.
-    '''
+
+    Args:
+
+    Returns:
+
+    """
 
     TOLERANCE = 1e-4        # tolerance for convergence of eigenvalues
 
     def __init__(self, data_id, network_model, continue_flag = True):
-        """ Initializes a prune job.
+        """Initializes a prune job.
 
-        :param data_id: id associated with data object
-        :param network_model: neural_network object
-        :param continue_flag: flag allowing to override spawning of subsequent job
+        Args:
+          data_id: id associated with data object
+          network_model: neural_network object
+          continue_flag: flag allowing to override spawning of subsequent job (Default value = True)
+
+        Returns:
+
         """
         super(TrajectoryJob_prune, self).__init__(data_id)
         self.job_type = "prune"
@@ -46,12 +55,15 @@ class TrajectoryJob_prune(TrajectoryJob):
         self.continue_flag = continue_flag
 
     def run(self, _data):
-        """ This implements pruning points from the trajectory stored in a
+        """This implements pruning points from the trajectory stored in a
         data object.
 
-        :param _data: data object to use
-        :param _object: FLAGS object that contains sampling parameters
-        :return: updated data object
+        Args:
+          _data: data object to use
+
+        Returns:
+          updated data object
+
         """
         def metropolis(old_energy, new_energy):
             logging.debug("Comparing "+str(old_energy)+" with "+str(new_energy))

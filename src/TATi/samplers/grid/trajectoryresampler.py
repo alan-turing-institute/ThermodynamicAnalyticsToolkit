@@ -23,11 +23,15 @@ import pandas as pd
 from TATi.samplers.grid.sampler import Sampler
 
 class TrajectoryReSampler(Sampler):
-    """ This class implements a sampler that simply re-evaluates all points
+    """This class implements a sampler that simply re-evaluates all points
     of a given trajectory.
-
+    
     This can be useful if the points are to be evaluated on a different loss
     function or dataset (e.g., test data set in place of training data set).
+
+    Args:
+
+    Returns:
 
     """
     def __init__(self, network_model, exclude_parameters, df_trajectory):

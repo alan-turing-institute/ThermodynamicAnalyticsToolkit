@@ -36,16 +36,21 @@ from TATi.options.pythonoptions import PythonOptions
 
 
 class Simulation(object):
-    """ This class represents the Python interface to TATi that allows to
+    """This class represents the Python interface to TATi that allows to
     access the neural network (including its loss function, parameters,
     ...) as a black-box function.
-
+    
     The idea is that there is no need to worry about any of the neural
     network internals. An initial parameter structure is all that is
     needed and afterwards one may treat the whole thing as two (coupled)
     functions, namely the loss and the predictor, where the loss depends
     implicitly on the dataset and both use the set of parameters of the
     neural network.
+
+    Args:
+
+    Returns:
+
     """
 
     ### gives which parts of the interal state are affected by each option
@@ -105,9 +110,13 @@ class Simulation(object):
     }
 
     def __init__(self, **kwargs):
-        """ Initializes the internal neural network and everything.
+        """Initializes the internal neural network and everything.
 
-        :param **kwargs: keyword argument that set non-default values
+        Args:
+          **kwargs: 
+
+        Returns:
+
         """
         super(Simulation, self).__init__()
         self._nn = None
@@ -154,15 +163,18 @@ class Simulation(object):
 
     @staticmethod
     def help(key=None):
-        """ Prints help for each option or all option names if key is None
+        """Prints help for each option or all option names if key is None
 
-        :param key: name of option or None for list of options
+        Args:
+          key: name of option or None for list of options (Default value = None)
+
+        Returns:
+
         """
         PythonOptions.help(key)
 
     def _construct_nn(self):
-        """ Constructs the neural network is dataset is present.
-        """
+        """Constructs the neural network is dataset is present."""
         if not self._lazy_nn_construction:
             self._nn.init_network(None, setup="trainsample", add_vectorized_gradients=True)
             self._nn.reset_dataset()
@@ -175,15 +187,19 @@ class Simulation(object):
             raise AttributeError("Neural network has not been constructed, dataset provided?")
 
     def set_options(self, **kwargs):
-        """ Resets some of the options to new values given by the keyword
+        """Resets some of the options to new values given by the keyword
         dictionary in `kwargs`.
-
-        Note:
-            This may reset the dataset or even the network depending on what 
+        
+        Warning:
+            This may reset the dataset or even the network depending on what
             parameters are changed.
 
-        :param args: positional arguments
-        :param **kwargs: keyword arguments
+        Kwargs:
+          any option listed in `Simulation.affects_map`
+
+        Returns:
+          None
+
         """
         # set the new option values
         self._options.set_options(**kwargs)
@@ -226,10 +242,14 @@ class Simulation(object):
             self._nn.reset_dataset()
 
     def _reassign_parameters(self, values, dimensions):
-        """ Reassigns a parameter set of a possibly smaller or larger network
+        """Reassigns a parameter set of a possibly smaller or larger network
 
-        :param values: old weights and biases
-        :param dimensions: dimensions of old network
+        Args:
+          values: old weights and biases
+          dimensions: dimensions of old network
+
+        Returns:
+
         """
         new_values = NetworkParameterAdapter(values, dimensions,
                                 [self.options.input_dimension]+ \
@@ -238,11 +258,15 @@ class Simulation(object):
         self._nn.assign_neural_network_parameters(new_values)
 
     def _evaluate_cache(self, key, walker_index=None):
-        """ Evaluates the neural network from the possibly cached values.
+        """Evaluates the neural network from the possibly cached values.
 
-        :param key: name of node
-        :param walker_index: index of walker to evaluate or None for all
-        :return: value for the given node and walker
+        Args:
+          key: name of node
+          walker_index: index of walker to evaluate or None for all (Default value = None)
+
+        Returns:
+          value for the given node and walker
+
         """
         if walker_index is None and self._nn.FLAGS.number_walkers == 1 \
             and not self.non_simplified_access:
@@ -251,34 +275,46 @@ class Simulation(object):
             return self._cache.evaluate(key, walker_index)
 
     def loss(self, walker_index=None):
-        """ Evalutes the current loss.
+        """Evalutes the current loss.
 
-        :param walker_index: index of walker to use or None for all
-        :return: value of the loss function for walker `walker_index`
+        Args:
+          walker_index: index of walker to use or None for all (Default value = None)
+
+        Returns:
+          value of the loss function for walker `walker_index`
+
         """
         return self._evaluate_cache("loss", walker_index)
 
     def gradients(self, walker_index=None):
-        """ Evaluates the gradient of the loss with respect to the set
+        """Evaluates the gradient of the loss with respect to the set
         of parameters at the current parameters.
-
+        
         For sake of speed, the parameters have to be set beforehand.
 
-        :param walker_index: index of walker to use for fitting or None for all
-        :return: gradients for walker `walker_index`
+        Args:
+          walker_index: index of walker to use for fitting or None for all (Default value = None)
+
+        Returns:
+          gradients for walker `walker_index`
+
         """
         if not self._cache.hasNode("gradients"):
             raise AttributeError("Gradient nodes have not been added to the graph.")
         return self._evaluate_cache("gradients", walker_index)
 
     def hessians(self, walker_index=None):
-        """ Evaluates the hessian of the loss with respect to the
+        """Evaluates the hessian of the loss with respect to the
         set of parameters at the current parameters.
-
+        
         For sake of speed, the parameters have to be set beforehand.
 
-        :param walker_index: index of walker to use for fitting or None for all
-        :return: hessian for walker `walker_index`
+        Args:
+          walker_index: index of walker to use for fitting or None for all (Default value = None)
+
+        Returns:
+          hessian for walker `walker_index`
+
         """
         if not self._cache.hasNode("hessians"):
             raise AttributeError("Hessian nodes have not been added to the graph." \
@@ -286,18 +322,24 @@ class Simulation(object):
         return self._evaluate_cache("hessians", walker_index)
 
     def score(self, walker_index=None):
-        """ Evaluates the accuracy on the given dataset
+        """Evaluates the accuracy on the given dataset
 
-        :param walker_index: index of walker to use for fitting
-        :return: accuracy for walker `walker_index`
+        Args:
+          walker_index: index of walker to use for fitting (Default value = None)
+
+        Returns:
+          accuracy for walker `walker_index`
+
         """
         return self._evaluate_cache("accuracy", walker_index)
 
     @property
     def parameters(self):
-        """ Returns the current set of parameters
+        """Returns the current set of parameters
 
-        :return: parameters
+        Returns:
+            parameters
+
         """
         self._check_nn()
         if not self.non_simplified_access and len(self._parameters) == 1:
@@ -307,12 +349,16 @@ class Simulation(object):
 
     @parameters.setter
     def parameters(self, values):
-        """ Assigns the current parameters from `parameters`.
-
+        """Assigns the current parameters from `parameters`.
+        
         The parameters are expected as a flat numpy array of the size
         of `simulation.num_parameters()`.
 
-        :param values: new parameters to set
+        Args:
+          values: new parameters to set
+
+        Returns:
+
         """
         self._check_nn()
         for i in range(len(self._parameters)):
@@ -321,9 +367,11 @@ class Simulation(object):
 
     @property
     def momenta(self):
-        """ Returns the current momentum to each parameter.
+        """Returns the current momentum to each parameter.
 
-        :return: momenta or None if sampler does not support momenta
+        Returns:
+            momenta or None if sampler does not support momenta
+
         """
         self._check_nn()
         try:
@@ -339,9 +387,13 @@ class Simulation(object):
 
     @momenta.setter
     def momenta(self, values):
-        """ Returns the current momentum to each parameter.
+        """Returns the current momentum to each parameter.
 
-        :param values: new momenta to set
+        Args:
+          values: new momenta to set
+
+        Returns:
+
         """
         self._check_nn()
         try:
@@ -352,14 +404,18 @@ class Simulation(object):
             return None
 
     def init_momenta(self, inverse_temperature = None):
-        """ Reinitializes the network parameter's momenta from gaussian distribution
+        """Reinitializes the network parameter's momenta from gaussian distribution
         with `inverse_temperature` as stddev and 0 mean.
-
+        
         Note:
             This uses numpy's standard_normal to initialize.
             Set `numpy.random.seed()` to obtain reproducible runs.
 
-        :param inverse_temperature: inverse temperature for momenta scaling or None for default
+        Args:
+          inverse_temperature: inverse temperature for momenta scaling or None for default
+
+        Returns:
+
         """
         if inverse_temperature is None:
             inverse_temperature = self._nn.FLAGS.inverse_temperature
@@ -368,31 +424,39 @@ class Simulation(object):
                 np.random.standard_normal(size=(self.num_parameters()))*inverse_temperature
 
     def num_parameters(self):
-        """ Returns the number of parameters of the neural network.
+        """Returns the number of parameters of the neural network.
 
-        :return: number of parameters/degrees of freedom of the network
+        Returns:
+            number of parameters/degrees of freedom of the network
+
         """
         self._check_nn()
         return self._nn.get_total_weight_dof() + self._nn.get_total_bias_dof()
 
     def num_walkers(self):
-        """ Returns the number of replicated copies of the neural network, i.e. walkers
+        """Returns the number of replicated copies of the neural network, i.e. walkers
 
-        :return: number of walkers/replicated copies of the network
+        Returns:
+            number of walkers/replicated copies of the network
+
         """
         self._check_nn()
         return self._nn.FLAGS.number_walkers
 
     def fit(self, walker_index=0):
-        """ Fits the parameters of the neural network to best match with the
+        """Fits the parameters of the neural network to best match with the
         given dataset.
-
+        
         Note that the parameters of the fit such as `optimizer`,
         `learning_rate` are all set in the `__init__()` options statement.
 
-        :param walker_index: index of walker to use for fitting
-        :return: `TrajectoryData` containing run_info, trajectory, averages
-                pandas dataframes
+        Args:
+          walker_index: index of walker to use for fitting (Default value = 0)
+
+        Returns:
+          TrajectoryData` containing run_info, trajectory, averages
+          pandas dataframes
+
         """
 
         self._check_nn()
@@ -405,18 +469,19 @@ class Simulation(object):
         return TrajectoryData(run_info, trajectory, averages)
 
     def sample(self):
-        """ Performs sampling of the neural network's loss manifold for all walkers.
-
-        NOTE:
+        """Performs sampling of the neural network's loss manifold for all walkers.
+        
+        Note:
             The parameters of the sampling such as `sampler`, `step_width`
             are all set in the `__init__()` options statement.
-
-        NOTE:
+        
             At the moment, this function will perform sampling for all walkers
             at once.
 
-        :return: `TrajectoryData` containing run_info, trajectory, averages
-                pandas dataframes
+        Returns:
+            `TrajectoryData` containing run_info, trajectory, averages pandas
+            dataframes
+
         """
         self._check_nn()
         self._nn.reset_dataset()
@@ -429,21 +494,25 @@ class Simulation(object):
 
     @property
     def dataset(self):
-        """ Getter for the dataset as a numpy array with respect to the
+        """Getter for the dataset as a numpy array with respect to the
         currently chosen `batch_size`.
 
-        :return: array of features and labels, each a numpy array of `batch_size`
+        Returns:
+            array of features and labels, each a numpy array of `batch_size`
+
         """
         return self._cache.dataset
 
     @dataset.setter
     def dataset(self, value):
-        """ Evaluates accuracy on a new dataset `dataset`
+        """Evaluates accuracy on a new dataset `dataset`
+        
+        Note:
+            This sets the `dataset` as the new dataset replacing the old one.
 
-        NOTE: This sets the `dataset` as the new dataset replacing the old
-        one.
+        Returns:
+            accuracy for `dataset`
 
-        :return: accuracy for `dataset`
         """
         if isinstance(value, str) or \
                 (isinstance(value, list) and isinstance(value[0], str)):
@@ -467,11 +536,15 @@ class Simulation(object):
         self._cache.reset()
 
     def predict(self, features, walker_index=0):
-        """ Evaluates predictions (i.e. output of network) for the given features.
+        """Evaluates predictions (i.e. output of network) for the given features.
 
-        :param: features - features to evaluate for network of walker `walker_index`
-        :param walker_index: index of walker to use for prediction
-        :return: labels for `features` predicted by walker `walker_index`
+        Args:
+          features: feature array to predict labels for
+          walker_index: index of walker to use for prediction (Default value = 0)
+
+        Returns:
+          labels for `features` predicted by walker `walker_index`
+
         """
         self._check_nn()
         # set up feed_dict

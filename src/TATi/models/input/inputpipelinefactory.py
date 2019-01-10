@@ -28,15 +28,17 @@ from TATi.models.helpers import get_dimension_from_tfrecord
 
 
 class InputPipelineFactory(object):
-    """ This factory produces specialized instances of `InputPipeline`.
-
-    """
+    """This factory produces specialized instances of `InputPipeline`."""
     @staticmethod
     def create(FLAGS, shuffle=False):
-        """ This creates an input pipeline using the tf.Dataset module.
+        """This creates an input pipeline using the tf.Dataset module.
 
-        :param FLAGS: parameters
-        :param shuffle: whether to shuffle dataset or not
+        Args:
+          FLAGS: parameters
+          shuffle: whether to shuffle dataset or not (Default value = False)
+
+        Returns:
+
         """
         InputPipelineFactory.check_valid_batch_size(FLAGS)
         if FLAGS.in_memory_pipeline:
@@ -65,12 +67,17 @@ class InputPipelineFactory(object):
 
     @staticmethod
     def provide_data(FLAGS, features, labels, shuffle=False):
-        """ Use to provide an in-memory dataset, i.e., numpy arrays with
+        """Use to provide an in-memory dataset, i.e., numpy arrays with
         `features` and `labels`.
 
-        :param features: feature part of dataset
-        :param labels: label part of dataset
-        :param shuffle: whether to shuffle the dataset initially or not
+        Args:
+          FLAGS: FLAGS structure, see `Options`
+          features: feature part of dataset
+          labels: label part of dataset
+          shuffle: whether to shuffle the dataset initially or not (Default value = False)
+
+        Returns:
+
         """
         logging.info("Using in-memory pipeline")
         FLAGS.input_dimension = len(features[0])
@@ -100,11 +107,16 @@ class InputPipelineFactory(object):
 
     @staticmethod
     def check_valid_batch_size(FLAGS):
-        ''' Helper function to check that batch_size does not exceed dimension
+        """Helper function to check that batch_size does not exceed dimension
         of dataset. After which it will be valid.
+        
+        Args:
+          FLAGS: options dict containing `dimension` and `batch_size`
 
-        :return: True - is smaller or equal, False - exceeded and capped batch_size
-        '''
+        Returns:
+          True - is smaller or equal, False - exceeded and capped batch_size
+
+        """
         if FLAGS.batch_size is None:
             logging.info("batch_size not set, setting to dimension of dataset.")
             FLAGS.batch_size = FLAGS.dimension

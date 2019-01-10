@@ -30,20 +30,28 @@ from TATi.exploration.trajectoryprocess_train import TrajectoryProcess_train
 from TATi.exploration.trajectoryjobqueue import TrajectoryJobQueue
 
 class TrajectoryProcessQueue(TrajectoryJobQueue):
-    ''' This class is a queue of trajectory jobs (of type run and analyze)
+    """This class is a queue of trajectory jobs (of type run and analyze)
     which are executed in a FIFO fashion until the queue is empty.
 
-    '''
+    Args:
+
+    Returns:
+
+    """
 
     MAX_MINIMA_CANDIDATES = 3 # dont check more than this number of minima candidates
 
     def __init__(self, parameters, number_pruning, number_processes, manager):
-        """ Initializes a queue of trajectory jobs.
+        """Initializes a queue of trajectory jobs.
 
-        :param max_legs: maximum number of legs (of length max_steps) per trajectory
-        :param number_pruning: number of pruning jobs added at trajectory end
-        :param number_processes: number of concurrent processes to use
-        :param manager: manager for semaphored instances used in multiprocessing
+        Args:
+          parameters: FLAGS structure with all parameters
+          number_pruning: number of pruning jobs added at trajectory end
+          number_processes: number of concurrent processes to use
+          manager: manager for semaphored instances used in multiprocessing
+
+        Returns:
+
         """
         super(TrajectoryProcessQueue, self).__init__(parameters.max_legs, number_pruning, number_processes)
         self.parameters = parameters
@@ -52,11 +60,15 @@ class TrajectoryProcessQueue(TrajectoryJobQueue):
         self.queue = JoinableQueue()
 
     def getUniqueFilename(self, prefix="", suffix=""):
-        """ Returns a unique filename
+        """Returns a unique filename
 
-        :param prefix: prefix for temporary filename
-        :param suffix: suffix for temporary filename
-        :return: unique filename
+        Args:
+          prefix: prefix for temporary filename (Default value = "")
+          suffix: suffix for temporary filename (Default value = "")
+
+        Returns:
+          unique filename
+
         """
         if prefix == "":
             f = tempfile.NamedTemporaryFile(mode="w", suffix=suffix)
@@ -67,11 +79,15 @@ class TrajectoryProcessQueue(TrajectoryJobQueue):
         return name
 
     def add_sample_job(self, data_object, run_object=None, continue_flag=False):
-        """ Adds a run job to the queue.
+        """Adds a run job to the queue.
 
-        :param data_object: data object for the job
-        :param restore_model_filename: file name from where to restore model
-        :param continue_flag: flag whether job should spawn more jobs or not
+        Args:
+          data_object: data object for the job
+          run_object: network_model required for the sample job (Default value = None)
+          continue_flag: flag whether job should spawn more jobs or not (Default value = False)
+
+        Returns:
+
         """
         data_object = self.instantiate_data_object(data_object, type="sample")
         temp_filenames = [ self.getUniqueFilename(prefix="run-", suffix=".csv"),
@@ -94,11 +110,15 @@ class TrajectoryProcessQueue(TrajectoryJobQueue):
         self._enqueue_job(sample_job)
 
     def add_train_job(self, data_object, run_object=None, continue_flag=False):
-        """ Adds a run job to the queue.
+        """Adds a run job to the queue.
 
-        :param data_object: data object for the job
-        :param restore_model_filename: file name from where to restore model
-        :param continue_flag: flag whether job should spawn more jobs or not
+        Args:
+          data_object: data object for the job
+          run_object: network_model required for the train job (Default value = None)
+          continue_flag: flag whether job should spawn more jobs or not (Default value = False)
+
+        Returns:
+
         """
         data_object = self.instantiate_data_object(data_object, type="train")
         temp_filenames = [ self.getUniqueFilename(prefix="run-", suffix=".csv"),
@@ -119,10 +139,14 @@ class TrajectoryProcessQueue(TrajectoryJobQueue):
         self._enqueue_job(train_job)
 
     def trajectory_ended(self, data_id):
-        """ Provides a hook for derived classes to do something when a trajectory
+        """Provides a hook for derived classes to do something when a trajectory
         is terminated.
 
-        :param data_id: data id to this trajectory
+        Args:
+          data_id: data id to this trajectory
+
+        Returns:
+
         """
         # remove the model files when trajectory is done
         data_object = self.data_container.get_data(data_id)
@@ -131,11 +155,14 @@ class TrajectoryProcessQueue(TrajectoryJobQueue):
             shutil.rmtree(data_object.model_filename)
 
     def run_next_job_till_queue_empty(self, network_model, parameters):
-        """ Run jobs in queue till empty
+        """Run jobs in queue till empty
 
-        :param network_model:
-        :param parameters:
-        :return:
+        Args:
+          network_model: model instance containing the whole network state
+          parameters: FLAGS structure with all parameters
+
+        Returns:
+
         """
         while True:
             logging.debug("Checking for next job, queue has approximate size "+str(self.queue.qsize()))
@@ -151,11 +178,14 @@ class TrajectoryProcessQueue(TrajectoryJobQueue):
             p.start()
 
     def run_all_jobs(self, network_model, parameters):
-        """ Run all jobs using a set of processes.
+        """Run all jobs using a set of processes.
 
-        :param network_model:
-        :param parameters:
-        :return:
+        Args:
+          network_model: model instance containing the whole network state
+          parameters: note used
+
+        Returns:
+
         """
         logging.debug("Waiting for queue to empty")
         self.queue.join()

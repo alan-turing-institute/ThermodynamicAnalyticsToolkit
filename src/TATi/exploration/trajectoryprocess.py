@@ -25,20 +25,28 @@ from TATi.exploration.trajectoryjob import TrajectoryJob
 from TATi.common import setup_csv_file
 
 class TrajectoryProcess(TrajectoryJob):
-    ''' This is the base class for process object that can be placed in the
+    """This is the base class for process object that can be placed in the
     TrajectoryQueue for processing. In contrast to a trajectory job the
     process may be run independently, even on another host.
-
+    
     This class needs to be derived and a proper run() method set up and the
     type of the job set.
 
-    '''
+    Args:
+
+    Returns:
+
+    """
 
     def __init__(self, data_id, network_model):
-        """ Initializes the trajectory process.
+        """Initializes the trajectory process.
 
-        :param _data_id: id associated with data object
-        :param network_model: neural network object for creating model files as starting points
+        Args:
+          data_id: id associated with data object
+          network_model: neural network object for creating model files as starting points
+
+        Returns:
+
         """
         super(TrajectoryProcess, self).__init__(data_id)
         self.network_model = network_model
@@ -69,9 +77,13 @@ class TrajectoryProcess(TrajectoryJob):
     def get_options_from_flags(FLAGS, keys):
         """
 
-        :param FLAGS: set of parameters
-        :param keys: set of keys from FLAGS to extract as command-line parameters
-        :return: list of parameters for a process to start
+        Args:
+          FLAGS: set of parameters
+          keys: set of keys from FLAGS to extract as command-line parameters
+
+        Returns:
+          list of parameters for a process to start
+
         """
         options = []
         for key in keys:

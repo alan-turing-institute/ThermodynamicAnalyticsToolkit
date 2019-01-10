@@ -24,10 +24,15 @@ from math import pow
 from TATi.exploration.trajectoryjob import TrajectoryJob
 
 class TrajectoryJob_extract_minimium_candidates(TrajectoryJob):
-    ''' This implements a job that extracts minimum candidates from the trajectory.
-
+    """This implements a job that extracts minimum candidates from the trajectory.
+    
     This is done by looking at the gradients along the trajectory.
-    '''
+
+    Args:
+
+    Returns:
+
+    """
 
     SMALLEST_TOLERANCE_POWER = -6       # tolerance for gradients being small
     LARGEST_TOLERANCE_POWER = -1        # tolerance for gradients being small
@@ -35,11 +40,15 @@ class TrajectoryJob_extract_minimium_candidates(TrajectoryJob):
 
 
     def __init__(self, data_id, parameters, continue_flag = True):
-        """ Initializes a extracting minimum candidates job.
+        """Initializes a extracting minimum candidates job.
 
-        :param data_id: id associated with data object
-        :param parameters: parameter for analysis
-        :param continue_flag: flag allowing to override spawning of subsequent job
+        Args:
+          data_id: id associated with data object
+          parameters: parameter for analysis
+          continue_flag: flag allowing to override spawning of subsequent job (Default value = True)
+
+        Returns:
+
         """
         super(TrajectoryJob_extract_minimium_candidates, self).__init__(data_id)
         self.job_type = "extract_minimium_candidates"
@@ -47,13 +56,16 @@ class TrajectoryJob_extract_minimium_candidates(TrajectoryJob):
         self.continue_flag = continue_flag
 
     def run(self, _data):
-        """ This implements extracting minimum candidates from the trajectory
+        """This implements extracting minimum candidates from the trajectory
         stored in a data object by looking at sections where the gradients is
         smaller than TOLERANCE and taking the smallest value in this section.
 
-        :param _data: data object to use
-        :param _object: FLAGS object that contains sampling parameters
-        :return: updated data object
+        Args:
+          _data: data object to use
+
+        Returns:
+          updated data object
+
         """
         for i in range(self.SMALLEST_TOLERANCE_POWER, self.LARGEST_TOLERANCE_POWER+1):
             tolerance = pow(10,i)
@@ -61,11 +73,15 @@ class TrajectoryJob_extract_minimium_candidates(TrajectoryJob):
             _data.minimum_candidates[:] = []
 
             def find_smallest_gradient_index(small_gradient_start, small_gradient_end):
-                """ Helper function to find the smallest value in the given interval.
+                """Helper function to find the smallest value in the given interval.
 
-                :param small_gradient_start: first value (included) of interval
-                :param small_gradient_end: last value (excluded) of interval
-                :return: index to the smallest value in the region
+                Args:
+                  small_gradient_start: first value (included) of interval
+                  small_gradient_end: last value (excluded) of interval
+
+                Returns:
+                  index to the smallest value in the region
+
                 """
                 smallest_val_index = small_gradient_start
                 smallest_val = _data.gradients[smallest_val_index]

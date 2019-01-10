@@ -24,8 +24,12 @@ import pandas as pd
 import sys
 
 class ParsedRunfile(object):
-    """ This class encapsulates a single or multiple trajectories
+    """This class encapsulates a single or multiple trajectories
     parsed from file.
+
+    Args:
+
+    Returns:
 
     """
 
@@ -34,8 +38,12 @@ class ParsedRunfile(object):
     def __init__(self, filename, every_nth):
         """
 
-        :param filename: runfile filename to parse
-        :param every_nth: only use every nth step
+        Args:
+          filename: runfile filename to parse
+          every_nth: only use every nth step
+
+        Returns:
+
         """
         df_run = pd.read_csv(filename, sep=',', header=0)
         self.run = np.asarray(df_run.loc[:, self.columns])
@@ -43,10 +51,14 @@ class ParsedRunfile(object):
         self.every_nth = every_nth
 
     def add_drop_burnin(self, drop_burnin):
-        """ Allows to exclude an initial selection of steps.
+        """Allows to exclude an initial selection of steps.
 
-        :param drop_burnin: up to which value in step column to exclude
-        :return:  True - excluded, False - drop_burnin is illegal
+        Args:
+          drop_burnin: up to which value in step column to exclude
+
+        Returns:
+          True - excluded, False - drop_burnin is illegal
+
         """
         if (len(self.run[:, 0]) > 1) and (drop_burnin >= self.run[1, 0]):
             if drop_burnin < self.run[-1, 0]:

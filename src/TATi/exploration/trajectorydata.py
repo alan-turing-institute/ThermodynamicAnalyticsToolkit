@@ -21,24 +21,33 @@
 import logging
 
 class TrajectoryData(object):
-    ''' This class contains all data associated with a single trajectory.
+    """This class contains all data associated with a single trajectory.
     Trajectory steps are bundled into consecutive legs. Over these legs
     we check diffusion map values for convergence and end trajectory if this
     is the case.
-
+    
     This is:
     -# id associated with this trajectory
     -# parameters per step
     -# loss, gradients per step
     -# eigenvectors and eigenvalues of diffusion map analysis per leg.
 
-    '''
+    Args:
+
+    Returns:
+
+    """
 
     def __init__(self, _id, _type = "sample"):
-        ''' Initialize data object with a valid id
+        """Initialize data object with a valid id
 
-        :param _id: id of the data object
-        '''
+        Args:
+          _id: id of the data object
+          _type:  (Default value = "sample")
+
+        Returns:
+
+        """
         self.id = _id
 
         # these are per step
@@ -73,24 +82,32 @@ class TrajectoryData(object):
         return ("data #"+str(self.id)+": "+str(self.steps[0:3])+"..."+str(self.steps[-3:-1]))
 
     def get_id(self):
-        """ Return the unique id of this data object
+        """
 
-        :return: unique id of object
+        Args:
+
+        Returns:
+            unique id of object
+
         """
         return self.id
 
     def add_run_step(self, _steps, _parameters, _losses, _gradients,
                      _averages_lines=None, _run_lines=None, _trajectory_lines=None):
-        """ Appends all values from a single run (one leg) to the specific
+        """Appends all values from a single run (one leg) to the specific
         internal containers for later analysis
 
-        :param _steps: step per array component
-        :param _parameters: (weight and bias) parameters of neural network as flattened vector
-        :param _losses: loss/potential energy
-        :param _gradients: gradient norm per step
-        :param _averages_lines: single pandas dataframe of averages line per step
-        :param _run_lines: single pandas dataframe of run info line per step
-        :param _trajectory_lines: single pandas dataframe of trajectory line per step
+        Args:
+          _steps: step per array component
+          _parameters: weight and bias) parameters of neural network as flattened vector
+          _losses: loss/potential energy
+          _gradients: gradient norm per step
+          _averages_lines: single pandas dataframe of averages line per step (Default value = None)
+          _run_lines: single pandas dataframe of run info line per step (Default value = None)
+          _trajectory_lines: single pandas dataframe of trajectory line per step (Default value = None)
+
+        Returns:
+
         """
         self.steps.extend(_steps)
         self.index_at_leg.append( len(self.parameters) )
@@ -111,9 +128,13 @@ class TrajectoryData(object):
         assert( self.check_size_consistency() )
 
     def check_size_consistency(self):
-        """ Checks whether the sizes of all the arrays are consistent.
+        """Checks whether the sizes of all the arrays are consistent.
 
-        :return: True - sizes match, False - something is broken
+        Args:
+
+        Returns:
+            True - sizes match, False - something is broken
+
         """
         status = True
         status = status and ( len(self.parameters) == len(self.losses) )
@@ -129,10 +150,14 @@ class TrajectoryData(object):
         return status
 
     def add_analyze_step(self, _eigenvectors, _eigenvalues):
-        """ Adds diffusion map analysis values per leg to specific containers.
+        """Adds diffusion map analysis values per leg to specific containers.
 
-        :param _eigenvectors: first dominant eigenvectors of diffusion map
-        :param _eigenvalues:  first dominant eigenvalues of diffusion map
+        Args:
+          _eigenvectors: first dominant eigenvectors of diffusion map
+          _eigenvalues: first dominant eigenvalues of diffusion map
+
+        Returns:
+
         """
         self.diffmap_eigenvectors.append(_eigenvectors)
         self.diffmap_eigenvalues.append(_eigenvalues)

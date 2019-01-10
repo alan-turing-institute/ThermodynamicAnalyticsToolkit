@@ -21,24 +21,29 @@
 import logging
 
 class Accumulator(object):
-    """ This class defines the accumulator interface.
-
+    """This class defines the accumulator interface.
+    
     Example:
         >> acc = AveragesAccumulator(...)
         >> acc.reset(true, [""])
-
+    
         During each step of the iteration call
-
+    
         >> acc.accumulate_each_step(current_step)
-
+    
         During each nth step (to print to file or screen)
-
+    
         >> acc.accumulate_nth_step(current_step)
-
+    
         For HMC sampling you need to inform about the next acceptance criterion
         evaluation like
-
+    
         >> acc.inform_next_eval_step(...)
+
+    Args:
+
+    Returns:
+
     """
 
     output_width = 8
@@ -61,21 +66,29 @@ class Accumulator(object):
         self._writer = writer
 
     def accumulate_each_step(self, current_step):
-        """ Accumulate values each step internally.
+        """Accumulate values each step internally.
 
-        :param current_step: current step with values
+        Args:
+          current_step: current step with values
+
+        Returns:
+
         """
         raise AttributeError("Not implemented, you need to derive properly from this class.")
 
     def accumulate_nth_step(self, current_step, walker_index):
-        """ Accumulate values each nth step, possibly writing to file.
-
+        """Accumulate values each nth step, possibly writing to file.
+        
         Here, we centrally control for all derived accumulators whether something
         should be written this particular `current_step` or not.
 
-        :param current_step: current step with values
-        :param walker_index: index of the walker in question
-        :return: True - write something, False - do not
+        Args:
+          current_step: current step with values
+          walker_index: index of the walker in question
+
+        Returns:
+          True - write something, False - do not
+
         """
         # here, we check whether we are past an acceptance criterion evaluation and
         # hence need to write something

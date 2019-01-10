@@ -25,9 +25,7 @@ import numpy as np
 import pandas as pd
 
 class AveragesAccumulator(Accumulator):
-    """ This class takes care of accumulating averages properly.
-
-    """
+    """This class takes care of accumulating averages properly."""
 
     def __init__(self, method, config_map,
                  max_steps, every_nth, number_walkers,

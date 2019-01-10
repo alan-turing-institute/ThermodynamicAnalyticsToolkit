@@ -19,9 +19,7 @@
 ### 
 
 class TrajectoryJobId(object):
-    """ This class encapsulates a trajectory job id in order to have it semaphorable
-
-    """
+    """This class encapsulates a trajectory job id in order to have it semaphorable"""
 
     def __init__(self, initial_id):
         self.current_id = initial_id
