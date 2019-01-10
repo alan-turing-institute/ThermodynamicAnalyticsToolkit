@@ -2,13 +2,16 @@ Thermodynamic Analytics ToolkIt (TATi)
 ======================================
 
 Thermodynamic Analytics Toolkit is a sampling-based approach to understand the
-effectiveness of neural networks training and investigate their loss manufolds.
+effectiveness of neural networks training and investigate their loss manifolds.
 
 It uses Tensorflow (https://www.tensorflow.org/) as neural network
-framework and implements sampling algorithms on top of it. It contains both
-a rapid prototyping platform for new sampling methods and also an analysis
+framework and implements advanced sampling algorithms on top of it. It contains
+both a rapid prototyping platform for new sampling methods and also an analysis
 framework to understand the intricacies of the loss manifold in terms of
 averages, covariance, diffusion maps, and free energy.
+
+Dependencies
+------------
 
 In total, we depend on the following python packages:
 
@@ -19,39 +22,70 @@ In total, we depend on the following python packages:
  * scikit-learn
  * acor (see the userguide for installation instructions)
 
-It has received financial support from a seed funding grant and through a 
-Rutherford fellowship from the Alan Turing Institute in London (R-SIS-003, 
-R-RUT-001) and EPSRC grant no. EP/P006175/1 (Data Driven Coarse Graining using
-Space-Time Diffusion Maps, B. Leimkuhler PI), and also from a Microsoft Azure 
-Sponsorship (MS-AZR-0143P).
-
-In general, see doc/userguide for all manuals and guides accompanying this
-package.
-
-Please refer to the guide (see introduction.txt) for installation instructions.
-As a fall-back have a look at INSTALL. When cloning from github please call 
-the bootstrap.sh script (requiring installed autotools and automake packages).
-
-NOTE: If you only want to *use* the package and *do not plan to submit code*, 
-it is strongly advised to *use the "release" tarballs* instead of cloning the 
-repository directly.
-
 Furthermore, for installation from a cloned git repository or a pure source
 tarball, the following non-standard packages are required for creating the
-userguide and running all tests:
+all userguides,
 
- * doxygen
+ * doxygen,
  * asciidoc, dblatex
- * gawk, sqlite3
+ * pdflatex,
 
-After installation (configure, make, make install) there is a userguide 
-"thermodynamicanalyticstoolkit.pdf" for full reference to end users. 
-Alternatively, this userguide is always contained in the release tarballs.
-Note that there is also a documentation aimed at programmers based on doxygen
-(make doc).
+and for running all tests,
+
+ * awk, sqlite3.
 
 Finally, there are some optional packages:
 
  * pydiffmap: allows diffusion map analysis through pydiffmap package
  * tqdm: allows displaying progress bar during training and sampling
+
+Installation
+------------
+
+Please refer to the userguide (see the 
+[releases](https://github.com/alan-turing-institute/ThermodynamicAnalyticsToolkit/releases) on github) 
+for installation instructions.
+
+Alternatively, the userguide is also contained in the release tarballs in 
+folder **doc/userguide**. i
+As a fall-back the asciidoc userguide files reside in **doc/userguide** 
+and are perfectly human-readable, see **doc/userguide/introduction.txt**.
+As a last fall-back have a look at INSTALL for general instructions on how to
+installing a package maintained by autotools, automake.
+
+When cloning from github please call the bootstrap.sh script (requiring
+installed autotools and automake packages).
+
+NOTE: If you only want to *use* the package and *do not plan to submit code*, 
+it is strongly advised to *use the "release" tarballs* instead of cloning the 
+repository directly.
+
+Documentation
+-------------
+
+In general, the documentation is maintained in the folder **doc**. The asciidoc
+userguide files reside in **doc/userguide** and are perfectly human-readable
+in your preferred editor if every other option fails.
+
+There are multiple guides to help you:
+
+- Userguide: user manual on how to install and use TATi
+- Programmer's guide: manual on basic programming with Tensorflow and TATi
+- API reference: doxygen-generated API reference
+
+After installation (configure, make, make doc, make install) these guides
+can be found in the typical documentation directory (e.g., 
+**share/doc/thermodynamicanalyticstoolkit/** depending on your OS).
+
+Note that all of the above guides are also available as *html* versions after
+installation.
+
+Acknowledgments
+---------------
+
+It has received financial support from a seed funding grant and through a 
+Rutherford fellowship from the Alan Turing Institute in London (R-SIS-003, 
+R-RUT-001) and EPSRC grant no. EP/P006175/1 (Data Driven Coarse Graining using
+Space-Time Diffusion Maps, B. Leimkuhler PI), and also from a Microsoft Azure 
+Sponsorship (MS-AZR-0143P).
 
