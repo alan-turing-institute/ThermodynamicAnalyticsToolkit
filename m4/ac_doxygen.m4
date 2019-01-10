@@ -184,6 +184,7 @@ AC_SUBST([DX_DOCDIR], [ifelse([$3], [], doxygen-doc, [$3])])
 
 # Environment variables used inside doxygen.cfg:
 DX_ENV_APPEND(SRCDIR, $srcdir)
+DX_ENV_APPEND(TOPBUILDDIR, \$(top_builddir))
 DX_ENV_APPEND(TOPSRCDIR, \$(top_srcdir))
 DX_ENV_APPEND(PROJECT, $DX_PROJECT)
 DX_ENV_APPEND(DOCDIR, $DX_DOCDIR)
