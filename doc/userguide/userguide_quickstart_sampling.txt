@@ -20,7 +20,15 @@ A very similar task is found in function approximation where an unknown and poss
 
 Very generally, sampling approaches can be placed into two categories: Grids and sequences. Sequences can be random, deterministic, or both. We briefly discuss them, focusing on their general computational cost in high dimensions.
 
+[[quickstart.sampling.grid]]
+Grids
+^^^^^
+
 Structured grids such as naive full grid approaches, where a fixed number of points with equidistant spacing is used per axis, suffer from the Curse of Dimensionality, a term coined by Bellman. With increasing number of parameters latexmath:[N] the computational cost becomes prohibitive. This Curse of Dimensionality is alleviated to some extent by so-called Sparse Grids, see <<Bungartz2004>>, where the quality bounds on the approximation are kept but fewer grid points need to be evaluated. However, they only alleviate the curse to some extent, see <<Pflueger2010>>, and are still infeasible at the moment for the extremely high-dimensional manifolds encountered in neural network losses.
+
+[[quickstart.sampling.sequences]]
+Sequences
+^^^^^^^^^
 
 Random sequences are Monte Carlo approaches where a specific sequence of random numbers decides which point in the whole space to evaluate. Due to their inherent stochasticity these lack the rigor of the structured grid methods but neither rely on, nor exploit any regularity as the structured grid methods. Therefore, they suffer no Curse of Dimensionality with respect to their convergence rate. The rate is bounded by the Central Limit Theorem to latexmath:[{\cal O}(n^{-\tfrac 1 2})] if latexmath:[n] is the number of evaluated points.
 
@@ -56,6 +64,10 @@ where latexmath:[Z] is a normalization constant and latexmath:[\beta]latexmath:[
 And indeed, dynamics-based sampling does not aim to approximate latexmath:[L] as best as possible but its Gibbs (also called the canonical) distribution latexmath:[\exp{(-\beta L)}]. In our case we are only interested in particular subsets of the space, namely those associated with a small loss. As we have given ample evidence, the central challenge in sampling is the computational cost. The dynamics-based sequences allow to save computational cost in the high-dimensional spaces by incorporating gradient information. Hence, the more accurately we sample from the Gibbs distribution, the more efficiently we sample only those subsets of interest. This saving could not be obtained with a pure Monte Carlo approach.
 
 Therefore, *we focus on dynamics-based sampling* for this high-dimensional exploration problem.
+
+[[quickstart.sampling.iat]]
+Integrated Autocorrelation Time
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In principle, the underlying challenge is to assure that the sampling trajectory covers a sufficient area of the whole space for validity. However, stating when to terminate is as difficult as the exploration task itself. Hence, the best measure is to assess when a new independent state has been obtained.
 

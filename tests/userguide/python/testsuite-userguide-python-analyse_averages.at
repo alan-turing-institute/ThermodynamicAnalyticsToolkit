@@ -39,7 +39,8 @@ AT_CHECK([cp -f ${abs_top_srcdir}/tests/userguide/python/pre/trajectory-two_clus
 AT_CHECK([../../../run \
 	${abs_top_srcdir}/doc/userguide/python/analyse_averages.py
 ], 0, [stdout], [stderr])
-AT_CHECK([test -e step-parameters.png], 0, [ignore], [ignore])
+AT_CHECK([grep '[0.199.*, 0.217.*, 0.019.*]' stdout], 0, [ignore], [ignore])
+AT_CHECK([grep '[0.000.*, 0.000.*, 0.000.*]' stdout], 0, [ignore], [ignore])
 
 AT_CLEANUP
 

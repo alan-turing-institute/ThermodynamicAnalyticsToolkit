@@ -24,6 +24,7 @@ TESTSCRIPTS += \
 	$(srcdir)/cmdline/testsuite-userguide-cmdline-write_dataset.at \
 	$(srcdir)/python/testsuite-userguide-python.at \
 	$(srcdir)/python/testsuite-userguide-python-analyse_averages.at \
+	$(srcdir)/python/testsuite-userguide-python-analyse_covariance.at \
 	$(srcdir)/python/testsuite-userguide-python-analyse_diffmap.at \
 	$(srcdir)/python/testsuite-userguide-python-eval_loss_gradient.at \
 	$(srcdir)/python/testsuite-userguide-python-explore.at \

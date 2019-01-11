@@ -648,101 +648,144 @@ waiting a minute or two for the sampling to execute.
 Analysing trajectories
 ^^^^^^^^^^^^^^^^^^^^^^
 
-Analysis involves parsing in run and trajectory files that we would write
-through optimization and sampling runs. Naturally, we could also perform this
-on the `pandas` dataframes directly. However, for completeness we will read
-from files in the examples of this section.
+Analysis involves parsing in run and trajectory files that we have written
+during optimization and sampling runs. Naturally, we could also perform this
+on the `pandas` dataframes directly, i.e. sampling and analysis in the same
+python script. However, for completeness we will read from files in the
+examples of this section.
 
-To this end, specify `FLAGS.run_file` and `FLAGS.trajectory_file` with
-some valid file names.
+The analysis functionality has been split into specific operations such as
+computing averages, computing the covariance matrix or generating a diffusion
+map analysis. See the source folder +src/TAT/analysis+, for all contained
+modules therein each represent such an operation.
+
+In the following we will highlight just a few of them.
+
+All these analysis operations are also possible through `TATiAnalyser`, see
++tools/TATiAnalyser.in+ in the repository.
 
 [[quickstart.simulation.analysis.averages]]
-Averages
-++++++++
-
-Subsequently, these may be easily parsed as follows, see also
-+tools/TATiAnalyser.in+ in the repository.
+Average parameters
+++++++++++++++++++
 
 [source,python]
 ---------------
 include::python/analyse_averages.py[]
 ---------------
 
-This would give a plot of the running average for each parameter in the
-trajectory file. In a similar, the run file can be loaded and its
-average quantities such as loss or kinetic energy be analysed and
-plotted.
+We use the helper class `ParsedTrajectory` which takes a trajectory file and
+heeds additional options such as neglecting burn in steps or taking only
+'every_nth' step into account.
+Next, we instantiate the `AverageTrajectoryWriter` module. It computes
+the averages and variance of each parameter, whose result we print.
+
+NOTE: This is only useful if the trajectory remains within a single minimum.
+
+[[quickstart.simulation.analysis.covariance]]
+Covariance
+++++++++++
+
+The covariance matrix of the trajectory gives the joint variability of any two
+of its components. Its eigenvalues give a notion the magnitude between
+directions with large gradients and between directions with small gradients.
+
+In sampling this is important as directions with small gradients take longer
+to be explored, see the concept of Integrated Autocorrelation Time (IAT) in
+section <<quickstart.sampling.iat>>.
+
+NOTE: If we look at the covariance of a distribution, we essentially replace it by
+a Gaussian mixture model defined by this covariance matrix.
+
+Let us compute the covariance using the analysis module `Covariance`.
+
+[source,python]
+---------------
+include::python/analyse_covariance.py[]
+---------------
+
+Note the helper class `ParsedTrajectory` which takes a trajectory file and
+heeds additional options such as neglecting burn in steps or taking only
+'every_nth' step into account.
+This instance is handed to the `Covariance` class whose `compute()` function
+performs the actual analysis. Typicallay, all analysis operations have such a
+`compute()` function.
+Again, we plot the result.
+
+[[quickstart.simulation.analysis.covariance.figure]]
+.Covariance: Trajectory plotted in the directions of two covariance eigenvectors
+image::pictures/covariance.png[align="center",{basebackend@docbook:scaledwidth="40%":width=400}]
+
+We have depicted the weights in the direction of each eigenvector. Essentially,
+we get a rotated view of the trajectory in <<quickstart.simulation.analysis.optimize_sample.weights>>
+where the *x* direction represents the dominant change.
 
 [[quickstart.simulation.analysis.diffusion_map]]
 Diffusion Map
 +++++++++++++
 
-NOTE: The former text was not agreed upon by the whole team and is therefore withdrawn at the moment.
+Diffusion maps are a technique for unsupervised learning introduced by
+<<Coifman2006>>.
 
-[[quickstart.simulation.exploration]]
-Exploring the loss manifold
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[quote, pydiffmap, https://pydiffmap.readthedocs.io/en/master/theory.html]
+_____
+Diffusion maps is a dimension reduction technique that can be used to discover
+low dimensional structure in high dimensional data. It assumes that the data
+points, which are given as points in a high dimensional metric space, actually
+live on a lower dimensional structure. To uncover this structure, diffusion
+maps builds a neighborhood graph on the data based on the distances between
+nearby points. Then a graph Laplacian L is constructed on the neighborhood
+graph. Many variants exist that approximate different differential operators.
+_____
 
-Exploration of the loss manifold is a bit more involved and hence uses a
-different part of the Python interface. We do not use the simulation interface
-anymore but the general Python interface as we require greater access to its
-internals.
+link:https://github.com/DiffusionMapsAcademics/pyDiffMap[pydiffmap] is an
+excellent Python package that performs the analysis which consists of computing
+the eigendecomposition of a sparse neighborhood graph where the Euclidean
+metric is used as distance measure. If it is installed (using `pip`), it is
+used for this type of analysis (use `method=pydiffmap` in this case).
 
-In general, the procedure has the following stages:
+In a nutshell, the eigenvectors of the diffusion map kernel give us the main
+directions on our trajectory. They represent collective variables learned
+from the trajectory.
 
-. [[step1]] We sample a few starting trajectory.
-. [[step2]] For the current set of trajectory points we perform a diffusion map
-analysis. Using the first eigenvector as the dominant diffusion mode, we
-pick the first corner points at its maximal component.
-. [[step3]] If more corner points are needed, then we look at the diffusion
-distance with respect to already picked corner points over all
-eigenvectors of the diffusion map and pick the next point always such
-that it maximizes the diffusion distance to the present ones.
-. [[step4]] Finally, we sample further trajectories, one starting at each of the
-picked corner points.
-. [[step5]] This is repeated (go to link:#step2[second step]) for as many
-exploration steps as we want to do.
-
-Note that each single trajectory is sampled in a special way:
-
-* First, three legs of sampling are performed
-* Then, we analyse the resulting diffusion map.
-* If the eigenvalues have not yet converged with respect to some
-relative threshold, we continue for one more leg and analyse again after
-that
-* If they have converged, we stop.
-* Finally, we look at the norm of the gradients along the trajectory. If
-it is below a certain threshold, then within this section of the
-trajectory (with gradient norms beneath the threshold) we pick the
-smallest gradient value as the trajectory step being a possible minimum
-candidate.
-* For all minimum candidates (if any) we run additional optimization
-trajectories, e.g. using GradientDescent, to find a local minima.
-
-Have a look at the following example.
-
-WARNING: This example code is very much involved. Do not worry if we do not
-understand what is going on right away. This may become a lot simpler in future
-versions of TATi.
+Let us take a look at the eigenvectors from our trajectory that we have sampled
+just before.
 
 [source,python]
 ---------------
-include::python/explore.py[]
+include::python/analyse_diffmap.py[]
 ---------------
 
-This performs exactly the procedure described before using very, very
-short trajectories ('max_steps'), only a few legs ('max_legs') and only
-a very limited number of exploration steps ('exploration_steps'). This is
-simple for the purpose of illustration. Naturally, larger values for all these
-parameters are required in order to explore complex manifolds and eventually
-find the global minimum.
+We should then obtain the Figure link:#quickstart.simulation.analysis.diffusion_map.eigenvectors[Diffusion map analysis].
 
-Note the calls to `run_all_jobs()`: What is happening behind the scenes is that
-the class `Explorer` contains a queue. Sampling a single leg of a trajectory
-is encoded as a single job, similarly performing a diffusion map analysis and so
-on. All these jobs are placed in the queue. `run_all_jobs()` will launch the
-jobs one after the other, or even in parallel if 'number_processes' is larger
-than *1*.
+[[quickstart.simulation.analysis.diffusion_map.eigenvectors]]
+.Diffusion map analysis: Plot of first weight against second weight, colored by first eigenvector of the diffusion map kernel
+image::pictures/eigenvectors.png[align="center",{basebackend@docbook:scaledwidth="25%":width=200}]
+
+NOTE: The true first eigenvector is constant and is therefore dropped in the
+function `compute_diffusion_maps()`.
+
+Keep in mind that the ridge is at the origin and there are two hperbolic basins
+on either side in the all-positive and all-negative orthant of the 2d space.
+We see that as we color the trajectory points by the value of the dominant
+eigenvector, the path between these two minima is highlighted: from
+light green to dark blue.
+
+The eigenvector gives a direction: From the top right to the bottom left and
+therefore from one minimum basin to the other.
+
+The eigenvector component give the implicit evaluation of the collective
+variable function at each trajectory point, i.e. latexmath:[e_i = \xi(x_i)],
+where latexmath:[\xi(x)] is the collective variable and latexmath:[e_i] is the
+i-th component and latexmath:[x_i] the i-th trajectory point.
+
+The eigenvectors of the diffusion map kernel also give us a mean to assess
+distances between trajectory points by looking at the difference in values,
+latexmath:[|e_i - e_j|].
+This is the so-called _diffusion distance_. It tells us how difficult it is to
+diffuse from one point to the other.
+
+The main difference between the covariance and diffusion maps is that the latter
+gives a non-linear mapping which is much more powerful.
 
 Conclusion
 ^^^^^^^^^^
