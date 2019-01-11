@@ -135,7 +135,7 @@ include::programmersguide_tati_buildsystem.txt[]
 
 include::programmersguide_tati_versioncontrol.txt[]
 
-include::tensorflow_flaws.txt[]
+include::programmersguide_tensorflow_flaws.txt[]
 
 :numbered!:
 

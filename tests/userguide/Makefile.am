@@ -10,6 +10,7 @@ TESTSCRIPTS =
 TESTSCRIPTS += \
 	$(srcdir)/cmdline/testsuite-userguide-cmdline.at \
 	$(srcdir)/cmdline/testsuite-userguide-cmdline-analyse_averages.at \
+	$(srcdir)/cmdline/testsuite-userguide-cmdline-analyse_covariance.at \
 	$(srcdir)/cmdline/testsuite-userguide-cmdline-analyse_diffmap.at \
 	$(srcdir)/cmdline/testsuite-userguide-cmdline-analyse_free_energy.at \
 	$(srcdir)/cmdline/testsuite-userguide-cmdline-exploring.at \
@@ -24,6 +25,7 @@ TESTSCRIPTS += \
 	$(srcdir)/cmdline/testsuite-userguide-cmdline-write_dataset.at \
 	$(srcdir)/python/testsuite-userguide-python.at \
 	$(srcdir)/python/testsuite-userguide-python-analyse_averages.at \
+	$(srcdir)/python/testsuite-userguide-python-analyse_covariance.at \
 	$(srcdir)/python/testsuite-userguide-python-analyse_diffmap.at \
 	$(srcdir)/python/testsuite-userguide-python-eval_loss_gradient.at \
 	$(srcdir)/python/testsuite-userguide-python-explore.at \
