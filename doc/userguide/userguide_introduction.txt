@@ -345,7 +345,7 @@ Feedback
 
 If you encounter any bugs, errors, or would like to submit feature request,
 please write to mailto:[{Email}] or open an issue at link:{Website}[GitHub].
-The author is especially thankful for any description of all related events
+The authors are especially thankful for any description of all related events
 prior to occurrence of the error and auxiliary files. More explicitly, the
 *following information is crucial* in enabling assistance:
 
