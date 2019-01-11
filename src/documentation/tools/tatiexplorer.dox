@@ -1,0 +1,99 @@
+/*
+ *    Project: ThermodynamicAnalyticsToolkit
+ *    Description:  loss manifolds of neural networks
+ *    Copyright (C) 2018 The University of Edinburgh
+ *    The TATi authors, see file AUTHORS, have asserted their moral rights.
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU General Public License as published by
+ *    the Free Software Foundation, either version 3 of the License, or
+ *    (at your option) any later version.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU General Public License for more details.
+ *
+ *    You should have received a copy of the GNU General Public License
+ *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+/**
+ * \file tatiexplorer.dox
+ *
+ *  Documentation on the tool TATiExplorer
+ *
+ * Created on: Jan 11, 2019
+ *    Author: heber
+ */
+
+/** \page TATiExplorer TATiExplorer
+ *
+ * TATiExplorer is a loss manifold exploration tool of TATi.
+ *
+ * WARNING: At the moment it is very experimental and not well documented.
+ *
+ * TATiExplorer aims at exploring the loss manifold of a neural network in
+ * order to uncover all of its minima and allow free energy analysis.
+ *
+ *
+ * \section TATiExplorer-help Getting help
+ *
+ * Call
+ * \code{.sh}
+ * TATiExplorer --help
+ * \endcode
+ * to get a list of all available options.
+ *
+ * \section TATiExplorer-example Example call
+ *
+ * An example call that will perform a sampling run looks like this.
+ * \code{.sh}
+ * TATiExplorer \
+ *	--batch_data_files dataset-twoclusters.csv \
+ *	--batch_size 10 \
+ *	--diffusion_map_method vanilla \
+ *	--do_hessians 1 \
+ *	--every_nth 1 \
+ *	--friction_constant 1 \
+ *	--inverse_temperature 1 \
+ *	--max_exploration_steps 1 \
+ *	--max_legs 25 \
+ *	--max_steps 20 \
+ *	--minima_file minima.csv \
+ *	--number_of_eigenvalues 1 \
+ *	--number_of_parallel_trajectories 3 \
+ *	--optimizer GradientDescent \
+ *	--run_file run-single.csv \
+ *	--step_width 1e-2 \
+ *	--sampler GeometricLangevinAlgorithm_1stOrder \
+ *	--seed 426 \
+ *	--trajectory_file trajectory-single.csv \
+ *	--use_reweighting 0
+ * \endcode
+ *
+ * This takes a single-layer perceptron (\b hidden_dimension is 0 by default)
+ * on the dataset \b dataset-twoclusters.csv with a \b batch_size of 10.
+ * It performs 25 consecutive sampling "legs", on 3 individual trajectories
+ * (\b number_of_parallel_trajectories), where each leg is 20 steps
+ * (\b max_steps). It will perform the sampling using the
+ * \a GeometricLangevinAlgorithm_1stOrder \b sampler with a \b step_width of
+ * 1e-2.
+ *
+ * If the norm of the gradient is suitably small along the trajectories it will
+ * try to find a local minimum whose points are written to the file
+ * \b minima.csv. All of the run info (on all trajectories) is written to
+ * \b run-single.cvs and all trajectories to \b trajectory-single.csv (the
+ * \a id column discerns between the different trajectories).
+ *
+ * Note that we only perform a single run (\b max_exploration_steps). If we
+ * would perform more, then the program would compute a diffusion map analysis,
+ * select points furthest apart on the so far explored subspace and continue
+ * sampling in the next step from these points.
+ *
+ * For more examples take a look at the userguide. Moreover, see the test
+ * cases contained in \b tests/regression/DataDrivenExplorer and subfolders.
+ *
+ * \date 2019-01-11
+ */

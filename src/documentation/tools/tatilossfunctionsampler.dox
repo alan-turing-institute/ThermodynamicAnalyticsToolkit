@@ -1,0 +1,77 @@
+/*
+ *    Project: ThermodynamicAnalyticsToolkit
+ *    Description:  loss manifolds of neural networks
+ *    Copyright (C) 2018 The University of Edinburgh
+ *    The TATi authors, see file AUTHORS, have asserted their moral rights.
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU General Public License as published by
+ *    the Free Software Foundation, either version 3 of the License, or
+ *    (at your option) any later version.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU General Public License for more details.
+ *
+ *    You should have received a copy of the GNU General Public License
+ *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+/**
+ * \file tatilossfunctionsampler.dox
+ *
+ *  Documentation on the tool TATiLossFunctionSampler
+ *
+ * Created on: Jan 11, 2019
+ *    Author: heber
+ */
+
+/** \page TATiLossFunctionSampler TATiLossFunctionSampler
+ *
+ * TATiLossFunctionSampler is a sampling tool of TATi. It allows to perform
+ * grid-based sampling on the loss manifold. Moreover, given a sampled
+ * trajectory it allows to re-evaluate each of the trajectory steps. This can
+ * be used to re-evaluate the loss with a different dataset or a different
+ * batch size (e.g., taking the whole dataset and no mini-batches per step).
+ *
+ *
+ * \section TATiLossFunctionSampler-help Getting help
+ *
+ * Call
+ * \code{.sh}
+ * TATiLossFunctionSampler --help
+ * \endcode
+ * to get a list of all available options.
+ *
+ * \section TATiLossFunctionSampler-example Example call
+ *
+ * An example call that will perform a sampling run looks like this.
+ * \code{.sh}
+ * TATiLossFunctionSampler \
+ *   naive_grid \
+ *	--batch_data_files dataset-twoclusters.csv \
+ *	--batch_size 20 \
+ *	--csv_file TATiLossFunctionSampler-output-grid.csv \
+ *  --interval_weights -5 5 \
+ *  --interval_biases -1 1 \
+ *  --samples_weights 4 \
+ *  --samples_biases 4
+ * \endcode
+ *
+ * This will perform a \a naive_grid (the operation \b mode) sampling of the
+ * loss manifold using a single-layer perceptron (default values) for the
+ * \b dataset-twoclusters.csv dataset with a \b batch_size of 20.
+ * The grid is done over the parameter space with the interval [-5,5] for
+ * the weights (\b interval_weights) and [-1,1] for the biases
+ * (\b interval_biases). We use 5 samples per weight and bias axis
+ * (\b samples_weights and \b samples_biases).
+ * The resulting parameters and loss values is written to the file
+ * \b TATiLossFunctionSampler-output-grid.csv.
+ *
+ * For more examples take a look at the userguide. Moreover, see the test
+ * cases contained in \b tests/regression/NumericalDiff and subfolders.
+ *
+ * \date 2019-01-11
+ */

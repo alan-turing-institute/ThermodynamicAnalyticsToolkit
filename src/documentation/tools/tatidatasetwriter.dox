@@ -1,0 +1,71 @@
+/*
+ *    Project: ThermodynamicAnalyticsToolkit
+ *    Description:  loss manifolds of neural networks
+ *    Copyright (C) 2018 The University of Edinburgh
+ *    The TATi authors, see file AUTHORS, have asserted their moral rights.
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU General Public License as published by
+ *    the Free Software Foundation, either version 3 of the License, or
+ *    (at your option) any later version.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU General Public License for more details.
+ *
+ *    You should have received a copy of the GNU General Public License
+ *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+/**
+ * \file tatidatasetwriter.dox
+ *
+ *  Documentation on the tool TATiDatasetWriter
+ *
+ * Created on: Jan 11, 2019
+ *    Author: heber
+ */
+
+/** \page TATiDatasetWriter TATiDatasetWriter
+ *
+ * TATiDatasetWriter is a tool of TATi for creating test datasets. It is
+ * inspired by the classification datasets on the tensorflow playground.
+ * It creates CSV files with randomly perturbed datasets of arbitrary
+ * dimensions.
+ *
+ *
+ * \section TATiDatasetWriter-help Getting help
+ *
+ * Call
+ * \code{.sh}
+ * TATiDatasetWriter --help
+ * \endcode
+ * to get a list of all available options.
+ *
+ * \section TATiDatasetWriter-example Example call
+ *
+ * An example call that will perform a sampling run looks like this.
+ * \code{.sh}
+ * TATiDatasetWriter \
+ *	--data_type 0 \
+ *	--dimension 20 \
+ *	--noise 0.1 \
+ *	--seed 426 \
+ *	--train_test_ratio 0 \
+ *	--test_data_files testset.csv
+ * \endcode
+ *
+ * This writes the dataset type 0 (two circles) (see
+ * TATi.datasets.classificationdatasets.ClassificationDatasets for all types)
+ * using 20 dataset items (\b dimension), a relative noise of 0.1 (\b noise),
+ * and a random number \b seed of 426. The dataset is split into test and train
+ * parts but all goes into test (\b train_test_ratio 0) and is written to
+ * the file \b testset.csv.
+ *
+ * For more examples take a look at the userguide. Moreover, see the test
+ * cases contained in \b tests/regression/DatasetWriter and subfolders.
+ *
+ * \date 2019-01-11
+ */

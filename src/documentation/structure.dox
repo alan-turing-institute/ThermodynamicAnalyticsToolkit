@@ -1,0 +1,156 @@
+/*
+ *    Project: ThermodynamicAnalyticsToolkit
+ *    Description:  loss manifolds of neural networks
+ *    Copyright (C) 2018 The University of Edinburgh
+ *    The TATi authors, see file AUTHORS, have asserted their moral rights.
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU General Public License as published by
+ *    the Free Software Foundation, either version 3 of the License, or
+ *    (at your option) any later version.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU General Public License for more details.
+ *
+ *    You should have received a copy of the GNU General Public License
+ *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+/**
+ * \file structure.dox
+ *
+ *  Explain the folder and file structure of TATi
+ *
+ * Created on: Jan 11, 2019
+ *    Author: heber
+ */
+
+/** \page structure File structure of TATi
+ *
+ * We explain the folder and file structure and give guidelines on naming
+ * schemes. Moreover, we explain how to add new files and embed them
+ * within the automake controlled \b Makefile.am's.
+ *
+ * \section structure-folder Folder structure
+ *
+ * In the root folder we have the following directories:
+ *
+ * - \b src - source files
+ * - \b tests - tests cases using autotest
+ * - \b doc - documentation using asciidoc
+ * - \b util - utility files such as shell scripts
+ *
+ * \subsection structure-folder-src Source folders
+ *
+ * In the \b src folder we find two folders \b TATi and \b documentation.
+ *
+ * The latter contains the main pages of the API reference that are
+ * compiled through doxygen, see \ref documentation .
+ *
+ * The former contains all source files related to the TATi suite. Its folder
+ * structure matches with the one that is installed.
+ *
+ * In \b src\TATi we then find the following directories:
+ *
+ * - \b analysis - classes related to analysing trajectories, see \ref TATiAnalyser
+ * - \b datasets - classes for generated test datasets, see \ref TATiDatasetWriter
+ * - \b diffusion_maps - classes for diffusion map analysis, superceded
+ *  partially by the python package `pydiffmap`.
+ * - \b exploration - classes for exploration of loss manifolds. This is still
+ *  very experimental. See \ref TATiExplorer.
+ * - \b models - classes on network models and everything related
+ * - \b options - classes for the general options structure
+ * - \b runtime - class related to measuring runtimes of functions
+ * - \b samplers - classes for sampling-based methods, both grid-based and
+ *  dynamics-based, see \ref TATiSampler
+ * - \b tools - all tools in the toolkit, see \ref tools.
+ *
+ * The most important of these folders is \b src/TATi/models with a few more
+ * folders contained:
+ *
+ * - \b accumulators - classes for accumulating values such as energies,
+ *  parameters, producing average, trajectory and run info output files
+ * - \b input - classes for the input pipeline that feeds the dataset into
+ * the neural network
+ * - \b networks - classes for creating the neural network
+ * - \b parameters - classes for treating all degrees of freedom of the network
+ *  in a linearized fashion, i.e. as a single vector
+ * - \b trajectories - classes for sampling of a trajectory, through training,
+ *  or through sampling with a specific type of dynamics, i.e. the iteration
+ *  loop for the samplers.
+ *
+ * \subsection structure-files Files
+ *
+ * Files are the atomic python modules. They contain python classes or sets
+ * of functions.
+ *
+ * \subsection structure-files-names Files and their names
+ *
+ * We follow these rules:
+ * - python modules have lower case filenames
+ * - python classes are in CamelCase, underscores are an exception only used
+ *  for clarity
+ * - there is at most one class per module
+ * - \b src/TATi should contain only central modules
+ * - \b Modules should generally reside in meaningful subfolders that give
+ *  an idea about their function and their place within the program
+ *
+ * \section structure-access Access to modules through import
+ *
+ * Access from a new file/module to the rest of TATi is as follows, given
+ * we need to use a class Test in \b src/TATi/foo/bar/test.py in TAti
+ * \code{.py}
+ * from TATi.foo.bar.test import Test
+ * \endcode
+ * or alternatively with keeping the namespaces
+ * \code{.py}
+ * import TATi.foo.bar.test
+ * \endcode
+ *
+ * It is advised ti import only those modules and only those functions that
+ * are needed. Modern editors such as pycharm help to find unneeded imports.
+ *
+ * \section structure-makefile Adding new files/modules
+ *
+ * Each file needs to be listed inside a respective \b Makefile.am to make
+ * the autotools suite aware of it. Only then it will be installed and visible.
+ * Otherwise get "module not found" error messages.
+ *
+ * Almost all \b Makefile.am are structure in the same way:
+ *
+ * 1. possible SUBDIRS directive tells automake to look for more Makefiles in
+ *  the listed folders.
+ * 2. TATI_folder1_folder2_..._PYTHON directive lists all python files in this
+ *  folder. This includes an empty `__init__.py` file, describing the module.
+ * 3. TATI_folder1_folder2_...dir = $(pythondir)/folder1/folder2/... list the
+ *  installation directory. Note that the folder in the installation target
+ *  mimicks the structure of the folders in the \b src folder.
+ *
+ * All Makefile.am's are listed in \b configure.ac in the root folder, see
+ * the AC_CONFIG_FILES directive therein. This tells autoconf (not automake)
+ * which files it needs to look at.
+ *
+ * \subsection structure-files-special Special files
+ *
+ * There are a few special files which we explain here:
+ *
+ * - \b src/TATi/.git-version is generated from the git source code version
+ *  control system and contains the version number and the unique hash of
+ * current commit. This is to clearly identify the program version.
+ * - \b src/TATi/version.py takes the \b .git-version file and supports the
+ * following statement
+ * \code{.py}
+ * import TATi.version
+ * print (TATi.__version__)
+ * \endcode
+ * to print the version number.
+ * - `<build folder>/src/TATi/exploration/get_executables.py` contains a path
+ * to the installed tools, e.g., \ref TATiSampler, as its called with the
+ * exploration scheme that uses parallel processes for exploring the loss
+ * manifold.
+ *
+ * \date 2019-01-11
+ */

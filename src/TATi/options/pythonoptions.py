@@ -27,26 +27,22 @@ class PythonOptions(Options):
     
     Example:
 
-    Args:
-
-    Returns:
-
-    >>> from TATi.options.pythonoptions import PythonOptions
-        >>> PythonOptions.help()
+        >> from TATi.options.pythonoptions import PythonOptions
+        >> PythonOptions.help()
         averages_file:             CSV file name to write ensemble averages information such as average kinetic, potential, virial
         batch_data_file_type:      type of the files to read input from
          <remainder omitted>
-        >>> PythonOptions.help("batch_data_files")
+        >> PythonOptions.help("batch_data_files")
         Option name: batch_data_files
         Description: set of files to read input from
         Type       : <class 'list'>
         Default    : []
-        >>> options = PythonOptions(
-        ... batch_data_files=["test.csv"],
-        ... batch_size=3,
-        ... max_steps=1000,
-        ... optimizer="GradientDescent",
-        ... )
+        >> options = PythonOptions(
+        .. batch_data_files=["test.csv"],
+        .. batch_size=3,
+        .. max_steps=1000,
+        .. optimizer="GradientDescent",
+        .. )
     """
 
     ## gives a description for each option.

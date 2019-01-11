@@ -115,7 +115,9 @@ DOC_TARGETS = \
 	userguide.pdf userguide.html \
     roadmap.pdf roadmap.html
 
-all: ${DOC_TARGETS}
+.PHONY: doc
+
+doc: ${DOC_TARGETS}
 
 EXTRA_DIST += ${DOC_TARGETS}
 
