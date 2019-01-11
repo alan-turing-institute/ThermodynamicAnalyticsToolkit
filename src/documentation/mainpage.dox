@@ -1,8 +1,22 @@
 /*
- * Project: ThermodynamicAnalyticsToolkit
- * Description: Explore the high-dimensional landscape of neural networks
- * Copyright (C)  2017 The University of Edinburgh. All rights reserved.
- * Please see the LICENSE file for details.
+ *    Project: ThermodynamicAnalyticsToolkit 
+ *    Description:  loss manifolds of neural networks
+ *    Copyright (C) 2018 The University of Edinburgh
+ *    The TATi authors, see file AUTHORS, have asserted their moral rights.
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU General Public License as published by
+ *    the Free Software Foundation, either version 3 of the License, or
+ *    (at your option) any later version.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU General Public License for more details.
+ *
+ *    You should have received a copy of the GNU General Public License
+ *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
  */
 
 /**
@@ -14,34 +28,57 @@
  *    Author: heber
  */
 
-/*! \page copyright Copyright notice
+/** \mainpage tati ThermodynamicAnalyticsToolkit
+ *
+ * This is the main page of the Doxygen documentation of \e ThermodynamicAnalyticsToolkit.
+ *
+ * \section tati-whatis What is TATi?
+ *
+ * TATi allows to perform thermodynamic sampling and analysis of large neural network
+ * loss manifolds. It extends tensorflow by several samplers, by a framework to rapidly
+ * prototype new samplers, by the capability to sample several networks in parallel and
+ * provides tools for analysis and visualization of loss manifolds for an overview.
+ *
+ * We rely fully on the Python programming language as only for that tensorflow's
+ * interface has an API stability promise.
+ *
+ * \section tati-purpose Purpose of this documentation
+ *
+ * This document provides information on the Application Program Interface (API).
+ * It is aimed at two audiences:
+ *
+ * - users of the code who wish to use the classes `Simulation` or `Model` in
+ *  their own codes
+ * - programmers who wish to extend TATi
+ *
+ * In any case, we recommend to first read the userguide to get acquainted with
+ * the general use of the program. See the PDF that accompanies the release
+ * tarball or the README file in the root folder for general how-to-start
+ * instructions
+ * After that this API reference may be of assistance. There the general
+ * components are the first to read about.
+ *
+ * \section tati-contents Contents
+ *
+ * \li \ref components : As there are many different classes, we give a brief
+ *  overview of the main classes that a user should be aware of.
+ * \li \ref structure : We review the structure of the folders/modules
+ *  contained in TATi and briefly explain their purposes and intentions.
+ * \li \ref autotools : We explain how to modify the autotools files needed
+ *  when adding new files to the program.
+ * \li \ref documentation : How is the documentation generated and where is it
+ * located.
+ * \li \ref tools : Description and list of all tools available in this toolkit
+ *
+ * \section tati-copyright Copyright
  *
  *  ThermodynamicAnalyticsToolkit - to design and perform numerical experiments
- *  Copyright (C) 2017 The University of Edinburgh. All rights reserved.
  *
- */
-
-/** \mainpage ThermodynamicAnalyticsToolkit
+ *  Copyright (C) 2017-2018 The University of Edinburgh. All rights reserved.
  *
- * This is the main page of the Doxygen documentation of \e ThermodynamicAnalyticsToolkit. 
- * We give a brief description what the program is intended to do and then
- * branch via the contents of this documentation into various topics.
+ *  The TATi authors, see file AUTHORS, have asserted their moral rights.
  *
- * \section about About the Program
- *
- *  For copyright see \ref copyright.
- *
- * \section idea The central idea behind the program
- *
- * What are the central ideas?
- *
- * \section contents Contents
- *
- * This manual is divided into the following sections:
- * \li \ref install
- * \li \ref userguide
- *
- * \date 2017-10-30
+ * \date 2019-01-11
  *
  */
 

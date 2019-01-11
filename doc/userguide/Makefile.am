@@ -61,7 +61,7 @@ DEPENDENCIES = \
 	introduction.txt \
 	programmersguide.txt \
 	programmersguide_computational_graph.txt \
-    programmersguide_debugging_tips.txt \
+	programmersguide_debugging_tips.txt \
 	programmersguide_extensions_samplers.txt \
 	programmersguide_neural_networks.txt \
 	programmersguide_tati_buildsystem.txt \
@@ -115,7 +115,9 @@ DOC_TARGETS = \
 	userguide.pdf userguide.html \
     roadmap.pdf roadmap.html
 
-all: ${DOC_TARGETS}
+.PHONY: doc
+
+doc: ${DOC_TARGETS}
 
 EXTRA_DIST += ${DOC_TARGETS}
 

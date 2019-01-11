@@ -1,0 +1,71 @@
+/*
+ *    Project: ThermodynamicAnalyticsToolkit
+ *    Description:  loss manifolds of neural networks
+ *    Copyright (C) 2018 The University of Edinburgh
+ *    The TATi authors, see file AUTHORS, have asserted their moral rights.
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU General Public License as published by
+ *    the Free Software Foundation, either version 3 of the License, or
+ *    (at your option) any later version.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU General Public License for more details.
+ *
+ *    You should have received a copy of the GNU General Public License
+ *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+/**
+ * \file tatioptimizer.dox
+ *
+ *  Documentation on the tool TATiOptimizer
+ *
+ * Created on: Jan 11, 2019
+ *    Author: heber
+ */
+
+/** \page TATiOptimizer TATiOptimizer
+ *
+ * TATiOptimizer is the training tool of TATi. It trains neural network
+ * parameters through (Stochastic) Gradient Descent in order to find
+ * a local minimum in the given loss manifold from a random starting
+ * position.
+ *
+ *
+ * \section TATiOptimizer-help Getting help
+ *
+ * Call
+ * \code{.sh}
+ * TATiOptimizer --help
+ * \endcode
+ * to get a list of all available options.
+ *
+ * \section TATiOptimizer-example Example call
+ *
+ * An example call that will perform a training run looks like this.
+ * \code{.sh}
+ * TATiOptimizer \
+ *   --batch_data_files dataset.csv \
+ *   --batch_size 10 \
+ *   --output_activation linear \
+ *   --learning_rate 0.1 \
+ *   --loss mean_squared \
+ *   --optimizer GradientDescent \
+ *   --run_file run.csv
+ * \endcode
+ *
+ * This will train a single-layer perceptron with linear output activction
+ * using the mean squared loss for the dataset found in \b dataset.csv
+ * with a batch size of 10 using Gradient Descent with a learning rate of
+ * 0.1.
+ * The tool will write a run info file to \b run.csv.
+ *
+ * For more examples take a look at the userguide. Moreove, see the test
+ * cases contained in \b tests/regression/DataOptimizer and subfolders.
+ *
+ * \date 2019-01-11
+ */

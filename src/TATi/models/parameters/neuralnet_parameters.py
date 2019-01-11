@@ -1,3 +1,23 @@
+#
+#    ThermodynamicAnalyticsToolkit - analyze loss manifolds of neural networks
+#    Copyright (C) 2018 The University of Edinburgh
+#    The TATi authors, see file AUTHORS, have asserted their moral rights.
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### 
+
 import logging
 import numpy as np
 import tensorflow as tf
@@ -6,9 +26,13 @@ from tensorflow.python.ops import control_flow_ops
 from TATi.models.basetype import dds_basetype
 
 class neuralnet_parameters:
-    """ This class wraps methods to get all parameters of a neural network, i.e.
+    """This class wraps methods to get all parameters of a neural network, i.e.
     weights and biases, as a single long vector. And also, the other way round to
     set all parameters from a single long vector.
+
+    Args:
+
+    Returns:
 
     """
 
@@ -24,9 +48,13 @@ class neuralnet_parameters:
         self.assign_all_t = control_flow_ops.group(*assigns)
 
     def create_flat_vector(self):
-        """ Creates a zero-filled numpy array of dimension matching parameters
+        """Creates a zero-filled numpy array of dimension matching parameters
 
-        :return: zero-filled vector of right dimension
+        Args:
+
+        Returns:
+            zero-filled vector of dimension matching number of dofs
+
         """
         total_dof = self.get_total_dof_from_list(self.parameters)
         logging.info("Number of dof: " + str(total_dof))
@@ -35,9 +63,14 @@ class neuralnet_parameters:
         return np.zeros([total_dof])
 
     def evaluate(self, _sess):
-        """ Evaluates the parameters and returns a flat vector.
+        """Evaluates the parameters and returns a flat vector.
 
-        :return: flat vector of parameters' current values
+        Args:
+          _sess: 
+
+        Returns:
+            flat vector of parameters' current values
+
         """
         # evaluate all
         weights_eval = _sess.run(self.parameters)
@@ -47,9 +80,14 @@ class neuralnet_parameters:
         return self.flatten_list_of_arrays(weights_eval)
 
     def assign(self, _sess, _np_array):
-        """ Assigns all the parameters given a flat vector of values.
+        """Assigns all the parameters given a flat vector of values.
 
-        :param _sess: tensorflow session
+        Args:
+          _sess: tensorflow session
+          _np_array: numpy arrays with the values to assign to the parameters
+
+        Returns:
+
         """
         # convert to same shape as placeholders/weight tensors
         list_of_arrays = self.convert_np_array_to_match_list_of_tensors(
@@ -70,11 +108,15 @@ class neuralnet_parameters:
 
     @staticmethod
     def create_placeholders(_list_of_tensors):
-        """ Create a list of tensors of placeholders given a list of tensors
+        """Create a list of tensors of placeholders given a list of tensors
          of variables, i.e. all match in size
 
-        :param _list_of_tensors: list of tensors of variables
-        :return: list of tensors of placeholders with equivalent sizes
+        Args:
+          _list_of_tensors: list of tensors of variables
+
+        Returns:
+          list of tensors of placeholders with equivalent sizes
+
         """
         weights_placeholder_list = []
         for tensor in _list_of_tensors:

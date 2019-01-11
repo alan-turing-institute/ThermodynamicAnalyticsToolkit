@@ -13,7 +13,7 @@ AM_PATH_PYTHON([2.5])
 # use doxygen
 DX_HTML_FEATURE(ON)
 DX_PS_FEATURE(OFF)
-DX_PDF_FEATURE(OFF)
+DX_PDF_FEATURE(ON)
 DX_INIT_DOXYGEN(ThermodynamicAnalyticsToolkit, Doxyfile, ${docdir})
 
 # awk for tests
@@ -51,6 +51,14 @@ if test -z $BIN_TRUE; then
 	BIN_TRUE="! /bin/false"
 fi
 
+# test for required python modules
+AX_PYTHON_MODULE(tensorflow, fatal, python3)
+AX_PYTHON_MODULE(pandas, fatal, python3)
+AX_PYTHON_MODULE(scipy, fatal, python3)
+AX_PYTHON_MODULE(sklearn, fatal, python3)
+AX_PYTHON_MODULE(acor, python3)
+AX_PYTHON_MODULE(doxypypy, python3)
+
 AC_CONFIG_FILES(
 	Makefile
 	src/Makefile
@@ -62,14 +70,20 @@ AC_CONFIG_FILES(
 	src/TATi/models/Makefile
 	src/TATi/models/accumulators/Makefile
 	src/TATi/models/input/Makefile
+	src/TATi/models/networks/Makefile
+	src/TATi/models/parameters/Makefile
+	src/TATi/models/trajectories/Makefile
 	src/TATi/options/Makefile
-	src/TATi/parameters/Makefile
 	src/TATi/runtime/Makefile
 	src/TATi/samplers/Makefile
 	src/TATi/samplers/dynamics/Makefile
 	src/TATi/samplers/grid/Makefile
 	src/TATi/tools/Makefile
 	tests/Makefile)
+AC_CONFIG_TESTDIR([tests/codechecks])
+AC_CONFIG_FILES(
+	tests/codechecks/atlocal
+	tests/codechecks/Makefile)
 AC_CONFIG_TESTDIR([tests/integration])
 AC_CONFIG_FILES(
 	tests/integration/atlocal

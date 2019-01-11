@@ -1,0 +1,143 @@
+/*
+ *    Project: ThermodynamicAnalyticsToolkit
+ *    Description:  loss manifolds of neural networks
+ *    Copyright (C) 2018 The University of Edinburgh
+ *    The TATi authors, see file AUTHORS, have asserted their moral rights.
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU General Public License as published by
+ *    the Free Software Foundation, either version 3 of the License, or
+ *    (at your option) any later version.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU General Public License for more details.
+ *
+ *    You should have received a copy of the GNU General Public License
+ *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+/**
+ * \file autotools.dox
+ *
+ *  Explain autotools and automake files that control the build and install
+ * process.
+ *
+ * Created on: Jan 11, 2019
+ *    Author: heber
+ */
+
+/** \page autotools Using autotools in TATi
+ *
+ * The autotools suite with automake is used to control the build and install
+ * files. It consists of a few files such as:
+ *
+ * - configure.ac (and configure)
+ * - Makefile.am (and Makefile.in)
+ * - aclocal.m4 and the folder \b m4
+ *
+ * They control the whole build process. Eventually, they act together like a
+ * preprocessor to generate \a Makefiles for (GNU) make in a more or less
+ * comfortable manner.
+ *
+ * Autotools relies on the \a m4 script language. However, it is not necessary
+ * to know this in detail. Autotools in \b configure.ac is controlled through
+ * an extendible set of \a commands such as \b AC_CHECK_PROGS which will check
+ * for the presence of a certain program and create a suitable variable. These
+ * commands or macros reside in the folder \b m4. Standard ones are present
+ * in OS-dependent folders. Typically one needs to the find the right command
+ * and add it to \b configure.ac
+ *
+ * Automake on the other hand works with a set of variables having a specific
+ * naming scheme. By setting a variable `SUBDIRS = foo`, we tell automake
+ * to look for more automake-related files in the folder \b foo.
+ *
+ * Last but not least, autotest is the testsuite based on the m4 language.
+ * Its files look very similar to configure.ac, being a list of commands, one
+ * per line. A command AT_CHECK(...) will call the program inside the
+ * brackets and look at its return code when finished. If 0, the test was
+ * fine, else the test has failed. This can be combined with pure shell
+ * statements to form test cases
+ *
+ * \section autotools-configure Adding new dependent packages
+ *
+ * Autoconf (part of autotools) checks for the presence of required python
+ * packages, such as \a numpy, through the \b AX_PYTHON_MODULE directive
+ * in \b configure.ac.
+ *
+ * If new dependencies are required, simply add another line therein. The
+ * keyword \a fatal states whether this package is required or optional.
+ *
+ * \section autotools-makefile Adding new files/modules
+ *
+ * Each python file needs to be listed inside a respective \b Makefile.am to
+ * make the autotools suite aware of it. Only then it will be installed and
+ * visible. Otherwise we get "module not found" error messages.
+ *
+ * Almost all \b Makefile.am are structured in the same way:
+ *
+ * 1. possible `SUBDIRS` directive tells automake to look for more Makefiles in
+ *  the listed folders.
+ * 2. `TATI_folder1_folder2_..._PYTHON` directive lists all python files in this
+ *  folder. This includes an empty \b __init__.py file, describing the module.
+ * 3. `TATI_folder1_folder2_...dir = $(pythondir)/folder1/folder2/...` list the
+ *  installation directory. Note that the folder in the installation target
+ *  mimicks the structure of the folders in the \b src folder.
+ *
+ * All Makefile.am's are listed in \b configure.ac in the root folder, see
+ * the AC_CONFIG_FILES directive. This tells autoconf (not automake) which
+ * files it needs to look at.
+ *
+ * \section autotools-autotest Tests with autotest
+ *
+ * Tests reside in the folder \b test. All test cases are described in files
+ * named `testsuite-....at`. The form a hierarchical structure: For example,
+ * in \b tests/regression there is a file \b testsuite.at that uses the
+ * directive `m4_include(...)` to include more `testsuite-..at` in subfolders.
+ * These in turn may again include more files.
+ *
+ * The execution of the tests is triggered by calling `make check` (or better
+ * `make -j4 check` which executes up to four tests in parallel).
+ *
+ * Generally, new test cases need to be placed in a accordingly named
+ * `testsuite-..at` in its proper folder (or new subfolder) and then have to
+ * be added to two files:
+ * 1. To an already present `testsuite-...at` using the `m4_include()` statement
+ * 2. To the central \b Makefile.am, e.g., for regression tests in
+ * \b tests/regression/Makefile.am
+ *
+ * If the former is forgotten, the testcase is never executed.
+ * If the latter is forgotten, the testsuite will not get updated when the
+ * testcase changes (calling `make check` will automatically update the
+ * testsuite) if any testcase file has changed.
+ *
+ * What happens under the hood is that a shell script `testsuite` is generated
+ * from the flock of `testsuite-...at` files by turning the m4 commands into
+ * shell commands. The testsuite is called on `make check` but may also be
+ * called directly. Watch out for a line similar to the following being printed
+ * just prior to the test banner 'ThermodynamicAnalyticsToolkit ...':
+ *
+ * \code{.sh}
+ * /bin/bash '<path to TATi>/tests/regression/testsuite' $nrjobs \
+ *   AUTOTEST_PATH='<path to build folder>/src'
+ * \endcode
+ *
+ * This may vary slightly depending on your system. Call
+ *
+ * \code{.sh}
+ * /bin/bash '<path to TATi>/tests/regression/testsuite' --help
+ * \endcode
+ *
+ * for a help.
+ *
+ * Single tests can be triggered by replacing `$nrjobs` above by the test
+ * number, e.g., 81. Other options such as `-d` leave the logs and output
+ * folders even if the test has finished successfully. Moreover, through
+ * the option `-k` subset of tests can be selected through proper keywords,
+ * e.g., `-k tatisampler` for all tests involving tatisampler, see the
+ * AT_KEYWORD directive in the `testsuite-...at` files of each test case.
+ *
+ * \date 2019-01-11
+ */

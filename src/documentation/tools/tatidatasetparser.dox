@@ -1,0 +1,64 @@
+/*
+ *    Project: ThermodynamicAnalyticsToolkit
+ *    Description:  loss manifolds of neural networks
+ *    Copyright (C) 2018 The University of Edinburgh
+ *    The TATi authors, see file AUTHORS, have asserted their moral rights.
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU General Public License as published by
+ *    the Free Software Foundation, either version 3 of the License, or
+ *    (at your option) any later version.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU General Public License for more details.
+ *
+ *    You should have received a copy of the GNU General Public License
+ *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+/**
+ * \file tatidatasetparser.dox
+ *
+ *  Documentation on the tool TATiDatasetParser
+ *
+ * Created on: Jan 11, 2019
+ *    Author: heber
+ */
+
+/** \page TATiDatasetParser TATiDatasetParser
+ *
+ * TATiDatasetParser is a dataset parser tool of TATi. It allows to read
+ * arbitrary datasets (that for example TATiDatasetParser can read) and prints
+ * them to screen.
+ *
+ *
+ * \section TATiDatasetParser-help Getting help
+ *
+ * Call
+ * \code{.sh}
+ * TATiDatasetParser --help
+ * \endcode
+ * to get a list of all available options.
+ *
+ * \section TATiDatasetParser-example Example call
+ *
+ * An example call that will perform a sampling run looks like this.
+ * \code{.sh}
+ * TATiDatasetParser \
+ *	--batch_data_files testset-foursquares.csv \
+ *	--batch_size 20 \
+ *	--seed 426
+ * \endcode
+ *
+ * This will parse the dataset in file \b testset-foursquares.csv and print
+ * a batch of 20 (\b batch_size) values of the shuffled dataset using a
+ * seed of 426 (\b seed).
+ *
+ * For more examples take a look at the userguide. Moreover, see the test
+ * cases contained in \b tests/regression/DatasetParser and subfolders.
+ *
+ * \date 2019-01-11
+ */

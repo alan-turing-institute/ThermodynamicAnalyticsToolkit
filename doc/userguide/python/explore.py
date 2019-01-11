@@ -1,9 +1,9 @@
-from TATi.models.model import model
+from TATi.model import Model as tati
 from TATi.exploration.explorer import Explorer
 
 import numpy as np
 
-FLAGS = model.setup_parameters(
+FLAGS = tati.setup_parameters(
     batch_data_files=["dataset-twoclusters.csv"],
     batch_size=500,
     diffusion_map_method="vanilla",
@@ -17,11 +17,11 @@ FLAGS = model.setup_parameters(
     step_width=1e-2,
     use_reweighting=False
 )
-nn = model(FLAGS)
+nn = tati(FLAGS)
 # init both sample and train right away
+nn.init_input_pipeline()
 nn.init_network(None, setup="sample")
 nn.init_network(None, setup="train")
-nn.init_input_pipeline()
 nn.reset_dataset()
 
 explorer = Explorer(parameters=FLAGS, max_legs=5, number_pruning=0)

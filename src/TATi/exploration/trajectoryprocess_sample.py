@@ -1,3 +1,23 @@
+#
+#    ThermodynamicAnalyticsToolkit - analyze loss manifolds of neural networks
+#    Copyright (C) 2018 The University of Edinburgh
+#    The TATi authors, see file AUTHORS, have asserted their moral rights.
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### 
+
 import logging
 import numpy as np
 import os
@@ -9,23 +29,26 @@ from TATi.exploration.get_executables import get_install_path
 
 
 class TrajectoryProcess_sample(TrajectoryProcess):
-    ''' This implements a job that runs a new leg of a given trajectory.
-
-    '''
+    """This implements a job that runs a new leg of a given trajectory."""
 
     INDEX_RUN_FILENAME = 0          # index of run_file in temp_filenames
     INDEX_TRAJECTORY_FILENAME = 1   # index of trajectory in temp_filenames
     INDEX_AVERAGES_FILENAME = 2     # index of averages in temp_filenames
 
     def __init__(self, data_id, network_model, FLAGS, temp_filenames, restore_model, save_model=None, continue_flag = True):
-        """ Initializes a run job.
+        """Initializes a run job.
 
-        :param data_id: id associated with data object
-        :param run_flags: FLAGS structure with run parameters
-        :param temp_filenames: temporary (unique) filenames for run_info, trajectory, and averages
-        :param restore_model: file of the model to restore from
-        :param save_model: file of the model to save last step to
-        :param continue_flag: flag allowing to override spawning of subsequent job
+        Args:
+          data_id: id associated with data object
+          network_model: network_model containing the neural network's whole state
+          FLAGS: FLAGS structure with run parameters
+          temp_filenames: temporary (unique) filenames for run_info, trajectory, and averages
+          restore_model: file of the model to restore from
+          save_model: file of the model to save last step to (Default value = None)
+          continue_flag: flag allowing to override spawning of subsequent job (Default value = True)
+
+        Returns:
+
         """
         super(TrajectoryProcess_sample, self).__init__(data_id, network_model)
         self.job_type = "sample"
@@ -38,11 +61,15 @@ class TrajectoryProcess_sample(TrajectoryProcess):
         self.continue_flag = continue_flag
 
     def run(self, _data):
-        """ This implements running a new leg of a given trajectory stored
+        """This implements running a new leg of a given trajectory stored
         in a data object.
 
-        :param _data: data object to use
-        :return: updated data object
+        Args:
+          _data: data object to use
+
+        Returns:
+          updated data object
+
         """
         # construct flags for TATiampler
         sampling_flags = self.get_options_from_flags(self.FLAGS,

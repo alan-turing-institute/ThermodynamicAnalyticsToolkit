@@ -1,0 +1,73 @@
+/*
+ *    Project: ThermodynamicAnalyticsToolkit
+ *    Description:  loss manifolds of neural networks
+ *    Copyright (C) 2018 The University of Edinburgh
+ *    The TATi authors, see file AUTHORS, have asserted their moral rights.
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU General Public License as published by
+ *    the Free Software Foundation, either version 3 of the License, or
+ *    (at your option) any later version.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU General Public License for more details.
+ *
+ *    You should have received a copy of the GNU General Public License
+ *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+/**
+ * \file documentation.dox
+ *
+ *  Details on the two different manners of providing documentation of the
+ * code using doxygen and asciidoc.
+ *
+ * Created on: Jan 11, 2019
+ *    Author: heber
+ */
+
+/** \page documentation Documentation of TATi
+ *
+ * There are three documents on TATi:
+ *
+ * - user guide
+ * - programmer's guide
+ * - API reference
+ *
+ * The first two are created from text files enhanced using "MarkDown" and
+ * processed by asciidoc. Markdown is a simplistic way of typesetting
+ * text, e.g., *bold* is printed bold. Note that there are several variants.
+ *
+ * The API reference is produced using doxygen from comments in each python
+ * file (associated with each class, function, and important variable) and
+ * a few special files, suffixed with \b .doc in the folder
+ * `src/documentation`.
+ *
+ * The documentation is generated through
+ * \code{.sh}
+ * make doc
+ * \endcode
+ * Of each documents there is a PDF version and an HTML version.
+ *
+ * \section documentation-asciidoc Asciidoc
+ *
+ * Asciidoc is called in `doc/userguide/Makefile.am` to create the PDF and
+ * HTML versions of the user and the programmer's guide.
+ *
+ * We check for the presence of `asciidoc` and `dblatex` through the command
+ * `AC_CHECK_PROGS` in \b configure.ac.
+ *
+ * \section documentation-doxygen Doxygen
+ *
+ * Doxygen is prepared using special directives in \b configure.ac, each
+ * beginning with `DX_...`. They switch in features (such as PDF and HTML
+ * output) and initialize doxygen with the proper output folder `$docdir`.
+ *
+ * Doxygen's central configuration file resides in `doc/Doxyfile` which has
+ * plenty of explaining comments per option.
+ *
+ * \date 2019-01-11
+ */

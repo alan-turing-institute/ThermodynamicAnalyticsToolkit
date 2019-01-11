@@ -6,14 +6,17 @@ SUBDIRS = \
     models \
     models/accumulators \
     models/input \
+    models/networks \
+    models/parameters \
+    models/trajectories \
     options \
-    parameters \
     runtime \
     samplers \
     tools
 
 TATI_PYTHON = \
 	common.py \
+	model.py \
 	simulation.py \
 	$(srcdir)/version.py \
 	__init__.py
