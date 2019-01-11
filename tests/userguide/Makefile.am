@@ -10,6 +10,7 @@ TESTSCRIPTS =
 TESTSCRIPTS += \
 	$(srcdir)/cmdline/testsuite-userguide-cmdline.at \
 	$(srcdir)/cmdline/testsuite-userguide-cmdline-analyse_averages.at \
+	$(srcdir)/cmdline/testsuite-userguide-cmdline-analyse_covariance.at \
 	$(srcdir)/cmdline/testsuite-userguide-cmdline-analyse_diffmap.at \
 	$(srcdir)/cmdline/testsuite-userguide-cmdline-analyse_free_energy.at \
 	$(srcdir)/cmdline/testsuite-userguide-cmdline-exploring.at \

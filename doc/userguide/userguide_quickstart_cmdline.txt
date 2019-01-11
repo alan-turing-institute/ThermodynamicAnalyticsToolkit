@@ -149,22 +149,14 @@ Otherwise we start from randomly initialized weights and non-zero biases.
 Analysing trajectories
 ^^^^^^^^^^^^^^^^^^^^^^
 
-Eventually, we now perform the diffusion map analysis on the obtained
-trajectories. The trajectory file written in the last step is simply a
-matrix of dimension (number of parameters) times (number of trajectory
-steps). The eigenvector to the largest (but one) eigenvalue will give
-the dominant direction in which the trajectory is moving.
+Eventually, we now want to analyse the obtained trajectories. The trajectory
+file written in the last step is simply a matrix of dimension (number of
+parameters) times (number of trajectory steps).
 
-[NOTE]
-====
-The largest eigenvalue is usually unity and its eigenvector is constant.
-Therefore, it is omitted. That's why indexing for the diffusion maps
-eigenvectors starts at 1 (omitted the constant eigenvector 0).
-====
-
-The analysis can perform three different tasks:
+The analysis can perform a number of different operations where we name a few:
 
 * Calculating averages.
+* Calculating covariances.
 * Calculating the diffusion map's largest eigenvalues and eigenvectors.
 * Calculating landmarks and level sets to obtain an approximation to the
 free energy.
@@ -180,10 +172,10 @@ Averages are calculated by specifying two options as follows:
 include::cmdline/analyse_average.sh[]
 ---------------
 
-This will load both the run file `run.csv` and the trajectory file
-`trajectory.csv`and average over them using only every 10th data point
-(_every_nth_) and also dropping the first steps below 100
-(_drop_burnin_). It will produce then ten averages (_steps_) for each of
+This will load both the run file +run.csv+ and the trajectory file
++trajectory.csv`+ and average over them using only every *10* th data point
+('every_nth') and also dropping the first steps below *100*
+('drop_burnin'). It will produce then ten averages ('steps') for each of
 energies in the run file and each of the parameters in the trajectories
 file (along with the variance) from the first non-dropped step till one
 of the ten end steps. These end steps are obtained by equidistantly
@@ -191,8 +183,8 @@ splitting up the whole step interval.
 
 Eventually, we have two output file. The averages over the run
 information such as total, kinetic, and potential energy in
-`average_run.csv`. Also, we have the averages over the degrees of
-freedom in `average_trajectories.csv`.
++average_run.csv+. Also, we have the averages over the degrees of
+freedom in +average_trajectories.csv+.
 
 [NOTE]
 ====
@@ -202,11 +194,34 @@ words, if large accuracy is required, the averages file (if it contains
 the value of interest) is a better place to look for.
 ====
 
+[[quickstart.cmdline.analysing.covariance]]
+Covariance
+++++++++++
+
+Computing the covariance is done as follows.
+
+[source,bash]
+---------------
+include::cmdline/analyse_covariance.sh[]
+---------------
+
+Here, we simply give the respective options to write the covariance matrix,
+its eigenvectors and eigenvalzes to CSV files. We drop the first 100 steps
+and take only every 10th step into account.
+
+The covariance eigenvectors give use the directions of strong and weak
+change while the eigenvalues give their magnitude. This correlates with strong
+and weak gradients and therefore with general directions of fast and slow
+exploration.
+
 [[quickstart.cmdline.analysing.diffusion_map]]
 Diffusion map
 +++++++++++++
 
-The eigenvalues and eigenvectors can be written as well to two output
+See section <<quickstart.simulation.analysis.diffusion_map>> for some more
+information on diffusion maps.
+
+its eigenvalues and eigenvectors can be written as well to two output
 files.
 
 [source,bash]
@@ -223,90 +238,14 @@ eigenvector components in one direction and the trajectory steps in the
 other. Additionally, it contains the parameters at the steps and also
 the loss and the kernel matrix entry.
 
-Note that again the all values up till step 100 are dropped and only
+Note that again the all values up till step *100* are dropped and only
 every 10th trajectory point is considered afterwards.
 
 There are two methods available. Here, we have used the simpler (and
-less accurate) (plain old) vanilla method. The other is called TMDMap.
+less accurate) (plain old) 'vanilla' method. The other is called 'TMDMap'.
 
-If you have installed the _pydiffmap_ python package, this mal also be
-specified as diffusion map method. It has the benefit of an interal
+If you have installed the 'pydiffmap' python package, this may also be
+specified as diffusion map method. It has the benefit of an internal
 optimal parameter choice. Hence, it should behave more robustly than the
-other two methods. TMDMap is different only in reweighting tre samples
+other two methods. 'TMDMap' is different only in re-weighting the samples
 according to the specific temperature.
-
-[[quickstart.cmdline.analysing.free_energy]]
-Free energy
-+++++++++++
-
-Last but not least, the free energy is calculated.
-
-[source,bash]
----------------
-include::cmdline/analyse_free_energy.sh[]
----------------
-
-This will extract landmark points from the trajectory. Basically, the
-loss manifold is discretized using these landmarks where all
-configurations close to a landmark step are combined onto a so-called
-level-set, i.e. all these configurations have a similar loss function
-value. By knowing the number of configurations in each level set and
-knowing the level sets loss value, an approximation of the free energy
-is computed.
-
-This is computed for every step of the trajectory and it is insightful
-to look at the free energy over the course of the trajectory represented
-by the first eigenvalue. If in this graph clear minima with maxima in
-between can be seen, then there are enthalpic barriers between two local
-minima. If on the other hand there are flat areas, then we found
-entropic barriers.
-
-Both these types of barriers obstruct trajectories and keep the
-optimization trapped in so-called meta-stable states. Each type of
-barrier requires a different type of remedy to overcome.
-
-[[quickstart.cmdline.exploration]]
-Exploring the loss manifold
-+++++++++++++++++++++++++++
-
-Eventually, we are not interested in obtaining trajectories on the loss
-manifold. Instead we would like to find the global minima. Or at least
-have a good idea about whether the minimas we have found so far are
-reasonable.
-
-To this end, a command-line tool called `TATiExplorer` is provided. The
-idea is to make use of the diffusion map with its diffusion distance to
-assess what part of the loss manifold has been explored already.
-Moreover, we use multiple trajectories that are spawned from a specific
-number of places that are maximally separate with respect to their
-diffusion distance. This will ensure that we cover the most ground
-possible.
-
-In the end, the eigenvectors obtained through a run using the
-`TATiExplorer` will return the dominant diffusion directions and
-therefore those pointing in the direction along the minima, i.e. where
-the sampling usually gets stuck and remains for a while, hence diffusion
-is slow.
-
-[source,bash]
----------------
-include::cmdline/exploring.sh[]
----------------
-
-In the example we call the explorer utility in much the same way as we
-have called the sampler. There are some additional options that give the
-number of eigenvalues to calculate and which diffusion map method to
-use. Note that `max_steps` now gives the number of steps of a single
-leg. Further down you find what a lag actually is.
-
-Furthermore, there are two options unique to the explorer. This is
-`max_legs` which gives the maximum number of legs to look at. Each leg
-goes over max_steps. After that a diffusion map analysis is performed
-that checks whether the eigenvalues have converged already. If yes, the
-trajectory is ended, if not we continue with a new leg (of max_steps
-steps). If no convergence should occur, max_legs gives the maximum
-number of legs after which the trajectory is terminated regardlessly.
-
-Finally, we run multiple trajectories in parallel from starting points
-that are maximally apart from each other in the sense of the diffusion
-distances. This is controlled by `number_of_parallel_trajectories`.
