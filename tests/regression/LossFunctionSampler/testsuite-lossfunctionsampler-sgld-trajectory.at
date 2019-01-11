@@ -34,10 +34,12 @@ AT_CHECK([../../../TATiLossFunctionSampler \
 
 
 # select only the "loss" column 
-cat TATiLossFunctionSampler-output-SGLD.csv | gawk -F"," 'BEGIN { column_nr=-1 } { if (NR==1) { for(i=1;i<=NF;++i) { if (match($i,"loss") != 0) { column_nr=i } } } else { print $column_nr+0 }  }' > LFS-losses.txt
+cat TATiLossFunctionSampler-output-SGLD.csv | $awk -F"," 'BEGIN { column_nr=-1 } { if (NR==1) { for(i=1;i<=NF;++i) { if (match($i,"loss") != 0) { column_nr=i } } } else { print $column_nr+0 }  }' > LFS-losses.txt
 
 # now compare
-AT_CHECK([diff LFS-losses.txt ${abs_top_srcdir}/tests/regression/LossFunctionSampler/post/trajectory-losses-SGLD.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff \
+    --general_threshold $threshold absolute \
+    -- LFS-losses.txt ${abs_top_srcdir}/tests/regression/LossFunctionSampler/post/trajectory-losses-SGLD.csv], 0, [ignore], [ignore])
 
 
 AT_CLEANUP
