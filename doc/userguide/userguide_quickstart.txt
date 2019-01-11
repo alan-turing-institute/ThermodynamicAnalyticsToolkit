@@ -31,18 +31,18 @@ Each is connected to its its own thread pool. Both the command-line and
 the Python interface let you pick the number of threads per pool. If 0
 is stated (default), then the number of threads is picked automatically.
 
-In general, ``inter_ops_threads''refers to multiple cores performing
+In general, 'inter_ops_threads' refers to multiple cores performing
 matrix multiplication or reduction operations together.
-``intra_ops_threads'' seems to be connected to executing multiple nodes
+'intra_ops_threads' seems to be connected to executing multiple nodes
 in parallel that are independent of each other but this is guessing at
 the moment.
 
 [WARNING]
 ====
-When setting `inter_ops_threads` _unequal_ to 1, then subsequent runs
+When setting 'inter_ops_threads' +unequal+ to 1, then subsequent runs
 may produce different results, i.e. results are no longer strictly
 reproducible. According to Tensorflow this is because reduction
-operations such as `reduce_sum` run non-deterministically on multiple
+operations such as `reduce_sum()` run non-deterministically on multiple
 cores for sake of speed.
 ====
 
@@ -50,5 +50,14 @@ cores for sake of speed.
 Conclusion
 ~~~~~~~~~~
 
-This has been the very quick introduction into samping done on neural
-network's loss function manifolds. You have to take it from here.
+This has been the quickstart introduction.
+
+In the following reference section you may find the following pieces
+interesting after having gone through this quickstart tutorial.
+
+- <<reference.examples.harmonic_oscillator>> for a light-weight example
+  probability distribution function whose properties are well understood.
+- <<reference.implementing_sampler>> explaining how to implement your own
+  sampler using the `Simulation` module as rapid-prototyping framework.
+- <<reference.simulation>> giving detailed examples on each function in
+  `Simulations`'s interface'.
