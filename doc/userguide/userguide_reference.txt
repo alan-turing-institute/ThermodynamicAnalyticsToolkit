@@ -157,7 +157,7 @@ points.
 [NOTE]
 ====
 For anything but trivial networks the computational cost quickly becomes
-prohibitively large. However, you may use `fix_parameter` to lower the
+prohibitively large. However, we may use `fix_parameter` to lower the
 computational cost by choosing a certain subsets of weights and biases to
 sample.
 ====
@@ -257,7 +257,7 @@ reproducibility. The former is taken care of by TATi itself. We make sure to
 set the random number seeds deterministically to ensure that values are
 unchanged even if the graph is slighlty changed.
 
-If you find that this should not be the case, please file an issue, see
+If we find that this should not be the case, please file an issue, see
 <<introduction.feedback>>.
 
 [[reference.performance]]
@@ -288,12 +288,12 @@ If the dataset is small enough to completely fit in memory, TATi will uses
 Tensorflow's _caching_ to speed up the operations. This will become noticeable
 after the first epoch, i.e. when all batches of the dataset have been processed
 exactly once. Caching delivers at least a tenfold increase in learning speed,
-depending on your hard drive setup.
+depending on wer hard drive setup.
 
 [NOTE]
 .In memory pipeline
 ======
-If your dataset fits in memory, it is advised to use the `InMemoryPipeline`
+If wer dataset fits in memory, it is advised to use the `InMemoryPipeline`
 by setting the appropriate options in `tati` instantiation, see
 <<quickstart.simulation>>.
 
@@ -373,16 +373,17 @@ sampling. This can be done as follows:
 include::python/fix_parameter.py[]
 ---------------
 
-Note that you need to initialize the network without adding training or
-sampling methods, i.e. `setup` is None. Then, we fix the parameter
-where we give its name in full tensorflow parlance. Afterwards, we may
-add sample or training nodes and start training/sampling.
+Note that we fix the parameter where we give its name in full tensorflow
+namescope: "layer1" for the network layer, "weights" for the weights ("biases"
+alternatively) and "Variable:0" is fixed (as it is the only one). This is
+followed by a comma-separated list of values, one for each component.
 
 ====
 [NOTE]
 
 Single values cannot be frozen but only entire weight matrices or bias
-vectors per layer at the moment.
+vectors per layer at the moment. As each component has to be listed, at the
+moment this is not suitable for large vectors.
 ====
 
 [[reference.miscellaneous.progress_bar]]

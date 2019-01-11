@@ -2,27 +2,26 @@
 Using module simulation
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-As promised before, the first contact point in this quickstart tutorial with
-TATi is the `simulation` module. It has been designed explicitly for
+The `simulation` module has been designed explicitly for
 ease-of-use and to contain any functionality required for the sampling approach.
-However, it can to training as well as you will see. Typically, everything is
+However, it can do training as well as we will see. Typically, everything is
 achieved through two or three commands: One to setup TATi by handing it a dash
 of options, then calling a function to `fit()` or `sample()`. In the very end
-of this quickstart you will learn how to implement your first sampler using this
+of this quickstart we will learn how to implement our first sampler using this
 interface.
 
 For a more extensive description of the simulation module, we refer to its
 link:#reference.simulation[reference section].
 
-If you have installed the package in the folder `/foo`, i.e. we have
-a folder `TATi` with a file `simulation.py` residing in there, then you
+If we have installed the TATi package in the folder `/foo`, i.e. we have
+a folder `TATi` with a file `simulation.py` residing in there, then we
 probably need to add it to the `PYTHONPATH` as follows
 
 ---------------
 PYTHONPATH=/foo python3
 ---------------
 
-In this shell, you may import the sampling part of the package as
+In this shell, we may import the sampling part of the package as
 follows
 
 ---------------
@@ -35,19 +34,19 @@ that hides all the complexity of setting up of input pipelines and networks.
 Accessing the loss function, gradients and alike or training and sampling can
 be done in just a few keystrokes.
 
-In order to make your own python scripts executable and know about the
+In order to make our own python scripts executable and know about the
 correct (possibly non-standard) path to ThermodynamicAnalyticsToolkit, place
-the following two lines at the veryg beginning of your script:
+the following two lines at the very beginning of the script:
 
 ---------------
 import sys
 sys.path.insert(1,"<path_to_TATi>/lib/python3.5/site-packages/")
 ---------------
 
-where +<path_to_TATi>+ needs to be replaced by your specific
-installation path and +python3.5+ needs to be replaced if you are using a
+where +<path_to_TATi>+ needs to be replaced by our specific
+installation path and +python3.5+ needs to be replaced if we are using a
 different python version. However, for the examples in this quickstart tutorial
-it is not necessary if you use +PYTHONPATH+.
+it is not necessary if we use +PYTHONPATH+.
 
 [[quickstart.simulation.notation]]
 Notation
@@ -98,7 +97,7 @@ NOTE: All of the examples below can also be found in the folders
 Help on Options
 +++++++++++++++
 
-`tati` has quite a number of options that control its behavior. You can
+`tati` has quite a number of options that control its behavior. we can
 request help to a specific option.
 Let us inspect the help for `batch_data_files`:
 
@@ -114,7 +113,7 @@ Default    : []
 
 This will print a description, give the default value and expected type.
 
-Moreover, in case you have forgotten the name of one of the options.
+Moreover, in case we have forgotten the name of one of the options.
 
 [source,python]
 ---------------
@@ -135,9 +134,9 @@ In the following we will first be creating a dataset to work on. This example
 code will be the most extensive one. All following ones are rather short and
 straight-forward.
 
-[[quickstart.simulation.writing_data]]
+[[quickstart.simulation.setup.writing_data]]
 Preparing a dataset
-^^^^^^^^^^^^^^^^^^^
++++++++++++++++++++
 
 Therefore, let us prepare the dataset, see the Figure link:#quickstart.dataset[Dataset],
 for our following experiments.
@@ -152,8 +151,8 @@ TATi provides a few simple dataset generators contained in the class
 
 One option therefore is to use the TATiDatasetWriter that provides access to
 `ClassificationDatasets`, see link:#quickstart.cmdline.writing_dataset[Writing a dataset].
-However, we can do the same using python as well. This should give you an idea
-that you are not constrained to the `simulation` part of the Python interface,
+However, we can do the same using python as well. This should give us an idea
+that we are not constrained to the `simulation` part of the Python interface,
 see the reference on the general Python interface where we go through the
 same examples without importing `simulation`.
 
@@ -178,7 +177,7 @@ The class `ClassificationDatasets` mimicks the dataset examples that can also
 be found on the link:https://playground.tensorflow.org/[Tensorflow playground].
 
 Afterwards, we write the dataset to a simple CSV file with columns "x1", "x2",
-and "label".
+and "label1" using a helper function contained in the `TATi.common` module.
 
 [CAUTION]
 The file `dataset-twoclusters.csv` is used in the following examples, so keep
@@ -207,7 +206,11 @@ In the above example, we specify a neural network of two hidden layers,
 each having 8 nodes. We use the "rectified linear" activation function
 for these nodes. The output nodes are activated by a linear function.
 
-Let us briefly highlight the essential options:
+The network's weights are initialized randomly in the interval [-0.5,0.5] and
+the biases are set to 0.1 (small, non-zero values).
+
+Let us briefly highlight the essential options (a full and up-to-date list
+is given in the API reference in the class `PythonOptions`):
 
 - `input_columns`: This option allows to add an additional layer after the
 input that selects a subset of the input nodes and additionally modifies them,
@@ -238,28 +241,29 @@ for individual nodes or between hidden layers.
 
 [NOTE]
 ====
-Note that (re-)creating the `tati_model` instance model will always reset the
-computational graph of tensorflow in case you need to add nodes.
+Note that (re-)creating the `tati` instance  will always reset the
+computational graph of tensorflow in case we need to add nodes.
 ====
 
 [[quickstart.simulation.simple_evaluation]]
 Evaluating loss and gradients
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Having created the dataset and explained how the network is set up, we are good
-to go and the remaining examples are easy and straight-forward.
+Having created the dataset and explained how the network is set up, we know
+see how to evaluate the loss and the gradients.
 
 The main idea of the `simulation` module is to be used as a simplified
 interface to access the loss and the gradients of the neural network without
 having to know about the internal of the neural network. In other words, we
 want to treat it as an abstract high-dimensional function, depending
-implicitly on the weights and explicitly on the dataset. Moreover, we have
+implicitly on the weights and explicitly on the dataset. To this end, the
+weights and biases are represented as one linearized vector. Moreover, we have
 another abstract high-dimensional function, the loss that depends explicitly
 on the weights and implicitly on the dataset, whose derivative (the gradients
 with respect to the parameters) is available as a numpy array, see also the
 section link:#quickstart.simulation.notation[Notation].
 
-See the following example which sets up a simple fully-connected hidden network
+In the following example we set up a simple fully-connected hidden network
 and evaluates loss and then the associated gradients.
 
 [source,python]
@@ -267,10 +271,10 @@ and evaluates loss and then the associated gradients.
 include::simulation/complex/eval_loss_gradient.py[]
 ---------------
 
-All we need to do is set some parameters -- here, 'batch_data_files' sets the
-dataset file to parse, batch size of 10 and we use a linear output activation
-function -- assign all network parameters to zero and then evaluate first the
-loss and then the gradients of the network.
+Again, we set up the network as before, here it is a single-layer perceptron
+as the default value for `hidden_dimension` is 0. Next, we evaluate the loss
+using `nn.loss()` and the gradients using `nn.gradients()`, returning a vector
+with the gradient per degree of freedom of the networl.
 
 [NOTE]
 Under the hood it is a bit more complicated: loss and gradients are inherently
@@ -286,11 +290,11 @@ that calling either `loss()` first and then `gradients()` or the other way
 round yields the same values connected to the same dataset batch.
 In essence, just don't worry about it!
 
-As you see in the above example, `tati` forms the general interface class that
+As we see in the above example, `tati` forms the general interface class that
 contains the network along with the dataset and everything in its internal
 state.
 
-This is basically all the access you need in order to use your own optimization,
+This is basically all the access we need in order to use our own optimization,
 sampling, or exploration methods in the context of neural networks in a
 high-level, abstract way.
 
@@ -308,8 +312,12 @@ include::simulation/complex/optimize.py[]
 Again all options are set in the init call to the interface. These options
 control how the optimization is performed, what kind of network is created,
 how often values are stored, and so on.
+Next, we call `nn.fit()` to perform the actual training for the chosen number
+of training steps ('max_steps'). We obtain a single return structure within
+which we find three `pandas` dataframes: run info, trajectory, and averages.
+Of each we print the last ten values.
 
-Let us quickly go through each of the parameters:
+Let us quickly go through each of the new parameters:
 
 * 'batch_size'
 +
@@ -333,27 +341,17 @@ defines the method to use for training. Here, we use Gradient Descent
 (in case 'batch_size' is smaller than dimension, then we actually have
 Stochastic Gradient Descent).
 
-* 'output_activation'
-+
-defines the activation function of all output nodes, here it is linear.
-
 * 'seed'
 +
 sets the seed of the random number generator. We will still have full
 randomness but in a deterministic manner, i.e. calling the same
 procedure again will bring up the exactly same values.
 
-In our case, the default option values are such that the network we use
-looks exactly as in the Figure link:#quickstart.perceptron[Network], namely
-a single-layer perceptron whose number of input and output nodes are completely
-fixed by the dataset. See link:#reference.simulation.setup.setting_up_network[Setting up the network]
-for more details on how to specify the network topology.
-
-TIP: In case you need to change these options elsewhere in your python code,
+TIP: In case we need to change these options elsewhere in our python code,
 use `set_options()`.
 
 WARNING: `set_options()` may need to reinitialize certain parts of `tati` s
-internal state depending on what options you choose to reset. Keep in mind
+internal state depending on what options we choose to reset. Keep in mind
 that modifying the network will reinitialize all its parameters and other
 possible side-effects. See `simulation._affected_map` in
 +src/TATi/simulation.py+ for an up-to-date list of what options affects what
@@ -380,8 +378,9 @@ a structure containing runtime info, trajectory, and averages as a pandas
 In the following section on link:#quickstart.simulation.sampling[sampling] we will
 explain what each of these three dataframes contains exactly.
 
-TIP: You want more output of what is actually going on in each training step?
-Set `verbose=1` or even `verbose=2` in the options when constructing `tati()`.
+TIP: In case more output of what is actually going on in each training step is
+needed, set `verbose=1` or even `verbose=2` in the options when constructing
+`tati()`.
 
 Let us have a quick glance at the decrease of the loss function over the steps
 by using `matplotlib`. In other words, let us look at how effective the training
@@ -393,17 +392,20 @@ has been.
 include::python/plot_optimize.py[]
 ---------------
 
+The loss per step is contained in both the run info and the trajectory dataframe
+in the column 'loss'.
+
 The graph should look similar to the one obtained with `pgfplots` here (see
 https://sourceforge.net/pgfplots).
 
 .Loss history: Behavior of the loss over the optimization run
 image::pictures/optimization-step_loss.png[{basebackend@docbook:scaledwidth="60%":width=500}]
 
-As you see the loss has decreased quite quickly down to 1e-3. Go and have a
+As we see the loss has decreased quite quickly down to 1e-3. Go and have a
 look at the other columns such as accuracy. Or try to visualize the change
 in the parameters (weights and biases) in the trajectories dataframe. See
 link:https://pandas.pydata.org/pandas-docs/stable/10min.html[10 Minutes to pandas]
-if you are unfamiliar with the `pandas` module, yet.
+if we are unfamiliar with the `pandas` module, yet.
 
 Obviously, we did not use a different dataset set for testing the effectiveness
 of the training which should commonly be done. This way we cannot check whether
@@ -414,10 +416,10 @@ Nonetheless, we show how to supply a different dataset and evaluate loss and
 accuracy on it.
 
 [[quickstart.simulation.sampling.supply_dataset]]
-Provide your own dataset
+Provide our own dataset
 ++++++++++++++++++++++++
 
-You can directly supply your own dataset, e.g., from a numpy array residing in
+We can directly supply our own dataset, e.g., from a numpy array residing in
 memory. See the following example where we do not generate the data but parse
 them from a CSV file instead of using the pandas module.
 
@@ -427,7 +429,7 @@ include::simulation/complex/supply_dataset.py[]
 ---------------
 
 The major difference is that `batch_data_files` in `tati()` is now empty and
-instead we simply later assign `dataset` a numpy array to use. Note that we
+instead we simply later assign `nn.dataset` a numpy array to use. Note that we
 could also have supplied it directly with the filename +dataset-twoclusters.csv+,
 i.e. `nn.dataset = "dataset-twoclusters.csv"`.
 In this example we have parsed the same file as the in the previous section
@@ -469,7 +471,10 @@ first guess to find such states, or at least to get close to them. In molecular
 dynamics, it is common to run sampling during an "equilibration period" in
 order to let the system relax to its equilibrium. During this equilibration
 time, the generated samples are not used for computing averages, as they will
-introduce large statistical error.
+introduce large statistical error. footnote:[Keep in mind that we sample the
+probability distribution function and not the loss function directly. Therefore,
+those initial (very high) loss values will have a probability that is not true
+to the Gibbs measure.]
 ================
 
 However, let us first ignore this good practice for a moment and simply look
@@ -511,7 +516,7 @@ not have momentum, hence there will be no average kinetic energy.
 Using a prior
 +++++++++++++
 
-You may add a prior to the sampling. At the current state two kinds of
+We may add a prior to the sampling. At the current state two kinds of
 priors are available: wall-repelling and tethering.
 
 The options 'prior_upper_boundary' and 'prior_lower_boundary' give the admitted
@@ -519,9 +524,8 @@ interval per parameter. Within a relative distance of 0.01 (with respect to
 length of domain and only in that small region next to the specified boundary)
 an additional force acts upon the particles to drives them back into the desired
 domain. Its magnitude increases with distance to the covered inside the boundary
-region. The distance is taken to the power of 'prior_power'. The force
+region. The distance is taken to the poour of 'prior_power'. The force
 is scaled by 'prior_factor'.
-
 
 In detail, the prior consists of an extra force added to the time integration
 within each sampler. We compute its magnitude as
@@ -540,7 +544,7 @@ virtue of the Heaviside function latexmath:[\Theta()].
 Note that the direction of the force is such that it always points back into
 the desired domain.
 
-If upper and lower boundary coincide, then we have the case of
+If upper and loour boundary coincide, then we have the case of
 tethering, where all parameters are pulled inward to the same point.
 
 At the moment applying prior on just a subset of particles is not supported.
@@ -572,11 +576,11 @@ Hence, we look at such a network by using 'input_columns' to only use input
 column "x1" although the dataset contains both "x1" and "x2".
 
 Moreover, we will add a hidden layer with a single node and thus obtain a
-network as depicted in Figure link:#quickstart.network[Permutation symmetry].
+network as depicted in Figure link:#quickstart.network[Network].
 We add this hidden node to make the loss manifold a little bit more
 interesting.
 
-Additionally, we fix the biases to *0.* for both the hidden layer bias and the
+Additionally, we fix the biases to *0* for both the hidden layer bias and the
 output bias. Effectively, we have two degrees of freedom left. This is not
 strictly necessary but allows to plot all degrees of freedom at once.
 
@@ -591,8 +595,10 @@ NOTE: Setting 'every_nth' large enough is essential when playing around with
 small networks and datsets as otherwise time spent writing files and adding
 values to arrays will dominate the actual neural network computations by far.
 
-As you see, some more options have popped up in the `__init__()` of the
-simulation interface: 'hidden_dimension' which is a list of the number of
+As we see, some more options have popped up in the `__init__()` of the
+simulation interface: 'fix_parameters' is explained in section
+<<reference.miscellaneous.parameter_freeze>>,
+'hidden_dimension' which is a list of the number of
 hidden nodes per layer, 'input_columns' which contains a list of strings,
 each giving the name of an input dimension (indexing starts at 1), and all
 sorts of 'prior_...' that define a wall-repelling prior, again see
@@ -600,9 +606,14 @@ sorts of 'prior_...' that define a wall-repelling prior, again see
 within the interval of [-2,2]. Last but not least, 'trajectory_file' writes
 all parameters per 'every_nth' step to this file.
 
-Moreover, we needed to change the number of steps, set a sampling step width
+Then, we call `nn.fit()` to perform the training as before.
+
+Next, we need to change the number of steps, set a sampling step width
 and add the sampler (which might depend on additional parameters, see <<reference.samplers>>
-).
+). This is done by calling `nn.set_options()`.
+
+Having set the stage for the sampling, we commence it by `nn.sample()`.
+
 At the very end we again obtain the data structure containing the `pandas`
 DataFrame containing runtime information, trajectory, and averages as its
 member variables.
@@ -623,22 +634,22 @@ First of all, take note that the prior (given 'prior_force' is strong enough
 with respect to the chosen 'inverse_temperature') indeed retains both parameters
 within the interval [-2,2] as requested.
 
-Compare this to the Figure link:#quickstart.landscape.loss[Loss manifold]. You
+Compare this to the Figure link:#quickstart.landscape.loss[Loss manifold]. we
 will notice that this trajectory (due to the large enough temperature) has also
 jumped over the ridge around the origin.
 
 NOTE: To bound the runtime of this example, we have set the parameters such that
 we obtain a good example of a barrier-jumping trajectory. The original values
-from the introduction are obtained when you reduce the 'inverse_temperature'
-to *4.* and increase 'max_steps' to *20000* (or even more) if you do not mind
+from the introduction are obtained when we reduce the 'inverse_temperature'
+to *4.* and increase 'max_steps' to *20000* (or even more) if we do not mind
 waiting a minute or two for the sampling to execute.
 
 [[quickstart.simulation.analysis]]
 Analysing trajectories
 ^^^^^^^^^^^^^^^^^^^^^^
 
-Analysis involves parsing in run and trajectory files that you would write
-through optimization and sampling runs. Naturally, you could also perform this
+Analysis involves parsing in run and trajectory files that we would write
+through optimization and sampling runs. Naturally, we could also perform this
 on the `pandas` dataframes directly. However, for completeness we will read
 from files in the examples of this section.
 
@@ -710,7 +721,7 @@ trajectories, e.g. using GradientDescent, to find a local minima.
 
 Have a look at the following example.
 
-WARNING: This example code is very much involved. Do not worry if you do not
+WARNING: This example code is very much involved. Do not worry if we do not
 understand what is going on right away. This may become a lot simpler in future
 versions of TATi.
 
@@ -738,10 +749,10 @@ Conclusion
 
 This has been the quickstart introduction to the `simulation` interface.
 
-If you want to take this further, we recommend reading how to implement a
+If we want to take this further, we recommend reading how to implement a
 link:#reference.implementing_sampler[GLA2 sampler] using this module.
 
-If you still want to take it further, then you need to look at the
+If we still want to take it further, then we need to look at the
 ifdef::basebackend-docbook[ programmer's guide ]
 ifdef::basebackend-html[ link:programmersguide.html[programmer's guide] ]
-that should accompany your installation.
+that should accompany our installation.

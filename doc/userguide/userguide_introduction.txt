@@ -9,7 +9,7 @@ installation folder.
 
 * User guide (this document: +userguide.html+ or +userguide.pdf+)
 * Programmer's guide (see +programmersguide.html+ or +programmersguide.pdf+)
-* Reference documentation (see +html/index.html+)
+* Reference documentation (see +thermodynamicanalyticstoolkit-API-reference.pdf+ or +html/index.html+)
 * Roadmap (see +roadmap.html+ or +roadmap.pdf+)
 
 [[introduction.needtoknow]]
@@ -25,64 +25,49 @@ rough idea of what optimization is and that gradients with respect to
 the chosen loss function can be obtained through so-called
 backpropagation.
 
-If you are _not_ familiar with the above terminology, then please first
-read the section on link:#reference.concepts[Concepts.]
+If you are _not_ familiar with the above terminology, then we recommend an
+introductory book on neural networks such as <<Bishop2006>>.
 
 [[introduction.whatis]]
 What is ThermodynamicAnalyticsToolkit?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Typically, optimization in neural network training employs methods such
-as Gradient Descent, Stochastic Gradient Descent or derived methods
-using momentum such as ADAM and so on. The loss function itself may be
-convex, however, the loss manifold given a large dataset is not convex
-in general. Hence, these methods will only find local minima. Naturally,
-multiple random starting positions are used and the winner takes it all.
-However, as there exponentially many minima this way we will never be able
-to glean any knowledge on how they are situated with respect to one another.
-We will never know how the network's topology, the number of nodes and so on
-influences it.
-Moreover, the eventually trained set of parameters of the neural network
-is never optimal. Not even when taking the generalization error into account.
-However, some simplicity must be hidden in those loss manifolds of neural
-networks: given enough data and processing power, they work marvelously even
-in spite of all these shortcomings and one may wonder why.
+// Technical description
+The Thermodynamic Analytics Toolkit allows to perform thermodynamic sampling
+and analysis of large neural network loss manifolds. It extends
+ link:https://www.tensorflow.org/[Tensorflow] by several samplers, by a framework
+to rapidly prototype new samplers, by the capability to sample several networks
+in parallel and provides tools for analysis and visualization of loss
+manifolds, see Figure <<introduction.figure.tools_module>> for an overview.
+We rely  on the Python programming language as only for that Tensorflow's
+interface has an API stability promise.
 
-The essential idea behind this program package is that we use sampling
-instead of optimization: we are not interested in the local minimum
-closest to some random initial configuration and be done. Instead we aim
-at finding all of the minima and all possible barriers in between by
-treating the loss function as a high-dimensional potential and the
-weights and biases of the neural network as one-dimensional particles in
-a stochastic differential equation, namely Langevin Dynamics.
+There are two approaches to using TATi:
+On the one hand, it is a toolkit consisting of command-line programs such as
+TATiOptimizer, TATiSampler, TATiLossFunctionSampler, and TATiAnalyzer that,
+when fed a dataset and given the network specifics, directly allow to optimize
+and sample the network parameters and analyze the exlored loss manifold, see
+Figure <<introduction.figure.tools_module>>.
 
-There is not need to panic: You do not need to know anything about these
-kinds of equations when using the program. However, rest assured that
-all statistical properties derived using trajectories obtained through
-these equations are meaningful.
-
-The hope is to elucidate the marvel behind the wondrous performance of
-neural networks, maybe to obtain even better parametrizations or obtain
-the same in cheaper ways, and also to gather means of optimizing the
-neural network's topology given a specific dataset to train.
-
-In essence, this program suite provides samplers using
-https://www.tensorflow.org/[TensorFlow] and analysis tools to extract
-specific statistical quantities from the computed particle trajectories.
-
+[[introduction.figure.tools_module]]
 .Architecture of TATi's tools
 image::pictures/tati_tools-architecture.png[{basebackend@docbook:scaledwidth="60%":width=500}]
 
-Moreover, it can also be used as a stand-alone Python module that allows
-to easily make use of present sampling Python code within the context of
-neural networks.
+On the other hand, TATi can be readily used inside Python programs by using its
+modules: +simulation+, +model+, +analysis+.
+The +simulation+ module, see Figure <<introduction.figure.simulation_module>>,
+contains a very easy-to-use, high-level interface to neural network modelling,
+granting full access to the network's parameters, its gradients, its loss and all
+other quantities of interest. It is especially practical for rapid prototyping.
+The module +model+ is its low-level counterpart and allows for more efficient
+implementations.
 
+[[introduction.figure.simulation_module]]
 .Architecture of the *simulation* module
 image::pictures/tati_simulations-architecture.png[{basebackend@docbook:scaledwidth="60%":width=500}]
 
-It can be used both as python module and as stand-alone command-line
-tools. The former is called the *simulation* module and will probably be your
-first contact point with TATi.
+Beginning with section <<quickstart>> we give an introduction to either way of
+using TATi.
 
 [[introduction.installation]]
 Installation
@@ -101,10 +86,12 @@ the moment other operation systems are not supported but may still work.
 
 It has the following non-trivial dependencies:
 
-* link:https://www.tensorflow.org/[TensorFlow]: version 1.4.1 till currently 1.6 supported
+* link:https://www.tensorflow.org/[TensorFlow]: version 1.4.1 till currently
+1.10 supported
 * link:https://www.numpy.org/[Numpy]:
 * link:https://pandas.pydata.org/[Pandas]
 * link:https://scikit-learn.org/[sklearn]
+* link:http://matplotlib.org/[matplotlib]
 * link:https://pypi.org/project/acor/[acor]
 
 Note that most of these packages can be easily installed using either
@@ -120,7 +107,7 @@ or via *pip3*, i.e.
 pip3 install numpy
 ---------------
 
-For *acor* a few extra changes are required (it cannot be installed via anaconda).
+For *acor* a few extra changes are required.
 ````
 pip3 install acor
 sed -i -e "s#import _acor#import acor._acor as _acor#" <install path>/acor/acor.py
@@ -134,13 +121,12 @@ may be ignored if this functionality is not required.
 Moreover, the following packages are not ultimately required but
 examples or tests may depend on them:
 
-* link:http://matplotlib.org/[matplotlib]
 * link:https://www.sqlite.org[sqlite3]
 * gawk
 
 The documentation is written in link:https://asciidoc.org/[AsciiDoc] and
-requires a suitable package to compile to HTML or create a PDF, e.g., using
-dblatex
+link:http://www.doxygen.nl/[doxygen] and requires a suitable package to compile
+to HTML or create a PDF, e.g., using dblatex
 
 * doxygen
 * asciidoc
@@ -149,8 +135,8 @@ dblatex
 Finally, for the diffusion map analysis we recommend using the pydiffmap
 package, see https://github.com/DiffusionMapsAcademics/pyDiffMap.
 
-In our setting what typically worked best was to use link:https://anaconda.org/[anaconda]
-in the following manner:
+In our setting what typically worked best was to use
+link:https://anaconda.org/[anaconda] in the following manner:
 
 ---------------
 conda create -n tensorflow python=3.5 -y
@@ -165,7 +151,7 @@ In case your machine has GPU hardware for tensorflow, replace
 Note that on systems with typical core i7 architecture recompiling
 tensorflow from source provided only very small runtime gains in our
 tests which in most cases do not support the extra effort. You may find
-it necessary for tackling really large networks and datasets and
+it necessary for tackling really large networks (>1e6 dofs) and datasets and
 especially if you desire using Intel's MKL library for the CPU-based
 linear algebra computations.
 
@@ -210,7 +196,7 @@ print(tati.__version__)
 Installation procedure
 ^^^^^^^^^^^^^^^^^^^^^^
 
-Installation comes in two flavours: Either a tarball or a cloned repository.
+Installation comes in two flavors: Either a tarball or a cloned repository.
 
 The tarball releases are recommended if you only plan to use TATi and do not
 intend modifying its code. If, however, you need to use a development branch,
@@ -222,8 +208,8 @@ problem. If not, please refer to the text `INSTALL` file that is included
 in the tarball.
 
 [NOTE]
-Only the tarball contains a precompiled PDF. The cloned repository
-contains only the HTML pages.
+Only the tarball contains precompiled PDFs of the userguides. The cloned
+repository contains only the HTML pages.
 
 [[introduction.installation.procedure.tarball]]
 ==== From Tarball
@@ -313,6 +299,18 @@ The extra argument *-j4* instructs +make+ to use four threads in parallel for
 testing. Use as many as you have cores on your machine.
 =========================
 
+[TIP]
+===================
+Tests may fail due to numerical inaccuracies due to reduction operations
+executed in parallel. Tensorflow does not emphasize on determinism but on
+speed and scaling. Therefore, if your system has many cores or is GPU-assisted,
+some tests may fail.
+
+In this case you can set the environment variable *TATI_TEST_THRESHOLD* when
+calling +configure+. Its default value is *1e-7*. For the DGX-1 we found *4e-6*
+to work. If the threshold need to run all test successfully is much larger than
+this, you should contact us, see <<introduction.feedback>>.
+===================
 
 [[introduction.license]]
 License
