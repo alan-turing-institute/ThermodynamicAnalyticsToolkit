@@ -1,6 +1,82 @@
 [[quickstart.sampling]]
-Sampling in neural networks
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sampling
+~~~~~~~~
+
+Let be given a high-dimensional loss manifold
+
+.Loss
+[latexmath]
+++++
+L_{\cal D}(\theta) = \sum_{(x_i,y_i) \in {\cal D}} l_\theta(x_i,y_i)
+++++
+
+that depends explicitly on the parameters latexmath:[\theta \in \Omega \subset \mathrm{R}^N] of the network with latexmath:[N] degrees of freedom and implicitly on a given dataset latexmath:[{\cal D} = \{x_i,y_i\}]. Furthermore, the loss function latexmath:[l_\theta] itself depends implicitly on the prediction latexmath:[f_\theta(x_i)] of the network for a given input latexmath:[x_i] and fixed parameters latexmath:[\theta] and therefore on the chosen network architecture.
+
+If latexmath:[{\cal D}] were the set of all possible realisations of the data, then latexmath:[L_{\cal D}(\theta)] would measure the so-called *generalization error*. As typically only a finite set of data is available, it is split into training and test parts, the latter set aside for approximating this error. Furthermore, during training the gradient is often computed on a subset of the training set latexmath:[{\cal D}], the mini-batches. In the following we will ignore these details as they are irrelevant to the general procedure described.
+
+In order to deduce information such as the number of minima, the number of saddle points, the typical barrier height between minima and other characteristics to classify the landscape, we need to *explore the whole domain* latexmath:[\Omega]. As latexmath:[L_{\cal D}] depends on an arbitrary dataset, we do not know anything a-priori apart from the general regularity properties footnote:[As activation functions contained in the loss may be non-smooth, e.g., the rectified linear unit, even this can be not taken as solid grounds.] and possible boundedness of latexmath:[l_\theta].
+
+A very similar task is found in function approximation where an unknown and possibly high-dimensional function latexmath:[f(x): \mathrm{R}^N \rightarrow \mathrm{R}] is approximated through a set of point evaluations in conjunction with a basis set. A typical usecase is the numerical integration of this high-dimensional function. Naturally, the quality of the approximation hinges not only on the basis set but even more on the choice of the precise location of point evaluations, the *sampling*.
+
+Very generally, sampling approaches can be placed into two categories: Grids and sequences. Sequences can be random, deterministic, or both. We briefly discuss them, focusing on their general computational cost in high dimensions.
+
+Structured grids such as naive full grid approaches, where a fixed number of points with equidistant spacing is used per axis, suffer from the Curse of Dimensionality, a term coined by Bellman. With increasing number of parameters latexmath:[N] the computational cost becomes prohibitive. This Curse of Dimensionality is alleviated to some extent by so-called Sparse Grids, see <<Bungartz2004>>, where the quality bounds on the approximation are kept but fewer grid points need to be evaluated. However, they only alleviate the curse to some extent, see <<Pflueger2010>>, and are still infeasible at the moment for the extremely high-dimensional manifolds encountered in neural network losses.
+
+Random sequences are Monte Carlo approaches where a specific sequence of random numbers decides which point in the whole space to evaluate. Due to their inherent stochasticity these lack the rigor of the structured grid methods but neither rely on, nor exploit any regularity as the structured grid methods. Therefore, they suffer no Curse of Dimensionality with respect to their convergence rate. The rate is bounded by the Central Limit Theorem to latexmath:[{\cal O}(n^{-\tfrac 1 2})] if latexmath:[n] is the number of evaluated points.
+
+Quasi-Monte Carlo (QMC) methods use deterministic sequences, such as Lattice rules (Hammersley, \ldots) or digital nets, and are able to obtain higher convergence rates of latexmath:[{\cal O}(n^{-1} (\log{n})^d)] at the price of a moderate dependence on dimension latexmath:[d].
+
+In this category of sequences we also have dynamics-based sequences. As examples of Markov Chain Monte Carlo (MCMC) methods, they are closely connected to pure Monte Carlo approaches. They make use of the ergodic property of the chosen dynamics allowing to replace high-dimensional whole-space integrals by single-dimensional time-integrals, where the accuracy depends on the trajectory length.
+
+The chain can be generated through suitable dynamics such as Hamiltonian,
+
+.Hamiltonian dynamics
+[latexmath]
+++++
+d\theta= M^{-1} p dt, \quad dp= -\nabla L(\theta) dt
+++++
+
+or Langevin dynamics,
+
+.Langevin dynamics
+[latexmath]
+++++
+d\theta= M^{-1} p dt, \quad dp= \Bigl [-\nabla L(\theta) - \gamma p \Bigr ] dt + \sigma M^{\tfrac 1 2} dW
+++++
+
+for positions (or parameters) latexmath:[\theta], momenta latexmath:[p], mass matrix latexmath:[M], potential (or loss) latexmath:[L(\theta)], friction constant latexmath:[\gamma] and a stationary normal random process latexmath:[W] with variance latexmath:[\sigma].
+Note that Langevin dynamics has both Hamiltonian dynamics and  Brownian dynamics as limiting cases of the friction constant latexmath:[\gamma] going to zero or infinity, respectively.
+
+There are also hybrid approaches where a purely deterministic sequence is randomized by a Metropolis-Hastings criterion to remove possible bias, such as Hybrid or Hamiltonian Monte Carlo, see <<Neal2011>>. Note that in the case of Langevin dynamics the stochasticity enters through the random process.
+
+If we consider the function latexmath:[L_{\cal D}(\theta)] as a potential energy function, then we may cast this into a probability distribution using the canonical Gibbs distribution
+latexmath:[Z \cdot \exp( -\beta L_{\cal D}(\theta))],
+where latexmath:[Z] is a normalization constant and latexmath:[\beta]latexmath:[ is the inverse temperature factor. Then, we have sampling in the typical sense in statistics where an unknown distribution is evaluated. We remark that this Gibbs measure is known in the neural networks community through the energy interpretation (<<LeCun2006>>) of a probability distribution in relation to a certain reference energy, given by the *temperature*.
+
+And indeed, dynamics-based sampling does not aim to approximate latexmath:[L] as best as possible but its Gibbs (also called the canonical) distribution latexmath:[\exp{(-\beta L)}]. In our case we are only interested in particular subsets of the space, namely those associated with a small loss. As we have given ample evidence, the central challenge in sampling is the computational cost. The dynamics-based sequences allow to save computational cost in the high-dimensional spaces by incorporating gradient information. Hence, the more accurately we sample from the Gibbs distribution, the more efficiently we sample only those subsets of interest. This saving could not be obtained with a pure Monte Carlo approach.
+
+Therefore, *we focus on dynamics-based sampling* for this high-dimensional exploration problem.
+
+In principle, the underlying challenge is to assure that the sampling trajectory covers a sufficient area of the whole space for validity. However, stating when to terminate is as difficult as the exploration task itself. Hence, the best measure is to assess when a new independent state has been obtained.
+
+When inspecting sampled MCMC trajectories, we need to assess how many consecutive steps it takes to get from one independent state to another. This is estimated by the *Integrated Autocorrelation Time* (IAT) latexmath:[\tau_s]. For any observable latexmath:[A], we have that its variance generally behaves as latexmath:[var_{A} = \tfrac {var_{\pi} (\varphi(X))}{T_s/\tau_s}], where latexmath:[\pi] is the target density, latexmath:[\varphi(X)] is the function of interest of the random variable latexmath:[X], and latexmath:[T_s] is the sampling time, see <<Goodman2010>>. Obviously, when time steps are discrete and latexmath:[\tau_s] is measured in number of steps, then latexmath:[\tau_s = 1] is highly desirable, i. e.~immediately stepping from one independent state to the next. The IAT latexmath:[\tau_s] is defined as
+
+.Integrated Autocorrelation Time
+[latexmath]
+++++
+\tau_s = \sum^{\infty}_{-\infty} \frac{ C_s(t)} {C_s(0)} \quad	\text{with} \quad C_s(t) = \lim_{t' \rightarrow \infty} cov[\varphi \bigl (X(t'+t) \bigr ), \varphi \bigl (X(t) \bigr)].
+++++
+
+The above holds also for sampling approaches based on Langevin Dynamics. There, we may use the IAT to gauge the *exploration speed* for each sampled trajectory latexmath:[X(t)].
+
+[[quickstart.sampling.example]]
+Example: Sampling of a Perceptron
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Let us give a trivial example to illustrate the above with a few figures. We
+want to highlight in the following the key aspect about the dynamics-based
+sampling approach, namely sampling the probability distribution function associated
+with the Gibbs measure and not the loss manifold directly.
 
 [[quickstart.dataset]]
 .Dataset: "Two Clusters" dataset consisting of two normally distributed point clouds in two dimensions
@@ -12,132 +88,39 @@ classify all red and blue dots into two different classes. This problem
 is quite simple to solve: a line in the two-dimensional space can easily
 separate the two classes.
 
-A very simple neural network, a perceptron, is all we need: it uses two
-inputs nodes, namely each coordinate component, latexmath:[$x_{1}$] and
-latexmath:[$x_{2}$], and a single output node with an activation
-function latexmath:[$f$] whose sign gives the class the input item
+A very simple neural network, a perceptron, is all we need: it would use one
+input node, namely either of the coordinate components, latexmath:[x_{1}] or
+latexmath:[x_{2}], and a single output node with an activation
+function latexmath:[f] whose sign gives the class the input item
 belongs to. The network is given in
-link:#quickstart.perceptron[Network].
-
-TIP: A little while later we will see that an even simpler network suffices to
-classify the dataset well, which is intrinsically one-dimensional.
-
-[[quickstart.perceptron]]
-.Network: Single-layer perceptron with weights and biases
-image::pictures/simple_single_layer_perceptron.png[align="center",{basebackend@docbook:scaledwidth="25%":width=200}]
-
-Traing a Neural Network
-^^^^^^^^^^^^^^^^^^^^^^^
-
-In the following we want to use the mean square loss, i.e. the euclidean
-distance between the output from the network and the expected values per
-item, as the network's loss function. The loss depends implicitly on the
-dataset and explicitly on the weights and biases associated with the
-network. In our case, we have two weights for the two edges between
-input nodes, latexmath:[$w_{1}$] and latexmath:[$w_{2}$], and the output
-node and a single bias attached to the output node latexmath:[$b$].
-
-The general goal of training is to find the set of parameters that achieve the
-lowest loss. To this end, we use the gradient that is readily obtained from the
-neural netwotk through backpropagation of the analytically known derivatives of
-the activation functions. The parameters are modified using Gradient Descent
-until the gradient becomes zero (or we stop before that).
-
-What is Sampling?
-^^^^^^^^^^^^^^^^^
-
-Sampling typically has quite a different perspective: There, we look at a
-system of particles that have two internal properties: _location_ and
-_momentum_. The location is simply their current value, that changes through
-its momentum over time. The momentum again changes because the particle are
-affected by a potential. The system is described by a so-called
-Hamilton operator that gives rise to its same named dynamics. If noise is
-additionally taken into account, then instead we look at Langevin Dynamics.
-_Noise is essential_: It is connected to the concept of _temperature_ as
-the average squared momenta of each particle, the kinetic energy. High
-temperature therefore means large amounts of noise, while low temperature is
-associated with small amounts.
-Temperature is connected to the concept of heat bath that is a reservoir of
-kinetic energy allowing the particles to overcome barriers.
-
-Returning to the neural networks, the role of the particles is taken up by
-the degrees of freedom of the system: weights and biases. The loss
-function is called the _potential_ and it is accompanied by a _kinetic
-energy_ that is simply the sum of all squared momenta. Adding Momentum
-to Optimizers in neural networks is a concept known already and inspired
-by physics. There, it counteracts areas of the loss function where it is
-essentially flat and the gradient therefore close to zero.
-
-Sampling produces trajectories of particles moving along the manifold.
-Integrals along these trajectories, if they are long enough, are
-equivalent to integrating over the whole manifold, if the system is
-ergodic.  And this is the key point!
-Essentially, it enables us to replace integrals over the whole (and possibly
-very high-dimensional domain) by a one-dimensional integral along the
-trajectory. This reduces dimensional complexity significantly if not all areas
-in the high-dimensional domain contribute equally to the integral, if the
-contribution from many areas is negligible (think: weight latexmath:[\exp(-l(x))]
-in integrand with a high value for latexmath:[l(x)]). All we need to do is have
-the sampling produce trajectories only in the areas of interest.
-
-By using sampling we mean to discover more of the loss manifold than
-just the closest local minimum, namely all minima. This excludes all regions
-with large loss function values. In other words, we would like to sample
-in such a way as only to stay in regions of the loss manifold associated
-with small values. Generating trajectories by dynamics where the
-negative of the gradient acts as a driving force onto each particle
-automatically brings them into regions where the loss' value is small.
-However, in general all possible minima locations will not form a connected
-region on the loss manifold. These minima regions may be separated by barriers
-which are needed to overcome. We distinguish two kinds,
-
-* entropic barriers,
-* and enthalpic barriers.
-
-Both of which are conceptually very simple. The enthalpic barrier is
-simply a ridge that is very high where the particles would need a large
-momentum to overcome it. Entropic barriers on the other hand are
-passages very small in volume that are simply very difficult to find. In
-order to overcome barriers of the first kind, higher temperatures
-suffice. For the second type of barrier, this is not so easy.
-Metaphorically speaking, we are looking for a possibly very small door like
-Alice in Wonderland.
-
-What Does the Landscape Look Like?
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Let us have a closer look at a very simple loss landscape. In Figure
-link:#quickstart.landscape.neuralnetwork[Permutation symmetry] we
-look at a very simple network of a single input node, with a single
-hidden layer containing just one node and a single output layer.
-Activation function is linear everywhere. We set the output node's and
-hidden node's bias to zero. The dataset contains two cluster of points,
-one (label -1) centered at -2, another (label +1) centered at 2 which is
-essentially the one given in Figure link:#quickstart.dataset[Dataset] if
-projected onto x or y axis. Any product of the two degrees of freedom of the
-network, namely its two weights, equal to unity will classify the data
-well.
+link:#quickstart.network[Network]. The network is chosen non-ideal by design to illustrate a point.
 
 [[quickstart.network]]
-.Permutation symmetry: Neural network with permutation symmetry to provoke multiple minima
+.Network: Neural network with permutation symmetry to provoke multiple minima
 image:pictures/neuralnetwork_permutation_symmetry.png[align="center",{basebackend@docbook:scaledwidth="50%":width=500}]
 
 In Figure link:#quickstart.landscape.loss[Loss manifold] we then
-turn to the loss landscape depending on either weight. We see two minima
-basins both of hyperbole or "banana" shape. There is a clear (enthalpic)
-potential barrier in between.
+turn to the two-dimensional loss landscape depending on the two weights. In
+this very low-dimensional case we turn to the "naive grid" approach and
+partition each axis equidistantly.
+We see two minima basins both of hyperbole or "banana" shape. Here, we see that
+there is not a single minima but two of them. This is caused by the deliberate
+permutation symmetry of the two weights in the network.
 
-In the figure we also give a trajectory as squiggly black line. Here, we have
+Assume we additionally perform dynamics-based sampling. In the figure the
+resulting trajectory is given as squiggly black line. Here, we have
 chosen such an (inverse) temperature value such that it is able to pass the
-potential barrier and reach the other minima basin. As we have mentioned before,
-higher temperature helps to overcome enthalpic barriers.
+potential barrier and reach the other minima basin.
 
 [[quickstart.landscape.loss]]
-.Loss manifold: Loss landscape with an example trajectory
+.Loss manifold: Loss landscape with underlying naive grid sampling and a dynamics-based trajectory obtained with the BAOAB sampler.
 image:pictures/losslandscape_permutation_symmetry.png[scaledwidth=45.0%]
 
-This quick description of the problem of sampling in the context of
-neural networks in data science should have acquainted you with some of the
-physical concepts underlying the idea of sampling. It hopefully has prepared
-you for the following quickstart tutorial on how to actually use
-ThermodynamicAnalyticsToolkit to perform sampling.
+As we clearly see, the grid-based approach does not distinguish between the
+areas of high loss and the areas of low loss. Note that the coloring comes from a spline interpolation from the grid points. The dynamics-based trajectory on the other hand remains in areas of low loss all the time, where "low" is
+relative to its inverse temperature parameter. This is because the areas of
+low loss have a much higher probability in the Gibbs measure which our sampler
+is faithful to.
+
+This quick description of the sampling loss manifolds in the context of
+neural networks in data science should have acquainted we with some of the concepts underlying the idea of sampling.

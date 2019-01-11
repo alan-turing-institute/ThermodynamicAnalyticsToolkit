@@ -2,6 +2,16 @@
 Literature
 ----------
 
+- [[Bishop2006]] Bishop, Christopher M. (2006).
+Pattern Recognition and Machine Learning.
+Springer Scienice+Business Media, LLC.
+https://www.springer.com/de/book/9780387310732
+
+- [[Bungartz2004]] Bungartz, H. J., & Griebel, M. (2004).
+Sparse grids.
+Acta Numerica, 13, 147–269.
+http://doi.org/10.1017/S0962492904000182
+
 - [[Coifman2006]] Coifman, R. R., & Lafon, S. (2006).
 Diffusion maps.
 Applied and Computational Harmonic Analysis, 21(1), 5–30.
@@ -11,6 +21,16 @@ https://doi.org/10.1016/j.acha.2006.04.006
 Hybrid Monte Carlo.
 Physics Letters B, 195(2), 216–222.
 http://doi.org/10.1016/0370-2693(87)91197-X
+
+- [[Goodman2010]] Goodman, J., & Weare, J. (2010).
+Ensemble samplers with affine invariance.
+Communications in Applied Mathematics and Computational Science, 5(1), 65–80.
+http://doi.org/10.2140/camcos.2010.5.65
+
+- [[LeCun2006]] LeCun, Y., Chopra, S., Hadsell, R., Ranzato, M., & Huang, F. J. (2006).
+A Tutorial on Energy-Based Learning.
+Predicting Structured Data, 191–246.
+http://doi.org/10.1198/tech.2008.s913
 
 - [[Leimkuhler2012]] Leimkuhler, B., & Matthews, C. (2012).
 Rational Construction of Stochastic Numerical Methods for Molecular Sampling.
@@ -22,9 +42,9 @@ The computation of averages from equilibrium and nonequilibrium Langevin molecul
 IMA Journal of Numerical Analysis, 1–55.
 http://doi.org/10.1093/imanum/dru056
 
-- [[MacKenzie1989]] Mackenzie, P. B. (1989). 
-An improved hybrid Monte Carlo method. 
-Physics Letters B, 226(3–4), 369–371. 
+- [[MacKenzie1989]] Mackenzie, P. B. (1989).
+An improved hybrid Monte Carlo method.
+Physics Letters B, 226(3–4), 369–371.
 https://doi.org/10.1016/0370-2693(89)91212-4
 
 - [[Matthews2018]] Matthews, C., Weare, J., & Leimkuhler, B. (2018).
@@ -32,9 +52,14 @@ Ensemble preconditioning for Markov chain Monte Carlo simulation.
 Statistics and Computing, 28(2), 277–290.
 http://doi.org/10.1007/s11222-017-9730-1
 
-- [[Neal2011]] Neal, R. M. (2011). 
-MCMC Using Hamiltonian Dynamics. 
+- [[Neal2011]] Neal, R. M. (2011).
+MCMC Using Hamiltonian Dynamics.
 In Handbook of Markov Chain Monte Carlo (pp. 113–162).
+
+- [[Pflueger2010]] Pflüger, D. (2010).
+Spatially Adaptive Sparse Grids for High-Dimensional Problems.
+PhD thesis. Technische Universität München.
+http://www5.in.tum.de/pub/pflueger10spatially.pdf
 
 - [[Shang2015]] Shang, X., Zhu, Z., Leimkuhler, B., & Storkey, A. J. (2015).
 Covariance-Controlled Adaptive Langevin Thermostat for Large-Scale Bayesian Sampling.

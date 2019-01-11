@@ -2,10 +2,21 @@
 Using command-line interface
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-All the tests use the command-line interface and for performing rigorous
-scientific experiments, we recommend using this interface as well. Here,
-it is to do parameter studies and have extensive runs using different
-seeds.
+All the tests use the command-line interface which suits itself well for
+performing rigorous scientific experiments in scripted stages. We recommend
+using this interface when doing parameter studies and performing extensive runs
+using different seeds.
+
+The examples on this interface will be much briefer as you are hopefully
+aware of the `simulation` module quickstart already and therefore much should
+be familiar.
+
+[NOTE]
+====
+All command-line option have equivalently named counterparts in the options given
+to the `simulation` (or `model`) module on instantiation or to
+`simulation.set_options()`, respectively.
+====
 
 [[quickstart.cmdline.writing_dataset]]
 Creating the dataset
@@ -15,16 +26,16 @@ As data is read from file, this file needs to be created beforehand.
 
 For a certain set of simple classification problems, namely those that
 can be found in the tensorflow playground, we have added a
-TATiDatasetWriter` that spills out the dataset in CSV format.
+`TATiDatasetWriter` that spills out the dataset in CSV format.
 
 [source,bash]
 ---------------
 include::cmdline/write_dataset.sh[]
 ---------------
 
-This will write 500 datums of the dataset type 2 ("two clusters") to a
-file ``testset-twoclusters.csv'' using all of the points as we have set
-the test/train ratio to 0. Note that we also perturb the points by 0.1
+This will write 500 datums of the dataset type 2 (*two clusters*) to a
+file +testset-twoclusters.csv+ using all of the points as we have set
+the test/train ratio to *0*. Note that we also perturb the points by *0.1*
 relative noise.
 
 [[quickstart.cmdline.parsing_dataset]]
@@ -41,6 +52,8 @@ include::cmdline/parse_dataset.sh[]
 
 where the _seed_ is used for shuffling the dataset.
 
+This will print 20 randomly drawn items from the dataset.
+
 [[quickstart.cmdline.optimizing]]
 Optimizing the network
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -55,16 +68,16 @@ include::cmdline/optimize.sh[]
 ---------------
 
 This call will parse the dataset from the file
-"dataset-twoclusters.csv". It will then perform a (Stochastic) Gradient
-Descent optimization in batches of 50 (10% of the dataset) of the
-parameters of the network using a step width/learning rate of 0.01 and
-do this for 1000 steps after which it stops and writes the resulting
++dataset-twoclusters.csv+. It will then perform a (Stochastic) Gradient
+Descent optimization in batches of *50* (10% of the dataset) of the
+parameters of the network using a step width/learning rate of *0.01* and
+do this for *1000* steps after which it stops and writes the resulting
 neural network in a TensorFlow-specific format to a set of files, one of
-which is called `model.ckpt.meta` (and the other filenames are derived
+which is called +model.ckpt.meta+ (and the other filenames are derived
 from this).
 
-We have also created a file `run.csv` which contains among others the
-loss at each (``every_nth'', respectively) step of the optimization run.
+We have also created a file +run.csv+ which contains among others the
+loss at each ('every_nth', respectively) step of the optimization run.
 Plotting the loss over the step column from the run file will result in
 a figure similar to in
 link:#quickstart.simulation.optimizing.plot[Loss history].
@@ -79,7 +92,7 @@ command `pwd`.
 
 If you need to compute the optimal step width, which is possible for
 smaller networks from the largest eigenvalue of the hessian matrix, then
-use the option ``do_hessians 1'' to activate it.
+use the option 'do_hessians 1' to activate it.
 
 [NOTE]
 ====
@@ -88,21 +101,11 @@ parameters of the network N. Hence, may not work for anything but small
 networks and should be done on purpose.
 ====
 
-In case you have read the quickstart tutorial on the Python interface
-before, then the names of the command-line option will probably remind
-you of the variables in the FLAGS structure.
-
 [[quickstart.cmdline.sampling]]
 Sampling trajectories on the loss manifold
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-We continue from this optimized or equilibrated state with sampling. It
-is called equilibrated as the network's parameter should now be close to
-a (local) minimum of the potential function and hence in equilibrium.
-This means that small changes to the parameters will result in gradients
-that force it back into the minimum.
-
-Let us call the sampler.
+Next, we show how to use the sampling tool called `TATiSampler`.
 
 [source,bash]
 ---------------
@@ -110,27 +113,37 @@ include::cmdline/sample.sh[]
 ---------------
 
 This will cause the sampler to parse the same dataset as before.
-Moreover, the sampler will load the neural network from the model, i.e.
-using the optimized parameters right from the start. Afterwards it will
-use the GLA in 2nd order discetization using again 'step_width' of 0.01
-and running for 1000 steps in total. The GLA is a descretized variant of
-Langevin Dynamics whose accuracy scales with the inverse square of the
-'step_width' (hence, 2nd order).
+Afterwards it will use the *GeometricLangevinAlgorithm_2nd* order discetization
+using again 'step_width' of *0.01* and running for *1000* steps in total. The
+GLA is a descretized variant of Langevin Dynamics whose accuracy scales with
+the inverse square of the 'step_width' (hence, 2nd order).
 
-The seed is needed as we sample using Langevin Dynamics where a noise
-term is present. The term basically ascertains a specific temperature
-which is proportional to the average momentum of each particle.
+The 'seed' is needed as we sample using Langevin Dynamics where a noise
+term is present whose magnitude scales with `inverse_temperature`.
 
 After it has finished, it will create three files; a run file
-`run.csv` containing run time information such as the step, the
++run.csv+ containing run time information such as the step, the
 potential, kinetic and total energy at each step, a trajectory file
-`trajectory.csv` with each parameter of the neural network at each step,
-and an averages file `averages.csv` containing averages accumulated
++trajectory.csv+ with each parameter of the neural network at each step,
+and an averages file +averages.csv+ containing averages accumulated
 along the trajectory such as average kinetic energy, average virial (
 connected to the kinetic energy through the virial theorem, valid if a
 prior keeps parameters bound to finite values), and the average
 (ensemble) loss. Moreover, for the HMC sampler the average rejection
 rate is stored there. The first two files we need in the next stage.
+
+As it is good practice to first optimize and then sample, also referred as to
+start from an +equilibrated position+, we may load the model saved after
+optimization by adding the option:
+
+[source,bash]
+---------------
+...
+  --restore_model ‘pwd‘/model.ckpt.meta \
+...
+---------------
+
+Otherwise we start from randomly initialized weights and non-zero biases.
 
 [[quickstart.cmdline.analysing]]
 Analysing trajectories
