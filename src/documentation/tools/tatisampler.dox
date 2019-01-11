@@ -1,0 +1,72 @@
+/*
+ *    Project: ThermodynamicAnalyticsToolkit
+ *    Description:  loss manifolds of neural networks
+ *    Copyright (C) 2018 The University of Edinburgh
+ *    The TATi authors, see file AUTHORS, have asserted their moral rights.
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU General Public License as published by
+ *    the Free Software Foundation, either version 3 of the License, or
+ *    (at your option) any later version.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU General Public License for more details.
+ *
+ *    You should have received a copy of the GNU General Public License
+ *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+/**
+ * \file tatisampler.dox
+ *
+ *  Documentation on the tool TATiSampler
+ *
+ * Created on: Jan 11, 2019
+ *    Author: heber
+ */
+
+/** \page TATiSampler TATiSampler
+ *
+ * TATiSampler is the dynamics-based sampling tool of TATi. It allows to obtain
+ * trajectories through Langevin or Hamiltonian dynamics using the advanced
+ * samplers implemented in tensorflow, see \b src/TATi/samplers/dynamics.
+ *
+ * \section TATiSampler-help Getting help
+ *
+ * Call
+ * \code{.sh}
+ * TATiSampler --help
+ * \endcode
+ * to get a list of all available options.
+ *
+ * \section TATiSampler-example Example call
+ *
+ * An example call that will perform a sampling run looks like this.
+ * \code{.sh}
+ * TATiSampler \
+ *   --batch_data_files dataset.csv \
+ *   --batch_size 10 \
+ *   --friction_constant 1 \
+ *   --inverse_temperature 10 \
+ *   --output_activation linear \
+ *   --loss mean_squared \
+ *   --run_file run.csv \
+ *   --sampler BAOAB \
+ *   --step_width 0.1
+ * \endcode
+ *
+ * This will sample the mean squared loss manifold of a single-layer
+ * perceptron with linear output activction for the dataset found in
+ * \b dataset.csv with a batch size of 10 using the BAOAB sampler.
+ * Its options are a friction constant of 10, an inverse temperature of 10,
+ * and a step width of 0.1.
+ * The tool will write a run info file to \b run.csv.
+ *
+ * For more examples take a look at the userguide. Moreove, see the test
+ * cases contained in \b tests/regression/DataDrivenSampler and subfolders.
+ *
+ * \date 2019-01-11
+ */

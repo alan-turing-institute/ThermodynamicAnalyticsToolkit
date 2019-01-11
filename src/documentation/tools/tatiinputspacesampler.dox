@@ -1,0 +1,75 @@
+/*
+ *    Project: ThermodynamicAnalyticsToolkit
+ *    Description:  loss manifolds of neural networks
+ *    Copyright (C) 2018 The University of Edinburgh
+ *    The TATi authors, see file AUTHORS, have asserted their moral rights.
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU General Public License as published by
+ *    the Free Software Foundation, either version 3 of the License, or
+ *    (at your option) any later version.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU General Public License for more details.
+ *
+ *    You should have received a copy of the GNU General Public License
+ *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+/**
+ * \file tatiinputspacesampler.dox
+ *
+ *  Documentation on the tool TATiInputSpaceSampler
+ *
+ * Created on: Jan 11, 2019
+ *    Author: heber
+ */
+
+/** \page TATiInputSpaceSampler TATiInputSpaceSampler
+ *
+ * TATiInputSpaceSampler is a tool of TATi that samples the input space for
+ * a given network parametrization.
+ *
+ * The input space of the neural network, where features of the dataset live,
+ * are sampled through a naive grid approach (equidistant per axis).
+ *
+ *
+ * \section TATiInputSpaceSampler-help Getting help
+ *
+ * Call
+ * \code{.sh}
+ * TATiInputSpaceSampler --help
+ * \endcode
+ * to get a list of all available options.
+ *
+ * \section TATiInputSpaceSampler-example Example call
+ *
+ * An example call that will perform a sampling run looks like this.
+ * \code{.sh}
+ * TATiInputSpaceSampler \
+ *  --batch_data_files grid.csv \
+ *  --input_dimension 2 \
+ *  --interval_input -4 4 \
+ *	--samples_input 10 \
+ *	--csv_file TATiInputSpaceSampler-output.csv \
+ *	--parse_step 101 \
+ *	--parse_parameters_file trajectory.csv
+ * \endcode
+ *
+ * This takes the parameter file \b  trajectory.csv (e.g., a trajectory file
+ * or a minima file resulting from \ref TATiExplorer) and uses the parameter
+ * set associated with \a step column value of 101.
+ * It then grids the two-dimensional (\b input_dimension) input space for
+ * each axis in the interval [-4,4] (\b interval_input) with 11 points per
+ * axis (\b samples_input 10, endpoint included).
+ * It writes the resulting grid of points to the file \b grid.csv. The
+ * resulting loss values go to \b TATiInputSpaceSampler-output.csv.
+ *
+ * For more examples take a look at the userguide. Moreover, see the test
+ * cases contained in \b tests/regression/NumericalDiff and subfolders.
+ *
+ * \date 2019-01-11
+ */
