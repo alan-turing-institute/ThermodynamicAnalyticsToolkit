@@ -204,7 +204,7 @@ include::simulation/setting_up_network.py[]
 In the above example, we specify a neural network of two hidden layers,
 each having 8 nodes. We use the "rectified linear" activation function
 for these nodes. The output nodes are activated by a linear function. At the
-end, we print the number of parameters, i.e. latexmath:[M] for the set of
+end, we print the number of parameters, i.e. latexmath:[M=105] for the set of
 parameters latexmath:[w=\{w_1, \ldots, w_M\}].
 
 The network's weights are initialized randomly in the interval [-0.5,0.5] and
@@ -245,6 +245,35 @@ for individual nodes or between hidden layers.
 ====
 Note that (re-)creating the `tati` instance  will always reset the
 computational graph of tensorflow in case we need to add nodes.
+====
+
+[[quickstart.simulation.setup.freezing_parameters]]
+Freezing network parameters
++++++++++++++++++++++++++++
+
+Sometimes it might be desirable to freeze parameters during training or
+sampling. This can be done as follows:
+
+[source,python]
+---------------
+include::simulation/fix_parameter.py[]
+---------------
+
+This is same code as before when
+link:#quickstart.simulation.setup.setting_up_network[setting up the network]
+the only exception is the additional option 'fix_parameters'.
+
+Note that we give the parameter's name in full tensorflow
+namescope: "output" for the network layer, "biases" for the weights ("weights"
+alternatively) and "Variable:0" is fixed (as it is the only one). This is
+followed by a comma-separated list of values, one for each component.
+
+====
+[NOTE]
+
+Single values cannot be frozen but only entire weight matrices or bias
+vectors per layer at the moment. As each component has to be listed, at the
+moment this is not suitable for large vectors.
 ====
 
 [[quickstart.simulation.simple_evaluation]]
@@ -590,7 +619,7 @@ values to arrays will dominate the actual neural network computations by far.
 
 As we see, some more options have popped up in the `__init__()` of the
 simulation interface: 'fix_parameters' is explained in section
-<<reference.miscellaneous.parameter_freeze>>,
+<<quickstart.simulation.setup.freezing_parameters>>,
 'hidden_dimension' which is a list of the number of
 hidden nodes per layer, 'input_columns' which contains a list of strings,
 each giving the name of an input dimension (indexing starts at 1), and all

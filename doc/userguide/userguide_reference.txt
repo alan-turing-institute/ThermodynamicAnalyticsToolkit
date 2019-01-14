@@ -6,11 +6,8 @@ The reference
 General concepts
 ~~~~~~~~~~~~~~~~
 
-Before we dive into the internals of this program suite, let us first
-introduce some general underlying concepts assuming that the reader is
-only roughly familiar with them. This is not meant as a replacement for
-the study of more in-depth material but should rather be seen as a
-reminder of the terms and notation that will appear later on.
+Here, we give definitions on a number of concepts that occur throughout this
+userguide.
 
 - Dataset
 +
@@ -24,26 +21,24 @@ it is a _regression_ problem.
 
 - Neural network
 +
-The neural network is a black-box latexmath:[F_w(x_i)] representing a certain
-set of general functions that are efficient in solving classification problems
-(among others). They are parametrized explicitly using weights and biases
+The neural network is a black-box representing a certain set of general
+functions that are efficient in solving classification problems (among others).
+They are parametrized explicitly using weights and biases
 latexmath:[w=\{w_1, \ldots, w_M\}] and implicitly through the topology of the
 network (connections of nodes residing in layers) and the activation functions
-used. Moreover, the loss function latexmath:[L_D(w)] determines the best set of
-parameters for a given task.
+used. The network's output latexmath:[F_w(x_i)] depends explicitly on the
+dataset's current datum (fed into the network) and implicitly on the parameters.
 
 - Loss
 +
 The default is 'mean_squared'.
 +
-The loss function latexmath:[L_D(w)] determines for a given (labeled) dataset what set of
-neural network's parameters are best. Different losses result in different set of
-parameters. It is a high-dimensional manifold that we want to learn and
-capture using the neural network. It implicitly depends on the given
+The loss function latexmath:[L_D(w)] determines for a given (labeled) dataset
+what set of neural network's parameters are best. Different losses result in
+different set of parameters. It is a high-dimensional manifold that we want to
+learn and capture using the neural network. It implicitly depends on the given
 dataset and explicitly on the parameters of the neural network, namely
-weights and biases. Dual to the loss function is the network's output
-that explicitly depends on the dataset's current datum (fed into the
-network) and implicitly on the parameters.
+weights and biases, latexmath:[w=\{w_1, \ldots, w_M\}].
 +
 Most important to understand about the loss is that it is a _non-convex_
 function and therefore in general does not just have a single minimum.
@@ -72,166 +67,25 @@ is set to unity.
 The kinetic energy latexmath:[0.5 \sum^M_i p^T_i p_i] is computed as sum over
 kinetic energies of each parameter.
 
-- Virials
+- Virial
 +
-Virials latexmath:[0.5 \sum^M_i w^T_i \nabla_{w_i} L_D(w)] are defined as one
-half of the sum over the scalar product of gradients with parameters. Given that the loss function is
-unbounded from above and raises more quickly than a linear function, the
-asymptotic value of the virial is related to the average kinetic energy through
-the virial theorem, see https://en.wikipedia.org/wiki/Virial_theorem.
+Virial latexmath:[0.5 \sum^M_i w^T_i \nabla_{w_i} L_D(w)] is defined as one
+half of the sum over the scalar product of gradients with parameters. Given
+that the loss function is unbounded from above and raises more quickly than a
+linear function, the asymptotic value of the virial is related to the average
+kinetic energy through the virial theorem, see
+https://en.wikipedia.org/wiki/Virial_theorem.
 
-- Optimizers
+- Averages
 +
-Optimizers are used to drive the parameters to the local minimum from a
-given (random) starting position. <<GD>> is best known,
-but there are more elaborate Optimizers that use the concept of momentum
-as well. This helps in overcoming flat parts of the manifold where the
-gradient is effectively zero but momentum still drives the particles
-towards the minimum.
-
-- Samplers
-+
-The goal of samplers is different than the goal of optimizers. Samplers
-such as <<GLA>> aim at discovering a great deal of the manifold, not constraint
-to the local minimum. Usually, they are started from the local minimum and
-drive the particles further and further out until new minima are found
-between which potential barriers had to be overcome.
-
-[[reference.concepts.neural_networks]]
-Neural Networks
-^^^^^^^^^^^^^^^
-
-A neural network (NN) is a tool used in the context of machine learning.
-Formally, it is a graph with nodes and edges, where nodes represent
-(simple) functions. The edges represent scalar values by which the
-output of one node is scaled as input to another node. The scalar value
-is called _weight_ and each node also has a constant value, the _bias_,
-that does not depend on the input of other nodes. Nodes are organized in
-layers and nodes are (mostly) only connected between adjacent layer.
-Special are the very first layer with input nodes that simply accept
-input from the user and the very last layer whose output is eventually
-all that matters.
-
-Typically, a NN might be used for the task of classification: Data is
-fed into the network's input layer and its output layer has nodes equal
-to the number of classes to be distinguished. This can for example be
-used for image classification.
-
-The essential task at hand is to determine a good set of parameters,
-i.e. values for the weights and biases, such that the task is performed
-best with respect to some measure.
-
-[[reference.concepts.loss]]
-The loss function
-^^^^^^^^^^^^^^^^^
-
-At the moment, there are two little utility programs that help in
-evaluating the loss function given a certain dataset, namely the
-`TATiLossFunctionSampler`. Let us give an example call right away.
-
-[source,bash]
----------------
-include::cmdline/lossfunctionsampler-trajectory.sh[]
----------------
-
-It takes as input the dataset file `dataset-twoclusters.csv` and
-either a parameter file +trajectory.csv+. This will cause the program
-the re-evaluate the loss function at the trajectory points which should
-hopefully give the same values as already stored in the trajectory file
-itself.
-
-However, this may be used with a different dataset file, e.g. the
-testing or validation dataset, in order to evaluate the generalization
-error in terms of the overall accuracy or the loss at the points along
-the given trajectory.
-
-Interesting is also the second case, where instead of giving a
-parameters file, we sample the parameter space equidistantly as follows:
-
-[source,bash]
----------------
-include::cmdline/lossfunctionsampler-grid.sh[]
----------------
-
-Here, sample for each weight in the interval [-5,5] at 11 points (10 +
-endpoint), and similarly for the weights in the interval [-1,1] at 5
-points.
-
-[NOTE]
-====
-For anything but trivial networks the computational cost quickly becomes
-prohibitively large. However, we may use `fix_parameter` to lower the
-computational cost by choosing a certain subsets of weights and biases to
-sample.
-====
-
-[source,bash]
----------------
-include::cmdline/lossfunctionsampler-fix_parameter.sh[]
----------------
-
-Moreover, using `exclude_parameters` can be used to exclude parameters
-from the variation, i.e. this subset is kept at fixed values read from
-the file given by `parse_parameters_file` where the row designated by
-the value in `parse_steps` is taken.
-
-This can be used to assess the shape of the loss manifold around a found
-minimum.
-
-[source,bash]
----------------
-include::cmdline/lossfunctionsampler-exclude_parameters.sh[]
----------------
-
-Here, we have excluded the second weight, named *w1*, from the sampling.
-Note that all weight and all bias degrees of freedom are simply
-enumerated one after the other when going from the input layer till the
-output layer.
-
-Furthermore, we have specified a file containing center points for all
-excluded parameters. This file is of CSV style having a column *step* to
-identify which row is to be used and moreover a column for every
-(excluded) parameter that is fixed at a value unequal to 0. Note that
-the minima file written by `TATiExplorer` can be used as this centers
-file. Moreover, also the trajectory files have the same structure.
-
-[[reference.concepts.network]]
-The learned function
-^^^^^^^^^^^^^^^^^^^^
-
-The second little utility programs does not evaluate the loss function
-itself but the unknown function learned by the neural network depending
-on the loss function, called the +TATiInputSpaceSampler+. In other
-words, it gives the classification result for data point sampled from an
-equidistant grid. Let us give an example call right away.
-
-[source,bash]
----------------
-include::cmdline/inputspacesampler.sh[]
----------------
-
-Here, `batch_data_files` is an input file but it does not need to be
-present. (Sorry about that abuse of the parameter as usually
-`batch_data_files` is read-only. Here, it is overwritten!). Namely, it
-is generated by the utility in that it equidistantly samples the input
-space, using the interval [-4,4] for each input dimension and 10+1
-samples (points on -4 and 4 included). The parameters file
-+trajectory.csv+ now contains the values of the parameters (weights
-and biases) to use on which the learned function depends or by, in other
-words, by which it is parametrized. As the trajectory contains a whole
-flock of these, the `parse_steps` parameter tells it which steps to
-use for evaluating each point on the equidistant input space grid,
-simply referring to rows in said file.
-
-[NOTE]
-====
-For anything but trivial input spaces the computational cost quickly
-becomes prohibitively large. But again `fix_parameters` is heeded and can be
-used to fix certain parameters. This is even necessary if parsing a trajectory
-that was created using some parameters fixed as they then will _not_
-appear in the set of parameters written to file. This will raise an
-error as the file will contain too few values.
-====
+Averages are meaningful when looking at the probability distribution function
+instead of the loss directly, see Section <<quickstart.sampling.sequences>>.
+There, we compute the integral latexmath:[\int A(w,p) \mu(w,p)] for in our case
+the (canonical) Gibbs measure latexmath:[\mu(w,p) = \exp(-\beta L_D(w))] that
+turns the loss into probability distribution function. Here, latexmath:[A(w,p)]
+is an observable, i.e. a function depending on positions and momenta. Examples
+of such observables are the kinetic energy or the virial, or maybe the
+parameters themselves.
 
 include::userguide_reference_examples.txt[]
 
@@ -241,9 +95,42 @@ include::userguide_reference_implementing_sampler.txt[]
 
 include::userguide_reference_simulation.txt[]
 
+[[reference.parallelization]]
+A note on parallelization
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Internally, Tensorflow uses a computational graph to represent all
+operations. Nodes in the graph represent computations and their results
+and edges represent dependencies between these values, i.e. some may act
+as input to operations resulting in certain output.
+
+Because of this internal representation Tensorflow has two kind of
+parallelisms:
+
+* inter ops
+* intra ops
+
+Each is connected to its its own thread pool. Both the command-line and
+the Python interface let you pick the number of threads per pool. If 0
+is stated (default), then the number of threads is picked automatically.
+
+In general, 'inter_ops_threads' refers to multiple cores performing
+matrix multiplication or reduction operations together.
+'intra_ops_threads' seems to be connected to executing multiple nodes
+in parallel that are independent of each other but this is guessing at
+the moment.
+
+[WARNING]
+====
+When setting 'inter_ops_threads' +unequal+ to 1, then subsequent runs
+may produce different results, i.e. results are no longer strictly
+reproducible. According to Tensorflow this is because reduction
+operations such as `reduce_sum()` run non-deterministically on multiple
+cores for sake of speed.
+====
 
 [[reference.reproducibility]]
-A Note on Reproducibility
+A note on reproducibility
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In many of the examples in the quickstart tutorials we have set a 'seed' value
@@ -258,13 +145,13 @@ non-deterministic. The latter can be overcome by setting 'inter_ops_threads' to
 _1_, which take away some of the parallelization for the sake of
 reproducibility. The former is taken care of by TATi itself. We make sure to
 set the random number seeds deterministically to ensure that values are
-unchanged even if the graph is slighlty changed.
+unchanged even if the graph is slightly changed.
 
 If we find that this should not be the case, please file an issue, see
 <<introduction.feedback>>.
 
 [[reference.performance]]
-A Note on Performance
+A note on performance
 ~~~~~~~~~~~~~~~~~~~~~
 
 Performance is everything in the world of neural network training. Codes and
@@ -365,31 +252,6 @@ image::pictures/time_per_nth_step_hidden_dimension-dimension_16000-batch_size_10
 [[reference.miscellaneous]]
 Miscellaneous
 ~~~~~~~~~~~~~
-
-[[reference.miscellaneous.parameter_freeze]]
-Freezing parameters
-^^^^^^^^^^^^^^^^^^^
-
-Sometimes it might be desirable to freeze parameters during training or
-sampling. This can be done as follows:
-
-[source,python]
----------------
-include::python/fix_parameter.py[]
----------------
-
-Note that we fix the parameter where we give its name in full tensorflow
-namescope: "layer1" for the network layer, "weights" for the weights ("biases"
-alternatively) and "Variable:0" is fixed (as it is the only one). This is
-followed by a comma-separated list of values, one for each component.
-
-====
-[NOTE]
-
-Single values cannot be frozen but only entire weight matrices or bias
-vectors per layer at the moment. As each component has to be listed, at the
-moment this is not suitable for large vectors.
-====
 
 [[reference.miscellaneous.progress_bar]]
 Displaying a progress bar

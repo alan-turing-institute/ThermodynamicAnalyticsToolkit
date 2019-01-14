@@ -19,40 +19,6 @@ include::userguide_quickstart_simulation.txt[]
 
 include::userguide_quickstart_cmdline.txt[]
 
-[[quickstart.parallelization]]
-A note on parallelization
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Internally, Tensorflow uses a computational graph to represent all
-operations. Nodes in the graph represent computations and their results
-and edges represent dependencies between these values, i.e. some may act
-as input to operations resulting in certain output.
-
-Because of this internal representation Tensorflow has two kind of
-parallelisms:
-
-* inter ops
-* intra ops
-
-Each is connected to its its own thread pool. Both the command-line and
-the Python interface let you pick the number of threads per pool. If 0
-is stated (default), then the number of threads is picked automatically.
-
-In general, 'inter_ops_threads' refers to multiple cores performing
-matrix multiplication or reduction operations together.
-'intra_ops_threads' seems to be connected to executing multiple nodes
-in parallel that are independent of each other but this is guessing at
-the moment.
-
-[WARNING]
-====
-When setting 'inter_ops_threads' +unequal+ to 1, then subsequent runs
-may produce different results, i.e. results are no longer strictly
-reproducible. According to Tensorflow this is because reduction
-operations such as `reduce_sum()` run non-deterministically on multiple
-cores for sake of speed.
-====
-
 [[quickstart.conclusion]]
 Conclusion
 ~~~~~~~~~~
