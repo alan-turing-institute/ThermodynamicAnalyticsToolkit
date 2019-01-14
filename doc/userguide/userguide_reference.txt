@@ -151,8 +151,8 @@ If we find that this should not be the case, please file an issue, see
 <<introduction.feedback>>.
 
 [[reference.performance]]
-A note on performance
-~~~~~~~~~~~~~~~~~~~~~
+Notes on Performance
+~~~~~~~~~~~~~~~~~~~~
 
 Performance is everything in the world of neural network training. Codes and
 machines are measured by how fast they perform in images/second when training
@@ -248,6 +248,31 @@ yet.
 [[references.performance.runtime_comparison_gpu]]
 .Runtime comparison, GPU: 2x V100 cards, network with a single hidden layer and various numbers of nodes on a random MNIST dataset
 image::pictures/time_per_nth_step_hidden_dimension-dimension_16000-batch_size_1000-2018-06-28.png[alt="runtime comparison",{basebackend@docbook:scaledwidth="60%":width=600}]
+
+[[reference.performance.hints]]
+General advice
+^^^^^^^^^^^^^^
+
+We conclude this section with some general advice on resolving performance issues:
+
+- trajectory files become very big with large networks. Do not write the
+  trajectory if you do not really need it. If you do need it, then write only
+	every tenth or better every hundredth step (option 'every_nth').
+- summaries (option 'summaries_path') are very costly as well. Write them only
+  for debugging purposes.
+- if you can afford the stochastic noise, use a small batch size (option
+  'batch_size').
+- use hessians (option 'do_hessians') only for really small networks.
+- covariance computations are latexmath:[{\cal O}(M^2)] in the number of
+  parameters *M*. Rather use diffusion_map analysis which is squared only in the
+	number of trajectory steps.
+- measure the time needed for a few sampling/training steps, see the
+  *time_per_nth_step* in the run info dataframes/files. A very good value
+  is 300 steps per second. If you find you are much worse than this (on otherwise
+	able hardware), then start tweaking parameters.
+- Parallel load is not everything. The dataset pipeline will produce much more
+  parallel load but is not necessarily faster than the in-memory pipeline. The
+	essential measure is **steps/second**.
 
 [[reference.miscellaneous]]
 Miscellaneous
