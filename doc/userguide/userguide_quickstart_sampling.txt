@@ -100,8 +100,8 @@ classify all red and blue dots into two different classes. This problem
 is quite simple to solve: a line in the two-dimensional space can easily
 separate the two classes.
 
-A very simple neural network, a perceptron, is all we need: it would use one
-input node, namely either of the coordinate components, latexmath:[x_{1}] or
+A very simple neural network, a perceptron: it would use one
+input node, either of the coordinate, latexmath:[x_{1}] or
 latexmath:[x_{2}], and a single output node with an activation
 function latexmath:[f] whose sign gives the class the input item
 belongs to. The network is given in
