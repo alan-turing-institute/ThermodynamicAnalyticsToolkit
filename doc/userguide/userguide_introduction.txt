@@ -108,10 +108,12 @@ pip3 install numpy
 ---------------
 
 For *acor* a few extra changes are required.
-````
+
+---------------
 pip3 install acor
 sed -i -e "s#import _acor#import acor._acor as _acor#" <install path>/acor/acor.py
-````
+---------------
+
 The last command replaces the third line in the file *acor/acor.py* such that the
 function *acor* (and not the module *acor*) is used.
 
