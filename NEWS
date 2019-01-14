@@ -1,3 +1,21 @@
+v0.9.3
+======
+
+- DOCU: Improved and update userguide.
+- DOCU: Code documentation now follows Google Style (no longer ReST) and has
+  API documentation.
+- Introduced a general test threshold to account for numerical inaccuracy of
+  parallel reduction on GPU-assisted hardware.
+- Fully refactored model class: ModelState, MultiLayerPerceptron, 
+  InputPipelineFactory.
+- Configure now checks presence of required python packages.
+- added full copyright notes, added code check tests on this.
+- extracted grid-based sampling from TATiLossFunctionSampler.
+- TATiAnalyser can perform covariance and Integrated Autocorrelation Time (IAT)
+  analysis.
+- Refactored TATiAnalyser into several operation modes such that these are
+  easy-to-use and accessible from Python interfaces.
+
 v0.9.2
 ======
 
