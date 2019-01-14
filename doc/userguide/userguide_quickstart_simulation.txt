@@ -3,12 +3,11 @@ Using module simulation
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 The `simulation` module has been designed explicitly for
-ease-of-use and to contain any functionality required for the sampling approach.
-However, it can do training as well as we will see. Typically, everything is
-achieved through two or three commands: One to setup TATi by handing it a dash
-of options, then calling a function to `fit()` or `sample()`. In the very end
-of this quickstart we will learn how to implement our first sampler using this
-interface.
+ease-of-use.
+Typically, everything is achieved through two or three commands: One to setup
+TATi by handing it a dash of options, then calling a function to `fit()` or
+`sample()`. In the very end of this quickstart we will learn how to implement
+our first sampler using this interface.
 
 For a more extensive description of the simulation module, we refer to its
 link:#reference.simulation[reference section].
@@ -204,7 +203,9 @@ include::simulation/setting_up_network.py[]
 
 In the above example, we specify a neural network of two hidden layers,
 each having 8 nodes. We use the "rectified linear" activation function
-for these nodes. The output nodes are activated by a linear function.
+for these nodes. The output nodes are activated by a linear function. At the
+end, we print the number of parameters, i.e. latexmath:[M] for the set of
+parameters latexmath:[w=\{w_1, \ldots, w_M\}].
 
 The network's weights are initialized randomly in the interval [-0.5,0.5] and
 the biases are set to 0.1 (small, non-zero values).
@@ -225,7 +226,8 @@ layers. Example: `hidden_activation="relu6"`
 - `hidden_dimension`: Gives the hidden layers and the nodes per layer by giving
 a list of integers. Example: `hidden_dimension=[2,2]` defines two hidden layers,
 each with 2 nodes.
-- `loss`: Sets the loss function to use. Example: `loss="softmax_cross_entropy"`
+- `loss`: Sets the loss function latexmath:[l(x,y)] to use. Example:
+`loss="softmax_cross_entropy"`
 
 For a complete list of values per option, we refer to the following sections in
 the code base for currentness:
@@ -273,8 +275,9 @@ include::simulation/complex/eval_loss_gradient.py[]
 
 Again, we set up the network as before, here it is a single-layer perceptron
 as the default value for `hidden_dimension` is 0. Next, we evaluate the loss
-using `nn.loss()` and the gradients using `nn.gradients()`, returning a vector
-with the gradient per degree of freedom of the networl.
+latexmath:[L_D(w)] using `nn.loss()` and the gradients latexmath:[\nabla_w L_D(w)]
+using `nn.gradients()`, returning a vector with the gradient per degree of
+freedom of the network.
 
 [NOTE]
 Under the hood it is a bit more complicated: loss and gradients are inherently
@@ -283,11 +286,12 @@ naive evaluation of first loss and then gradients in two separate function calls
 would cause them to be evaluated on different batches. Depending on the size of
 the batch, the gradients will then not belong the to the respective loss
 evaluation and vice versa.
-Therefore, loss, accuracy, gradients, and hessians (if 'do_hessians' is True) are
-cached. Only when one of them is evaluated for the second time (e.g., inside the
-loop body on the next iteration), then the next batch is used. This makes sure
-that calling either `loss()` first and then `gradients()` or the other way
-round yields the same values connected to the same dataset batch.
+Therefore, loss, accuracy, gradients, and hessians latexmath:[H_{ij}] (if
+'do_hessians' is True) are cached. Only when one of them is evaluated for the
+second time (e.g., inside the loop body on the next iteration), then the next
+batch is used. This makes sure that calling either `loss()` first and then
+`gradients()` or the other way round yields the same values connected to the
+same dataset batch.
 In essence, just don't worry about it!
 
 As we see in the above example, `tati` forms the general interface class that
@@ -321,9 +325,9 @@ Let us quickly go through each of the new parameters:
 
 * 'batch_size'
 +
-sets the subset size of the data set looked at per training step, if
-smaller than dimension, then we add stochasticity/noise to the training
-but for the advantage of smaller runtime.
+sets the subset size of the data set looked at per training step,
+latexmath:[|D_i|=|\{X_i, Y_i\}|], if smaller than dimension, then we add
+stochasticity/noise to the training but for the advantage of smaller runtime.
 
 * 'learning_rate'
 +
@@ -452,13 +456,9 @@ NOTE: The nodes in the input layer can be modified using `input_columns`, e.g.,
 Sampling the network
 ^^^^^^^^^^^^^^^^^^^^
 
-Optimization only steps down to the nearest local minimum from some initial
-random starting position. Only through sampling do we actually uncover the shape
-of the loss manifold and thereby are able to deduce whether our network is
-efficient at doing its job.
-
-Nonetheless, optimization is always the initial step to sampling as we are
-still generally interested in all minimum regions.
+Typically, as preparation to a sampling run, one would optimize or equilibrate
+the initially random positions first. This might be considered a specific way
+of initializing parameters.
 
 [NOTE]
 .Statistical background
@@ -466,15 +466,8 @@ still generally interested in all minimum regions.
 In general, when sampling from a distribution (to compute empirical averages
 for example), one wants to start 'close to equilibrium', i.e. from states which
 are of high probability with respect to the target distribution (therefore
-the minima of the loss). The initial optimisation procedure is therefore a
-first guess to find such states, or at least to get close to them. In molecular
-dynamics, it is common to run sampling during an "equilibration period" in
-order to let the system relax to its equilibrium. During this equilibration
-time, the generated samples are not used for computing averages, as they will
-introduce large statistical error. footnote:[Keep in mind that we sample the
-probability distribution function and not the loss function directly. Therefore,
-those initial (very high) loss values will have a probability that is not true
-to the Gibbs measure.]
+the minima of the loss). The initial optimization procedure is therefore a
+first guess to find such states, or at least to get close to them.
 ================
 
 However, let us first ignore this good practice for a moment and simply look
@@ -495,11 +488,11 @@ NOTE: In the context of sampling we use 'step_width' in place of 'learning_rate'
 
 Again, we produce a single data structure that contains three data frames: run
 info, trajectory, and averages. Trajectories contains among others all
-parameter degrees of freedom for each step (or 'every_nth' step). Run info
-contains loss, accuracy, norm of gradient, norm of noise and others, again for
-each step. Finally, in averages we compute running averages over the trajectory
-such as average (ensemble) loss, average kinetic energy, average virial, see
-link:#reference.concepts[general concepts].
+parameter degrees of freedom latexmath:[w=\{w_1, \ldots, w_M\}] for each step
+(or 'every_nth' step). Run info contains loss, accuracy, norm of gradient,
+norm of noise and others, again for each step. Finally, in averages we compute
+running averages over the trajectory such as average (ensemble) loss, averag
+kinetic energy, average virial, see link:#reference.concepts[general concepts].
 
 Take a peep at `sampling_data.run_info.columns` to see all columns in the
 run info dataframe (and similarly for the others.)
@@ -532,10 +525,10 @@ within each sampler. We compute its magnitude as
 
 [latexmath]
 ++++
-\Theta(\frac{||x - \pi||}{\tau}-1.) \cdot a ||x - \pi||^n
+\Theta(\frac{||w - \pi||}{\tau}-1.) \cdot a ||x - \pi||^n
 ++++
 
-where *x* is the position of the particle, *a* is the 'prior_factor',
+where *w* is the position of the particle, *a* is the 'prior_factor',
 latexmath:[\pi] is the position of the boundary ('prior_upper_boundary'
 latexmath:[\pi_{ub}] or 'prior_lower_boundary' latexmath:[\pi_{lb}]), and *n*
 is the `prior_power`. Finally, the force is only in effect within a distance of
@@ -544,7 +537,7 @@ virtue of the Heaviside function latexmath:[\Theta()].
 Note that the direction of the force is such that it always points back into
 the desired domain.
 
-If upper and loour boundary coincide, then we have the case of
+If upper and lower boundary coincide, then we have the case of
 tethering, where all parameters are pulled inward to the same point.
 
 At the moment applying prior on just a subset of particles is not supported.

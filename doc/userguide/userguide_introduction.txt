@@ -82,7 +82,7 @@ Installation requirements
 
 This program suite is implemented using python3 and the development
 mainly focused on Linux (development machine used Ubuntu 14.04 up to 18.04). At
-the moment other operation systems are not supported but may still work.
+the moment other operating systems are not supported but may still work.
 
 It has the following non-trivial dependencies:
 
@@ -94,7 +94,7 @@ It has the following non-trivial dependencies:
 * link:http://matplotlib.org/[matplotlib]
 * link:https://pypi.org/project/acor/[acor]
 
-Note that most of these packages can be easily installed using either
+Note that these packages can be easily installed using either
 the repository tool (using some linux derivate such as Ubuntu), e.g.
 
 ---------------
@@ -150,11 +150,11 @@ In case your machine has GPU hardware for tensorflow, replace
 ``tensorflow'' by ``tensorflow-gpu''.
 
 [NOTE]
-Note that on systems with typical core i7 architecture recompiling
+On systems with typical core i7 architecture recompiling
 tensorflow from source provided only very small runtime gains in our
 tests which in most cases do not support the extra effort. You may find
 it necessary for tackling really large networks (>1e6 dofs) and datasets and
-especially if you desire using Intel's MKL library for the CPU-based
+especially if you desire to use Intel's MKL library for the CPU-based
 linear algebra computations.
 
 [TIP] *acor* cannot be installed using anaconda (not available). Hence, it
@@ -198,7 +198,7 @@ print(tati.__version__)
 Installation procedure
 ^^^^^^^^^^^^^^^^^^^^^^
 
-Installation comes in two flavors: Either a tarball or a cloned repository.
+Installation comes in two flavors: either via a tarball or a cloned repository.
 
 The tarball releases are recommended if you only plan to use TATi and do not
 intend modifying its code. If, however, you need to use a development branch,

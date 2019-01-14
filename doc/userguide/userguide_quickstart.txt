@@ -2,7 +2,7 @@
 Quickstart
 ----------
 
-Before we come to actually using TATi, we explain what possible approaches 
+Before we come to actually using TATi, we explain what possible approaches
 there are to sampling a high-dimensional function such as the loss manifold of
 neural networks. To this end, we talk about grid-based sampling that however
 suffers from the Curse of Dimensionality. Moreover, we will discuss Monte Carlo
@@ -10,9 +10,8 @@ and especially Markov Chain Monte Carlo methods. In the latter category we have
 what we will call dynamics-based sampling. This approach does not suffer in
 principle from the Curse of Dimensionality but moreover may have additional
 savings by looking only at areas of the manifold that have small loss.
-At the end, want to set the stage with a little trivial example: We will look 
-at a very simple classification task and see how it is solved using neural 
-networks.
+At the end, want to set the stage with a little example: We will look  at a
+very simple classification task and see how it is solved using neural networks.
 
 include::userguide_quickstart_sampling.txt[]
 
