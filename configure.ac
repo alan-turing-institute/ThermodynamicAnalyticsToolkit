@@ -80,6 +80,8 @@ AC_CONFIG_FILES(
 	src/TATi/samplers/dynamics/Makefile
 	src/TATi/samplers/grid/Makefile
 	src/TATi/tools/Makefile
+	wheel/Makefile
+	wheel/setup.py
 	tests/Makefile)
 AC_CONFIG_TESTDIR([tests/codechecks])
 AC_CONFIG_FILES(
