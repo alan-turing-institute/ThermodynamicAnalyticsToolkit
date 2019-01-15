@@ -8,7 +8,7 @@ AC_CONFIG_MACRO_DIR([m4])
 
 AC_CANONICAL_SYSTEM
 AM_INIT_AUTOMAKE([dist-bzip2 1.5 parallel-tests color-tests tar-pax subdir-objects])
-AM_PATH_PYTHON([2.5])
+AM_PATH_PYTHON([3.0])
 
 # use doxygen
 DX_HTML_FEATURE(ON)
