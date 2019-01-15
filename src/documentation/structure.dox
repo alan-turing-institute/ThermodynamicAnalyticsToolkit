@@ -42,6 +42,7 @@
  * - \b tests - tests cases using autotest
  * - \b doc - documentation using asciidoc
  * - \b util - utility files such as shell scripts
+ * - \b wheel - creating a distributable .whl PyPI package
  *
  * \subsection structure-folder-src Source folders
  *

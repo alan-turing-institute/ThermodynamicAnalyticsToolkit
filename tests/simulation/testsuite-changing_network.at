@@ -19,7 +19,7 @@
 ### test on changing the network
 
 AT_SETUP([Simulation - changing network])
-AT_KEYWORDS([simulation changing network])
+AT_KEYWORDS([python simulation changing network])
 AT_XFAIL_IF([$BIN_TRUE])
 
 AT_CHECK([cp -f \

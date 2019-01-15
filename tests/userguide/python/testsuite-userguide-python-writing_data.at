@@ -19,7 +19,7 @@
 ### test on examples in the userguide
 
 AT_SETUP([Examples - writing the dataset])
-AT_KEYWORDS([example python writing_data])
+AT_KEYWORDS([example python writing_data numericaldiff])
 
 # the comparison file was crated by running:
 # (Two clusters dataset with two inputs nodes, single output, linear activation)

@@ -19,7 +19,7 @@
 ### test on accessing the dataset
 
 AT_SETUP([Simulation - accessing dataset])
-AT_KEYWORDS([simulation accessing dataset])
+AT_KEYWORDS([python simulation accessing dataset])
 
 AT_CHECK([cp -f \
     ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/pre/dataset-twoclusters.csv \

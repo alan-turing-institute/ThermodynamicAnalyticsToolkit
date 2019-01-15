@@ -69,6 +69,7 @@
  * \li \ref documentation : How is the documentation generated and where is it
  * located.
  * \li \ref tools : Description and list of all tools available in this toolkit
+ * \li \ref distributables : How to create release tarballs and wheel archives
  *
  * \section tati-copyright Copyright
  *

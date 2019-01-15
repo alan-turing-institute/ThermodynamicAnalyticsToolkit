@@ -1,0 +1,64 @@
+/*
+ *    Project: ThermodynamicAnalyticsToolkit
+ *    Description:  loss manifolds of neural networks
+ *    Copyright (C) 2018 The University of Edinburgh
+ *    The TATi authors, see file AUTHORS, have asserted their moral rights.
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU General Public License as published by
+ *    the Free Software Foundation, either version 3 of the License, or
+ *    (at your option) any later version.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU General Public License for more details.
+ *
+ *    You should have received a copy of the GNU General Public License
+ *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+/**
+ * \file distributables.dox
+ *
+ *  Explain how tarballs and wheels are craated
+ *
+ * Created on: Jan 15, 2019
+ *    Author: heber
+ */
+
+/** \page distributables How to generate distributables
+ *
+ * TATi is distributed in various ways:
+ *
+ * - release tarballs: created using `make dist`
+ * - python wheels (PyPI): created using `make wheel`
+ *
+ * \section distributables-tarballs
+ *
+ * The logic to create the release tarballs is handled by autotools.
+ *
+ * Basically, it packs every relevant source file (read, \a .py) and
+ * any file that is mentioned in \a EXTRA_DIST (in \b Makefile.am).
+ *
+ * \section distributables-wheels
+ *
+ * Wheels (with suffix \a .whl) is a python-specific way of distributing
+ * packages.
+ *
+ * The logic is contained in \b wheel/Makefile.am.
+ *
+ * The basic idea is to use `make install` in order to install all relevant
+ * files in an extra folder and pack the wheel archive from this folder.
+ *
+ * We perform a check on the python package by `make wheel-check` (in build
+ * folder wheel) by unzipping the wheel and calling the testsuite with a
+ * specific \a AUTOTEST_PATH. This path tells the testsuite where the actual
+ * package is.
+ *
+ * As the executables are not installed, we cannot use any tests depending
+ * on them.
+ *
+ * \date 2019-01-15
+ */

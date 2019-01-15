@@ -27,7 +27,7 @@
 # precision.
 
 AT_SETUP([Simulation - Ensemble Quasi Newton every step])
-AT_KEYWORDS([simulation ensemblequasinewton])
+AT_KEYWORDS([python simulation ensemblequasinewton tatisampler numericaldiff])
 
 AT_CHECK([cp -f \
     ${abs_top_srcdir}/tests/simulation/pre/dataset-anisotropic-gaussian.csv \
@@ -93,7 +93,7 @@ AT_CLEANUP
 
 
 AT_SETUP([Simulation - Ensemble Quasi Newton every 10th step])
-AT_KEYWORDS([simulation ensemblequasinewton])
+AT_KEYWORDS([python simulation ensemblequasinewton tatisampler numericaldiff])
 
 AT_CHECK([cp -f \
     ${abs_top_srcdir}/tests/simulation/pre/dataset-anisotropic-gaussian.csv \
@@ -159,7 +159,7 @@ AT_CLEANUP
 
 
 AT_SETUP([Simulation - Ensemble Quasi Newton every 10th step with collapse])
-AT_KEYWORDS([simulation ensemblequasinewton collapse])
+AT_KEYWORDS([python simulation ensemblequasinewton collapse tatisampler numericaldiff])
 
 AT_CHECK([cp -f \
     ${abs_top_srcdir}/tests/simulation/pre/dataset-anisotropic-gaussian.csv \

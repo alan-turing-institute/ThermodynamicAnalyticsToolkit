@@ -19,7 +19,7 @@
 ### test on accessing parameters
 
 AT_SETUP([Simulation - access parameters])
-AT_KEYWORDS([simulation parameters access])
+AT_KEYWORDS([python simulation parameters access])
 
 AT_CHECK([cp -f \
     ${abs_top_srcdir}/tests/regression/DataDrivenSampler/Samplers/pre/dataset-twoclusters.csv \

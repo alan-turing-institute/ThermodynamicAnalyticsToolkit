@@ -19,7 +19,7 @@
 ### test on HMC_2ndOrder against a reference implementation in TATi
 
 AT_SETUP([Simulation - HMC_2nd vs. reference implementation])
-AT_KEYWORDS([simulation hmc reference])
+AT_KEYWORDS([python simulation hmc reference tatisampler numericaldiff])
 
 AT_CHECK([cp -f \
     ${abs_top_srcdir}/tests/simulation/pre/dataset_harmonicoscillator.csv \
