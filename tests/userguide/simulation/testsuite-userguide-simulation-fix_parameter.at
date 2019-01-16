@@ -18,8 +18,8 @@
 #
 ### test on simulation network
 
-AT_SETUP([Examples - simulation: setting up network])
-AT_KEYWORDS([example simulation network])
+AT_SETUP([Examples - simulation: setting up partially fixed network])
+AT_KEYWORDS([example simulation network fix_parameters])
 
 # dataset prepared as follows:
 # TATiDatasetWriter --data_type 2 --dimension 500 --seed 426 --noise 0.1 --train_test_ratio 0 --test_data_files dataset-twoclusters.csv
