@@ -21,7 +21,8 @@
 """
 This file was taken from the  LIGO Scientific Collaboration Algorithm Library,
 see <https://git.ligo.org/lscsoft/lalsuite> (license GPLv2+, hence compatible
-with GPLv3) and subsequently modified to fulfill our needs.
+with GPLv3) in lalsuite/wheel/setup.py.in and subsequently modified to fulfill
+our needs.
 
 """
 
@@ -33,13 +34,21 @@ import tempfile
 
 from glob import glob
 
-from setuptools import Extension, find_packages, setup
+from setuptools import Extension, find_namespace_packages, setup
 from setuptools.command.build_ext import build_ext as _build_ext
 from distutils.command.build_scripts import build_scripts as _build_scripts
+
+# setuptools entry_point scripts take ages to start because of
+# importing pgf_resources. This is a patch that avoids importing
+# the module which is not needed for smaller scripts (such as ours).
+#
+# see https://github.com/ninjaaron/fast-entry_points
+import fastentrypoints
 
 # These variables come from automake.
 subst = dict(prefix=os.path.abspath('build/inst'))
 subst['exec_prefix'] = Template('@exec_prefix@').substitute(**subst)
+BINDIR = Template('@bindir@').substitute(**subst)
 LIBEXECDIR = Template('@libexecdir@').substitute(**subst)
 PYTHONDIR = Template('@pythondir@').substitute(**subst)
 VERSION = '@PACKAGE_VERSION@'
@@ -82,17 +91,63 @@ class build_scripts(_build_scripts):
             shutil.rmtree(tmpdir)
 
 
+def get_tools():
+    """ Generate a list of all python tools in TATi.tools.
+
+    Returns:
+      list of python tool files
+    """
+    src = os.path.join(PYTHONDIR, 'TATi/tools')
+    files = os.listdir(src)
+    python_files = list(filter(lambda x: x.endswith('.py'), files))
+    python_files.remove('__init__.py')
+    tools = [os.path.splitext(tool)[0] for tool in python_files]
+    return tools
+
+
+def get_entry_points():
+    """ Generates the entry points dict for `setuptools.setup`.
+
+    Returns:
+      created dict with keys \a console_scripts for each tool
+    """
+    tools = get_tools()
+    entry_points={
+        'console_scripts': [
+		tool+' = TATi.tools.'+tool+':internal_main' for tool in tools
+	]
+    }
+    return entry_points
+
 setup(
+    # name of the project (becomes prefix of wheel archive)
     name='thermodynamicanalyticstoolkit',
+
+    # license of project
     license='GPL-3',
+
+    # version of project
     version=VERSION,
+
+    # generate description from __doc__ string
     description=__doc__.strip().split('\n')[0],
+
+    # generate longer description from __doc__ string
     long_description='\n'.join(__doc__.strip().split('\n')[1:]).strip(),
-    url='https://github.com/alan-turing-institute/ThermodynamicAnalyticsToolkit',
+
+    # who are the authors, i.e. who wrote the code
     author='TATi Team',
-    author_email='',
+
+    # give general email for authors
+    #author_email='',
+
+    # package maintainer, i.e. who is responsible for generating the wheel
     maintainer='Frederik Heber',
+
+    # maintainer's email
     maintainer_email='frederik.heber@gmail.com',
+
+    # set of classifiers to describe the package and some properties
     classifiers=[
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
@@ -105,13 +160,57 @@ setup(
         'Topic :: Scientific/Engineering :: Mathematics',
         'Topic :: Scientific/Engineering :: Physics',
     ],
+
+    # package can be safely installed and run from zip
+    zip_safe=True,
+
+    # list of space-separated keywords to allow to find the package
+    keywords="",
+
+    # main URL
+    url='https://github.com/alan-turing-institute/ThermodynamicAnalyticsToolkit',
+
+    # topic-specific URLs
+    project_urls={
+        "Bug Tracker": "https://github.com/alan-turing-institute/ThermodynamicAnalyticsToolkit/issues",
+        "Documentation": "",
+        "Source Code": "https://github.com/alan-turing-institute/ThermodynamicAnalyticsToolkit/tree",
+    },
+
+    # ???
     cmdclass={'build_ext': build_ext, 'build_scripts': build_scripts},
+    
+    # Set the root src folder to find_packages(), here the folder give as 
+    # prefix to `make install`
     package_dir={'': PYTHONDIR},
-    packages=find_packages(PYTHONDIR),
-    scripts=glob(LIBEXECDIR + '/**/*.py'),
-    ext_modules=[Extension(os.path.relpath(filename, PYTHONDIR)
-                           .replace('.so', '')
-                           .replace('/', '.'), [])
-                 for filename in glob(PYTHONDIR + '/**/*.so')],
-    install_requires=['tensorflow>=1.4.1', 'numpy>=1.7', 'pandas', 'scipy', 'sklearn']
+
+    # automatically find all packages used inside project
+    packages=find_namespace_packages(PYTHONDIR),
+
+    # gather all scripts (.py) automatically
+    scripts=glob(LIBEXECDIR + '/**/*.py'), #+glob(BINDIR + '/*'),
+
+    # include any compiled modules (.so), at the moment not needed
+    #ext_modules=[Extension(os.path.relpath(filename, PYTHONDIR)
+    #                       .replace('.so', '')
+    #                       .replace('/', '.'), [])
+    #             for filename in glob(PYTHONDIR + '/**/*.so')],
+
+    # list dependencies for installation package
+    install_requires=[
+        'matplotlib',
+        'numpy>=1.7',
+        'pandas',
+        'scipy',
+        'sklearn',
+        'tensorflow>=1.4.1',
+    ],
+    
+    # create tools with setuptools
+    entry_points=get_entry_points(),
+
+    # declare extra features depending on additional packages
+    extras_require={
+        'IAT': ["acor"],
+    },
 )

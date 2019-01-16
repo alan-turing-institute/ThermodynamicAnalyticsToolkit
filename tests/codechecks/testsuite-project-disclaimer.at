@@ -19,7 +19,7 @@
 
 AT_SETUP([Checking for present copyright note])
 AT_KEYWORDS([CodeCheck disclaimer])
-ok="convert_mnist_to_records.py __init__.py version.py get_executables.py"
+ok="convert_mnist_to_records.py __init__.py version.py get_executables.py fastentrypoints.py"
 okdir="doc/userguide/python doc/userguide/simulation doc/userguide/simulation/complex doc/userguide/simulation/examples tests/regression/NumericalDiff tests/regression/NumericalDiff/Comparisons tests/regression/NumericalDiff/Options"
 echo `pwd`
 echo "${#ok[*]} are ok to not contain copyright note: ${ok[*]}."
