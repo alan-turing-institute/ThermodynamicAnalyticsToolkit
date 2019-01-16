@@ -1,0 +1,8 @@
+#!/usr/bin/env @PYTHON@
+
+import sys, getopt
+sys.path.insert(1, '@pythondir@')
+
+if __name__ == '__main__':
+    from TATi.tools.@MODULE@ import internal_main
+    internal_main()

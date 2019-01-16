@@ -1,3 +1,17 @@
+TATI_tools_PYTHON = \
+	TATiAnalyser.py \
+	TATiDatasetParser.py \
+	TATiDatasetWriter.py \
+	TATiExplorer.py \
+	TATiInputSpaceSampler.py \
+	TATiLossFunctionSampler.py \
+	TATiOptimizer.py \
+	TATiSampler.py \
+	NumericalDiff.py \
+	__init__.py
+
+TATI_toolsdir = $(pythondir)/TATi/tools
+
 bin_SCRIPTS = \
 	TATiAnalyser \
 	TATiDatasetParser \
@@ -12,53 +26,48 @@ bin_SCRIPTS = \
 CLEANFILES = $(bin_SCRIPTS)
 
 EXTRA_DIST = \
-	TATiAnalyser.in \
-	TATiDatasetParser.in \
-	TATiDatasetWriter.in \
-	TATiExplorer.in \
-	TATiInputSpaceSampler.in \
-	TATiLossFunctionSampler.in \
-	TATiOptimizer.in \
-	TATiSampler.in \
-	NumericalDiff.in
+    run_template.in
 
-do_substitution = $(SED) -e 's,[@]pythondir[@],$(pythondir),g' \
+# turn run_template.in into a wrapper for the main() functionality inside
+# the python script tools
+do_substitution = sed -e 's,[@]pythondir[@],$(pythondir),g' \
+	-e 's,[@]MODULE[@]'",$@,g" \
 	-e 's,[@]PACKAGE[@],$(PACKAGE),g' \
 	-e 's,[@]PYTHON[@],$(PYTHON),g' \
 	-e 's,[@]VERSION[@],$(VERSION),g'
 
-TATiAnalyser: TATiAnalyser.in Makefile
-	$(do_substitution) < $(srcdir)/TATiAnalyser.in > TATiAnalyser
+TATiAnalyser: TATiAnalyser.py run_template.in Makefile
+	$(do_substitution) < $(srcdir)/run_template.in > TATiAnalyser
 	chmod +x TATiAnalyser
 
-TATiDatasetParser: TATiDatasetParser.in Makefile
-	$(do_substitution) < $(srcdir)/TATiDatasetParser.in > TATiDatasetParser
+TATiDatasetParser: TATiDatasetParser.py run_template.in Makefile
+	$(do_substitution) < $(srcdir)/run_template.in > TATiDatasetParser
 	chmod +x TATiDatasetParser
 
-TATiDatasetWriter: TATiDatasetWriter.in Makefile
-	$(do_substitution) < $(srcdir)/TATiDatasetWriter.in > TATiDatasetWriter
+TATiDatasetWriter: TATiDatasetWriter.py run_template.in Makefile
+	$(do_substitution) < $(srcdir)/run_template.in > TATiDatasetWriter
 	chmod +x TATiDatasetWriter
 
-TATiExplorer: TATiExplorer.in Makefile
-	$(do_substitution) < $(srcdir)/TATiExplorer.in > TATiExplorer
+TATiExplorer: TATiExplorer.py run_template.in Makefile
+	$(do_substitution) < $(srcdir)/run_template.in > TATiExplorer
 	chmod +x TATiExplorer
 
-TATiInputSpaceSampler: TATiInputSpaceSampler.in Makefile
-	$(do_substitution) < $(srcdir)/TATiInputSpaceSampler.in > TATiInputSpaceSampler
+TATiInputSpaceSampler: TATiInputSpaceSampler.py run_template.in Makefile
+	$(do_substitution) < $(srcdir)/run_template.in > TATiInputSpaceSampler
 	chmod +x TATiInputSpaceSampler
 
-TATiLossFunctionSampler: TATiLossFunctionSampler.in Makefile
-	$(do_substitution) < $(srcdir)/TATiLossFunctionSampler.in > TATiLossFunctionSampler
+TATiLossFunctionSampler: TATiLossFunctionSampler.py run_template.in Makefile
+	$(do_substitution) < $(srcdir)/run_template.in > TATiLossFunctionSampler
 	chmod +x TATiLossFunctionSampler
 
-TATiOptimizer: TATiOptimizer.in Makefile
-	$(do_substitution) < $(srcdir)/TATiOptimizer.in > TATiOptimizer
+TATiOptimizer: TATiOptimizer.py run_template.in Makefile
+	$(do_substitution) < $(srcdir)/run_template.in > TATiOptimizer
 	chmod +x TATiOptimizer
 
-TATiSampler: TATiSampler.in Makefile
-	$(do_substitution) < $(srcdir)/TATiSampler.in > TATiSampler
+TATiSampler: TATiSampler.py run_template.in Makefile
+	$(do_substitution) < $(srcdir)/run_template.in > TATiSampler
 	chmod +x TATiSampler
 
-NumericalDiff: NumericalDiff.in Makefile
-	$(do_substitution) < $(srcdir)/NumericalDiff.in > NumericalDiff
+NumericalDiff: NumericalDiff.py run_template.in Makefile
+	$(do_substitution) < $(srcdir)/run_template.in > NumericalDiff
 	chmod +x NumericalDiff

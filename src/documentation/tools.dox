@@ -52,5 +52,20 @@
  * \li \ref TATiOptimizer
  * \li \ref TATiSampler
  *
+ * \section tools-howto How the tools are done
+ *
+ * The tools are python files themselves but have a special structure
+ *
+ * - `main()` : Every functionality of the module given a set of options
+ * - `internal_main()` : Extra functionality to properly parse command-line
+ *  options and any extra wrapper when calling main, e.g., inside `tf.app.run()`
+ *
+ * Inside `Makefile.am` a template wrapper called \b run_template.in is
+ * modified in order to import the specific tool module and call its
+ * `internal_main()` function (which in turn needs to call `main()`).
+ *
+ * This setup allows to install these tools using \b setuptools as well
+ * using the \a entry_point mechanism
+ *
  * \date 2019-01-11
  */

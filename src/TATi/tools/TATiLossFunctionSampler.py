@@ -1,10 +1,26 @@
-#!/usr/bin/env @PYTHON@
+#
+#    ThermodynamicAnalyticsToolkit - analyze loss manifolds of neural networks
+#    Copyright (C) 2018 The University of Edinburgh
+#    The TATi authors, see file AUTHORS, have asserted their moral rights.
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+###
 
-import sys, getopt
-sys.path.insert(1, '@pythondir@')
 
-import argparse
 import logging
+import sys
 import tensorflow as tf
 
 from TATi.common import get_list_from_string
@@ -33,6 +49,8 @@ def parse_parameters():
 
     :return: dictionary with parameter names as keys, unrecognized parameters
     """
+    global options
+
     options._add_option_cmd('mode', type=str, default=None,
         help='sampling mode to execute')
 
@@ -68,6 +86,8 @@ def parse_parameters():
 
 
 def main(_):
+    global options
+
     # add options which model requires
     options.add("number_walkers")
     options.number_walkers = 1
@@ -140,7 +160,9 @@ def main(_):
     if csv_file is not None:
         csv_file.close()
 
-if __name__ == '__main__':
+def internal_main():
+    global options
+
     # setup logging
     logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
 

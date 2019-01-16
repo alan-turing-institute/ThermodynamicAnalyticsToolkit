@@ -1,4 +1,3 @@
-#!/usr/bin/env @PYTHON@
 #
 #    ThermodynamicAnalyticsToolkit - analyze loss manifolds of neural networks
 #    Copyright (C) 2018 The University of Edinburgh
@@ -18,9 +17,6 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ###
-
-import sys, getopt
-sys.path.insert(1, '@pythondir@')
 
 import argparse
 import logging
@@ -100,11 +96,15 @@ def parse_parameters():
 
 
 def main(_):
+    global FLAGS
+
     modules = AnalyserModules(FLAGS, output_width, output_precision)
 
     modules.execute(FLAGS.modules)
 
-if __name__ == '__main__':
+def internal_main():
+    global FLAGS
+
     # setup logging
     logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
 

@@ -1,31 +1,35 @@
-#!/usr/bin/env @PYTHON@
 #
-# This a command-line version of some of the features found under
-# http://playground.tensorflow.org/
-# aimed at comparing steepest descent optimizer with a bayesian
-# sampling approach.
+#    ThermodynamicAnalyticsToolkit - analyze loss manifolds of neural networks
+#    Copyright (C) 2018 The University of Edinburgh
+#    The TATi authors, see file AUTHORS, have asserted their moral rights.
 #
-# (C) Frederik Heber 2017-12-01
-
-import sys
-
-sys.path.insert(1, '@pythondir@')
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+###
 
 import argparse
 import csv
 import logging
 import numpy as np
+import sys
 
 from TATi.datasets.classificationdatasets import ClassificationDatasets as DatasetGenerator
 from TATi.options.commandlineoptions import react_generally_to_options
 
 FLAGS = None
 
-
-if __name__ == '__main__':
-    # setup logging
-    logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
-
+def parse_parameters():
     parser = argparse.ArgumentParser()
     # please adhere to alphabetical ordering
     parser.add_argument('--data_type', type=int, default=DatasetGenerator.SPIRAL,
@@ -46,38 +50,16 @@ if __name__ == '__main__':
         help='Level of verbosity during compare')
     parser.add_argument('--version', action="store_true",
         help='Gives version information')
-    FLAGS, unparsed = parser.parse_known_args()
+    return parser.parse_known_args()
 
-    react_generally_to_options(FLAGS, unparsed)
 
-    # init random: None will use random seed
-    if FLAGS.seed is not None:
-        np.random.seed(FLAGS.seed)
-
-    # get number of files
-    if len(FLAGS.train_data_files) != 0:
-        number_files = len(FLAGS.train_data_files)
-    elif len(FLAGS.test_data_files) != 0:
-        number_files = len(FLAGS.test_data_files)
-    else:
-        logging.critial("Neither test nor train output filenames specified!")
-        sys.exit(255)
-
-    # check for same number of files
-    if (len(FLAGS.train_data_files) != 0 and len(FLAGS.test_data_files) != 0) \
-        and (len(FLAGS.train_data_files) !=len(FLAGS.test_data_files)):
-        logging.critical("The same number of test and train files need to be specified.")
-        sys.exit(255)
-
-    # check dimension
-    if FLAGS.dimension % number_files != 0:
-        logging.warning("Truncating dimension to multiple of number of input files.")
-    FLAGS.dimension = int(FLAGS.dimension/number_files)
+def main(_):
+    global FLAGS
 
     print("Generating input data")
     dataset_generator=DatasetGenerator()
     xs, ys = dataset_generator.generate(
-        dimension=FLAGS.dimension*number_files,
+        dimension=FLAGS.dimension*FLAGS.number_files,
         noise=FLAGS.noise,
         data_type=FLAGS.data_type)
 
@@ -89,10 +71,10 @@ if __name__ == '__main__':
 
     slice_ratio = int(FLAGS.dimension*FLAGS.train_test_ratio)
     other_slice_ratio = int(FLAGS.dimension*(1.-FLAGS.train_test_ratio))
-    slice_index = slice_ratio*number_files
+    slice_index = slice_ratio*FLAGS.number_files
 
     if len(FLAGS.train_data_files) != 0:
-        for l in range(number_files):
+        for l in range(FLAGS.number_files):
             logging.info("Writing to training file "+FLAGS.train_data_files[l])
             start_index = l*slice_ratio
             end_index = (l+1)*slice_ratio
@@ -104,7 +86,7 @@ if __name__ == '__main__':
                 train_data_file.close()
 
     if len(FLAGS.test_data_files) != 0:
-        for l in range(number_files):
+        for l in range(FLAGS.number_files):
             logging.info("Writing to test file "+FLAGS.test_data_files[l])
             start_index = slice_index+l*other_slice_ratio
             end_index = slice_index+(l+1)*other_slice_ratio
@@ -114,3 +96,40 @@ if __name__ == '__main__':
                 for x,y in zip(xs[start_index:end_index], ys[start_index:end_index]):
                     csv_writer.writerow([x[0], x[1], y[0]])
                 test_data_file.close()
+
+
+def internal_main():
+    global FLAGS
+
+    # setup logging
+    logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
+
+    FLAGS, unparsed = parse_parameters()
+
+    react_generally_to_options(FLAGS, unparsed)
+
+    # init random: None will use random seed
+    if FLAGS.seed is not None:
+        np.random.seed(FLAGS.seed)
+
+    # get number of files
+    if len(FLAGS.train_data_files) != 0:
+        FLAGS.number_files = len(FLAGS.train_data_files)
+    elif len(FLAGS.test_data_files) != 0:
+        FLAGS.number_files = len(FLAGS.test_data_files)
+    else:
+        logging.critial("Neither test nor train output filenames specified!")
+        sys.exit(255)
+
+    # check for same number of files
+    if (len(FLAGS.train_data_files) != 0 and len(FLAGS.test_data_files) != 0) \
+        and (len(FLAGS.train_data_files) !=len(FLAGS.test_data_files)):
+        logging.critical("The same number of test and train files need to be specified.")
+        sys.exit(255)
+
+    # check dimension
+    if FLAGS.dimension % FLAGS.number_files != 0:
+        logging.warning("Truncating dimension to multiple of number of input files.")
+    FLAGS.dimension = int(FLAGS.dimension/FLAGS.number_files)
+
+    main([sys.argv[0]] + unparsed)
