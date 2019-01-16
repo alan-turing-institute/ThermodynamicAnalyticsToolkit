@@ -19,7 +19,7 @@
 ### test on examples in the reference section userguide
 
 AT_SETUP([Examples - simulation: Harmonic oscillator, sampling])
-AT_KEYWORDS([example simulation harmonic_oscillator sampling])
+AT_KEYWORDS([python example simulation harmonic_oscillator sampling numericaldiff])
 
 # see test on harmonic_oscillator_dataset.py for preparing dataset
 

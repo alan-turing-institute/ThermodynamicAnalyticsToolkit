@@ -19,7 +19,7 @@
 ### test on simulation fit()
 
 AT_SETUP([Examples - simulation: fit])
-AT_KEYWORDS([example simulation fit])
+AT_KEYWORDS([python example simulation fit])
 
 # dataset prepared as follows:
 # TATiDatasetWriter --data_type 2 --dimension 500 --seed 426 --noise 0.1 --train_test_ratio 0 --test_data_files dataset-twoclusters.csv

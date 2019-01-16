@@ -19,7 +19,7 @@
 ### test on examples in the reference section userguide
 
 AT_SETUP([Examples - simulation: Harmonic oscillator, dataset])
-AT_KEYWORDS([example simulation harmonic_oscillator dataset])
+AT_KEYWORDS([python example simulation harmonic_oscillator dataset])
 
 AT_CHECK([../../../run \
 	${abs_top_srcdir}/doc/userguide/simulation/examples/harmonic_oscillator_dataset.py

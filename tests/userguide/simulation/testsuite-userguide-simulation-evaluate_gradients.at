@@ -19,7 +19,7 @@
 ### test on simulation gradients()
 
 AT_SETUP([Examples - simulation: evaluate gradients])
-AT_KEYWORDS([example simulation gradients])
+AT_KEYWORDS([python example simulation gradients])
 
 # dataset prepared as follows:
 # TATiDatasetWriter --data_type 2 --dimension 500 --seed 426 --noise 0.1 --train_test_ratio 0 --test_data_files dataset-twoclusters.csv
