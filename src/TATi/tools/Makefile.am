@@ -22,7 +22,7 @@ EXTRA_DIST = \
 	TATiSampler.in \
 	NumericalDiff.in
 
-do_substitution = sed -e 's,[@]pythondir[@],$(pythondir),g' \
+do_substitution = $(SED) -e 's,[@]pythondir[@],$(pythondir),g' \
 	-e 's,[@]PACKAGE[@],$(PACKAGE),g' \
 	-e 's,[@]PYTHON[@],$(PYTHON),g' \
 	-e 's,[@]VERSION[@],$(VERSION),g'

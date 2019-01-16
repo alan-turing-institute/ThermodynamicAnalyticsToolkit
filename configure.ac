@@ -18,6 +18,7 @@ DX_INIT_DOXYGEN(ThermodynamicAnalyticsToolkit, Doxyfile, ${docdir})
 
 # awk for tests
 AC_PROG_AWK()
+AC_PROG_SED()
 
 # allow to change general test threshold
 AC_MSG_CHECKING(for tati test threshold)
