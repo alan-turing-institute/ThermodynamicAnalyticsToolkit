@@ -1,6 +1,7 @@
 TATI_samplers_grid_PYTHON = \
     naivegridsampler.py \
     sampler.py \
+    samplingmodes.py \
     subgridsampler.py \
     trajectoryresampler.py \
 	__init__.py

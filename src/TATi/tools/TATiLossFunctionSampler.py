@@ -27,22 +27,27 @@ from TATi.common import get_list_from_string
 from TATi.model import Model
 from TATi.models.input.inputpipelinefactory import InputPipelineFactory
 from TATi.options.commandlineoptions import CommandlineOptions
-from TATi.samplers.grid.naivegridsampler import NaiveGridSampler
-from TATi.samplers.grid.subgridsampler import SubgridSampler
-from TATi.samplers.grid.trajectoryresampler import TrajectoryReSampler
-
-options = CommandlineOptions()
+from TATi.samplers.grid.samplingmodes import SamplingModes
 
 output_width=8
 output_precision=8
 
 def get_description():
     output = "The 'mode' parameter determines which way the sampling is executed.\n"
-    output += "You have the following choices:\n"
-    output += "\tnaive_grid\n"
-    output += "\tnaive_subgrid\n"
-    output += "\ttrajectory\n"
+    output += "It switches between grid-based sampling and resampling a given"+ \
+        " trajectory.\n"
+    output += "'trajectory_file' contains a trajectory from a sampling or "+ \
+        " optimization run. Either a certain step, defined by 'trajectory_stepnr'"+ \
+        " is used to define the grid's center or the entire trajectory is taken"+ \
+        " for resampling.\n The latter may be used to switch the dataset (e.g., "+ \
+        " test instead of training) or to change the batch size (no "+ \
+        " mini-batching), i.e. to recalculate the loss for a given trajectory.\n"
+    output += "In case the output is desired only on a subspace of the original"+ \
+        " parameter space, then a 'directions_file' needs to be specified. Its"+ \
+        " rows each define a vector spanning said subspace.\n"
     return output
+
+options = CommandlineOptions(description=get_description())
 
 def parse_parameters():
     """ Sets up the argument parser for parsing command line parameters into dictionary
@@ -52,7 +57,7 @@ def parse_parameters():
     global options
 
     options._add_option_cmd('mode', type=str, default=None,
-        help='sampling mode to execute')
+        help='sampling mode to execute: '+", ".join(SamplingModes.list_modes()))
 
     options.add_data_options_to_parser()
     options.add_model_options_to_parser()
@@ -100,40 +105,11 @@ def main(_):
 
     options.exclude_parameters = get_list_from_string(options.exclude_parameters)
 
-    trajectory_file = options.parse_parameters_file
-    if len(options.parse_steps) == 0:
-        trajectory_stepnr = None
-    else:
-        trajectory_stepnr = options.parse_steps[0]
-    if options.mode == "naive_grid":
-        sampler = NaiveGridSampler(network_model=network_model,
-                                   exclude_parameters=options.exclude_parameters,
-                                   samples_weights=options.samples_weights,
-                                   samples_biases=options.samples_biases)
-        sampler.setup_start(trajectory_file=trajectory_file,
-                            trajectory_stepnr=trajectory_stepnr,
-                            interval_weights=options.interval_weights,
-                            interval_biases=options.interval_biases)
-    elif options.mode == "naive_subgrid":
-        sampler = SubgridSampler.from_file(
-                network_model=network_model,
-                exclude_parameters=options.exclude_parameters,
-                samples_weights=options.samples_weights,
-                directions_file=options.directions_file)
-        sampler.setup_start(trajectory_file=trajectory_file,
-                            trajectory_stepnr=trajectory_stepnr,
-                            interval_weights=options.interval_weights,
-                            interval_offsets=options.interval_offsets)
-    elif options.mode == "trajectory":
-        sampler = TrajectoryReSampler.from_trajectory_file(
-                network_model=network_model,
-                exclude_parameters=options.exclude_parameters,
-                trajectory_file=trajectory_file)
-        sampler.setup_start()
-        if len(options.parse_steps) != 0:
-            logging.warning("Option parse_steps is not used when sampling in mode trajectory.")
-    else:
-        logging.error("Unknown sampling mode '"+options.mode+"' specified, aborting.")
+    # prepare which mode to use
+    print(SamplingModes.list_modes())
+    sampler = SamplingModes.create(options.mode, network_model, options)
+    if sampler is None:
+        logging.critical("The mode name "+options.mode+" is not known.")
         sys.exit(255)
 
     options.max_steps = sampler.get_max_steps()

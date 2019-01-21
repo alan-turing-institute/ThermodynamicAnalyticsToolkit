@@ -68,7 +68,7 @@ class SubgridSampler(NaiveGridSampler):
             self.directions[i, :] *= 1./np.linalg.norm(self.directions[i,:])
 
     def get_max_steps(self):
-        return math.pow(self.samples_weights+1, self.number_directions)
+        return math.ceil(math.pow(self.samples_weights+1, self.number_directions))
 
     def _prepare_header(self):
         header = super(NaiveGridSampler, self)._prepare_header()
@@ -86,8 +86,8 @@ class SubgridSampler(NaiveGridSampler):
         # store the starting position
         self._weights_start = self.network_model.weights[0].evaluate(self._sess)
         self._biases_start = self.network_model.biases[0].evaluate(self._sess)
-        print(self._weights_start)
-        print(self._biases_start)
+        #print(self._weights_start)
+        #print(self._biases_start)
         self.interval_weights = interval_weights
         self.interval_offsets = interval_offsets
 
@@ -132,7 +132,7 @@ class SubgridSampler(NaiveGridSampler):
         for i in range(self.number_directions):
             # set the parameters for the direction
             temp = np.multiply(self.directions[i], vals[i])
-            print(temp)
+            #print(temp)
             self.weights_vals += temp[:self.weights_vals.size]
             self.biases_vals += temp[self.weights_vals.size:]
 
