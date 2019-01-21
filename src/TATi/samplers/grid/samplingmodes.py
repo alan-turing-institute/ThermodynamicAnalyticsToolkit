@@ -24,6 +24,7 @@ import logging
 from TATi.samplers.grid.naivegridsampler import NaiveGridSampler
 from TATi.samplers.grid.subgridsampler import SubgridSampler
 from TATi.samplers.grid.trajectoryresampler import TrajectoryReSampler
+from TATi.samplers.grid.trajectorysubspaceresampler import TrajectorySubspaceReSampler
 
 
 class SamplingModes(object):
@@ -124,6 +125,18 @@ class SamplingModes(object):
         return sampler
 
     @staticmethod
+    def _common_trajectory(network_model, options, trajectory_file, directions_file):
+        """ This helper function instantiates a "trajectory" sampler
+
+        :param network_model: network model whose loss to sample
+        :param options: options dict containing all option required by the samplers
+        :param trajectory_file: trajectory file name
+        :param directions_file: None - all directions, else - only subspace spanned by row in this file
+        :return: created sampler object
+        """
+        # we cover both trajectory and trajectory_subgrid in this statement
+
+    @staticmethod
     def _sample_trajectory(network_model, options, trajectory_file, _):
         """ Creates a "trajectory" sampler.
 
@@ -138,5 +151,27 @@ class SamplingModes(object):
                 network_model=network_model,
                 exclude_parameters=options.exclude_parameters,
                 trajectory_file=trajectory_file)
+        sampler.setup_start()
+        return sampler
+
+    @staticmethod
+    def _sample_trajectory_subgrid(network_model, options, trajectory_file, _):
+        """ Creates a "trajectory" sampler that stores only the coordinates of the given
+        subgrid (rows in \a directions_file)
+
+        :param network_model: network model whose loss to sample
+        :param options: options dict containing all option required by the samplers
+        :param trajectory_file: trajectory file name
+        :return: created sampler object
+        """
+        if len(options.parse_steps) != 0:
+            logging.warning("Option parse_steps is not used when sampling in mode trajectory.")
+        if len(options.directions_file) is None:
+            raise ValueError("Mode 'trajectory_subgrid' requires set directions_file.")
+        sampler = TrajectorySubspaceReSampler.from_files(
+                network_model=network_model,
+                exclude_parameters=options.exclude_parameters,
+                trajectory_file=trajectory_file,
+                directions_file=options.directions_file)
         sampler.setup_start()
         return sampler

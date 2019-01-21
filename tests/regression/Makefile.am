@@ -103,6 +103,7 @@ TESTSCRIPTS += \
 	$(srcdir)/LossFunctionSampler/testsuite-lossfunctionsampler-grid-directions.at \
 	$(srcdir)/LossFunctionSampler/testsuite-lossfunctionsampler-interval_center_file.at \
 	$(srcdir)/LossFunctionSampler/testsuite-lossfunctionsampler-sgld-trajectory.at \
+	$(srcdir)/LossFunctionSampler/testsuite-lossfunctionsampler-sgld-trajectory-directions.at \
 	$(srcdir)/LossFunctionSampler/testsuite-lossfunctionsampler-simple.at \
 	$(srcdir)/NumericalDiff/testsuite-numericaldiff.at \
 	$(srcdir)/NumericalDiff/testsuite-numericaldiff-simple.at \
