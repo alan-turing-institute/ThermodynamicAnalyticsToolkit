@@ -100,11 +100,11 @@ class CommandlineOptions(PythonOptions):
     Returns:
 
     """
-    def __init__(self):
+    def __init__(self, description=None):
         """Creates the internal parser."""
         super(CommandlineOptions, self).__init__(add_keys=False)
         self._excluded_keys.append("parser")
-        self.parser = argparse.ArgumentParser()
+        self.parser = argparse.ArgumentParser(description=description)
 
         # option keys whose values need to be converted before going into `_options_map`
         self._excluded_keys.append("_special_keys")
