@@ -65,6 +65,9 @@ class ParsedTrajectory(object):
                 return False
         return True
 
+    def get_step_indices(self):
+        return self.df_trajectory.index[self.start::self.every_nth]
+
     def get_steps(self):
         return self.df_trajectory.loc[self.start::self.every_nth,['step']].values
 
