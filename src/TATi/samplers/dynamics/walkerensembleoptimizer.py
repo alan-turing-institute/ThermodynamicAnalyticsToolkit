@@ -383,41 +383,20 @@ class WalkerEnsembleOptimizer(Optimizer):
         vars = tf.stack(flat_othervars)
             # tf.Print(,
             # [flat_othervars], "flat_othervars", summarize=10)
+
         number_dim = tf.size(flat_othervars[0])
         number_walkers = vars.shape[0]
-
-        scope_name = "EQN_%s" % (var.name[:var.name.find(":")].replace("/", "_"))
-        means = self._get_means(flat_othervars, vars, number_dim, scope_name)
-
         norm_factor = self._get_norm_factor(number_dim, number_walkers)
 
-        rank1factors = self._get_rank1_factors(flat_othervars, vars, means, number_walkers, scope_name)
-
-        with tf.variable_scope(scope_name, reuse=False):
-            cov = tf.get_variable(
-                initializer=tf.initializers.zeros(dtype=dds_basetype),
-                shape=(flat_othervars[0].shape[0],flat_othervars[0].shape[0]), dtype=dds_basetype,
-                use_resource=True,
-                trainable=False, name="covariance_bias")
-        #print(cov)
-
-        # make a chained list of assigns, each assigning onto cov
-        cov_assigns = [cov.assign(tf.zeros_like(cov))]
-        for walker_index in range(len(flat_othervars)):
-            if vars[walker_index].name == var.name:
-                continue
-            if LooseVersion(tf.__version__) >= LooseVersion("1.6.0"):
-                cov_assigns.append(cov.assign(cov_assigns[-1]+tf.tensordot(
-                                   rank1factors[walker_index],
-                                   tf.transpose(rank1factors[walker_index]),
-                                   axes=0)))
-            else:
-                cov_assigns.append(cov.assign(cov_assigns[-1]+tf.tensordot(
-                                tf.expand_dims(rank1factors[walker_index], 0),
-                                tf.expand_dims(tf.transpose(rank1factors[walker_index]), 0),
-                                axes=[[0], [0]])))
-
-        return vars, norm_factor * cov_assigns[-1] # tf.Print(cov_assigns[-1], [cov.name, cov_assigns[-1]], "cov: ")
+        means = self._get_means(vars)
+        rank1factors = self._get_rank1_factors(vars, means)
+        cov = tf.matmul(
+            tf.transpose(rank1factors),
+            rank1factors,
+            name="rank1factor_product"
+        )
+        #return vars, norm_factor * tf.Print(cov, [cov.name, cov], "cov: ", summarize=9)
+        return vars, norm_factor * cov
 
     def _get_norm_factor(self, number_dim, number_walkers):
         dim = math_ops.cast(number_walkers
@@ -437,55 +416,22 @@ class WalkerEnsembleOptimizer(Optimizer):
 
         return norm_factor
 
-    def _get_means(self, flat_othervars, vars, number_dim, scope_name):
+    def _get_means(self, vars):
         # means are needed for every component. Hence, we save a bit by
         # creating all means beforehand
-        with tf.variable_scope(scope_name, reuse=False):
-            means = tf.get_variable(initializer=tf.initializers.zeros(dtype=dds_basetype),
-                                    shape=flat_othervars[0].shape, dtype=dds_basetype,
-                                    use_resource=True,
-                                    trainable=False, name="mean")
+        means = tf.reduce_mean(vars, axis=0, name="reduce_mean_over_othervars")
 
-        def body_mean(i, mean_copy):
-            with tf.control_dependencies([  # tf.Print(
-                means[i].assign(tf.reduce_mean(vars[:, i], name="reduce_mean"),
-                                name="assign_mean_component"),
-                # [var.name, i, means[i]], "i, mean: ", summarize=4),
-            ]):
-                return (tf.add(i, 1), mean_copy)
-
-        i = tf.constant(0)
-        c = lambda i, x: tf.less(i, number_dim)
-        with tf.control_dependencies(flat_othervars):
-            r, mean_eval = tf.while_loop(c, body_mean, (i, means), name="means_loop")
-        means = mean_eval
-            #tf.Print(,
-            # [mean_eval.name, mean_eval], "mean_eval: ")
-        # print(means)
+        #return tf.Print(means, [means], "mean: ", summarize=4)
         return means
 
-    def _get_rank1_factors(self, flat_othervars, vars, means, number_walkers, scope_name):
-        with tf.variable_scope(scope_name, reuse=False):
-            rank1factors = tf.get_variable(initializer=tf.initializers.zeros(dtype=dds_basetype),
-                                    shape=tf.TensorShape(number_walkers+1).concatenate(flat_othervars[0].shape), dtype=dds_basetype,
-                                    use_resource=True,
-                                    trainable=False, name="rank1factor")
-
-        def body_factor(i, factor_copy):
-            with tf.control_dependencies([  # tf.Print(
-                rank1factors[i,:].assign(vars[i,:] - means, name="difference"),
-                # [var.name, i, rank1factors[i]], "i, rank1factor: ", summarize=4),
-            ]):
-                return (tf.add(i, 1), factor_copy)
-
-        i = tf.constant(0)
-        c = lambda i, x: tf.less(i, number_walkers)
-        with tf.control_dependencies(flat_othervars):
-            r, factor_eval = tf.while_loop(c, body_factor, (i, rank1factors), name="factor_loop")
-        factors = factor_eval
-        #tf.Print(, [factor_eval.name, factor_eval], "factor_eval: ")
-        # print(means)
-        return factors
+    def _get_rank1_factors(self, vars, means):
+        stacked_means = tf.tensordot(
+            tf.expand_dims(tf.ones_like(means, name="ones_for_broadcast"), 0),
+            tf.expand_dims(means, 0),
+            axes=[[0], [0]], name="broadcast_means")
+        rank1factors = vars - stacked_means
+        #return tf.Print(rank1factors, [rank1factors], "assigned factors", summarize=4)
+        return rank1factors
 
     def _stack_gradients(self, grads_and_vars, var):
         """ Stacks all (other) gradients together to compute a covariance matrix.
