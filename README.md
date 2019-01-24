@@ -23,8 +23,8 @@ In total, we depend on the following python packages:
  * acor (see the userguide for installation instructions)
 
 Furthermore, for installation from a cloned git repository or a pure source
-tarball, the following non-standard packages are required for creating the
-all userguides,
+tarball, the following non-python packages are required for creating all 
+userguides,
 
  * doxygen,
  * asciidoc, dblatex
@@ -34,7 +34,7 @@ and for running all tests,
 
  * awk, sqlite3.
 
-Finally, there are some optional packages:
+Finally, there are some optional python packages:
 
  * pydiffmap: allows diffusion map analysis through pydiffmap package
  * tqdm: allows displaying progress bar during training and sampling
@@ -46,8 +46,8 @@ Please refer to the userguide (see the
 [releases](https://github.com/alan-turing-institute/ThermodynamicAnalyticsToolkit/releases) on github) 
 for installation instructions.
 
-Alternatively, the userguide is also contained in the release tarballs in 
-folder **doc/userguide**. i
+Alternatively, the userguide PDF is also contained in the release tarballs in 
+folder **doc/userguide**.
 As a fall-back the asciidoc userguide files reside in **doc/userguide** 
 and are perfectly human-readable, see **doc/userguide/introduction.txt**.
 As a last fall-back have a look at INSTALL for general instructions on how to
@@ -64,8 +64,8 @@ Documentation
 -------------
 
 In general, the documentation is maintained in the folder **doc**. The asciidoc
-userguide files reside in **doc/userguide** and are perfectly human-readable
-in your preferred editor if every other option fails.
+userguide files reside in **doc/userguide** and are human-readable in your 
+preferred editor if every other option fails.
 
 There are multiple guides to help you:
 
@@ -83,9 +83,9 @@ installation.
 Acknowledgments
 ---------------
 
-It has received financial support from a seed funding grant and through a 
+TATi has received financial support from a seed funding grant and through a 
 Rutherford fellowship from the Alan Turing Institute in London (R-SIS-003, 
-R-RUT-001) and EPSRC grant no. EP/P006175/1 (Data Driven Coarse Graining using
-Space-Time Diffusion Maps, B. Leimkuhler PI), and also from a Microsoft Azure 
-Sponsorship (MS-AZR-0143P).
+R-RUT-001), from an EPSRC grant no. EP/P006175/1 (Data Driven Coarse Graining
+using Space-Time Diffusion Maps, B. Leimkuhler PI), and also from a Microsoft
+Azure  Sponsorship (MS-AZR-0143P).
 

@@ -178,7 +178,8 @@ it necessary for tackling really large networks (>1e6 dofs) and datasets and
 especially if you desire to use Intel's MKL library for the CPU-based
 linear algebra computations.
 
-[TIP] *acor* cannot be installed using anaconda (not available). Hence, it
+[TIP] 
+*acor* cannot be installed using anaconda (not available). Hence, it
 needs to be installed using `pip` for the respective environment. See above for
 installation instructions.
 
@@ -372,7 +373,7 @@ Feedback
 ~~~~~~~~
 
 If you encounter any bugs, errors, or would like to submit feature request,
-please write to mailto:[{Email}] or open an issue at link:{Website}[GitHub].
+please open an issue at link:{Website}[GitHub] or write to mailto:[{Email}].
 The authors are especially thankful for any description of all related events
 prior to occurrence of the error and auxiliary files. More explicitly, the
 *following information is crucial* in enabling assistance:
