@@ -31,8 +31,11 @@ AT_CHECK([../../../TATiInputSpaceSampler \
 	--parse_parameters_file ${abs_top_srcdir}/tests/regression/InputSpaceSampler/pre/trajectory-SGLD.csv
 ], 0, [stdout], [stderr])
 
-AT_CHECK([../../../NumericalDiff -- grid.csv ${abs_top_srcdir}/tests/regression/InputSpaceSampler/post/grid.csv], 0, [ignore], [ignore])
-AT_CHECK([../../../NumericalDiff -- TATiInputSpaceSampler-output.csv ${abs_top_srcdir}/tests/regression/InputSpaceSampler/post/InputSpaceSampler-output.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff \
+    -- grid.csv ${abs_top_srcdir}/tests/regression/InputSpaceSampler/post/grid.csv], 0, [ignore], [ignore])
+AT_CHECK([../../../NumericalDiff \
+    --general_threshold $threshold absolute \
+    -- TATiInputSpaceSampler-output.csv ${abs_top_srcdir}/tests/regression/InputSpaceSampler/post/InputSpaceSampler-output.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP
 

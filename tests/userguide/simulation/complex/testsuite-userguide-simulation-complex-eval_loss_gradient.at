@@ -29,7 +29,7 @@ AT_CHECK([../../../run \
 	${abs_top_srcdir}/doc/userguide/simulation/complex/eval_loss_gradient.py
 ], 0, [stdout], [stderr])
 AT_CHECK([grep '1.0' stdout], 0, [ignore], [ignore])
-AT_CHECK([grep '\-4.158566.*-3.6922557.*-1.2' stdout], 0, [ignore], [ignore])
+AT_CHECK([grep '\-4.158566.*-3.69225.*-1.2' stdout], 0, [ignore], [ignore])
 
 AT_CLEANUP
 

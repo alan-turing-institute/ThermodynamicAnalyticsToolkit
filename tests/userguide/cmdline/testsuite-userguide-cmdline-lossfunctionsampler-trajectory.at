@@ -41,7 +41,7 @@ AT_CHECK([cp -f ${abs_top_srcdir}/tests/userguide/cmdline/pre/dataset-twocluster
 file="trajectory.csv"
 AT_CHECK([cp -f ${abs_top_srcdir}/tests/userguide/cmdline/pre/trajectory-two_clusters-dim_500-gamma_10-beta_1e4-max_steps_1000-noise_0.1-linear-seed_426.csv $file], 0, [ignore], [ignore])
 
-AT_CHECK([env - PATH=${AUTOTEST_PATH}/TATi/tools /bin/bash \
+AT_CHECK([env PATH=${AUTOTEST_PATH}/TATi/tools /bin/bash \
 	${abs_top_srcdir}/doc/userguide/cmdline/lossfunctionsampler-trajectory.sh
 ], 0, [stdout], [stderr])
 AT_CHECK([grep "step,loss,accuracy,w0,w1,b0" TATiLossFunctionSampler-output-SGLD.csv], 0, [ignore], [ignore])

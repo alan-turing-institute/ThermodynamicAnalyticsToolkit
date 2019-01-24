@@ -79,10 +79,13 @@ AT_CHECK([../../../TATiInputSpaceSampler \
 
 # compare
 AT_CHECK([../../../NumericalDiff \
+    --general_threshold $threshold absolute \
     -- inputspace_step11.csv inputspace_step20.csv], 1, [ignore], [ignore])
 AT_CHECK([../../../NumericalDiff \
+    --general_threshold $threshold absolute \
     -- inputspace_step11.csv ${abs_top_srcdir}/tests/integration/InputSpaceSampling_Trajectory/post/inputspace_step11.csv], 0, [ignore], [ignore])
 AT_CHECK([../../../NumericalDiff \
+    --general_threshold $threshold absolute \
     -- inputspace_step20.csv ${abs_top_srcdir}/tests/integration/InputSpaceSampling_Trajectory/post/inputspace_step20.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP

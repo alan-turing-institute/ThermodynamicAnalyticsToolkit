@@ -84,7 +84,7 @@ AT_CHECK([../../../TATiSampler \
 
 # now compare (exclude time_per_nth_step column)
 AT_CHECK([../../../NumericalDiff \
-    --general_threshold 1e-5 absolute \
+    --general_threshold `echo 100 $threshold | $awk '{print $1*$2}'` absolute \
     --column_drop step id -- \
     trajectory-EQN_ref.csv trajectory_TATi.csv], 0, [ignore], [ignore])
 
@@ -150,7 +150,7 @@ AT_CHECK([../../../TATiSampler \
 
 # now compare (exclude time_per_nth_step column)
 AT_CHECK([../../../NumericalDiff \
-    --general_threshold 2e-6 absolute \
+    --general_threshold `echo 20 $threshold | $awk '{print $1*$2}'` absolute \
     --column_drop step id -- \
     trajectory-EQN_ref.csv trajectory_TATi.csv], 0, [ignore], [ignore])
 
@@ -216,7 +216,7 @@ AT_CHECK([../../../TATiSampler \
 
 # now compare (exclude time_per_nth_step column)
 AT_CHECK([../../../NumericalDiff \
-    --general_threshold 4e-6 absolute \
+    --general_threshold `echo 40 $threshold | $awk '{print $1*$2}'` absolute \
     --column_drop step id -- \
     trajectory-EQN_ref.csv trajectory_TATi.csv], 0, [ignore], [ignore])
 

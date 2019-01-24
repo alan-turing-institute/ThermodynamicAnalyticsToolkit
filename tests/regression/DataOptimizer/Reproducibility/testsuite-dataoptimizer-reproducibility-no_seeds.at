@@ -48,7 +48,7 @@ AT_CHECK([../../../TATiOptimizer \
 # now compare (exclude time_per_nth_step column)
 # using decreased accuracy of 3e-7 for rounding issues, see tensorflaw sum test
 AT_CHECK([../../../NumericalDiff \
-    --general_threshold 3e-7 relative \
+    --general_threshold `echo 3 $threshold | $awk '{print $1*$2}'` relative \
     --column_drop time_per_nth_step id -- \
     run-first.csv run-second.csv], 1, [ignore], [ignore])
 
