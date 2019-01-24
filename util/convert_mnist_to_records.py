@@ -38,7 +38,15 @@ def _bytes_feature(value):
 
 
 def convert_to(data_set, name):
-  """Converts a dataset to tfrecords."""
+    """Converts a dataset to tfrecords.
+
+    Args:
+      data_set: 
+      name: 
+
+    Returns:
+
+    """
   images = data_set.images
   labels = data_set.labels
   num_examples = data_set.num_examples

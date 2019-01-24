@@ -1,0 +1,56 @@
+/*
+ *    Project: ThermodynamicAnalyticsToolkit
+ *    Description:  loss manifolds of neural networks
+ *    Copyright (C) 2018 The University of Edinburgh
+ *    The TATi authors, see file AUTHORS, have asserted their moral rights.
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU General Public License as published by
+ *    the Free Software Foundation, either version 3 of the License, or
+ *    (at your option) any later version.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU General Public License for more details.
+ *
+ *    You should have received a copy of the GNU General Public License
+ *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+/**
+ * \file tools.dox
+ *
+ *  Listing of all tools available in TATi
+ *
+ * Created on: Jan 11, 2019
+ *    Author: heber
+ */
+
+/** \page tools Tools in TATi
+ *
+ * TATi is a toolkit and therefore comes with a set of (command-line) tools.
+ * These are small python programs that use the python modules of TATi to
+ * provide certain functionality, controlled by a set of command-line
+ * options.
+ *
+ * These options are perfectly reminiscent of the options structure, see
+ * \ref components-design.
+ *
+ * \section tools-list List of tools
+ *
+ * At the time of writing, we have the following tools:
+ *
+ * \li \ref NumericalDiff
+ * \li \ref TATiAnalyser
+ * \li \ref TATiDatasetParser
+ * \li \ref TATiDatasetWriter
+ * \li \ref TATiExplorer
+ * \li \ref TATiInputSpaceSampler
+ * \li \ref TATiLossFunctionSampler
+ * \li \ref TATiOptimizer
+ * \li \ref TATiSampler
+ *
+ * \date 2019-01-11
+ */

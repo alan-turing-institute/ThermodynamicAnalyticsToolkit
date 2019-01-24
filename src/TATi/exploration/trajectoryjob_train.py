@@ -1,3 +1,23 @@
+#
+#    ThermodynamicAnalyticsToolkit - analyze loss manifolds of neural networks
+#    Copyright (C) 2018 The University of Edinburgh
+#    The TATi authors, see file AUTHORS, have asserted their moral rights.
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### 
+
 import logging
 import numpy as np
 from tensorflow.python.framework import errors_impl
@@ -7,20 +27,22 @@ import tensorflow as tf
 from TATi.exploration.trajectoryjob_sample import TrajectoryJob_sample
 
 class TrajectoryJob_train(TrajectoryJob_sample):
-    ''' This implements a job that runs a new leg of a given trajectory.
-
-    '''
+    """This implements a job that runs a new leg of a given trajectory."""
 
     LEARNING_RATE = 3e-2 # use larger learning rate as we are close to minimum
 
     def __init__(self, data_id, network_model, initial_step, parameters=None, continue_flag = True):
-        """ Initializes a run job.
+        """Initializes a run job.
 
-        :param data_id: id associated with data object
-        :param network_model: network model containing the computational graph and session
-        :param initial_step: number of first step (for continuing a trajectory)
-        :param parameters: parameters of the neural net to set. If None, keep random ones
-        :param continue_flag: flag allowing to override spawning of subsequent job
+        Args:
+          data_id: id associated with data object
+          network_model: network model containing the computational graph and session
+          initial_step: number of first step (for continuing a trajectory)
+          parameters: parameters of the neural net to set. If None, keep random ones (Default value = None)
+          continue_flag: flag allowing to override spawning of subsequent job (Default value = True)
+
+        Returns:
+
         """
         super(TrajectoryJob_train, self).__init__(
             data_id=data_id,
@@ -53,11 +75,15 @@ class TrajectoryJob_train(TrajectoryJob_sample):
                                _trajectory_lines=trajectory)
 
     def run(self, _data):
-        """ This implements running a new leg of a given trajectory stored
+        """This implements running a new leg of a given trajectory stored
         in a data object.
 
-        :param _data: data object to use
-        :return: updated data object
+        Args:
+          _data: data object to use
+
+        Returns:
+          updated data object
+
         """
         # modify max_steps for optimization
         FLAGS = self.network_model.FLAGS

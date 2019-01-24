@@ -1,3 +1,23 @@
+#
+#    ThermodynamicAnalyticsToolkit - analyze loss manifolds of neural networks
+#    Copyright (C) 2018 The University of Edinburgh
+#    The TATi authors, see file AUTHORS, have asserted their moral rights.
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### 
+
 # This is heavily inspired by  https://github.com/openai/iaf/blob/master/tf_utils/adamax.py
 import tensorflow as tf
 from tensorflow.python.framework import ops
@@ -10,23 +30,32 @@ from TATi.samplers.dynamics.walkerensembleoptimizer import WalkerEnsembleOptimiz
 
 
 class StochasticGradientLangevinDynamicsSampler(WalkerEnsembleOptimizer):
-    """ Implements a Stochastic Gradient Langevin Dynamics Sampler
+    """Implements a Stochastic Gradient Langevin Dynamics Sampler
     in the form of a TensorFlow Optimizer, overriding tensorflow.python.training.Optimizer.
+    
+    We have the upgrade as: \f$ \Delta\Theta = - \nabla \beta U(\Theta) \Delta t + \sqrt{\Delta t} N \f$,
+    where \f$\beta\f$ is the inverse temperature coefficient, \f$\Delta t\f$ is the (discretization)
+    step width and \f$\Theta\f$ is the parameter vector and \f$U(\Theta)\f$ the energy or loss function.
 
-    We have the upgrade as: %\Delta\Theta = - \nabla \beta U(\Theta) \Delta t + \sqrt{\Delta t} N$,
-    where $\beta$ is the inverse temperature coefficient, $\Delta t$ is the (discretization)
-    step width and $\Theta$ is the parameter vector and $U(\Theta)$ the energy or loss function.
+    Args:
+
+    Returns:
+
     """
     def __init__(self, covariance_blending, step_width, inverse_temperature,
                  seed=None, use_locking=False, name='SGLD'):
-        """ Init function for this class.
+        """Init function for this class.
 
-        :param covariance_blending: covariance identity blending value eta to use in creating the preconditioning matrix
-        :param step_width: step width for gradient, also affects inject noise
-        :param inverse_temperature: scale for gradients
-        :param seed: seed value of the random number generator for generating reproducible runs
-        :param use_locking: whether to lock in the context of multi-threaded operations
-        :param name: internal name of optimizer
+        Args:
+          covariance_blending: covariance identity blending value eta to use in creating the preconditioning matrix
+          step_width: step width for gradient, also affects inject noise
+          inverse_temperature: scale for gradients
+          seed: seed value of the random number generator for generating reproducible runs (Default value = None)
+          use_locking: whether to lock in the context of multi-threaded operations (Default value = False)
+          name: internal name of optimizer (Default value = 'SGLD')
+
+        Returns:
+
         """
         super(StochasticGradientLangevinDynamicsSampler, self).__init__(covariance_blending,
                                                                         use_locking, name)
@@ -42,29 +71,42 @@ class StochasticGradientLangevinDynamicsSampler(WalkerEnsembleOptimizer):
         self.force_power = 1.
 
     def _prepare(self):
-        """ Converts step width into a tensor, if given as a floating-point
+        """Converts step width into a tensor, if given as a floating-point
         number.
+
+        Args:
+
+        Returns:
+
         """
         super(StochasticGradientLangevinDynamicsSampler, self)._prepare()
         self._step_width_t = ops.convert_to_tensor(self._step_width, name="step_width")
         self._inverse_temperature_t = ops.convert_to_tensor(self._inverse_temperature, name="inverse_temperature")
 
     def _create_slots(self, var_list):
-        """ Slots are internal resources for the Optimizer to store values
+        """Slots are internal resources for the Optimizer to store values
         that are required and modified during each iteration.
-
+        
         Here, we do not create any slots.
 
-        :param var_list: list of variables
+        Args:
+          var_list: list of variables
+
+        Returns:
+
         """
         pass
 
     def _prepare_dense(self, grad, var):
-        """ Stuff common to all Langevin samplers.
+        """Stuff common to all Langevin samplers.
 
-        :param grad: gradient nodes, i.e. they contain the gradient per parameter in `var`
-        :param var: parameters of the neural network
-        :return: step_width, inverse_temperature, and noise tensors
+        Args:
+          grad: gradient nodes, i.e. they contain the gradient per parameter in `var`
+          var: parameters of the neural network
+
+        Returns:
+          step_width, inverse_temperature, and noise tensors
+
         """
         step_width_t = math_ops.cast(self._step_width_t, var.dtype.base_dtype)
         inverse_temperature_t = math_ops.cast(self._inverse_temperature_t, var.dtype.base_dtype)
@@ -78,10 +120,14 @@ class StochasticGradientLangevinDynamicsSampler(WalkerEnsembleOptimizer):
         return step_width_t, inverse_temperature_t, random_noise_t
 
     def set_prior(self, prior):
-        """ Sets the parameters for enforcing a prior.
+        """Sets the parameters for enforcing a prior.
 
-        :param prior: dict with keys factor, lower_boundary and upper_boundary that
-                specifies a wall-repelling force to ensure a prior on the parameters
+        Args:
+          prior: dict with keys factor, lower_boundary and upper_boundary that
+        specifies a wall-repelling force to ensure a prior on the parameters
+
+        Returns:
+
         """
         if "factor" in prior:
             self.force_factor = prior["factor"]
@@ -93,24 +139,26 @@ class StochasticGradientLangevinDynamicsSampler(WalkerEnsembleOptimizer):
             self.upper_boundary = prior["upper_boundary"]
 
     def _apply_prior(self, var):
-        """ Returns two prior constraining force nodes that have linearly increasing
+        """Returns two prior constraining force nodes that have linearly increasing
         strength with distance to wall (and beyond).
-
+        
         Note that force is continuous,
         not smooth itself!
-
+        
         The domain is specified by the interval [upper_boundary, lower_boundary].
-
-        Cases:
-        ------
+        
+        We have the following cases:
           1. both ub and lb specified, then in 0.01 of domain length (ub-lb) the force
              begins
           2. if only ub is specified, then within 0.01 of domain length (ub) ...
           3. if only lb is specified as it negative, then within -0.01 ...
              otherwise we use a fixed relative domain length of 0.01
 
-        :param var:
-        :return:
+        Args:
+          var: return:
+
+        Returns:
+
         """
 
         def wall_force(signed_distance, wall_size):
@@ -164,16 +212,20 @@ class StochasticGradientLangevinDynamicsSampler(WalkerEnsembleOptimizer):
         return ub_repell, lb_repell
 
     def _apply_dense(self, grads_and_vars, var):
-        """ Adds nodes to TensorFlow's computational graph in the case of densely
+        """Adds nodes to TensorFlow's computational graph in the case of densely
         occupied tensors to perform the actual sampling.
-
+        
         We simply add nodes that generate normally distributed noise here, one
         for each weight.
         The norm of the injected noise is placed into the TensorFlow summary.
 
-        :param grads_and_vars: gradient nodes over all replicas and all variables
-        :param var: parameters of the neural network
-        :return: a group of operations to be added to the graph
+        Args:
+          grads_and_vars: gradient nodes over all replicas and all variables
+          var: parameters of the neural network
+
+        Returns:
+          a group of operations to be added to the graph
+
         """
         # Pick correct gradient from grad_list
         #print(grad)
@@ -208,13 +260,17 @@ class StochasticGradientLangevinDynamicsSampler(WalkerEnsembleOptimizer):
                                         var_update])
 
     def _apply_sparse(self, grad, var):
-        """ Adds nodes to TensorFlow's computational graph in the case of sparsely
+        """Adds nodes to TensorFlow's computational graph in the case of sparsely
         occupied tensors to perform the actual sampling.
-
+        
         Note that this is not implemented so far.
 
-        :param grad: gradient nodes, i.e. they contain the gradient per parameter in `var`
-        :param var: parameters of the neural network
-        :return: a group of operations to be added to the graph
+        Args:
+          grad: gradient nodes, i.e. they contain the gradient per parameter in `var`
+          var: parameters of the neural network
+
+        Returns:
+          a group of operations to be added to the graph
+
         """
         raise NotImplementedError("Sparse gradient updates are not supported.")

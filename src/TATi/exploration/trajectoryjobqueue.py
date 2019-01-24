@@ -1,3 +1,23 @@
+#
+#    ThermodynamicAnalyticsToolkit - analyze loss manifolds of neural networks
+#    Copyright (C) 2018 The University of Edinburgh
+#    The TATi authors, see file AUTHORS, have asserted their moral rights.
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### 
+
 from collections import deque
 import logging
 
@@ -12,19 +32,27 @@ from TATi.exploration.trajectoryjobid import TrajectoryJobId
 from TATi.exploration.trajectoryqueue import TrajectoryQueue
 
 class TrajectoryJobQueue(TrajectoryQueue):
-    ''' This class is a queue of trajectory jobs (of type run and analyze)
+    """This class is a queue of trajectory jobs (of type run and analyze)
     which are executed in a FIFO fashion until the queue is empty.
 
-    '''
+    Args:
+
+    Returns:
+
+    """
 
     MAX_MINIMA_CANDIDATES = 3 # dont check more than this number of minima candidates
 
     def __init__(self, max_legs, number_pruning, number_processes=0):
-        """ Initializes a queue of trajectory jobs.
+        """Initializes a queue of trajectory jobs.
 
-        :param max_legs: maximum number of legs (of length max_steps) per trajectory
-        :param number_pruning: number of pruning jobs added at trajectory end
-        :param number_processes: number of concurrent processes to use
+        Args:
+          max_legs: maximum number of legs (of length max_steps) per trajectory
+          number_pruning: number of pruning jobs added at trajectory end
+          number_processes: number of concurrent processes to use (Default value = 0)
+
+        Returns:
+
         """
         super(TrajectoryJobQueue, self).__init__(max_legs, number_pruning, number_processes)
         self.data_container =  TrajectoryDataContainer()
@@ -32,11 +60,15 @@ class TrajectoryJobQueue(TrajectoryQueue):
         self.queue = deque()
 
     def add_analyze_job(self, data_object, parameters, continue_flag):
-        """ Adds an analyze job to the queue.
+        """Adds an analyze job to the queue.
 
-        :param data_object: data object for the job
-        :param parameters: parameters for analysis
-        :param continue_flag: flag whether job should spawn more jobs or not
+        Args:
+          data_object: data object for the job
+          parameters: parameters for analysis
+          continue_flag: flag whether job should spawn more jobs or not
+
+        Returns:
+
         """
         analyze_job = TrajectoryJob_analyze(data_id=data_object.get_id(),
                                             parameters=parameters,
@@ -44,11 +76,15 @@ class TrajectoryJobQueue(TrajectoryQueue):
         self._enqueue_job(analyze_job)
 
     def add_check_gradient_job(self, data_object, parameters=None, continue_flag=True):
-        """ Adds an check_gradient job to the queue.
+        """Adds an check_gradient job to the queue.
 
-        :param data_object: data object for the job
-        :param parameters: parameters for analysis
-        :param continue_flag: flag whether job should spawn more jobs or not
+        Args:
+          data_object: data object for the job
+          parameters: parameters for analysis (Default value = None)
+          continue_flag: flag whether job should spawn more jobs or not (Default value = True)
+
+        Returns:
+
         """
         check_gradient_job = TrajectoryJob_check_gradient(data_id=data_object.get_id(),
                                                           parameters=parameters,
@@ -56,11 +92,15 @@ class TrajectoryJobQueue(TrajectoryQueue):
         self._enqueue_job(check_gradient_job)
 
     def add_check_minima_jobs(self, data_object, run_object, continue_flag):
-        """ Adds a check_minima/optimize job to the queue.
+        """Adds a check_minima/optimize job to the queue.
 
-        :param data_object: data object for the job
-        :param network_model: neural network object for running the graph
-        :param continue_flag: flag whether job should spawn more jobs or not
+        Args:
+          data_object: data object for the job
+          continue_flag: flag whether job should spawn more jobs or not
+          run_object:  network_model required for the train job
+
+        Returns:
+
         """
         if not self.do_check_minima:
             return
@@ -102,11 +142,15 @@ class TrajectoryJobQueue(TrajectoryQueue):
                 continue_flag=continue_flag)
 
     def add_extract_minima_job(self, data_object, parameters, continue_flag):
-        """ Adds an extract job to the queue.
+        """Adds an extract job to the queue.
 
-        :param data_object: id associated with data object for the job
-        :param parameters: parameters for analysis
-        :param continue_flag: flag whether job should spawn more jobs or not
+        Args:
+          data_object: id associated with data object for the job
+          parameters: parameters for analysis
+          continue_flag: flag whether job should spawn more jobs or not
+
+        Returns:
+
         """
         if not self.do_check_minima:
             return
@@ -117,11 +161,15 @@ class TrajectoryJobQueue(TrajectoryQueue):
         self._enqueue_job(extract_job)
 
     def add_prune_job(self, data_object, network_model, continue_flag):
-        """ Adds a prune job to the queue.
+        """Adds a prune job to the queue.
 
-        :param data_object: data object for the job
-        :param network_model: neural network model
-        :param continue_flag: flag whether job should spawn more jobs or not
+        Args:
+          data_object: data object for the job
+          network_model: neural network model
+          continue_flag: flag whether job should spawn more jobs or not
+
+        Returns:
+
         """
         prune_job = TrajectoryJob_prune(data_id=data_object.get_id(),
                                         network_model=network_model,
@@ -129,13 +177,15 @@ class TrajectoryJobQueue(TrajectoryQueue):
         self._enqueue_job(prune_job)
 
     def add_sample_job(self, data_object, run_object, continue_flag=False):
-        """ Adds a run job to the queue.
+        """Adds a run job to the queue.
 
-        :param data_object: data object for the job
-        :param run_object: neural network object for running the graph
-        :param initial_step: number of first step (for continuing a trajectory)
-        :param parameters: parameters of the neural net to set. If None, keep random ones
-        :param continue_flag: flag whether job should spawn more jobs or not
+        Args:
+          data_object: data object for the job
+          run_object: neural network object for running the graph
+          continue_flag: flag whether job should spawn more jobs or not (Default value = False)
+
+        Returns:
+
         """
         data_object = self.instantiate_data_object(data_object)
         if len(data_object.legs_at_step) > 0:
@@ -155,13 +205,15 @@ class TrajectoryJobQueue(TrajectoryQueue):
         self._enqueue_job(sample_job)
 
     def add_train_job(self, data_object, run_object, continue_flag=False):
-        """ Adds a run job to the queue.
+        """Adds a run job to the queue.
 
-        :param data_object: data object for the job
-        :param run_object: neural network object for running the graph
-        :param initial_step: number of first step (for continuing a trajectory)
-        :param parameters: parameters of the neural net to set. If None, keep random ones
-        :param continue_flag: flag whether job should spawn more jobs or not
+        Args:
+          data_object: data object for the job
+          run_object: neural network object for running the graph
+          continue_flag: flag whether job should spawn more jobs or not (Default value = False)
+
+        Returns:
+
         """
         data_object = self.instantiate_data_object(data_object)
         # TODO: parameters needs to be properly adapted to ensemble of walkers case
@@ -173,28 +225,40 @@ class TrajectoryJobQueue(TrajectoryQueue):
         self._enqueue_job(train_job)
 
     def trajectory_ended(self, data_id):
-        """ Provides a hook for derived classes to do something when a trajectory
+        """Provides a hook for derived classes to do something when a trajectory
         is terminated.
 
-        :param data_id: data id to this trajectory
+        Args:
+          data_id: data id to this trajectory
+
+        Returns:
+
         """
         pass
 
     def leg_ended(self, data_id):
-        """ Provides a hook for derived classes to do something when a leg
+        """Provides a hook for derived classes to do something when a leg
         is terminated.
 
-        :param data_id: data id to this trajectory
+        Args:
+          data_id: data id to this trajectory
+
+        Returns:
+
         """
         pass
 
     def run_next_job(self, run_object, analyze_object):
-        ''' Takes the next job from the start of the queue and runs it.
+        """Takes the next job from the start of the queue and runs it.
         Will add new jobs to queue depending on the result of the run job.
 
-        :param run_object: neural network object for run
-        :param analyze_object: parameter object for analysis
-        '''
+        Args:
+          run_object: neural network object for run
+          analyze_object: parameter object for analysis
+
+        Returns:
+
+        """
         usable_job = False
         while not usable_job:
             if self.number_processes == 0:

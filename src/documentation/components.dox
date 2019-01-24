@@ -1,0 +1,218 @@
+/*
+ *    Project: ThermodynamicAnalyticsToolkit
+ *    Description:  loss manifolds of neural networks
+ *    Copyright (C) 2018 The University of Edinburgh
+ *    The TATi authors, see file AUTHORS, have asserted their moral rights.
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU General Public License as published by
+ *    the Free Software Foundation, either version 3 of the License, or
+ *    (at your option) any later version.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU General Public License for more details.
+ *
+ *    You should have received a copy of the GNU General Public License
+ *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+/**
+ * \file components.dox
+ *
+ *  Explain central components/classes of TATi.
+ *
+ * Created on: Jan 11, 2019
+ *    Author: heber
+ */
+
+/** \page components Components of TATi
+ *
+ * In this part we elaborate on the central components and classes of TATi
+ * to guide the user through the many classes found in this suite.
+ *
+ * We talk about:
+ *
+ * \li \ref components-options "Options"
+ * \li \ref components-central "Central modules" such as
+ *      \ref components-central-simulation "Simulation" and
+ *      \ref components-central-model "Model"
+ * \li \ref components-other "Other modules"
+ * \li \ref components-walkers "Walker concept"
+ *
+ * \section components-options Dict of options controls TATi
+ *
+ * TATi's program design revolves around a central dict where we store all
+ * options. These options control the network (number nodes, type of
+ * activation), and loss. They define the dataset files. They give the
+ * type of sampler or optimizer method to use along with options such
+ * as step width or learning rate. Everything.
+ *
+ * This dict is often referred to by the name \link FLAGS \endlink
+ * (sometimes \a options).
+ * Its class resides in \b src/TATi/options, see the documentation of
+ * \ref TATi.options.pythonoptions.PythonOptions.
+ *
+ * The dict comes with a set of default values. Both main modules may be
+ * instantiated by giving keywords (respective to this dict), one for
+ * each value where it differs from the default (or when the default is
+ * \a None ).
+ *
+ * - Default values: see TATi.options.pythonoptions.PythonOptions._default_map
+ * - General description: see TATi.options.pythonoptions.PythonOptions._description_map
+ * - Type of each value: see TATi.options.pythonoptions.PythonOptions._type_map
+ *
+ * \note This dict is not really a dict but a class that has certain numbers
+ * overwritten to allow access as if each key actually referred to a member
+ * variable, e.g., `FLAGS["batch_data_files"]` becomes
+ * \code{.py}
+ * FLAGS.batch_data_files
+ * \endcode
+ *
+ * \section components-central Central components
+ *
+ * Then, there are two main modules, `tati.simulation` and `tati.model`,
+ * that use these options dict and execute operations such as sampling
+ * a trajectory, predicting labels for a given set of features,
+ * analyzing the covariance of a trajectory and so on.
+ *
+ * \subsection components-central-simulation Simulation module
+ *
+ * How to use the TATi.simulation.Simulation module is explained in great
+ * detail in the userguide.
+ *
+ * Here, we just elaborate on its design.
+ *
+ * Simulation acts pretty much as a simple interface class to many other
+ * modules contained in TATi. It contains internally TATi.model.Model as the
+ * class that represents TATi's internal state (actually
+ * TATi.models.modelstate.ModelState) of the network, the input pipeline,
+ * access to parameters and so on.
+ *
+ * To this end, it contains a set of functions that simply relay to
+ * functions inside the TATi.model.Model class.
+ *
+ * There are a few peculiarities though.
+ *
+ * \subsubsection components-central-simulation-lazy Lazy instantiation
+ *
+ * The user may decide to not provide a dataset in instantiation of the
+ * Simulation class. The reason might be that he wants to provide the
+ * dataset as numpy arrays lateron through TATi.simulation.Simulation.dataset.
+ *
+ * As the dataset determines the size of the input and output layer of the
+ * neural network it is a crucial ingredient for its construction.
+ *
+ * Or in other words, without knowing the dataset we cannot construct the
+ * neural network.
+ *
+ * Therefore, we delay the network's creation (lazy construction) until
+ * the dataset is known. This is handled by the internal variable
+ * TATi.simulation.Simulation._lazy_nn_construction.
+ *
+ * \subsubsection components-central-simulation-cache Evaluation cache
+ *
+ * Simulation needs to take into account that a user may write:
+ *
+ * \code{.py}
+ * from TATi.simulation import Simulation as tati
+ * nn = tati(batch_data_files="dataset.csv, batch_size=10)
+ * print(nn.loss())
+ * print(nn.gradients())
+ * \endcode
+ *
+ * Here, the user reads a dataset \b dataset.csv and uses the randomly
+ * initialized single-layer perceptron (no hidden nodes) with default
+ * activations. Afterwards, it wants to print the loss and next the
+ * gradient.
+ *
+ * If the dataset is smaller than the batch size 10, then naive implementation
+ * would cause loss and gradients to evaluated on different batches. This
+ * might possibly yield meaningless results to the user who wants to know
+ * the gradient with respect to the loss he saw just before.
+ *
+ * Therefore, Simulation comes with a class
+ * TATi.models.evaluationcache.EvaluationCache wherein results of certain
+ * operations such as loss, gradients, ... are cached. Requesting one of
+ * these will check whether they are still contained in the cache.
+ *
+ * A reset of the EvaluationCache is triggered, when an operation is requested
+ * whose value has already been given from the cache. This will skip to a
+ * a new batch.
+ *
+ *  This allows to return both loss and gradient to the same batch.
+ *
+ * \subsubsection components-central-simulation-affects Resetting options
+ *
+ * Another peculiarity is that the user is allowed to modify the options, see
+ * TATi.simulation.Simulation.set_options().
+ *
+ * Changing an option may simply change the verbosity of the debugging output
+ * or have heavy-weight effects such as changing the network architecture by
+ * adding more hidden nodes.
+ *
+ * Simulation on the one hand has an TATi.simulation.Simulation._affects_map
+ * that tells the effect of each option value change.
+ *
+ * \subsection components-central-model Model module
+ *
+ * Where the \ref components-simulation "Simulation" interface is thought as
+ * the light-weight interface to TATi that provides a rapid-prototyping
+ * capability for new samplers, the TATi.model.Model class is the heavy-weight
+ * counterpart.
+ *
+ * The delineation is not so strict as Python does not truly know about private
+ * and public parts of the interface. Therefore, even from the Simulation
+ * interface any class contents may be manipulated.
+ *
+ * However, the \ref model class allows a more direct access. It is directly
+ * tied to the TATi.models.modelstate.ModelState class that contains the state
+ * of the network, the input pipeline, the trajectory writers, and everything
+ * else. Within ModelState all initialization happens in a variety of
+ * `init_...()` functions.
+ *
+ * \section components-other Other important modules
+ *
+ * We conclude this page with a list of some other important modules:
+ *
+ * - TATi.models.networks.neuralnetwork - construct the neural network with
+ *  its weight and biases and adds the samplers and optimizers.
+ * - TATi.runtime.runtime.runtime - measuring the run time of components
+ *
+ * \section components-walkers Multiple walkers
+ *
+ * One concept that one may come across frequently is the walker, e.g.,
+ * through the function parameter `walker_index`.
+ *
+ * In sampling walkers are associated with an individual set of parameters
+ * (the degrees of freedom of the network) and they move during sampling
+ * or training along the loss manifold. Their parameter set gives the position
+ * on the manifold.
+ *
+ * TATi allows to sample with many walkers in parallel. This may be used for
+ * the benefit to speed up the sampling by exchanging information between the
+ * walkers that is used to build an approximation of the local covariance
+ * (something akin to 2nd order optimization).
+ *
+ * This requires us to copy the neural network but feed each with the same batch
+ * of the dataset. Tensorflow aids this by allowing different namespaces such
+ * that weights of each network are properly distinct from each other.
+ *
+ * You can either think of these walkers as distinct copies of the neural
+ * network or as different positions on the loss manifold that move (or walk)
+ * independently.
+ *
+ * Typically, however, there will be only a single walker.
+ *
+ * \note The implementation for exchanging information between walkers required
+ * us to override tensorflow's `tf.train.Optimizer` class. This causes sometimes
+ * issues with newer versions of tensorflow when private parts of the
+ * interface change as these are naturally not covered by the Python API
+ * stability promise. Typically, these changes are simply taken over and
+ * bracketed to be only applicable from the respective tensorflow version
+ * onwards, see the module TATi.samplers.walkersensembleoptimizer.
+ *
+ * \date 2019-01-11
+ */

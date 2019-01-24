@@ -1,30 +1,56 @@
+#
+#    ThermodynamicAnalyticsToolkit - analyze loss manifolds of neural networks
+#    Copyright (C) 2018 The University of Edinburgh
+#    The TATi authors, see file AUTHORS, have asserted their moral rights.
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### 
+
 from hmac import new
 
 import numpy as np
 
 
 class NetworkParameterAdapter(object):
-    """ Adapts parameters obtained from one network size to another.
+    """Adapts parameters obtained from one network size to another.
 
-    Parameters of a neural network can be obtained as a single numpy vector.
-    When one changes the network dimensions, this vector is no longer valid
-    as it internally needs to fulfill a certain structure.
+    Args:
+      When: one changes the network dimensions
+      as: it internally needs to fulfill a certain structure
+      This: class helps in adapting a parameter vector obtained from a network
+      of: one size to the parameter vector of a network with a different size
 
-    This class helps in adapting a parameter vector obtained from a network
-    of one size to the parameter vector of a network with a different size.
+    Returns:
+
     """
 
     perturbation_scale = 1e-2
 
     @staticmethod
     def convert(old_parameters, old_dimensions, new_dimensions):
-        """ Converts `old_parameters` conforming to the sizes defined in
+        """Converts `old_parameters` conforming to the sizes defined in
         `old_dimensions` to `new_dimensions`.
 
-        :param old_parameters: numpy array of parameters
-        :param old_dimensions: list of input, list of hidden, and output dimensions
-        :param new_dimensions: list of input, list of hidden, and output dimensions
-        :return: new numpy array of parameters
+        Args:
+          old_parameters: numpy array of parameters
+          old_dimensions: list of input, list of hidden, and output dimensions
+          new_dimensions: list of input, list of hidden, and output dimensions
+
+        Returns:
+          new numpy array of parameters
+
         """
         print(old_parameters.shape)
 
@@ -79,13 +105,17 @@ class NetworkParameterAdapter(object):
 
     @staticmethod
     def _convert_single_layer_weights(layer_weights, old_dims, new_dims):
-        """ This converts a single set of weights from one layer having `old_dims`
+        """This converts a single set of weights from one layer having `old_dims`
         into `new_dims`
 
-        :param layer_weights: numpy array with old weights
-        :param old_dims: list of input and output dimension of old network
-        :param new_dims: list of input and output dimension of new network
-        :return: convert set of weights
+        Args:
+          layer_weights: numpy array with old weights
+          old_dims: list of input and output dimension of old network
+          new_dims: list of input and output dimension of new network
+
+        Returns:
+          convert set of weights
+
         """
         # print(hidden_layer_weights)
         layer_weights.shape = (old_dims[0], old_dims[1])
@@ -103,12 +133,16 @@ class NetworkParameterAdapter(object):
 
     @staticmethod
     def _convert_single_layer_biases(layer_biases, new_dims):
-        """ This converts a single set of biases from one layer having `old_dims`
+        """This converts a single set of biases from one layer having `old_dims`
         into `new_dims`
 
-        :param layer_biases: numpy array with old biases
-        :param new_dims: list of input and output dimension of new network
-        :return: convert set of biases
+        Args:
+          layer_biases: numpy array with old biases
+          new_dims: list of input and output dimension of new network
+
+        Returns:
+          convert set of biases
+
         """
         # print(layer_biases)
         ###layer_biases.shape = (old_dims[1])
@@ -126,11 +160,15 @@ class NetworkParameterAdapter(object):
 
     @staticmethod
     def _add_diagonal_layer_weights(dims):
-        """ This adds a new layer with ones on the diagonal and small values unequal to
+        """This adds a new layer with ones on the diagonal and small values unequal to
         zero everywhere else, i.e. a pass-thru layer.
 
-        :param dims: list of input and output dimension of new network
-        :return: numpy array with new weight matrix
+        Args:
+          dims: list of input and output dimension of new network
+
+        Returns:
+          numpy array with new weight matrix
+
         """
         layer_weights = np.random.rand(dims[0], dims[1]) * NetworkParameterAdapter.perturbation_scale
         min_dim = min(dims[0], dims[1])
@@ -141,10 +179,14 @@ class NetworkParameterAdapter(object):
 
     @staticmethod
     def _add_diagonal_layer_biases(dims):
-        """ This adds a new vector biases all small unequal to zero values
+        """This adds a new vector biases all small unequal to zero values
 
-        :param dims: list of input and output dimension of new network
-        :return: numpy array with new bias parameters
+        Args:
+          dims: list of input and output dimension of new network
+
+        Returns:
+          numpy array with new bias parameters
+
         """
         return np.ones(dims[1]) * NetworkParameterAdapter.perturbation_scale
 

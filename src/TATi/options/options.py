@@ -1,9 +1,22 @@
-""" @package docstring
-Options contains all parameters that control runtime behavior.
-
-"""
-
-import logging
+#
+#    ThermodynamicAnalyticsToolkit - analyze loss manifolds of neural networks
+#    Copyright (C) 2018 The University of Edinburgh
+#    The TATi authors, see file AUTHORS, have asserted their moral rights.
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### 
 
 class Options(object):
     """ Options is an abstract class to contain all option values.
@@ -50,6 +63,9 @@ class Options(object):
     def __setstate__(self, state):
         """ Override pickling's `setstate()` as otherwise the `_options_map`
         is search for the builtin function.
+
+        Args:
+            state: dict with new values.
         """
         self._option_map = state["_option_map"]
         self._excluded_keys = state["_excluded_keys"]
@@ -57,15 +73,16 @@ class Options(object):
     def add(self, key):
         """ Specifically add a new value to the set of options.
 
-        @note `set()` will fail when the option is not known, yet. This is done
+        `set()` will fail when the option is not known, yet. This is done
         deliberately to prevent errors with typos in option names.
 
-        @note Option is initially set to None.
+        Option is initially set to None.
+
+        Args:
+            key: name of new option
 
         Raises:
             AttributeError
-
-        :param key: name of new option
         """
         if key in self._option_map.keys():
             raise AttributeError("Option "+str(key)+" is already known.")
@@ -76,26 +93,43 @@ class Options(object):
     def get(self, key):
         """ Getter for the value associated with the option named `key`.
 
+        Args:
+            key: name of option
+            option value of key
+
         Raises:
             AttributeError
 
-        :param key: name of option
-        :return: option value of key
         """
         try:
             return self._option_map[str(key)]
         except KeyError:
             raise AttributeError("Option '"+str(key)+"' is unknown")
 
+    def __contains__(self, key):
+        """ Checks whether 'key` is a known key to this options class.
+
+        Args:
+            key: key name
+
+        Returns:
+            True - key found, False - key unknown
+        """
+        return str(key) in self._option_map.keys()
+
     def __getattr__(self, key):
         """ Override `__getattr__` to mask access to options as if they were
         member variables.
 
+        Args:
+            key: name of option
+
+        Returns:
+            value of option
+
         Raises:
             AttributeError
 
-        :param key: name of option
-        :return: value of option
         """
         #print("__getattr__:"+key)
         if (key[0] != '_') and \
@@ -106,11 +140,13 @@ class Options(object):
     def set(self, key, value):
         """ Setter for the value associated with the option named `key`.
 
+        Args:
+            key: name of option
+            value: value to set
+
         Raises:
             AttributeError
 
-        :param key: name of option
-        :param value: value to set
         """
         if key in self._option_map.keys():
             if key in self._type_map.keys():
@@ -145,9 +181,12 @@ class Options(object):
         Raises:
             AttributeError
 
-        :param key: name of option
-        :param value: value to set
-        :return: value of option
+        Args:
+            key: name of option
+            value: value to set
+
+        Returns:
+            value of option
         """
         #print("__setattr__:"+key)
         if (key[0] != '_') and \

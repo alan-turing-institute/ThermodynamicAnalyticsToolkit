@@ -1,0 +1,44 @@
+#
+#    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
+#    Copyright (C) 2018 The University of Edinburgh
+#    The TATi authors, see file AUTHORS, have asserted their moral rights.
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+###
+
+AT_SETUP([Checking for present date stamp in .dox files])
+AT_KEYWORDS([CodeCheck dox date_in_dox])
+ok=""
+echo `pwd`
+echo "${#ok[*]} are ok to not contain date in .dox: ${ok[*]}."
+liste=`find ${abs_top_srcdir}/src -name '*.dox'`
+for file in $liste
+do
+  # check whether its one of the excluded ones
+  found=0
+  for item in $ok
+  do
+    if test "$item" == "`basename $file`"
+    then
+      found=1
+      break
+    fi
+  done
+  # if not, check whether it contains the include
+  if test $found -eq 0
+  then
+    AT_CHECK([egrep -q '\date [[0-9]]{4}-[[0-2]][[0-9]]-[[0-3]][[0-9]]' $file], 0, [ignore], [ignore], [echo "Could not find date stamp in $file."])
+  fi
+done
+AT_CLEANUP

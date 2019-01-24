@@ -1,14 +1,14 @@
-from TATi.models.model import model
+from TATi.model import Model as tati
 
 import numpy as np
 
 # prepare parameters
-FLAGS = model.setup_parameters(
+FLAGS = tati.setup_parameters(
     batch_data_files=["dataset-twoclusters.csv"],
     batch_size=10,
     output_activation="linear"
 )
-nn = model(FLAGS)
+nn = tati(FLAGS)
 
 # prepare network and input pipeline
 nn.init_input_pipeline()
