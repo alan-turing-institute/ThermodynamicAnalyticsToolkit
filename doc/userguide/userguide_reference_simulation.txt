@@ -169,7 +169,7 @@ computational graph of tensorflow in case you need to add nodes.
 Supply dataset as array
 +++++++++++++++++++++++
 
-As a next step, we need to supply a dataset latexmath:[D]. This dataset will
+As a next step, we need to supply a dataset latexmath:[$D$]. This dataset will
 also necessitate a certain amount of input and output nodes.
 
 [NOTE]
@@ -227,7 +227,7 @@ parameters.
 Requesting parameters
 +++++++++++++++++++++
 
-The network's parameters consist of a single vector latexmath:[w] where weights
+The network's parameters consist of a single vector latexmath:[$w$] where weights
 and biases are concatenated in the following fashion: weight matrix to first
 layer, weight matrix to second layer, ..., bias vector to first layer. In
 other words, first all weights, then all biases.
@@ -295,7 +295,7 @@ Requesting momenta
 ++++++++++++++++++
 
 In the same way as requesting the current set of parameters we can also access
-the momenta latexmath:[p].
+the momenta latexmath:[$p$].
 
 [source,python]
 ---------------
@@ -353,8 +353,8 @@ automatically.
 Evaluate loss
 +++++++++++++
 
-Now, all is set to actually evaluate the loss function latexmath:[L_D(w)] for
-the first time. As a default the mean squared distance latexmath:[l(x,y) = ||x-y||^2]
+Now, all is set to actually evaluate the loss function latexmath:[$L_D(w)$] for
+the first time. As a default the mean squared distance latexmath:[$l(x,y) = ||x-y||^2$]
 is chosen as the loss function. However, by setting the `loss` in the initial
 parameters to `tati` appropriately, all other loss functions that tensorflow
 offers are available, too.
@@ -373,7 +373,7 @@ Evaluate gradients
 ++++++++++++++++++
 
 Gradient information is similarly important as the loss function itself,
-latexmath:[\nabla_w L_D(w)].
+latexmath:[$\nabla_w L_D(w)$].
 
 [source,python]
 ---------------
@@ -385,13 +385,13 @@ Remember that all parameters are vectorized, hence, the
 per component the gradient with respect to the specific parameter.
 
 NOTE: The gradients are given in exactly the same order as the order of
-the parameter vector latexmath:[w].
+the parameter vector latexmath:[$w$].
 
 [[reference.simulation.evaluation.hessians]]
 Evaluate Hessians
 +++++++++++++++++
 
-Apart from gradient information hessians latexmath:[H_{ij}] are also available.
+Apart from gradient information hessians latexmath:[$H_{ij}$] are also available.
 Note however that hessians are both very expensive to compute and to setup as
 many nodes needed to be added to the computational graph. Therefore, in
 the initial parameters to `tati` you need to explicitly state
@@ -419,8 +419,8 @@ include::simulation/evaluate_accuracy.py[]
 
 The accuracy is simply comparing the signs of predicted label and label given
 in the dataset over all the batch or dataset.  In other words in the binary
-classification setting we expect labels as latexmath:[\{-1,1\}].
-For multi-class classification labels are simply in latexmath:[\{0,1\}] and
+classification setting we expect labels as latexmath:[$\{-1,1\}$].
+For multi-class classification labels are simply in latexmath:[$\{0,1\}$] and
 we compare which two classes have the largest output component, i.e. the
 likeliest to match. Again, this is reduced by taking the mean square over the
 whole dataset or batch.

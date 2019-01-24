@@ -142,7 +142,7 @@ use the option 'do_hessians 1' to activate it.
 
 [NOTE]
 ====
-The creation of the nodes is costly, latexmath:[O(N^2)] in the number of
+The creation of the nodes is costly, latexmath:[$O(N^2)$] in the number of
 parameters of the network N. Hence, may not work for anything but small
 networks and should be done on purpose.
 ====

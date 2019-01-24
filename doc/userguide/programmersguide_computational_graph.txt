@@ -27,7 +27,7 @@ Underlying all of tensorflow and typically most of the Machine Learning (ML)
 frameworks is the concept of a _computational graph_.
 
 A graph consists of a set of vertices V and a set of edges E. Edges
-latexmath:[e_{ij} \in E] connect two nodes latexmath:[v_i, v_j] and may be
+latexmath:[$e_{ij} \in E$] connect two nodes latexmath:[$v_i, v_j$] and may be
 directed.
 
 In the context of a computational graph functions and variables represent the
@@ -41,7 +41,7 @@ image::./pictures/computational_graph.png[{basebackend@docbook:scaledwidth="25%"
 
 Let us have a concrete example and take a look at Figure
 link:#concepts.computational_graph.figure[Computational Graph].
-There, we have two variable nodes *a* and *b* and one summation node latexmath:[\Sigma]
+There, we have two variable nodes *a* and *b* and one summation node latexmath:[$\Sigma$]
 that depends on the two.
 
 Assume we want to evaluate the sum function. The function node can be imagined

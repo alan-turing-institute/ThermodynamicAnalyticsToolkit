@@ -131,7 +131,7 @@ Output layer
 ++++++++++++
 
 Then we continue with the next layer, the output layer. In essence, our network
-computes the function latexmath:[f(Wx+b)], where *W* is the weight matrix, *x*
+computes the function latexmath:[$f(Wx+b)$], where *W* is the weight matrix, *x*
 is the input vector and *b* is a bias vector.
 
 Weights and biases are represented by variables `tf.Variable()`, an activation
@@ -184,7 +184,7 @@ Hidden layers
 
 Adding a _hidden layer_ is then as simple as adding another weight matrix where
 we need to use a *different* seed for its random numbers and setting up the
-function latexmath:[f_o(W_o f_h(W_h x+b_h) + b_o)], where we used indices *h*
+function latexmath:[$f_o(W_o f_h(W_h x+b_h) + b_o)$], where we used indices *h*
 and *o* for the hidden and output layer.
 
 This way we can construct arbitrary feed-forward networks.
@@ -401,7 +401,7 @@ making use of gradients, e.g., Gradient Descent.
 
 Let us look at the _optimizer_ first and then fill in the other gaps.
 Furthermore, let us consider a concrete example, namely we want to find the
-approximate minimum of the convex function latexmath:[2x^2-5x+4]. Therefore,
+approximate minimum of the convex function latexmath:[$2x^2-5x+4$]. Therefore,
 we know it has a single global extremum (a minimum).
 
 [source, python]
@@ -450,7 +450,7 @@ taking place.
 
 Similar to the above example, we will now also train our neural network.
 The only thing we need to change is the loss function. Here, we will use the
-mean squared loss latexmath:[||F_D(x) - y||^2], where latexmath:[F_D(x)] is
+mean squared loss latexmath:[$||F_D(x) - y||^2$], where latexmath:[$F_D(x)$] is
 the black-box neural network function depending implicitly on the dataset. It
 returns a vector (or matrix) of all predictions. These are compared to *y*, the
 labels of the dataset.

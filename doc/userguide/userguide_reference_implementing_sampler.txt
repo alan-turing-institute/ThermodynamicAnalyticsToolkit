@@ -31,10 +31,10 @@ Let us look at the four integration steps.
 [[reference.implementing_sampler.gla2]]
 .Geometric Langevin Algorithm 2nd order
 --
-. latexmath:[p_{n+\tfrac 1 2} = p_n - \tfrac {\lambda}{2} \nabla_x L(x_n)]
-. latexmath:[x_{n+1} = x_n + \lambda p_{n+\tfrac 1 2}]
-. latexmath:[\widehat{p}_{n+1} = p_{n+\tfrac 1 2} - \tfrac {\lambda}{2} \nabla_x L(x_{n+1})]
-. latexmath:[p_{n+1} = \alpha \widehat{p}_{n+1} + \sqrt{\frac{1-\alpha^2}{\beta}} \cdot \eta_n]
+. latexmath:[$p_{n+\frac 1 2} = p_n - \frac {\lambda}{2} \nabla_x L(x_n)$]
+. latexmath:[$x_{n+1} = x_n + \lambda p_{n+\frac 1 2}$]
+. latexmath:[$\widehat{p}_{n+1} = p_{n+\frac 1 2} - \frac {\lambda}{2} \nabla_x L(x_{n+1})$]
+. latexmath:[$p_{n+1} = \alpha \widehat{p}_{n+1} + \sqrt{\frac{1-\alpha^2}{\beta}} \cdot \eta_n$]
 --
 
 If you are familar with the *A* (position integration), *B*
@@ -48,19 +48,19 @@ Simple update implementation
 Therefore, let us write a python function that works on several `numpy` arrays
 producing a single GLA2 update step by performing the four integration steps
 above. To this end, we make use `tati.gradients()` for computing the gradients
-latexmath:[\nabla_x L(x_{n+1})].
+latexmath:[$\nabla_x L(x_{n+1})$].
 
 .A first GLA2 update implementation
 [source,python]
 ----
 def gla2_update_step(nn, momenta, step_width, beta, gamma): # <1>
-  # 1. p_{n+\tfrac 1 2} = p_n - \tfrac {\lambda}{2} \nabla_x L(x_n)
+  # 1. p_{n+\frac 1 2} = p_n - \frac {\lambda}{2} \nabla_x L(x_n)
   momenta -= .5*step_width * nn.gradients() # <2>
 
-  # 2. x_{n+1} = x_n + \lambda p_{n+\tfrac 1 2}
+  # 2. x_{n+1} = x_n + \lambda p_{n+\frac 1 2}
   nn.parameters = nn.parameters + step_width * momenta  # <3>
 
-  # 3. \widehat{p}_{n+1} = p_{n+\tfrac 1 2} - \tfrac {\lambda}{2} \nabla_x L(x_{n+1})
+  # 3. \widehat{p}_{n+1} = p_{n+\frac 1 2} - \frac {\lambda}{2} \nabla_x L(x_{n+1})
   momenta -= .5*step_width * nn.gradients()  # <4>
 
   # 4. p_{n+1} = \alpha \widehat{p}_{n+1} + \sqrt{\frac{1-\alpha^2}{\beta}} \cdot \eta_n
@@ -83,7 +83,7 @@ the friction constant `gamma`.
 <4> Then, we integrate momenta again, *B*.
 
 <5> Last, we perform the noise integration *O*. First, we compute the value of
-latexmath:[\alpha_n] and the the momenta are partially reset by the noise.
+latexmath:[$\alpha_n$] and the the momenta are partially reset by the noise.
 
 As the source of noise we have simply used `numpy`s standard normal
 distribution.
@@ -113,16 +113,16 @@ Hence, let us refine the function with respect to this.
 [source,python]
 ----
 def gla2_update_step(nn, momenta, old_gradients, step_width, beta, gamma):
-    # 1. p_{n+\tfrac 1 2} = p_n - \tfrac {\lambda}{2} \nabla_x L(x_n)
+    # 1. p_{n+\frac 1 2} = p_n - \frac {\lambda}{2} \nabla_x L(x_n)
     momenta -= .5*step_width * old_gradients
 
-    # 2. x_{n+1} = x_n + \lambda p_{n+\tfrac 1 2}
+    # 2. x_{n+1} = x_n + \lambda p_{n+\frac 1 2}
     nn.parameters = nn.parameters + step_width * momenta
 
     # \nabla_x L(x_{n+1})
     gradients = nn.gradients()
 
-    # 3. \widehat{p}_{n+1} = p_{n+\tfrac 1 2} - \tfrac {\lambda}{2} \nabla_x L(x_{n+1})
+    # 3. \widehat{p}_{n+1} = p_{n+\frac 1 2} - \frac {\lambda}{2} \nabla_x L(x_{n+1})
     momenta -= .5*step_width * gradients
 
     # 4. p_{n+1} = \alpha \widehat{p}_{n+1} + \sqrt{\frac{1-\alpha^2}{\beta}} \cdot \eta_n

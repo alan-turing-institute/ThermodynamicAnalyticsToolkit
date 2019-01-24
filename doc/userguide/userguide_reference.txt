@@ -32,9 +32,9 @@ userguide.
 
 - Dataset
 +
-The dataset latexmath:[D = \{X,Y\}] contains a fixed number of datums of input
-tuples or features latexmath:[X=\{x_d\}] and output tuples or labels
-latexmath:[Y=\{y_d\}]. Basically, they are samples taken from
+The dataset latexmath:[$D = \{X,Y\}$] contains a fixed number of datums of input
+tuples or features latexmath:[$X=\{x_d\}$] and output tuples or labels
+latexmath:[$Y=\{y_d\}$]. Basically, they are samples taken from
 the unknown function which we wish to approximate using the neural
 network. If the output tuples are binary in each component, the
 approximation problem is called a _classification_ problem. Otherwise,
@@ -45,21 +45,21 @@ it is a _regression_ problem.
 The neural network is a black-box representing a certain set of general
 functions that are efficient in solving classification problems (among others).
 They are parametrized explicitly using weights and biases
-latexmath:[w=\{w_1, \ldots, w_M\}] and implicitly through the topology of the
+latexmath:[$w=\{w_1, \ldots, w_M\}$] and implicitly through the topology of the
 network (connections of nodes residing in layers) and the activation functions
-used. The network's output latexmath:[F_w(x_i)] depends explicitly on the
+used. The network's output latexmath:[$F_w(x_i)$] depends explicitly on the
 dataset's current datum (fed into the network) and implicitly on the parameters.
 
 - Loss
 +
 The default is 'mean_squared'.
 +
-The loss function latexmath:[L_D(w)] determines for a given (labeled) dataset
+The loss function latexmath:[$L_D(w)$] determines for a given (labeled) dataset
 what set of neural network's parameters are best. Different losses result in
 different set of parameters. It is a high-dimensional manifold that we want to
 learn and capture using the neural network. It implicitly depends on the given
 dataset and explicitly on the parameters of the neural network, namely
-weights and biases, latexmath:[w=\{w_1, \ldots, w_M\}].
+weights and biases, latexmath:[$w=\{w_1, \ldots, w_M\}$].
 +
 Most important to understand about the loss is that it is a _non-convex_
 function and therefore in general does not just have a single minimum.
@@ -70,7 +70,7 @@ actually the global one.
 
 - Momenta and kinetic energy
 +
-Momenta latexmath:[p=\{p_1, \ldots, p_M\}] is a concept taken over from physics
+Momenta latexmath:[$p=\{p_1, \ldots, p_M\}$] is a concept taken over from physics
 where the parameters are considered as particles each in a one-dimensional
 space where the loss is a potential function whose ( negative) gradient acts as
 a force onto the particle driving them down-hill (towards the local minimum).
@@ -85,12 +85,12 @@ position (i.e. the parameter value) and its momentum through time. Note
 that momentum and velocity are actually equivalent as usually the mass
 is set to unity.
 +
-The kinetic energy latexmath:[0.5 \sum^M_i p^T_i p_i] is computed as sum over
+The kinetic energy latexmath:[$0.5 \sum^M_i p^T_i p_i$] is computed as sum over
 kinetic energies of each parameter.
 
 - Virial
 +
-Virial latexmath:[0.5 \sum^M_i w^T_i \nabla_{w_i} L_D(w)] is defined as one
+Virial latexmath:[$0.5 \sum^M_i w^T_i \nabla_{w_i} L_D(w)$] is defined as one
 half of the sum over the scalar product of gradients with parameters. Given
 that the loss function is unbounded from above and raises more quickly than a
 linear function, the asymptotic value of the virial is related to the average
@@ -101,9 +101,9 @@ https://en.wikipedia.org/wiki/Virial_theorem.
 +
 Averages are meaningful when looking at the probability distribution function
 instead of the loss directly, see Section <<quickstart.sampling.sequences>>.
-There, we compute the integral latexmath:[\int A(w,p) \mu(w,p)] for in our case
-the (canonical) Gibbs measure latexmath:[\mu(w,p) = \exp(-\beta L_D(w))] that
-turns the loss into probability distribution function. Here, latexmath:[A(w,p)]
+There, we compute the integral latexmath:[$\int A(w,p) \mu(w,p)$] for in our case
+the (canonical) Gibbs measure latexmath:[$\mu(w,p) = \exp(-\beta L_D(w))$] that
+turns the loss into probability distribution function. Here, latexmath:[$A(w,p)$]
 is an observable, i.e. a function depending on positions and momenta. Examples
 of such observables are the kinetic energy or the virial, or maybe the
 parameters themselves.
@@ -284,7 +284,7 @@ We conclude this section with some general advice on resolving performance issue
 - if you can afford the stochastic noise, use a small batch size (option
   'batch_size').
 - use hessians (option 'do_hessians') only for really small networks.
-- covariance computations are latexmath:[{\cal O}(M^2)] in the number of
+- covariance computations are latexmath:[${O}(M^2)$] in the number of
   parameters *M*. Rather use diffusion_map analysis which is squared only in the
 	number of trajectory steps.
 - measure the time needed for a few sampling/training steps, see the

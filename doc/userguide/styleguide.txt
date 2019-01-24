@@ -22,7 +22,18 @@
 Style guide
 ===========
 
+For the general user guide on asciidoc formatting, see 
+http://www.methods.co.nz/asciidoc
+
 - Options are set like 'batch_data_files'.
 - Filenames, executables, and paths are set like to +test.csv+.
 - Functions and classes are set like `tati`.
 - _emphasize_
+- formulas: ++latexmath:[$a=b$]++ (do not use passthrough delimited block as
+  these are not converted for the html output and only work in the pdf output).
+  We are constrained (as we need to produce either output format) to 
+  latexmathml, see http://www.methods.co.nz/asciidoc/chunked/ch25.html
+  Moreover, LatexMathML only has a simpler subset of all typical AMS or 
+  special font latex  commands, e.g., there is no ++\tfrac++, ++\cal++, 
+  ++\text++ and so on.
+

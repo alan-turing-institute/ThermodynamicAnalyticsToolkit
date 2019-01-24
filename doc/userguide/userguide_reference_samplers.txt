@@ -42,8 +42,8 @@ smaller step width will produce a smaller error.
 This can be observed for the average kinetic energy by looking at a small
 example network and dataset and producing sufficiently long trajectories.
 If one plots the difference against the known asymptotical value (namely
-latexmath:[\frac{N^\text{dof}}{2} k_B T] with temperature *T*, and degrees of
-freedom latexmath:[N^\text{dof}]) over different step widths in double
+latexmath:[$\frac{N^{dof}}{2} k_B T$] with temperature *T*, and degrees of
+freedom latexmath:[$N^{dof}$]) over different step widths in double
 logarithmic fashion, one obtains straight lines whose slope depends on the
 discretization order.
 
@@ -85,16 +85,16 @@ Implements a Stochastic Gradient Langevin Dynamics Sampler in the form of a
 TensorFlow Optimizer, overriding `tensorflow.python.training.Optimizer`.
 
 The step update is:
-latexmath:[\theta^{n+1} = \theta^{n} - \beta \nabla  U(\theta) \Delta t + \sqrt{\Delta t} G^n],
+latexmath:[$\theta^{n+1} = \theta^{n} - \beta \nabla  U(\theta) \Delta t + \sqrt{\Delta t} G^n$],
 where
-latexmath:[\beta] is the inverse temperature coefficient, latexmath:[\Delta t] is the (discretization)
-step width and latexmath:[\theta] is the parameter vector and latexmath:[U(\theta)] the energy or loss function.
+latexmath:[$\beta$] is the inverse temperature coefficient, latexmath:[$\Delta t$] is the (discretization)
+step width and latexmath:[$\theta$] is the parameter vector and latexmath:[$U(\theta)$] the energy or loss function.
 
 .Table of parameters for SGLD
 [width="80%",cols="3,^2",options="header"]
 |=========================================================
 |Option name |Description
-| `step_width` | time integration step width latexmath:[\delta t]
+| `step_width` | time integration step width latexmath:[$\delta t$]
 |=========================================================
 
 [NOTE]
@@ -119,13 +119,13 @@ Euler-Maruyama as <<SGLD>> but on <<GLA>> 2nd order.
 [width="80%",cols="3,^2",options="header"]
 |=========================================================
 |Option name |Description
-| `friction_constant` | friction constant latexmath:[\gamma] that controls
+| `friction_constant` | friction constant latexmath:[$\gamma$] that controls
 how much momentum is replaced by random noise each step
 | `inverse_temperature` | inverse temperature factor scaling the noise,
-latexmath:[\beta]
+latexmath:[$\beta$]
 | `sigma`  | controlling the thermostat
 | `sigmaA` | controlling the thermostat's adaptivity
-| `step_width` | time integration step width latexmath:[\delta t]
+| `step_width` | time integration step width latexmath:[$\delta t$]
 |=========================================================
 
 [NOTE]
@@ -149,14 +149,14 @@ cost.
 
 The update step of the parameters for second order GLA is BABO:
 
-latexmath:[B: p^{n+1/2} = p^n -\nabla U(q^n)\frac{\Delta t}{2}]
+latexmath:[$B: p^{n+1/2} = p^n -\nabla U(q^n)\frac{\Delta t}{2}$]
 
-latexmath:[A: q^{n+1} =q^n+M^{-1}p^{n+1/2}\Delta t]
+latexmath:[$A: q^{n+1} =q^n+M^{-1}p^{n+1/2}\Delta t$]
 
-latexmath:[B: \tilde{p}^{n+1} = p^{n+1/2} -\nabla U(q^{n+1})\frac{\Delta t}{2}]
+latexmath:[$B: \tilde{p}^{n+1} = p^{n+1/2} -\nabla U(q^{n+1})\frac{\Delta t}{2}$]
 
-latexmath:[O: p^{n+1} = \alpha_{\Delta t}\tilde{p}^{n+1}+ \sqrt{\frac{1-\alpha_{\Delta t}^2}{\beta}M}G^n]
-where latexmath:[\alpha_{\Delta t}=exp(-\gamma \Delta t)] and latexmath:[G\sim N (0, 1)].
+latexmath:[$O: p^{n+1} = \alpha_{\Delta t}\tilde{p}^{n+1}+ \sqrt{\frac{1-\alpha_{\Delta t}^2}{\beta}M}G^n$]
+where latexmath:[$\alpha_{\Delta t}=exp(-\gamma \Delta t)$] and latexmath:[$G\sim N (0, 1)$].
 
 The first order GLA is BAO.
 
@@ -164,16 +164,16 @@ The first order GLA is BAO.
 [width="80%",cols="3,^2",options="header"]
 |=========================================================
 |Option name |Description
-| `friction_constant` | friction constant latexmath:[\gamma] that controls
+| `friction_constant` | friction constant latexmath:[$\gamma$] that controls
 how much momentum is replaced by random noise each step
 | `inverse_temperature` | inverse temperature factor scaling the noise,
-latexmath:[\beta]
-| `step_width` | time integration step width latexmath:[\delta t]
+latexmath:[$\beta$]
+| `step_width` | time integration step width latexmath:[$\delta t$]
 |=========================================================
 
 [NOTE]
 ====
-All GLA samplers have two more parameters: `inverse_temperature` (usually denoted as latexmath:[\beta]) and `friction_constant` (usually denoted as latexmath:[\gamma]). Inverse
+All GLA samplers have two more parameters: `inverse_temperature` (usually denoted as latexmath:[$\beta$]) and `friction_constant` (usually denoted as latexmath:[$\gamma$]). Inverse
 temperature controls the average momentum of each parameter while the
 friction constant decides over how much of the momentum is replaced by
 random noise, i.e. the random walker character of the trajectory.
@@ -181,10 +181,10 @@ random noise, i.e. the random walker character of the trajectory.
 Good values for beta depend on the loss manifold and its barriers and
 need to be find by try&error at the moment.
 
-As a rough guide, latexmath:[\gamma=10] is a good start for the friction
+As a rough guide, latexmath:[$\gamma=10$] is a good start for the friction
 constant. Moreover, when choosing such a friction constant, with
-latexmath:[\beta=1000] sampling will remain in the starting minimum basin,
-while latexmath:[\beta=1] exists basins very soon. Note that large noise can
+latexmath:[$\beta=1000$] sampling will remain in the starting minimum basin,
+while latexmath:[$\beta=1$] exists basins very soon. Note that large noise can
 be hidden by a too small friction constant, i.e. they both depend on each
 other.
 ====
@@ -200,8 +200,8 @@ Tensorflow, however, by its code design, only allows gradient (and loss)
 evaluation at the very beginning of the sequence.
 
 To overcome this, we shuffle the steps in a cyclic fashion to become BOBA.
-This can be seen as delaying some steps at iteration latexmath:[n] and
-performing them at iteration latexmath:[n+1]. Here, we delay the action of
+This can be seen as delaying some steps at iteration latexmath:[$n$] and
+performing them at iteration latexmath:[$n+1$]. Here, we delay the action of
 the "BO" part to the next step.
 
 When doing this, we have to take extra care to still calculate all energies
@@ -230,27 +230,27 @@ accuracy and superb overall accuracy with respect to positions. See
 
 The update step of the parameters is:
 
-latexmath:[B: p^{n+1/2} = p^n -\nabla U(q^n)\frac{\Delta t}{2}]
+latexmath:[$B: p^{n+1/2} = p^n -\nabla U(q^n)\frac{\Delta t}{2}$]
 
-latexmath:[A: q^{n+1} =q^n+M^{-1}p^{n+1/2}\frac{\Delta t}{2}]
+latexmath:[$A: q^{n+1} =q^n+M^{-1}p^{n+1/2}\frac{\Delta t}{2}$]
 
-latexmath:[O: p^{n+1} = \alpha_{\Delta t}\tilde{p}^{n+1}+ \sqrt{\frac{1-\alpha_{\Delta t}^2}{\beta}M}G^n]
+latexmath:[$O: p^{n+1} = \alpha_{\Delta t}\tilde{p}^{n+1}+ \sqrt{\frac{1-\alpha_{\Delta t}^2}{\beta}M}G^n$]
 
-latexmath:[A: q^{n+1} =q^n+M^{-1}p^{n+1/2}\frac{\Delta t}{2}]
+latexmath:[$A: q^{n+1} =q^n+M^{-1}p^{n+1/2}\frac{\Delta t}{2}$]
 
-latexmath:[B: p^{n+1/2} = p^n -\nabla U(q^n)\frac{\Delta t}{2}]
+latexmath:[$B: p^{n+1/2} = p^n -\nabla U(q^n)\frac{\Delta t}{2}$]
 
-where latexmath:[\alpha_{\Delta t}=exp(-\gamma \Delta t)] and latexmath:[G\sim N (0, 1)].
+where latexmath:[$\alpha_{\Delta t}=exp(-\gamma \Delta t)$] and latexmath:[$G\sim N (0, 1)$].
 
 .Table of parameters for BAOAB
 [width="80%",cols="3,^2",options="header"]
 |=========================================================
 |Option name |Description
-| `friction_constant` | friction constant latexmath:[\gamma] that controls
+| `friction_constant` | friction constant latexmath:[$\gamma$] that controls
 how much momentum is replaced by random noise each step
 | `inverse_temperature` | inverse temperature factor scaling the noise,
-latexmath:[\beta]
-| `step_width` | time integration step width latexmath:[\delta t]
+latexmath:[$\beta$]
+| `step_width` | time integration step width latexmath:[$\delta t$]
 |=========================================================
 
 [[reference.samplers.baoab.implementation]]
@@ -260,7 +260,7 @@ Implementation notes
 With BAOAB we face similar difficulties as with second order GLA: we would need
 to recalculate gradients for the second "B" step. Again, we solve this by
 cyclic permutation of the steps to become BBAOA. In other words, we delay
-the action of the very last "B" step to iteration latexmath:[n+1].
+the action of the very last "B" step to iteration latexmath:[$n+1$].
 
 Now, gradient calculation is at the very beginning and both "B" steps use the
 same gradient. Loss calculation is still after the second "A" step. The only
@@ -295,15 +295,15 @@ noise. Langevin dynamics can be recovered by using just a single step for
 time integration (i.e. a single step is immediately followed by evaluating the
 acceptance criterion). This is called "Langevin Monte Carlo" which does however
 lack the favorable scaling properties of HMC, i.e. when using multiple steps.
-Random walk scales as latexmath:[d^2] in the amount of computation time for
-a dataset of dimensionality latexmath:[d], while HMC scales only as
-latexmath:[d^{5/4}]. LMC on the other hand scales as latexmath:[d^{4/3}], see
+Random walk scales as latexmath:[$d^2$] in the amount of computation time for
+a dataset of dimensionality latexmath:[$d$], while HMC scales only as
+latexmath:[$d^{5/4}$]. LMC on the other hand scales as latexmath:[$d^{4/3}$], see
 link:#Neal2011[Neal, 2011, section 4.4 and 5.2].
 
 However, longer legs again typically cause higher rejection rates. Therefore,
 they come at the price of extra computational work in terms of possibly
 rejected legs. There are specific rejection rates that are optimal.
-Typically they range between 35% (latexmath:[L\gg 1]) and 43% (latexmath:[L=1]).
+Typically they range between 35% (latexmath:[$L\gg 1$]) and 43% (latexmath:[$L=1$]).
 In essence, the rejection rate tells about getting sufficiently far from the
 initial state to a truly independent proposal state.
 See  link:#Neal2011[Neal, 2011, section 5.2] for details and in general
@@ -319,11 +319,11 @@ dynamics. This is relative to `step_width`. For example, if `step_width` is
 *0.05* and this is chosen as *0.05* as well, it will evaluate every other step,
 i.e. perform only a single time integration step before evaluating the
 acceptance criterion. If you want to evaluate every *n* steps, then use
-latexmath:[n \cdot \Delta t]
+latexmath:[$n \cdot \Delta t$]
 | `inverse_temperature` | inverse temperature factor scaling the initially
 randomly drawn momenta,
-latexmath:[\beta]
-| `step_width` | time integration step width latexmath:[\delta t]
+latexmath:[$\beta$]
+| `step_width` | time integration step width latexmath:[$\delta t$]
 |=========================================================
 
 IMPORTANT: Both the exact amount of Hamiltonian dynamics time integration
@@ -351,18 +351,18 @@ data frames: run info, trajectory, averages.
 
 <<Neal2011>> gives the following steps for the HMC:
 
-. New values for the momentum latexmath:[p_n] variables are randomly drawn from
-their Gaussian distribution. The positions latexmath:[q_n] do not change.
+. New values for the momentum latexmath:[$p_n$] variables are randomly drawn from
+their Gaussian distribution. The positions latexmath:[$q_n$] do not change.
 . A Metropolis update is performed, using Hamiltonian dynamics to propose a new
-state latexmath:[(q_{n+1},p_{n+1})].
-.. Start with an initial state latexmath:[(q_{n,0},p_{n,0}) := (q_n,p_n)]
-.. Simulate Hamiltonian Dynamics for latexmath:[L] steps using Leapfrog (or some
-other volume preserving/reversible method): latexmath:[(q_{n,L},p_{n,L})]
-.. Momentum is negated at the leg's end: latexmath:[(q_{n,L},-p_{n,L})]
+state latexmath:[$(q_{n+1},p_{n+1})$].
+.. Start with an initial state latexmath:[$(q_{n,0},p_{n,0}) := (q_n,p_n)$]
+.. Simulate Hamiltonian Dynamics for latexmath:[$L$] steps using Leapfrog (or some
+other volume preserving/reversible method): latexmath:[$(q_{n,L},p_{n,L})$]
+.. Momentum is negated at the leg's end: latexmath:[$(q_{n,L},-p_{n,L})$]
 .. Accept the proposed state with probability
-latexmath:[min(1,exp(-U(q_{n,L})+U(q_n)-T(-p_{n,L})+T(p_n)))]
-... Accept: Set latexmath:[(q_{n+1},p_{n+1}) := (q_{n,L},-p_{n,L})]
-... Reject: Set latexmath:[(q_{n+1},p_{n+1}) := (q_{n},p_{n})]
+latexmath:[$min(1,exp(-U(q_{n,L})+U(q_n)-T(-p_{n,L})+T(p_n)))$]
+... Accept: Set latexmath:[$(q_{n+1},p_{n+1}) := (q_{n,L},-p_{n,L})$]
+... Reject: Set latexmath:[$(q_{n+1},p_{n+1}) := (q_{n},p_{n})$]
 
 NOTE: The negation of momentum is not needed in practice but makes the proposal
 symmetric which is relevant for the method's analysis.
@@ -376,8 +376,8 @@ link:#Neal2011[ Neal, 2011, section 3.2, paragraph "two steps" ]).
 This means that one sampling step will perform (exclusively) either an
 evaluation or a single integration step. The sampling function is given the
 current step and the next evaluation step. When both are equal, we do not
-perform an integration (latexmath:[q] does not change) but redraw momenta and
-evaluate the criterion (this may change latexmath:[q], restoring it to its
+perform an integration (latexmath:[$q$] does not change) but redraw momenta and
+evaluate the criterion (this may change latexmath:[$q$], restoring it to its
 old value). For more details on how to implement branching with Tensorflow,
 we refer to the link:#extensions.samplers.branching[programmer's guide].
 
@@ -385,17 +385,17 @@ On top of that we have the Tensorflow constraint that the loss and gradient
 evaluation occurs always at the very beginning of the sampling step. This
 means we need to restore the loss, gradients, virials and other energies
 when the proposed state is rejected. Also, the loss always lags behind one
-step, i.e. we see latexmath:[L(q_{n-1})] and latexmath:[T(p_n)]. Note that
+step, i.e. we see latexmath:[$L(q_{n-1})$] and latexmath:[$T(p_n)$]. Note that
 this does not affect the criterion evaluation as this is an extra step and
 the loss is updated in time.
 
 In TATi there are two time integration methods implemented for HMC: _modified
 Euler method_ and _Leapfrog_ (also called Velocity Verlet).
 These are available as +HamiltonianMonteCarlo_1stOrder+ (Euler) and
-+HamiltonianMonteCarlo_2ndOrder+ (Leapfrog). If latexmath:[n] is the number
++HamiltonianMonteCarlo_2ndOrder+ (Leapfrog). If latexmath:[$n$] is the number
 of hamiltonian dynamics steps, then the first order method will perform
-latexmath:[n+1] steps (and gradient evaluations), while the second order
-method executes latexmath:[n+2] steps. This is because of the aforementioned
+latexmath:[$n+1$] steps (and gradient evaluations), while the second order
+method executes latexmath:[$n+2$] steps. This is because of the aforementioned
 constraint in the Tensorflow code base.
 
 The extra step for Leapfrog is because we again need to use cyclic permutation
@@ -405,7 +405,7 @@ properly evaluate the kinetic energy before evaluating the acceptance
 criterion. This is not needed for the modified Euler which performs only "BA".
 
 Finally, in the output files or data frames only the final state is seen. We
-do not output any of the intermediate states latexmath:[(q_{n,i}, p_{n,i})]
+do not output any of the intermediate states latexmath:[$(q_{n,i}, p_{n,i})$]
 during integration.
 
 As a last remark, the very first step is always an evaluation step that we also
@@ -427,37 +427,37 @@ the algorithm given in <<Neal2011>>.
 . Run info
 .. 'step': shows the evaluation steps only, e.g., 1 (n=1), 7 (n=2), 13 (n=3) for
 L=5 and HMC_1st.
-.. 'loss': shows latexmath:[L(q_n)], i.e. the loss of the current state, either
+.. 'loss': shows latexmath:[$L(q_n)$], i.e. the loss of the current state, either
 accepted or rejected.
-.. 'total_energy': shows the total energy latexmath:[L(q_{n-1,L})+T(-p_{n-1,L})] of
+.. 'total_energy': shows the total energy latexmath:[$L(q_{n-1,L})+T(-p_{n-1,L})$] of
 the proposed state used for the acceptance evaluation. Note that this is _not_
 the sum of 'loss' and 'kinetic_energy'.
-.. 'old_total_energy': shows the total energy latexmath:[L(q_{n-1,0})+T(-p_{n-1,0})]
+.. 'old_total_energy': shows the total energy latexmath:[$L(q_{n-1,0})+T(-p_{n-1,0})$]
 of the initial state used for the acceptance evaluation.
 .. 'kinetic_energy': shows the kinetic energy _after_ momenta have been redrawn,
-latexmath:[T(p_n)].
+latexmath:[$T(p_n)$].
 .. 'scaled_momentum': shows the scaled momenta _after_ momenta have been redrawn.
 .. 'scaled_gradient': shows the gradients scaled by the step width for the
-current state latexmath:[q_n], either accepted or rejected.
-.. 'virial': shows the virial energy for the current state latexmath:[q_n]
+current state latexmath:[$q_n$], either accepted or rejected.
+.. 'virial': shows the virial energy for the current state latexmath:[$q_n$]
 .. 'average_rejection_rate': shows the number of rejected states over the sum of
 accepeted and rejected states.
 . Trajectory
 .. 'step': see run info.
 .. 'loss': see run info.
-.. 'weight?': one weight parameter of the current state latexmath:[q_n], either
+.. 'weight?': one weight parameter of the current state latexmath:[$q_n$], either
 accepted or rejected.
 .. 'bias?': equivalently, one bias parameter of the current state
-latexmath:[q_n].
+latexmath:[$q_n$].
 . Averages
 .. 'step': see run info.
 .. 'loss': see run info.
 .. 'ensemble_average_loss': evaluates
-latexmath:[\frac{ \sum_n L(q_n) exp(-1/T \cdot L(q_n)) }{ \sum_n exp(-1/T \cdot L(q_n)) }]
-over the states latexmath:[q_n].
-.. 'average_kinetic_energy': evaluates latexmath:[\frac 1 N \sum^N_{n=1} T(p_n)].
+latexmath:[$\frac{ \sum_n L(q_n) exp(-1/T \cdot L(q_n)) }{ \sum_n exp(-1/T \cdot L(q_n)) }$]
+over the states latexmath:[$q_n$].
+.. 'average_kinetic_energy': evaluates latexmath:[$\frac 1 N \sum^N_{n=1} T(p_n)$].
 .. 'average_virials': evaluates
-latexmath:[\frac 1 N \sum^N_{n=1} \frac 1 2 | q_n \cdot p_n  |].
+latexmath:[$\frac 1 N \sum^N_{n=1} \frac 1 2 | q_n \cdot p_n  |$].
 .. 'average_rejection_rate': see run info.
 
 

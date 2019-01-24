@@ -23,21 +23,19 @@
 Sampling
 ~~~~~~~~
 
-Let be given a high-dimensional loss manifold
+Let be given a high-dimensional loss manifold 
 
-.Loss
-[latexmath]
-++++
-L_{\cal D}(\theta) = \sum_{(x_i,y_i) \in {\cal D}} l_\theta(x_i,y_i)
-++++
+_____
+latexmath:[$L_{D}(\theta) = \sum_{(x_i,y_i) \in {D}} l_\theta(x_i,y_i)$]
+_____
 
-that depends explicitly on the parameters latexmath:[\theta \in \Omega \subset \mathrm{R}^N] of the network with latexmath:[N] degrees of freedom and implicitly on a given dataset latexmath:[{\cal D} = \{x_i,y_i\}]. Furthermore, the loss function latexmath:[l_\theta] itself depends implicitly on the prediction latexmath:[f_\theta(x_i)] of the network for a given input latexmath:[x_i] and fixed parameters latexmath:[\theta] and therefore on the chosen network architecture.
+that depends explicitly on the parameters latexmath:[$\theta \in \Omega \subset \mathrm{R}^N$] of the network with latexmath:[$N$] degrees of freedom and implicitly on a given dataset latexmath:[${D} = \{x_i,y_i\}$]. Furthermore, the loss function latexmath:[$l_\theta$] itself depends implicitly on the prediction latexmath:[$f_\theta(x_i)$] of the network for a given input latexmath:[$x_i$] and fixed parameters latexmath:[$\theta$] and therefore on the chosen network architecture.
 
-If latexmath:[{\cal D}] were the set of all possible realisations of the data, then latexmath:[L_{\cal D}(\theta)] would measure the so-called *generalization error*. As typically only a finite set of data is available, it is split into training and test parts, the latter set aside for approximating this error. Furthermore, during training the gradient is often computed on a subset of the training set latexmath:[{\cal D}], the mini-batches. In the following we will ignore these details as they are irrelevant to the general procedure described.
+If latexmath:[${D}$] were the set of all possible realisations of the data, then latexmath:[$L_{D}(\theta)$] would measure the so-called *generalization error*. As typically only a finite set of data is available, it is split into training and test parts, the latter set aside for approximating this error. Furthermore, during training the gradient is often computed on a subset of the training set latexmath:[${D}$], the mini-batches. In the following we will ignore these details as they are irrelevant to the general procedure described.
 
-In order to deduce information such as the number of minima, the number of saddle points, the typical barrier height between minima and other characteristics to classify the landscape, we need to *explore the whole domain* latexmath:[\Omega]. As latexmath:[L_{\cal D}] depends on an arbitrary dataset, we do not know anything a-priori apart from the general regularity properties footnote:[As activation functions contained in the loss may be non-smooth, e.g., the rectified linear unit, even this can be not taken as solid grounds.] and possible boundedness of latexmath:[l_\theta].
+In order to deduce information such as the number of minima, the number of saddle points, the typical barrier height between minima and other characteristics to classify the landscape, we need to *explore the whole domain* latexmath:[$\Omega$]. As latexmath:[$L_{D}$] depends on an arbitrary dataset, we do not know anything a-priori apart from the general regularity properties footnote:[As activation functions contained in the loss may be non-smooth, e.g., the rectified linear unit, even this can be not taken as solid grounds.] and possible boundedness of latexmath:[$l_\theta$].
 
-A very similar task is found in function approximation where an unknown and possibly high-dimensional function latexmath:[f(x): \mathrm{R}^N \rightarrow \mathrm{R}] is approximated through a set of point evaluations in conjunction with a basis set. A typical usecase is the numerical integration of this high-dimensional function. Naturally, the quality of the approximation hinges not only on the basis set but even more on the choice of the precise location of point evaluations, the *sampling*.
+A very similar task is found in function approximation where an unknown and possibly high-dimensional function latexmath:[$f(x): \mathrm{R}^N \rightarrow \mathrm{R}$] is approximated through a set of point evaluations in conjunction with a basis set. A typical usecase is the numerical integration of this high-dimensional function. Naturally, the quality of the approximation hinges not only on the basis set but even more on the choice of the precise location of point evaluations, the *sampling*.
 
 Very generally, sampling approaches can be placed into two categories: Grids and sequences. Sequences can be random, deterministic, or both. We briefly discuss them, focusing on their general computational cost in high dimensions.
 
@@ -45,44 +43,40 @@ Very generally, sampling approaches can be placed into two categories: Grids and
 Grids
 ^^^^^
 
-Structured grids such as naive full grid approaches, where a fixed number of points with equidistant spacing is used per axis, suffer from the Curse of Dimensionality, a term coined by Bellman. With increasing number of parameters latexmath:[N] the computational cost becomes prohibitive. This Curse of Dimensionality is alleviated to some extent by so-called Sparse Grids, see <<Bungartz2004>>, where the quality bounds on the approximation are kept but fewer grid points need to be evaluated. However, they only alleviate the curse to some extent, see <<Pflueger2010>>, and are still infeasible at the moment for the extremely high-dimensional manifolds encountered in neural network losses.
+Structured grids such as naive full grid approaches, where a fixed number of points with equidistant spacing is used per axis, suffer from the Curse of Dimensionality, a term coined by Bellman. With increasing number of parameters latexmath:[$N$] the computational cost becomes prohibitive. This Curse of Dimensionality is alleviated to some extent by so-called Sparse Grids, see <<Bungartz2004>>, where the quality bounds on the approximation are kept but fewer grid points need to be evaluated. However, they only alleviate the curse to some extent, see <<Pflueger2010>>, and are still infeasible at the moment for the extremely high-dimensional manifolds encountered in neural network losses.
 
 [[quickstart.sampling.sequences]]
 Sequences
 ^^^^^^^^^
 
-Random sequences are Monte Carlo approaches where a specific sequence of random numbers decides which point in the whole space to evaluate. Due to their inherent stochasticity these lack the rigor of the structured grid methods but neither rely on, nor exploit any regularity as the structured grid methods. Therefore, they suffer no Curse of Dimensionality with respect to their convergence rate. The rate is bounded by the Central Limit Theorem to latexmath:[{\cal O}(n^{-\tfrac 1 2})] if latexmath:[n] is the number of evaluated points.
+Random sequences are Monte Carlo approaches where a specific sequence of random numbers decides which point in the whole space to evaluate. Due to their inherent stochasticity these lack the rigor of the structured grid methods but neither rely on, nor exploit any regularity as the structured grid methods. Therefore, they suffer no Curse of Dimensionality with respect to their convergence rate. The rate is bounded by the Central Limit Theorem to latexmath:[${O}(n^{-\frac 1 2})$] if latexmath:[$n$] is the number of evaluated points.
 
-Quasi-Monte Carlo (QMC) methods use deterministic sequences, such as Lattice rules (Hammersley, \ldots) or digital nets, and are able to obtain higher convergence rates of latexmath:[{\cal O}(n^{-1} (\log{n})^d)] at the price of a moderate dependence on dimension latexmath:[d].
+Quasi-Monte Carlo (QMC) methods use deterministic sequences, such as Lattice rules (Hammersley, \ldots) or digital nets, and are able to obtain higher convergence rates of latexmath:[${O}(n^{-1} (\log{n})^d)$] at the price of a moderate dependence on dimension latexmath:[$d$].
 
 In this category of sequences we also have dynamics-based sequences. As examples of Markov Chain Monte Carlo (MCMC) methods, they are closely connected to pure Monte Carlo approaches. They make use of the ergodic property of the chosen dynamics allowing to replace high-dimensional whole-space integrals by single-dimensional time-integrals, where the accuracy depends on the trajectory length.
 
 The chain can be generated through suitable dynamics such as Hamiltonian,
 
-.Hamiltonian dynamics
-[latexmath]
-++++
-d\theta= M^{-1} p dt, \quad dp= -\nabla L(\theta) dt
-++++
+____
+latexmath:[$d\theta= M^{-1} p dt, \quad dp= -\nabla L(\theta) dt$]
+____
 
 or Langevin dynamics,
 
-.Langevin dynamics
-[latexmath]
-++++
-d\theta= M^{-1} p dt, \quad dp= \Bigl [-\nabla L(\theta) - \gamma p \Bigr ] dt + \sigma M^{\tfrac 1 2} dW
-++++
+____
+latexmath:[$d\theta= M^{-1} p dt, \quad dp= \Bigl (-\nabla L(\theta) - \gamma p \Bigr ) dt + \sigma M^{\frac 1 2} dW$]
+____
 
-for positions (or parameters) latexmath:[\theta], momenta latexmath:[p], mass matrix latexmath:[M], potential (or loss) latexmath:[L(\theta)], friction constant latexmath:[\gamma] and a stationary normal random process latexmath:[W] with variance latexmath:[\sigma].
-Note that Langevin dynamics has both Hamiltonian dynamics and  Brownian dynamics as limiting cases of the friction constant latexmath:[\gamma] going to zero or infinity, respectively.
+for positions (or parameters) latexmath:[$\theta$], momenta latexmath:[$p$], mass matrix latexmath:[$M$], potential (or loss) latexmath:[$L(\theta)$], friction constant latexmath:[$\gamma$] and a stationary normal random process latexmath:[$W$] with variance latexmath:[$\sigma$].
+Note that Langevin dynamics has both Hamiltonian dynamics and  Brownian dynamics as limiting cases of the friction constant latexmath:[$\gamma$] going to zero or infinity, respectively.
 
 There are also hybrid approaches where a purely deterministic sequence is randomized by a Metropolis-Hastings criterion to remove possible bias, such as Hybrid or Hamiltonian Monte Carlo, see <<Neal2011>>. Note that in the case of Langevin dynamics the stochasticity enters through the random process.
 
-If we consider the function latexmath:[L_{\cal D}(\theta)] as a potential energy function, then we may cast this into a probability distribution using the canonical Gibbs distribution
-latexmath:[Z \cdot \exp( -\beta L_{\cal D}(\theta))],
-where latexmath:[Z] is a normalization constant and latexmath:[\beta]latexmath:[ is the inverse temperature factor. Then, we have sampling in the typical sense in statistics where an unknown distribution is evaluated. We remark that this Gibbs measure is known in the neural networks community through the energy interpretation (<<LeCun2006>>) of a probability distribution in relation to a certain reference energy, given by the *temperature*.
+If we consider the function latexmath:[$L_{D}(\theta)$] as a potential energy function, then we may cast this into a probability distribution using the canonical Gibbs distribution
+latexmath:[$Z \cdot \exp( -\beta L_{D}(\theta))$],
+where latexmath:[$Z$] is a normalization constant and latexmath:[$\beta$]latexmath:[ is the inverse temperature factor. Then, we have sampling in the typical sense in statistics where an unknown distribution is evaluated. We remark that this Gibbs measure is known in the neural networks community through the energy interpretation (<<LeCun2006>>) of a probability distribution in relation to a certain reference energy, given by the *temperature*.
 
-And indeed, dynamics-based sampling does not aim to approximate latexmath:[L] as best as possible but its Gibbs (also called the canonical) distribution latexmath:[\exp{(-\beta L)}]. In our case we are only interested in particular subsets of the space, namely those associated with a small loss. As we have given ample evidence, the central challenge in sampling is the computational cost. The dynamics-based sequences allow to save computational cost in the high-dimensional spaces by incorporating gradient information. Hence, the more accurately we sample from the Gibbs distribution, the more efficiently we sample only those subsets of interest. This saving could not be obtained with a pure Monte Carlo approach.
+And indeed, dynamics-based sampling does not aim to approximate latexmath:[$L$] as best as possible but its Gibbs (also called the canonical) distribution latexmath:[$\exp{(-\beta L)}$]. In our case we are only interested in particular subsets of the space, namely those associated with a small loss. As we have given ample evidence, the central challenge in sampling is the computational cost. The dynamics-based sequences allow to save computational cost in the high-dimensional spaces by incorporating gradient information. Hence, the more accurately we sample from the Gibbs distribution, the more efficiently we sample only those subsets of interest. This saving could not be obtained with a pure Monte Carlo approach.
 
 Therefore, *we focus on dynamics-based sampling* for this high-dimensional exploration problem.
 
@@ -92,15 +86,13 @@ Integrated Autocorrelation Time
 
 In principle, the underlying challenge is to assure that the sampling trajectory covers a sufficient area of the whole space for validity. However, stating when to terminate is as difficult as the exploration task itself. Hence, the best measure is to assess when a new independent state has been obtained.
 
-When inspecting sampled MCMC trajectories, we need to assess how many consecutive steps it takes to get from one independent state to another. This is estimated by the *Integrated Autocorrelation Time* (IAT) latexmath:[\tau_s]. For any observable latexmath:[A], we have that its variance generally behaves as latexmath:[var_{A} = \tfrac {var_{\pi} (\varphi(X))}{T_s/\tau_s}], where latexmath:[\pi] is the target density, latexmath:[\varphi(X)] is the function of interest of the random variable latexmath:[X], and latexmath:[T_s] is the sampling time, see <<Goodman2010>>. Obviously, when time steps are discrete and latexmath:[\tau_s] is measured in number of steps, then latexmath:[\tau_s = 1] is highly desirable, i. e.~immediately stepping from one independent state to the next. The IAT latexmath:[\tau_s] is defined as
+When inspecting sampled MCMC trajectories, we need to assess how many consecutive steps it takes to get from one independent state to another. This is estimated by the *Integrated Autocorrelation Time* (IAT) latexmath:[$\tau_s$]. For any observable latexmath:[$A$], we have that its variance generally behaves as latexmath:[$var_{A} = \frac {var_{\pi} (\varphi(X))}{T_s/\tau_s}$], where latexmath:[$\pi$] is the target density, latexmath:[$\varphi(X)$] is the function of interest of the random variable latexmath:[$X$], and latexmath:[$T_s$] is the sampling time, see <<Goodman2010>>. Obviously, when time steps are discrete and latexmath:[$\tau_s$] is measured in number of steps, then latexmath:[$\tau_s = 1$] is highly desirable, i. e.~immediately stepping from one independent state to the next. The IAT latexmath:[$\tau_s$] is defined as
 
-.Integrated Autocorrelation Time
-[latexmath]
-++++
-\tau_s = \sum^{\infty}_{-\infty} \frac{ C_s(t)} {C_s(0)} \quad	\text{with} \quad C_s(t) = \lim_{t' \rightarrow \infty} cov[\varphi \bigl (X(t'+t) \bigr ), \varphi \bigl (X(t) \bigr)].
-++++
+____
+latexmath:[$\tau_s = \sum^{\infty}_{-\infty} \frac{ C_s(t)} {C_s(0)} \quad	{with} \quad C_s(t) = \lim_{t' \rightarrow \infty} cov[\varphi \bigl (X(t'+t) \bigr ), \varphi \bigl (X(t) \bigr)$]].
+____
 
-The above holds also for sampling approaches based on Langevin Dynamics. There, we may use the IAT to gauge the *exploration speed* for each sampled trajectory latexmath:[X(t)].
+The above holds also for sampling approaches based on Langevin Dynamics. There, we may use the IAT to gauge the *exploration speed* for each sampled trajectory latexmath:[$X(t)$].
 
 [[quickstart.sampling.example]]
 Example: Sampling of a Perceptron
@@ -122,9 +114,9 @@ is quite simple to solve: a line in the two-dimensional space can easily
 separate the two classes.
 
 A very simple neural network, a perceptron: it would use one
-input node, either of the coordinate, latexmath:[x_{1}] or
-latexmath:[x_{2}], and a single output node with an activation
-function latexmath:[f] whose sign gives the class the input item
+input node, either of the coordinate, latexmath:[$x_{1}$] or
+latexmath:[$x_{2}$], and a single output node with an activation
+function latexmath:[$f$] whose sign gives the class the input item
 belongs to. The network is given in
 link:#quickstart.network[Network]. The network is chosen non-ideal by design to illustrate a point.
 

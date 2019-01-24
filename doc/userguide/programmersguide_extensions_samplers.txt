@@ -182,9 +182,9 @@ update step that performs well on both CPUs and GPUs.
 
 Therefore, let's do the (python) implementation ourselves in the following
 example. Remember that the update step in Gradient Descent is
-latexmath:[x_{n+1} = x_n - \lambda \nabla_{x} L(x_n)], where we have called the
-current variable tensor *x*, latexmath:[\lambda] is the scalar learning rate,
-and latexmath:[\nabla_x L(x_n)] is the gradient of the loss function *L* with
+latexmath:[$x_{n+1} = x_n - \lambda \nabla_{x} L(x_n)$], where we have called the
+current variable tensor *x*, latexmath:[$\lambda$] is the scalar learning rate,
+and latexmath:[$\nabla_x L(x_n)$] is the gradient of the loss function *L* with
 respect t the variable tensor.
 
 .Gradient Descent optimizer
@@ -235,24 +235,24 @@ Let us first look at the formulas that perform the descrete time integration.
 .Geometric Langevin Algorithm 2nd order
 [[extensions.samplers.simple.gla2]]
 --
-. latexmath:[p_{n+\tfrac 1 2} = p_n - \tfrac {\lambda}{2} \nabla_x L(x_n)]
-. latexmath:[x_{n+1} = x_n + \lambda p_{n+\tfrac 1 2}]
-. latexmath:[\widehat{p}_{n+1} = p_{n+\tfrac 1 2} - \tfrac {\lambda}{2} \nabla_x L(x_{n+1})]
-. latexmath:[p_{n+1} = \alpha \widehat{p}_{n+1} + \sqrt{\frac{1-\alpha^2}{\beta}} \cdot \eta_n]
+. latexmath:[$p_{n+\frac 1 2} = p_n - \frac {\lambda}{2} \nabla_x L(x_n)$]
+. latexmath:[$x_{n+1} = x_n + \lambda p_{n+\frac 1 2}$]
+. latexmath:[$\widehat{p}_{n+1} = p_{n+\frac 1 2} - \frac {\lambda}{2} \nabla_x L(x_{n+1})$]
+. latexmath:[$p_{n+1} = \alpha \widehat{p}_{n+1} + \sqrt{\frac{1-\alpha^2}{\beta}} \cdot \eta_n$]
 --
 
-Here, latexmath:[\eta_n] is the random noise at step *n*, latexmath:[p_n]
-designates momentum, and moreover we have latexmath:[\alpha = \exp(-\gamma \cdot \lambda)]
-with the so-called friction constant latexmath:[\gamma].
+Here, latexmath:[$\eta_n$] is the random noise at step *n*, latexmath:[$p_n$]
+designates momentum, and moreover we have latexmath:[$\alpha = \exp(-\gamma \cdot \lambda)$]
+with the so-called friction constant latexmath:[$\gamma$].
 
 [[extensions.samplers.simple.slots]]
 Variables of the first kind: slots
 ++++++++++++++++++++++++++++++++++
 
-First of all, we need more variables. latexmath:[x_n] is given by `var`
-and latexmath:[\nabla_x L(x_n)] is given by `grad`. Both are simply parameters
+First of all, we need more variables. latexmath:[$x_n$] is given by `var`
+and latexmath:[$\nabla_x L(x_n)$] is given by `grad`. Both are simply parameters
 to the `_apply_dense()` function. However, we lack a variable to store the
-momenta latexmath:[p_n].
+momenta latexmath:[$p_n$].
 
 For this purpose, we can use _slots_. Slots are an official mechanism of
 tensorflow's `Optimizer` for this particular purpose as there are other, more
@@ -260,12 +260,12 @@ advanced optimizers such as ADAM that actually use momenta as well. We will
 see how these are constructed in the new `_prepare()` function.
 
 However before that, we still need more variables in the form of placeholders:
-inverse temperature latexmath:[\beta],
-friction constant latexmath:[\gamma]
-and the learning rate latexmath:[\lambda]
+inverse temperature latexmath:[$\beta$],
+friction constant latexmath:[$\gamma$]
+and the learning rate latexmath:[$\lambda$]
 which we will call _step width_ to distinguish samplers from optimizers.
 
-and there is one more: GLA2 contains a noise term latexmath:[\eta_n].
+and there is one more: GLA2 contains a noise term latexmath:[$\eta_n$].
 To this end, we require a random number generator that produces random numbers
 of the same _shape_ as `var` (or equivalently `grad`). These are created by `tf.random_uniform()`
 as you will see further below in `_prepare_dense()`.
@@ -365,9 +365,9 @@ Remember that `_apply_dense()` is called inside `_apply_gradients()` which is
 called after `compute_gradients()`.
 In other words, the gradients have been computed just before.
 
-Hence, in the initial step we have an evaluation of term latexmath:[\nabla_x L(x_n)]
+Hence, in the initial step we have an evaluation of term latexmath:[$\nabla_x L(x_n)$]
 and we cannot trigger a second evaluation inside `_apply_dense()` to compute
-latexmath:[\nabla_x L(x_{n+1})]. If we wanted to do this, we would have to
+latexmath:[$\nabla_x L(x_{n+1})$]. If we wanted to do this, we would have to
 completely rewrite the base `Optimizer` class.
 
 WARNING: Rewriting tensorflow classes is perfectly possible. However, tensorflow
@@ -399,7 +399,7 @@ def _apply_dense(self, grad, var):
   momentum = self.get_slot("momentum") # <2>
   scaled_gradient = grad * step_width_t # <3>
 
-  # 3. \widehat{p}_{n+1} = p_{n+\tfrac 1 2} - \tfrac {\lambda}{2} \nabla_x L(x_{n+1})
+  # 3. \widehat{p}_{n+1} = p_{n+\frac 1 2} - \frac {\lambda}{2} \nabla_x L(x_{n+1})
   momentum_half_step = momentum - 0.5 * scaled_gradient # <3>
 
   # 4. p_{n+1} = \alpha \widehat{p}_{n+1} + \sqrt{\frac{1-\alpha^2}{\beta}} \cdot \eta_n
@@ -408,10 +408,10 @@ def _apply_dense(self, grad, var):
   scaled_noise = noise_scale * random_noise_t # <4>
   momentum_noise_step = alpha * momentum_half_step + scaled_noise # <4>
 
-  # 1. p_{n+\tfrac 1 2} = p_n - \tfrac {\lambda}{2} \nabla_x L(x_n)
+  # 1. p_{n+\frac 1 2} = p_n - \frac {\lambda}{2} \nabla_x L(x_n)
   momentum_t = momentum.assign(momentum_noise_step - 0.5 * scaled_gradient) # <5>
 
-  # 2. x_{n+1} = x_n + \lambda p_{n+\tfrac 1 2}
+  # 2. x_{n+1} = x_n + \lambda p_{n+\frac 1 2}
   var_update_t = state_ops.assign_add(var, step_width * momentum_t) # <6>
 
   return control_flow_ops.group(*[var_update]) # <7>
@@ -420,16 +420,16 @@ def _apply_dense(self, grad, var):
 As this is quite a large example, let's go through the lines step by step.
 
 <1> First, we use `_prepare_dense()` to obtain the three tensors containing
-our parameters `step_width` latexmath:[\delta t], +beta+ latexmath:[\beta],
-and +gamma+ latexmath:[\gamma]. Moreover, we get the random number
-tensor that is our source of normally distributed noise latexmath:[\eta_n].
+our parameters `step_width` latexmath:[$\delta t$], +beta+ latexmath:[$\beta$],
+and +gamma+ latexmath:[$\gamma$]. Moreover, we get the random number
+tensor that is our source of normally distributed noise latexmath:[$\eta_n$].
 <2> Next, we get the slot variable `momentum`. We have obtained `grad` and
 `var` as parameters to `_apply_dense()`.
 <3> Then comes the first momentum integration step, *B*. We create a helper
 node `scaled_gradient` that contains the gradient tensor scaled by the step
 width. Then, we assign the update to a temporary tensor named
 `momentum_half_step`.
-<4> For the following *O* step, we need to compute latexmath:[\alpha]. To this
+<4> For the following *O* step, we need to compute latexmath:[$\alpha$]. To this
 end, we create several temporary nodes `alpha`, `noise_scale`, and finally
 `scaled_noise` to obtain the factor in the first in `alpha` and the second term
 in `scaled_noise` of step *4.* in link:#extensions.samplers.simple.gla2[GLA2].
@@ -563,18 +563,18 @@ def _apply_dense(self, grad, var):
       momentum_noise_step))
     kinetic_energy_t = tf.assign_add(kinetic_energy, momentum_sq) # <2>
 
-  # 1. p_{n+\tfrac 1 2} = p_n - \tfrac {\lambda}{2} \nabla_x L(x_n)
+  # 1. p_{n+\frac 1 2} = p_n - \frac {\lambda}{2} \nabla_x L(x_n)
   with tf.control_dependencies([kinetic_energy_t]): # <3>
       momentum_t = momentum.assign(momentum_noise_step - 0.5 * scaled_gradient)
   ....
-  # 2. x_{n+1} = x_n + \lambda p_{n+\tfrac 1 2}
+  # 2. x_{n+1} = x_n + \lambda p_{n+\frac 1 2}
   var_update_t = state_ops.assign_add(var, step_width_t * momentum_t)
 
   return control_flow_ops.group(*[var_update, kinetic_energy_t]) # <4>
 ----
 
 <1> We obtain a reference to the already created resource variable.
-<2> Next, we add the contribution from latexmath:[\tfrac 1 2 p_{n}^t p_{n}] to
+<2> Next, we add the contribution from latexmath:[$\frac 1 2 p_{n}^t p_{n}$] to
 the resource variable.
 <3> Adding a `tf.control_dependencies()` in a `with` context
 instructs tensorflow that all nodes in the list have to be evaluated before any

@@ -74,16 +74,16 @@ Notation
 
 In the following, we will use the following notation:
 
-- dataset: latexmath:[D = \{X,Y\}] with features latexmath:[X=\{x_d\}] and labels
-latexmath:[Y=\{y_d\}]
-- batch of the dataset: latexmath:[D_i=\{X_i, Y_i\}]
-- network parameters: latexmath:[w=\{w_1, \ldots, w_M\}]
-- momenta of network parameters: latexmath:[p=\{p_1, \ldots, p_M\}]
-- neural network function: latexmath:[F_w(x)]
-- loss function: latexmath:[L_D(w) = \sum_i l(F_w(x_i), y_i)] with a loss
-latexmath:[l(x,y)]
-- gradients: latexmath:[\nabla_w L_D(w)]
-- Hessians: latexmath:[H_{ij} = \partial_{w_i} \partial_{w_j} L_D(w)]
+- dataset: latexmath:[$D = \{X,Y\}$] with features latexmath:[$X=\{x_d\}$] and labels
+latexmath:[$Y=\{y_d\}$]
+- batch of the dataset: latexmath:[$D_i=\{X_i, Y_i\}$]
+- network parameters: latexmath:[$w=\{w_1, \ldots, w_M\}$]
+- momenta of network parameters: latexmath:[$p=\{p_1, \ldots, p_M\}$]
+- neural network function: latexmath:[$F_w(x)$]
+- loss function: latexmath:[$L_D(w) = \sum_i l(F_w(x_i), y_i)$] with a loss
+latexmath:[$l(x,y)$]
+- gradients: latexmath:[$\nabla_w L_D(w)$]
+- Hessians: latexmath:[$H_{ij} = \partial_{w_i} \partial_{w_j} L_D(w)$]
 
 [[quickstart.simulation.general]]
 Instantiating TATi
@@ -225,8 +225,8 @@ include::simulation/setting_up_network.py[]
 In the above example, we specify a neural network of two hidden layers,
 each having 8 nodes. We use the "rectified linear" activation function
 for these nodes. The output nodes are activated by a linear function. At the
-end, we print the number of parameters, i.e. latexmath:[M=105] for the set of
-parameters latexmath:[w=\{w_1, \ldots, w_M\}].
+end, we print the number of parameters, i.e. latexmath:[$M=105$] for the set of
+parameters latexmath:[$w=\{w_1, \ldots, w_M\}$].
 
 The network's weights are initialized randomly in the interval [-0.5,0.5] and
 the biases are set to 0.1 (small, non-zero values).
@@ -247,7 +247,7 @@ layers. Example: `hidden_activation="relu6"`
 - `hidden_dimension`: Gives the hidden layers and the nodes per layer by giving
 a list of integers. Example: `hidden_dimension=[2,2]` defines two hidden layers,
 each with 2 nodes.
-- `loss`: Sets the loss function latexmath:[l(x,y)] to use. Example:
+- `loss`: Sets the loss function latexmath:[$l(x,y)$] to use. Example:
 `loss="softmax_cross_entropy"`
 
 For a complete list of values per option, we refer to the following sections in
@@ -325,7 +325,7 @@ include::simulation/complex/eval_loss_gradient.py[]
 
 Again, we set up the network as before, here it is a single-layer perceptron
 as the default value for `hidden_dimension` is 0. Next, we evaluate the loss
-latexmath:[L_D(w)] using `nn.loss()` and the gradients latexmath:[\nabla_w L_D(w)]
+latexmath:[$L_D(w)$] using `nn.loss()` and the gradients latexmath:[$\nabla_w L_D(w)$]
 using `nn.gradients()`, returning a vector with the gradient per degree of
 freedom of the network.
 
@@ -336,7 +336,7 @@ naive evaluation of first loss and then gradients in two separate function calls
 would cause them to be evaluated on different batches. Depending on the size of
 the batch, the gradients will then not belong the to the respective loss
 evaluation and vice versa.
-Therefore, loss, accuracy, gradients, and hessians latexmath:[H_{ij}] (if
+Therefore, loss, accuracy, gradients, and hessians latexmath:[$H_{ij}$] (if
 'do_hessians' is True) are cached. Only when one of them is evaluated for the
 second time (e.g., inside the loop body on the next iteration), then the next
 batch is used. This makes sure that calling either `loss()` first and then
@@ -376,7 +376,7 @@ Let us quickly go through each of the new parameters:
 * 'batch_size'
 +
 sets the subset size of the data set looked at per training step,
-latexmath:[|D_i|=|\{X_i, Y_i\}|], if smaller than dimension, then we add
+latexmath:[$|D_i|=|\{X_i, Y_i\}|$], if smaller than dimension, then we add
 stochasticity/noise to the training but for the advantage of smaller runtime.
 
 * 'learning_rate'
@@ -420,7 +420,7 @@ of the hessian matrix. However, we will not do so here.
 [CAUTION]
 ====
 The creation of these hessian evaluation nodes (not speaking of their
-evaluation) is a latexmath:[O(N^2)] process in the number of parameters of the
+evaluation) is a latexmath:[$O(N^2)$] process in the number of parameters of the
 network N. Hence, this should only be done for small networks and on purpose.
 ====
 
@@ -538,7 +538,7 @@ NOTE: In the context of sampling we use 'step_width' in place of 'learning_rate'
 
 Again, we produce a single data structure that contains three data frames: run
 info, trajectory, and averages. Trajectories contains among others all
-parameter degrees of freedom latexmath:[w=\{w_1, \ldots, w_M\}] for each step
+parameter degrees of freedom latexmath:[$w=\{w_1, \ldots, w_M\}$] for each step
 (or 'every_nth' step). Run info contains loss, accuracy, norm of gradient,
 norm of noise and others, again for each step. Finally, in averages we compute
 running averages over the trajectory such as average (ensemble) loss, averag
@@ -579,11 +579,11 @@ within each sampler. We compute its magnitude as
 ++++
 
 where *w* is the position of the particle, *a* is the 'prior_factor',
-latexmath:[\pi] is the position of the boundary ('prior_upper_boundary'
-latexmath:[\pi_{ub}] or 'prior_lower_boundary' latexmath:[\pi_{lb}]), and *n*
+latexmath:[$\pi$] is the position of the boundary ('prior_upper_boundary'
+latexmath:[$\pi_{ub}$] or 'prior_lower_boundary' latexmath:[$\pi_{lb}$]), and *n*
 is the `prior_power`. Finally, the force is only in effect within a distance of
-latexmath:[\tau = 0.01 \cdot || \pi_{ub} - \pi_{lb} ||] to either boundary by
-virtue of the Heaviside function latexmath:[\Theta()].
+latexmath:[$\tau = 0.01 \cdot || \pi_{ub} - \pi_{lb} ||$] to either boundary by
+virtue of the Heaviside function latexmath:[$\Theta()$].
 Note that the direction of the force is such that it always points back into
 the desired domain.
 
@@ -817,13 +817,13 @@ The eigenvector gives a direction: From the top right to the bottom left and
 therefore from one minimum basin to the other.
 
 The eigenvector component give the implicit evaluation of the collective
-variable function at each trajectory point, i.e. latexmath:[e_i = \xi(x_i)],
-where latexmath:[\xi(x)] is the collective variable and latexmath:[e_i] is the
-i-th component and latexmath:[x_i] the i-th trajectory point.
+variable function at each trajectory point, i.e. latexmath:[$e_i = \xi(x_i)$],
+where latexmath:[$\xi(x)$] is the collective variable and latexmath:[$e_i$] is the
+i-th component and latexmath:[$x_i$] the i-th trajectory point.
 
 The eigenvectors of the diffusion map kernel also give us a mean to assess
 distances between trajectory points by looking at the difference in values,
-latexmath:[|e_i - e_j|].
+latexmath:[$|e_i - e_j|$].
 This is the so-called _diffusion distance_. It tells us how difficult it is to
 diffuse from one point to the other.
 
