@@ -105,6 +105,7 @@ class WalkerEnsembleOptimizer(Optimizer):
         self._covariance_blending = ensemble_precondition["covariance_blending"]
         self._covariance_after_steps = ensemble_precondition["covariance_after_steps"]
         self._current_step = ensemble_precondition["current_step"]
+        self.EQN_update = None
 
     def _prepare(self):
         """ Converts step width into a tensor, if given as a floating-point
@@ -144,8 +145,7 @@ class WalkerEnsembleOptimizer(Optimizer):
 
         :param grads_and_vars: gradients and variables as a list over all parallel
                         walkers
-        :param global_step: global_step node for this walkers
-        :param name: name of this operation
+        :param index: index of this walker
         """
         # add processor for each variable
         grads_and_vars = tuple(walkers_grads_and_vars[index])    # Make sure repeat iteration works.
@@ -250,11 +250,17 @@ class WalkerEnsembleOptimizer(Optimizer):
 
         normalizing_factor = tf.cond(tf.greater(max_matrix, 1.),
                                      accept, reject)
-        return tf.sqrt(tf.reciprocal(normalizing_factor)) * \
+        update_precond = tf.sqrt(tf.reciprocal(normalizing_factor)) * \
                 tf.cholesky(normalizing_factor * matrix)
-        # tf.Print(, [normalizing_factor],
-        # "normalizing factor: ")
-        # tf.Print(, [matrix], "matrix: ", summarize=4)
+
+        scope_name = "EQN_%s" % (var.name[:var.name.find(":")].replace("/", "_"))
+        with tf.variable_scope(scope_name, reuse=True):
+            precondition_matrix = tf.get_variable("precondition_matrix", dtype=dds_basetype)
+
+        precond_assign = precondition_matrix.assign(update_precond) #, name="update_preccondition_matrix")
+
+        return tf.Print(
+            precond_assign, [precond_assign], "preconditioner:", summarize=9)
 
     def _pick_grad(self, grads_and_vars, var):
         """ Helper function to extract the gradient associated with `var` from
@@ -289,44 +295,21 @@ class WalkerEnsembleOptimizer(Optimizer):
         precondition_matrix_initial = tf.eye(number_dim) # flat_othervars[0].shape[0])
         scope_name = "EQN_%s" % (var.name[:var.name.find(":")].replace("/", "_"))
         with tf.variable_scope(scope_name, reuse=False):
-            precondition_matrix = tf.Variable(precondition_matrix_initial,
-                                              validate_shape=False,  # shape is run-tine initialized
-                                              trainable=False, dtype=dds_basetype,
-                                              name="precondition_matrix")
+            precondition_matrix = tf.get_variable(initializer=precondition_matrix_initial,
+                                                  validate_shape=False,  # shape is run-tine initialized
+                                                  trainable=False, dtype=dds_basetype,
+                                                  name="precondition_matrix")
 
         if len(flat_othervars) != 0:
 
-            with tf.variable_scope(scope_name, reuse=False):
-                means = tf.get_variable(initializer=tf.initializers.zeros(dtype=dds_basetype),
-                                        shape=flat_othervars[0].shape, dtype=dds_basetype,
-                                        use_resource=True,
-                                        trainable=False, name="mean")
-                cov = tf.get_variable(
-                    initializer=tf.initializers.zeros(dtype=dds_basetype),
-                    shape=(flat_othervars[0].shape[0], flat_othervars[0].shape[0]), dtype=dds_basetype,
-                    use_resource=True,
-                    trainable=False, name="covariance_bias")
-
-            def take_covariance():
-                return tf.identity(precondition_matrix)
-
-            def recalc_covariance():
-                with tf.control_dependencies([
-                    precondition_matrix.assign(self._get_preconditioner(flat_othervars, var))
-                ]):
-                    #tf.Print(, [self._current_step, precondition_matrix], "precondition_matrix: ", summarize=4)
-                    return tf.identity(precondition_matrix)
-
-            preconditioner = tf.cond(
-                tf.equal(tf.mod(current_step_t, covariance_after_steps_t),0),
-                recalc_covariance, take_covariance)
+            self.EQN_update = self._get_preconditioner(flat_othervars, var)
 
             # apply the covariance matrix to the flattened gradient and then return to
             # original shape to match for variable update
 
             def precondition_grad():
                 return tf.reshape(
-                    tf.matmul( preconditioner, tf.expand_dims(tf.reshape(grad, [-1]), 1), transpose_a=True),
+                    tf.matmul( precondition_matrix, tf.expand_dims(tf.reshape(grad, [-1]), 1), transpose_a=True),
                     grad.get_shape())
             def pass_grad():
                 return tf.identity(grad)
@@ -393,8 +376,8 @@ class WalkerEnsembleOptimizer(Optimizer):
         :param flat_othervars: list of all other variables
         :return: node for the stacked variables and the covariance matrix
         """
-        # we need a flat vars tensor as otherwise the index arithmetics becomes
-        # very complicate for the "matrix * vector" product (covariance matrix
+        # we use a flat vars tensor as otherwise the index arithmetics becomes
+        # very complicated for the "matrix * vector" product (covariance matrix
         # times the gradient) in the end. This is undone in `_pick_grad()`
         #print(flat_othervars)
         vars = tf.stack(flat_othervars)
@@ -410,7 +393,7 @@ class WalkerEnsembleOptimizer(Optimizer):
 
         rank1factors = self._get_rank1_factors(flat_othervars, vars, means, number_walkers, scope_name)
 
-        with tf.variable_scope(scope_name, reuse=True):
+        with tf.variable_scope(scope_name, reuse=False):
             cov = tf.get_variable(
                 initializer=tf.initializers.zeros(dtype=dds_basetype),
                 shape=(flat_othervars[0].shape[0],flat_othervars[0].shape[0]), dtype=dds_basetype,
@@ -457,7 +440,7 @@ class WalkerEnsembleOptimizer(Optimizer):
     def _get_means(self, flat_othervars, vars, number_dim, scope_name):
         # means are needed for every component. Hence, we save a bit by
         # creating all means beforehand
-        with tf.variable_scope(scope_name, reuse=True):
+        with tf.variable_scope(scope_name, reuse=False):
             means = tf.get_variable(initializer=tf.initializers.zeros(dtype=dds_basetype),
                                     shape=flat_othervars[0].shape, dtype=dds_basetype,
                                     use_resource=True,

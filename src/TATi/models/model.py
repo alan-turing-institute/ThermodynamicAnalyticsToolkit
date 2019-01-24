@@ -540,6 +540,7 @@ class model:
                             grads_and_vars, i, global_step=global_step,
                             name=self.sampler[i].get_name())
                     self.nn[i].summary_nodes['sample_step'] = train_step
+                    self.nn[i].summary_nodes['EQN_step'] = self.sampler[i].EQN_update
             else:
                 logging.info("Not adding sample method.")
 
@@ -1171,6 +1172,8 @@ class model:
             for walker_index in range(self.FLAGS.number_walkers)]
 
         test_nodes = self._get_test_nodes(setup="sample")
+        EQN_nodes =[self.nn[walker_index].get("EQN_step") \
+                           for walker_index in range(self.FLAGS.number_walkers)]
         all_weights, all_biases = self._get_all_parameters()
 
         averages = AveragesAccumulator(return_averages, self.FLAGS.sampler,
@@ -1282,6 +1285,11 @@ class model:
             if current_step % self.FLAGS.every_nth == 0:
                 accumulated_values.weights, accumulated_values.biases = \
                     self._get_parameters(return_trajectories, all_weights, all_biases)
+
+            # perform the EQN update step
+            if self.FLAGS.covariance_blending != 0. and \
+                    current_step % self.FLAGS.covariance_after_steps == 0:
+                self.sess.run(EQN_nodes, feed_dict=feed_dict)
 
             # perform the sampling step
             step_success = False
@@ -1396,6 +1404,8 @@ class model:
         for walker_index in range(self.FLAGS.number_walkers):
             placeholder_nodes.append(self.nn[walker_index].get_dict_of_nodes(["current_step"]))
         test_nodes = self._get_test_nodes(setup="sample")
+        EQN_nodes =[self.nn[walker_index].get("EQN_step") \
+                           for walker_index in range(self.FLAGS.number_walkers)]
         all_weights, all_biases = self._get_all_parameters()
 
         averages = AveragesAccumulator(return_averages, self.FLAGS.sampler,
@@ -1471,6 +1481,11 @@ class model:
             if current_step % self.FLAGS.every_nth == 0:
                 accumulated_values.weights, accumulated_values.biases = \
                     self._get_parameters(return_trajectories, all_weights, all_biases)
+
+            # perform the EQN update step
+            if self.FLAGS.covariance_blending != 0. and \
+                    current_step % self.FLAGS.covariance_after_steps == 0:
+                self.sess.run(EQN_nodes, feed_dict=feed_dict)
 
             # perform the sampling step
             step_success = False
@@ -1596,6 +1611,8 @@ class model:
         assert( walker_index < self.FLAGS.number_walkers)
 
         test_nodes = self._get_test_nodes(setup="train")
+        EQN_nodes =[self.nn[walker_index].get("EQN_step") \
+                           for walker_index in range(self.FLAGS.number_walkers)]
         all_weights, all_biases = self._get_all_parameters()
 
         averages = AveragesAccumulator(return_averages, self.FLAGS.optimizer,
@@ -1666,6 +1683,12 @@ class model:
             if current_step % self.FLAGS.every_nth == 0:
                 accumulated_values.weights, accumulated_values.biases = \
                     self._get_parameters(return_trajectories, all_weights, all_biases)
+
+            ## training is not compatible (yet) with performing the EQN update step
+            #if self.FLAGS.covariance_blending != 0. and \
+            #        current_step % self.FLAGS.covariance_after_steps == 0:
+            #    self.sess.run(EQN_nodes, feed_dict=feed_dict)
+
 
             # perform the sampling step
             summary, accumulated_values.accuracy, accumulated_values.global_step, accumulated_values.loss = \
