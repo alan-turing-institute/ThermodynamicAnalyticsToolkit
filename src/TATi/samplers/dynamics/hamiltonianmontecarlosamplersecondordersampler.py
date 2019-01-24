@@ -15,13 +15,12 @@ class HamiltonianMonteCarloSamplerSecondOrderSampler(HamiltonianMonteCarloSample
 
     """
     def __init__(self,
-                 ensemble_precondition, step_width, inverse_temperature,
+                 covariance_blending, step_width, inverse_temperature,
                  loss, current_step, next_eval_step, hd_steps, accept_seed,
                  seed=None, use_locking=False, name='HamiltonianMonteCarlo_2ndOrder'):
         """ Init function for this class.
 
-        :param ensemble_precondition: whether to precondition the gradient using
-                all the other walkers or not
+        :param covariance_blending: covariance identity blending value eta to use in creating the preconditioning matrix
         :param step_width: step width for gradient
         :param inverse_temperature: scale for noise
         :param loss: loss value of the current state for evaluating acceptance
@@ -32,7 +31,7 @@ class HamiltonianMonteCarloSamplerSecondOrderSampler(HamiltonianMonteCarloSample
         :param name: internal name of optimizer
         """
         super(HamiltonianMonteCarloSamplerSecondOrderSampler, self).__init__(
-            ensemble_precondition, step_width, inverse_temperature,
+            covariance_blending, step_width, inverse_temperature,
             loss, current_step, next_eval_step, accept_seed,
             seed, use_locking, name)
         self._hd_steps = hd_steps

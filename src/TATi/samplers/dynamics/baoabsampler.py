@@ -13,11 +13,11 @@ class BAOABSampler(GeometricLangevinAlgorithmFirstOrderSampler):
     in the form of a TensorFlow Optimizer, overriding tensorflow.python.training.Optimizer.
 
     """
-    def __init__(self, ensemble_precondition, step_width, inverse_temperature, friction_constant,
+    def __init__(self, covariance_blending, step_width, inverse_temperature, friction_constant,
                  seed=None, use_locking=False, name='BAOAB'):
         """ Init function for this class.
 
-        :param ensemble_precondition: array with information to perform ensemble precondition method
+        :param covariance_blending: covariance identity blending value eta to use in creating the preconditioning matrix
         :param step_width: step width for gradient, also affects inject noise
         :param inverse_temperature: scale for gradients
         :param friction_constant: scales the momenta
@@ -25,7 +25,7 @@ class BAOABSampler(GeometricLangevinAlgorithmFirstOrderSampler):
         :param use_locking: whether to lock in the context of multi-threaded operations
         :param name: internal name of optimizer
         """
-        super(BAOABSampler, self).__init__(ensemble_precondition, step_width, inverse_temperature,
+        super(BAOABSampler, self).__init__(covariance_blending, step_width, inverse_temperature,
                                            friction_constant, seed, use_locking, name)
 
 

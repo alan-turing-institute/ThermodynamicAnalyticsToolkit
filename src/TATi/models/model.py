@@ -932,10 +932,9 @@ class model:
         for walker_index in range(self.FLAGS.number_walkers):
             logging.info("Dependent walker #"+str(walker_index))
             if self.FLAGS.covariance_blending != 0.:
-                eta, cov_steps =  self.sess.run(self.nn[walker_index].get_list_of_nodes(
-                    ["covariance_blending", "covariance_after_steps"]), feed_dict=feed_dict)
-                logging.info("EQN parameters, walker #%d: eta = %lg, cov at steps = %d" %
-                             (walker_index, eta, cov_steps))
+                eta = self.sess.run(self.nn[walker_index].get_list_of_nodes(
+                    ["covariance_blending"]), feed_dict=feed_dict)[0]
+                logging.info("EQN parameters, walker #%d: eta = %lg" % (walker_index, eta))
             if self.FLAGS.sampler in ["StochasticGradientLangevinDynamics",
                                       "GeometricLangevinAlgorithm_1stOrder",
                                       "GeometricLangevinAlgorithm_2ndOrder",
@@ -1564,7 +1563,7 @@ class model:
 
         # add sampler options only when they are present in parameter struct
         param_dict = {}
-        for key in ["covariance_blending", "covariance_after_steps",
+        for key in ["covariance_blending",
                     "friction_constant", "inverse_temperature",
                     "learning_rate", "sigma", "sigmaA", "step_width"]:
             try:
@@ -1688,7 +1687,6 @@ class model:
             #if self.FLAGS.covariance_blending != 0. and \
             #        current_step % self.FLAGS.covariance_after_steps == 0:
             #    self.sess.run(EQN_nodes, feed_dict=feed_dict)
-
 
             # perform the sampling step
             summary, accumulated_values.accuracy, accumulated_values.global_step, accumulated_values.loss = \

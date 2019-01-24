@@ -92,19 +92,15 @@ class WalkerEnsembleOptimizer(Optimizer):
     This way the position update may actually rely on the gradients of other
     instances (or any other information) stored in possible walkers.
     """
-    def __init__(self, ensemble_precondition, use_locking=False, name='WalkerEnsembleOptimizer'):
+    def __init__(self, covariance_blending, use_locking=False, name='WalkerEnsembleOptimizer'):
         """ Init function for this class.
 
-        :param ensemble_precondition: array with information to perform ensemble precondition method
-        :param covariance_after_steps: number of steps after which to recalculate covariance
-        :param current_step: placeholder containing the current number of steps taken
+        :param covariance_blending: covariance identity blending value eta to use in creating the preconditioning matrix
         :param use_locking: whether to lock in the context of multi-threaded operations
         :param name: internal name of optimizer
         """
         super(WalkerEnsembleOptimizer, self).__init__(use_locking, name)
-        self._covariance_blending = ensemble_precondition["covariance_blending"]
-        self._covariance_after_steps = ensemble_precondition["covariance_after_steps"]
-        self._current_step = ensemble_precondition["current_step"]
+        self._covariance_blending = covariance_blending
         self.EQN_update = None
 
     def _prepare(self):
@@ -113,8 +109,6 @@ class WalkerEnsembleOptimizer(Optimizer):
         """
         super(WalkerEnsembleOptimizer, self)._prepare()
         self._covariance_blending_t = ops.convert_to_tensor(self._covariance_blending, name="covariance_blending")
-        self._covariance_after_steps_t = ops.convert_to_tensor(self._covariance_after_steps, name="covariance_after_steps")
-        self._current_step_t = ops.convert_to_tensor(self._current_step, name="current_step")
 
     def compute_and_check_gradients(self, loss, var_list=None,
                  gate_gradients=Optimizer.GATE_GRAPH, aggregation_method=None,
@@ -273,8 +267,6 @@ class WalkerEnsembleOptimizer(Optimizer):
         :param var: current variable to associated to grad of this walker instance
         :return: (preconditioned) grad associated to var
         """
-        current_step_t = math_ops.cast(self._current_step_t, tf.int64)
-        covariance_after_steps_t = math_ops.cast(self._covariance_after_steps_t, tf.int64)
         #print(var.name[var.name.find("/"):])
         grad, _ = self._extract_grads(grads_and_vars, var)
         #print("grad: "+str(grad))
@@ -302,6 +294,7 @@ class WalkerEnsembleOptimizer(Optimizer):
 
         if len(flat_othervars) != 0:
 
+            # create the preconditioning matrix update node
             self.EQN_update = self._get_preconditioner(flat_othervars, var)
 
             # apply the covariance matrix to the flattened gradient and then return to

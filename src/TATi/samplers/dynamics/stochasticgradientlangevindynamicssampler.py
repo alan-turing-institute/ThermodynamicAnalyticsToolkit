@@ -17,18 +17,18 @@ class StochasticGradientLangevinDynamicsSampler(WalkerEnsembleOptimizer):
     where $\beta$ is the inverse temperature coefficient, $\Delta t$ is the (discretization)
     step width and $\Theta$ is the parameter vector and $U(\Theta)$ the energy or loss function.
     """
-    def __init__(self, ensemble_precondition, step_width, inverse_temperature,
+    def __init__(self, covariance_blending, step_width, inverse_temperature,
                  seed=None, use_locking=False, name='SGLD'):
         """ Init function for this class.
 
-        :param ensemble_precondition: array with information to perform ensemble precondition method
+        :param covariance_blending: covariance identity blending value eta to use in creating the preconditioning matrix
         :param step_width: step width for gradient, also affects inject noise
         :param inverse_temperature: scale for gradients
         :param seed: seed value of the random number generator for generating reproducible runs
         :param use_locking: whether to lock in the context of multi-threaded operations
         :param name: internal name of optimizer
         """
-        super(StochasticGradientLangevinDynamicsSampler, self).__init__(ensemble_precondition,
+        super(StochasticGradientLangevinDynamicsSampler, self).__init__(covariance_blending,
                                                                         use_locking, name)
         self._step_width = step_width
         self._seed = seed

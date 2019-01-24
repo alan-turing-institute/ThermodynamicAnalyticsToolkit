@@ -264,30 +264,20 @@ class NeuralNetwork(object):
             tf.summary.scalar('friction_constant', friction_constant)
             self.placeholder_nodes['friction_constant'] = friction_constant
 
-            covariance_after_steps = tf.placeholder(tf.int64, name="covariance_after_steps")
-            tf.summary.scalar('covariance_after_steps', covariance_after_steps)
-            self.placeholder_nodes['covariance_after_steps'] = covariance_after_steps
-
             covariance_blending = tf.placeholder(dds_basetype, name="covariance_blending")
             tf.summary.scalar('covariance_blending', covariance_blending)
             self.placeholder_nodes['covariance_blending'] = covariance_blending
 
-            ensemble_precondition = {
-                "covariance_blending": covariance_blending,
-                "current_step": current_step,
-                "covariance_after_steps": covariance_after_steps
-            }
-
             if sampling_method == "StochasticGradientLangevinDynamics":
-                sampler = StochasticGradientLangevinDynamicsSampler(ensemble_precondition,
+                sampler = StochasticGradientLangevinDynamicsSampler(covariance_blending,
                                                                     step_width, inverse_temperature,
                                                                     seed=seed)
             elif sampling_method == "GeometricLangevinAlgorithm_1stOrder":
-                sampler = GeometricLangevinAlgorithmFirstOrderSampler(ensemble_precondition,
+                sampler = GeometricLangevinAlgorithmFirstOrderSampler(covariance_blending,
                                                                       step_width, inverse_temperature, friction_constant,
                                                                       seed=seed)
             elif sampling_method == "GeometricLangevinAlgorithm_2ndOrder":
-                sampler = GeometricLangevinAlgorithmSecondOrderSampler(ensemble_precondition,
+                sampler = GeometricLangevinAlgorithmSecondOrderSampler(covariance_blending,
                                                                        step_width, inverse_temperature, friction_constant,
                                                                        seed=seed)
             elif "HamiltonianMonteCarlo" in sampling_method:
@@ -296,21 +286,21 @@ class NeuralNetwork(object):
                 accept_seed = int(np.random.uniform(low=0,high=67108864))
                 if sampling_method  == "HamiltonianMonteCarlo_1stOrder":
                     sampler = HamiltonianMonteCarloSamplerFirstOrderSampler(
-                        ensemble_precondition, step_width, inverse_temperature, loss,
+                        covariance_blending, step_width, inverse_temperature, loss,
                         current_step, next_eval_step, accept_seed=accept_seed, seed=seed)
                 elif sampling_method == "HamiltonianMonteCarlo_2ndOrder":
                     sampler = HamiltonianMonteCarloSamplerSecondOrderSampler(
-                        ensemble_precondition, step_width, inverse_temperature,
+                        covariance_blending, step_width, inverse_temperature,
                         loss, current_step, next_eval_step, hd_steps,
                         accept_seed=accept_seed, seed=seed)
                 else:
                     raise NotImplementedError("The HMC sampler %s is unknown" % (sampling_method))
             elif sampling_method == "BAOAB":
-                sampler = BAOABSampler(ensemble_precondition,
+                sampler = BAOABSampler(covariance_blending,
                                        step_width, inverse_temperature, friction_constant,
                                        seed=seed)
             elif sampling_method == "CovarianceControlledAdaptiveLangevinThermostat":
-                sampler = CCAdLSampler(ensemble_precondition,
+                sampler = CCAdLSampler(covariance_blending,
                                        step_width, inverse_temperature, friction_constant,
                                        sigma=sigma, sigmaA=sigmaA, seed=seed)
             else:

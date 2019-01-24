@@ -14,11 +14,11 @@ class CovarianceControlledAdaptiveLangevinThermostat(GeometricLangevinAlgorithmS
     in the form of a TensorFlow Optimizer, overriding tensorflow.python.training.Optimizer.
 
     """
-    def __init__(self, ensemble_precondition, step_width, inverse_temperature, friction_constant, sigma, sigmaA,
+    def __init__(self, covariance_blending, step_width, inverse_temperature, friction_constant, sigma, sigmaA,
                  seed=None, use_locking=False, name='CovarianceControlledAdaptiveLangevinThermostat'):
         """ Init function for this class.
 
-        :param ensemble_precondition: array with information to perform ensemble precondition method
+        :param covariance_blending: covariance identity blending value eta to use in creating the preconditioning matrix
         :param step_width: step width for gradient, also affects inject noise
         :param inverse_temperature: scale for gradients
         :param friction_constant: scales the momenta
@@ -28,7 +28,7 @@ class CovarianceControlledAdaptiveLangevinThermostat(GeometricLangevinAlgorithmS
         :param use_locking: whether to lock in the context of multi-threaded operations
         :param name: internal name of optimizer
         """
-        super(CovarianceControlledAdaptiveLangevinThermostat, self).__init__(ensemble_precondition, step_width, inverse_temperature,
+        super(CovarianceControlledAdaptiveLangevinThermostat, self).__init__(covariance_blending, step_width, inverse_temperature,
                                                                              friction_constant, seed, use_locking, name)
         self._sigma = sigma
         self._sigmaA = sigmaA
