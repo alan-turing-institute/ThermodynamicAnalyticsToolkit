@@ -1,0 +1,57 @@
+////
+#
+#    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
+#    Copyright (C) 2018 The University of Edinburgh
+#    The TATi authors, see file AUTHORS, have asserted their moral rights.
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+////
+
+[[quickstart]]
+Quickstart
+----------
+
+Before we come to actually using TATi, we explain what possible approaches
+there are to sampling a high-dimensional function such as the loss manifold of
+neural networks. To this end, we talk about grid-based sampling that however
+suffers from the Curse of Dimensionality. Moreover, we will discuss Monte Carlo
+and especially Markov Chain Monte Carlo methods. In the latter category we have
+what we will call dynamics-based sampling. This approach does not suffer in
+principle from the Curse of Dimensionality but moreover may have additional
+savings by looking only at areas of the manifold that have small loss.
+At the end, want to set the stage with a little example: We will look  at a
+very simple classification task and see how it is solved using neural networks.
+
+include::userguide_quickstart_sampling.txt[]
+
+include::userguide_quickstart_simulation.txt[]
+
+include::userguide_quickstart_cmdline.txt[]
+
+[[quickstart.conclusion]]
+Conclusion
+~~~~~~~~~~
+
+This has been the quickstart introduction.
+
+In the following reference section you may find the following pieces
+interesting after having gone through this quickstart tutorial.
+
+- <<reference.examples.harmonic_oscillator>> for a light-weight example
+  probability distribution function whose properties are well understood.
+- <<reference.implementing_sampler>> explaining how to implement your own
+  sampler using the `Simulation` module as rapid-prototyping framework.
+- <<reference.simulation>> giving detailed examples on each function in
+  `Simulations`'s interface'.

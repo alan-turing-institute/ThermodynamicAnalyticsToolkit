@@ -1,11 +1,13 @@
 from TATi.datasets.classificationdatasets \
     import ClassificationDatasets as DatasetGenerator
+from TATi.common import data_numpy_to_csv
 
-import csv
 import numpy as np
 
+# fix random seed for reproducibility
 np.random.seed(426)
 
+# generate test dataset: two clusters
 dataset_generator = DatasetGenerator()
 xs, ys = dataset_generator.generate(
     dimension=500,
@@ -18,17 +20,5 @@ np.random.shuffle(randomize)
 xs[:] = np.array(xs)[randomize]
 ys[:] = np.array(ys)[randomize]
 
-with open("dataset-twoclusters.csv", 'w', newline='') as data_file:
-    csv_writer = csv.writer(data_file, delimiter=',', \
-                            quotechar='"', \
-                            quoting=csv.QUOTE_MINIMAL)
-    header = ["x"+str(i+1) for i in range(len(xs[0]))]+["label"]
-    csv_writer.writerow(header)
-    for x, y in zip(xs, ys):
-        csv_writer.writerow(
-            ['{:{width}.{precision}e}'.format(val, width=8,
-                                              precision=8)
-             for val in list(x)] \
-            + ['{}'.format(y[0], width=8,
-                                                precision=8)])
-    data_file.close()
+# call helper to write as properly formatted CSV
+data_numpy_to_csv(xs,ys, "dataset-twoclusters.csv")

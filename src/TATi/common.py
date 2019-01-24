@@ -349,35 +349,29 @@ def create_input_layer(input_dimension, input_list):
     return xinput, x
 
 
-def data_numpy_to_csv(dataset, labels, fileName):
-    """Save data in numpy format into .csv file
-    
-    params: dataset (numpy.ndarray) with all the points and features
-    params: labels (numpy.ndarray) with all the labels
+def data_numpy_to_csv(features, labels, fileName):
+    """ Save data in numpy format into .csv file
 
     Args:
-      dataset: 
-      labels: 
-      fileName: 
+      features: features (numpy.ndarray) with all the points 
+      labels: labels (numpy.ndarray) with all the labels
+      fileName: filename of CSV file
 
     Returns:
 
     """
-    from TATi.datasets.classificationdatasets \
-        import ClassificationDatasets as DatasetGenerator
-    import numpy as np
-
-    xs, ys = dataset, labels
+    xs, ys = features, labels
 
     with open(fileName, 'w', newline='') as data_file:
         csv_writer = csv.writer(data_file, delimiter=',', \
                                 quotechar='"', \
                                 quoting=csv.QUOTE_MINIMAL)
-        header = ["x"+str(i+1) for i in range(len(xs[0]))]+["label"]
+        header = ["x"+str(i+1) for i in range(len(xs[0]))] \
+                 +["label"+str(i+1) for i in range(len(ys[0]))]
         csv_writer.writerow(header)
         for x, y in zip(xs, ys):
             csv_writer.writerow(
                 ['{:{width}.{precision}e}'.format(val, width=8, precision=8)
-    for val in list(x)] \
-            + ['{}'.format(y[0], width=8,precision=8)])
+                 for val in list(x)] \
+                + ['{}'.format(val, width=8,precision=8) for val in list(y)])
     data_file.close()

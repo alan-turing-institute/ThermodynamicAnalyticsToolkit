@@ -1,0 +1,414 @@
+////
+#
+#    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
+#    Copyright (C) 2018 The University of Edinburgh
+#    The TATi authors, see file AUTHORS, have asserted their moral rights.
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+////
+
+[[quickstart.cmdline]]
+Using command-line interface
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+All the tests use the command-line interface which suits itself well for
+performing rigorous scientific experiments in scripted stages. We recommend
+using this interface when doing parameter studies and performing extensive runs
+using different seeds.
+
+The examples on this interface will be much briefer as you are hopefully
+aware of the `simulation` module quickstart already and therefore much should
+be familiar.
+
+[NOTE]
+====
+All command-line option have equivalently named counterparts in the options given
+to the `simulation` (or `model`) module on instantiation or to
+`simulation.set_options()`, respectively.
+====
+
+[[quickstart.cmdline.writing_dataset]]
+Creating the dataset
+^^^^^^^^^^^^^^^^^^^^
+
+As data is read from file, this file needs to be created beforehand.
+
+For a certain set of simple classification problems, namely those that
+can be found in the tensorflow playground, we have added a
+`TATiDatasetWriter` that spills out the dataset in CSV format.
+
+[source,bash]
+---------------
+include::cmdline/write_dataset.sh[]
+---------------
+
+This will write 500 datums of the dataset type 2 (*two clusters*) to a
+file +testset-twoclusters.csv+ using all of the points as we have set
+the test/train ratio to *0*. Note that we also perturb the points by *0.1*
+relative noise.
+
+[[quickstart.cmdline.parsing_dataset]]
+Parsing the dataset
+^^^^^^^^^^^^^^^^^^^
+
+Similarly, for testing the dataset can be parsed using the same
+tensorflow machinery as is done for sampling and optimizing, using
+
+[source,bash]
+---------------
+include::cmdline/parse_dataset.sh[]
+---------------
+
+where the _seed_ is used for shuffling the dataset.
+
+This will print 20 randomly drawn items from the dataset.
+
+[[quickstart.cmdline.optimizing]]
+Optimizing the network
+^^^^^^^^^^^^^^^^^^^^^^
+
+As weights (and biases) are usually uniformly random initialized and the
+potential may therefore start with large values, we first have to
+optimize the network, using (Stochastic) Gradient Descent (GD).
+
+[[quickstart.cmdline.parameter_freeze]]
+Freezing parameters
+^^^^^^^^^^^^^^^^^^^
+
+Sometimes it might be desirable to freeze parameters during training or
+sampling. This can be done as follows:
+
+[source,python]
+---------------
+include::python/fix_parameter.py[]
+---------------
+
+Note that we fix the parameter where we give its name in full tensorflow
+namescope: "layer1" for the network layer, "weights" for the weights ("biases"
+alternatively) and "Variable:0" is fixed (as it is the only one). This is
+followed by a comma-separated list of values, one for each component.
+
+====
+[NOTE]
+
+Single values cannot be frozen but only entire weight matrices or bias
+vectors per layer at the moment. As each component has to be listed, at the
+moment this is not suitable for large vectors.
+====
+
+[source,bash]
+---------------
+include::cmdline/optimize.sh[]
+---------------
+
+This call will parse the dataset from the file
++dataset-twoclusters.csv+. It will then perform a (Stochastic) Gradient
+Descent optimization in batches of *50* (10% of the dataset) of the
+parameters of the network using a step width/learning rate of *0.01* and
+do this for *1000* steps after which it stops and writes the resulting
+neural network in a TensorFlow-specific format to a set of files, one of
+which is called +model.ckpt.meta+ (and the other filenames are derived
+from this).
+
+We have also created a file +run.csv+ which contains among others the
+loss at each ('every_nth', respectively) step of the optimization run.
+Plotting the loss over the step column from the run file will result in
+a figure similar to in
+link:#quickstart.simulation.optimizing.plot[Loss history].
+
+
+[NOTE]
+====
+Since Tensorflow 1.4 an absolute path is required for the storing the
+model. In the example we use the current directory returned by the unix
+command `pwd`.
+====
+
+If you need to compute the optimal step width, which is possible for
+smaller networks from the largest eigenvalue of the hessian matrix, then
+use the option 'do_hessians 1' to activate it.
+
+[NOTE]
+====
+The creation of the nodes is costly, latexmath:[O(N^2)] in the number of
+parameters of the network N. Hence, may not work for anything but small
+networks and should be done on purpose.
+====
+
+[[quickstart.cmdline.sampling]]
+Sampling trajectories on the loss manifold
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Next, we show how to use the sampling tool called `TATiSampler`.
+
+[source,bash]
+---------------
+include::cmdline/sample.sh[]
+---------------
+
+This will cause the sampler to parse the same dataset as before.
+Afterwards it will use the *GeometricLangevinAlgorithm_2nd* order discetization
+using again 'step_width' of *0.01* and running for *1000* steps in total. The
+GLA is a descretized variant of Langevin Dynamics whose accuracy scales with
+the inverse square of the 'step_width' (hence, 2nd order).
+
+The 'seed' is needed as we sample using Langevin Dynamics where a noise
+term is present whose magnitude scales with `inverse_temperature`.
+
+After it has finished, it will create three files; a run file
++run.csv+ containing run time information such as the step, the
+potential, kinetic and total energy at each step, a trajectory file
++trajectory.csv+ with each parameter of the neural network at each step,
+and an averages file +averages.csv+ containing averages accumulated
+along the trajectory such as average kinetic energy, average virial (
+connected to the kinetic energy through the virial theorem, valid if a
+prior keeps parameters bound to finite values), and the average
+(ensemble) loss. Moreover, for the HMC sampler the average rejection
+rate is stored there. The first two files we need in the next stage.
+
+As it is good practice to first optimize and then sample, also referred as to
+start from an +equilibrated position+, we may load the model saved after
+optimization by adding the option:
+
+[source,bash]
+---------------
+...
+  --restore_model ‘pwd‘/model.ckpt.meta \
+...
+---------------
+
+Otherwise we start from randomly initialized weights and non-zero biases.
+
+[[quickstart.cmdline.analysing]]
+Analysing trajectories
+^^^^^^^^^^^^^^^^^^^^^^
+
+Eventually, we now want to analyse the obtained trajectories. The trajectory
+file written in the last step is simply a matrix of dimension (number of
+parameters) times (number of trajectory steps).
+
+The analysis can perform a number of different operations where we name a few:
+
+* Calculating averages.
+* Calculating covariances.
+* Calculating the diffusion map's largest eigenvalues and eigenvectors.
+* Calculating landmarks and level sets to obtain an approximation to the
+free energy.
+
+[[quickstart.cmdline.analysing.averages]]
+Averages
+++++++++
+
+Averages are calculated by specifying two options as follows:
+
+[source,bash]
+---------------
+include::cmdline/analyse_average.sh[]
+---------------
+
+This will load both the run file +run.csv+ and the trajectory file
++trajectory.csv`+ and average over them using only every *10* th data point
+('every_nth') and also dropping the first steps below *100*
+('drop_burnin'). It will produce then ten averages ('steps') for each of
+energies in the run file and each of the parameters in the trajectories
+file (along with the variance) from the first non-dropped step till one
+of the ten end steps. These end steps are obtained by equidistantly
+splitting up the whole step interval.
+
+Eventually, we have two output file. The averages over the run
+information such as total, kinetic, and potential energy in
++average_run.csv+. Also, we have the averages over the degrees of
+freedom in +average_trajectories.csv+.
+
+[NOTE]
+====
+Averages depend crucially on the number of steps we average over. I.e.
+the more points we throw away, the less accurate it becomes. In other
+words, if large accuracy is required, the averages file (if it contains
+the value of interest) is a better place to look for.
+====
+
+[[quickstart.cmdline.analysing.covariance]]
+Covariance
+++++++++++
+
+Computing the covariance is done as follows.
+
+[source,bash]
+---------------
+include::cmdline/analyse_covariance.sh[]
+---------------
+
+Here, we simply give the respective options to write the covariance matrix,
+its eigenvectors and eigenvalzes to CSV files. We drop the first 100 steps
+and take only every 10th step into account.
+
+The covariance eigenvectors give use the directions of strong and weak
+change while the eigenvalues give their magnitude. This correlates with strong
+and weak gradients and therefore with general directions of fast and slow
+exploration.
+
+[[quickstart.cmdline.analysing.diffusion_map]]
+Diffusion map
++++++++++++++
+
+See section <<quickstart.simulation.analysis.diffusion_map>> for some more
+information on diffusion maps.
+
+its eigenvalues and eigenvectors can be written as well to two output
+files.
+
+[source,bash]
+---------------
+include::cmdline/analyse_diffmap.sh[]
+---------------
+
+The files ending in `..values.csv` contains the eigenvalues in two
+columns, the first is the eigenvalue index, the second is the
+eigenvalue.
+
+The other file ending in `..vectors.csv` is simply a matrix of the
+eigenvector components in one direction and the trajectory steps in the
+other. Additionally, it contains the parameters at the steps and also
+the loss and the kernel matrix entry.
+
+Note that again the all values up till step *100* are dropped and only
+every 10th trajectory point is considered afterwards.
+
+There are two methods available. Here, we have used the simpler (and
+less accurate) (plain old) 'vanilla' method. The other is called 'TMDMap'.
+
+If you have installed the 'pydiffmap' python package, this may also be
+specified as diffusion map method. It has the benefit of an internal
+optimal parameter choice. Hence, it should behave more robustly than the
+other two methods. 'TMDMap' is different only in re-weighting the samples
+according to the specific temperature.
+
+[[quickstart.cmdline.more_tools]]
+More tools
+^^^^^^^^^^
+
+There are a few more tools available in TATi. They allow to inspect the loss
+manifold or the input space with respect to a certain parameter set.
+
+[[quickstart.cmdline.more_tools.loss]]
+The loss function
++++++++++++++++++
+
+Let us give an example call of `TATiLossFunctionSampler` right away.
+
+[source,bash]
+---------------
+include::cmdline/lossfunctionsampler-trajectory.sh[]
+---------------
+
+It takes as input the dataset file `dataset-twoclusters.csv` and
+either a parameter file +trajectory.csv+. This will cause the program
+the re-evaluate the loss function at the trajectory points which should
+hopefully give the same values as already stored in the trajectory file
+itself.
+
+However, this may be used with a different dataset file, e.g. the
+testing or validation dataset, in order to evaluate the generalization
+error in terms of the overall accuracy or the loss at the points along
+the given trajectory.
+
+Interesting is also the second case, where instead of giving a
+parameters file, we sample the parameter space equidistantly as follows:
+
+[source,bash]
+---------------
+include::cmdline/lossfunctionsampler-grid.sh[]
+---------------
+
+Here, sample for each weight in the interval [-5,5] at 11 points (10 +
+endpoint), and similarly for the weights in the interval [-1,1] at 5
+points.
+
+[NOTE]
+====
+For anything but trivial networks the computational cost quickly becomes
+prohibitively large. However, we may use `fix_parameter` to lower the
+computational cost by choosing a certain subsets of weights and biases to
+sample.
+====
+
+[source,bash]
+---------------
+include::cmdline/lossfunctionsampler-fix_parameter.sh[]
+---------------
+
+Moreover, using `exclude_parameters` can be used to exclude parameters
+from the variation, i.e. this subset is kept at fixed values read from
+the file given by `parse_parameters_file` where the row designated by
+the value in `parse_steps` is taken.
+
+This can be used to assess the shape of the loss manifold around a found
+minimum.
+
+[source,bash]
+---------------
+include::cmdline/lossfunctionsampler-exclude_parameters.sh[]
+---------------
+
+Here, we have excluded the second weight, named *w1*, from the sampling.
+Note that all weight and all bias degrees of freedom are simply
+enumerated one after the other when going from the input layer till the
+output layer.
+
+Furthermore, we have specified a file containing center points for all
+excluded parameters. This file is of CSV style having a column *step* to
+identify which row is to be used and moreover a column for every
+(excluded) parameter that is fixed at a value unequal to 0. Note that
+the minima file written by `TATiExplorer` can be used as this centers
+file. Moreover, also the trajectory files have the same structure.
+
+[[quickstart.cmdline.more_tools.inputspace]]
+The learned function
+++++++++++++++++++++
+
+The second little utility programs does not evaluate the loss function
+itself but the unknown function learned by the neural network depending
+on the loss function, called the +TATiInputSpaceSampler+. In other
+words, it gives the classification result for data point sampled from an
+equidistant grid. Let us give an example call right away.
+
+[source,bash]
+---------------
+include::cmdline/inputspacesampler.sh[]
+---------------
+
+Here, `batch_data_files` is an input file but it does not need to be
+present. (Sorry about that abuse of the parameter as usually
+`batch_data_files` is read-only. Here, it is overwritten!). Namely, it
+is generated by the utility in that it equidistantly samples the input
+space, using the interval [-4,4] for each input dimension and 10+1
+samples (points on -4 and 4 included). The parameters file
++trajectory.csv+ now contains the values of the parameters (weights
+and biases) to use on which the learned function depends or by, in other
+words, by which it is parametrized. As the trajectory contains a whole
+flock of these, the `parse_steps` parameter tells it which steps to
+use for evaluating each point on the equidistant input space grid,
+simply referring to rows in said file.
+
+[NOTE]
+====
+For anything but trivial input spaces the computational cost quickly
+becomes prohibitively large. But again `fix_parameters` is heeded and can be
+used to fix certain parameters. This is even necessary if parsing a trajectory
+that was created using some parameters fixed as they then will _not_
+appear in the set of parameters written to file. This will raise an
+error as the file will contain too few values.
+====

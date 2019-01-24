@@ -21,6 +21,7 @@
 import numpy as np
 
 from TATi.common import setup_csv_file
+from TATi.analysis.parsedtrajectory import ParsedTrajectory
 
 class AverageTrajectoryWriter(object):
     """This class writes the averaged parameters to a CSV file"""
@@ -29,13 +30,16 @@ class AverageTrajectoryWriter(object):
     output_precision = 8
 
     def __init__(self, trajectory):
-        self.trajectory = trajectory
-        self.number_dof = len(self.trajectory[0,:])
-        self.average_params = [np.average(self.trajectory[0:, i]) for i in range(self.number_dof)]
-        self.variance_params = [np.var(self.trajectory[0:, i]) for i in range(self.number_dof)]
-        print("First ten parameters are converged to the following values:")
-        print(str(self.average_params[0:10]))
-        print(str(self.variance_params[0:10]))
+        if isinstance(trajectory, ParsedTrajectory):
+            self._trajectory = trajectory.get_trajectory()
+        else:
+            self._trajectory = trajectory
+        self.number_dof = len(self._trajectory[0,:])
+        self.average_params = [np.average(self._trajectory[0:, i]) for i in range(self.number_dof)]
+        self.variance_params = [np.var(self._trajectory[0:, i]) for i in range(self.number_dof)]
+        #print("First ten parameters are converged to the following values:")
+        #print(str(self.average_params[0:10]))
+        #print(str(self.variance_params[0:10]))
 
     def write(self, filename):
         """Write average and variance of each parameter to file.
