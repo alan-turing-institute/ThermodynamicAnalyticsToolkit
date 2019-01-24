@@ -56,8 +56,8 @@ AX_PYTHON_MODULE(tensorflow, fatal, python3)
 AX_PYTHON_MODULE(pandas, fatal, python3)
 AX_PYTHON_MODULE(scipy, fatal, python3)
 AX_PYTHON_MODULE(sklearn, fatal, python3)
-AX_PYTHON_MODULE(acor, python3)
-AX_PYTHON_MODULE(doxypypy, python3)
+AX_PYTHON_MODULE(acor, , python3)
+AX_PYTHON_MODULE(doxypypy, , python3)
 
 AC_CONFIG_FILES(
 	Makefile
