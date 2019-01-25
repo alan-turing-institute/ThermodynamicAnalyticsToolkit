@@ -64,7 +64,7 @@ internal floating point precision.
 +
 What I found was that suddenly I could not recover the theoretical
 properties any more. Even simple sampling (i.e. central limit theorem
-and expected convergence rates of latexmath:[$$\frac 1 {sqrt(n)}$$] would not
+and expected convergence rates of latexmath:[$\frac 1 {sqrt(n)}$] would not
 bring up slopes of -0.5 as expected in log-log plots but also -0.4.
 +
 I went to great length to check that all values are tf.float64. If I had
