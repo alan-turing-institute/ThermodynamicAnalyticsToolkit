@@ -250,11 +250,19 @@ each with 2 nodes.
 - `loss`: Sets the loss function latexmath:[$l(x,y)$] to use. Example:
 `loss="softmax_cross_entropy"`
 
-For a complete list of values per option, we refer to the following sections in
-the code base for currentness:
+A complete set of all actications functions can be obtained.
 
-- activation functions: in ++src/TATi/models/neuralnetwork.py++ see `get_activations()`
-- loss function: in ++src/TATi/models/neuralnetwork.py++ see `add_losses()`
+[source,python]
+---------------
+include::simulation/get_activations.py[]
+---------------
+
+Similar, there is a also a list of all available loss functions.
+
+[source,python]
+---------------
+include::simulation/get_losses.py[]
+---------------
 
 [NOTE]
 ====

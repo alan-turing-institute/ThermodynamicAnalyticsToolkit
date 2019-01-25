@@ -501,6 +501,9 @@ class NeuralNetwork(object):
         self.loss_nodes["sigmoid_cross_entropy"] = sigmoid_cross_entropy
         self.loss_nodes["softmax_cross_entropy"] = softmax_cross_entropy
 
+        # make sure than get_losses() is up-to-date
+        assert( sorted(list(self.loss_nodes.keys())) == sorted(NeuralNetwork.get_losses()) )
+
     def add_keep_probability(self):
         """Adds a placeholder node for the keep probability of dropped layers.
         
@@ -595,4 +598,14 @@ class NeuralNetwork(object):
         }
         return activations
 
+    @staticmethod
+    def get_losses():
+        return ["mean_squared",
+                "log_loss",
+                "hinge_loss",
+                "cosine_distance",
+                "absolute_difference",
+                "sigmoid_cross_entropy",
+                "softmax_cross_entropy"
+                ]
 

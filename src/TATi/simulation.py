@@ -33,6 +33,7 @@ from TATi.models.parameters.networkparameter_adapter import NetworkParameterAdap
 from TATi.models.parameters.parameters import Parameters
 from TATi.models.trajectories.trajectorydata import TrajectoryData
 from TATi.options.pythonoptions import PythonOptions
+from TATi.models.networks.neuralnetwork import NeuralNetwork
 
 
 class Simulation(object):
@@ -602,3 +603,21 @@ class Simulation(object):
         y_node = self._nn.nn[walker_index].get_list_of_nodes(["y"])
         y_eval = self._nn.sess.run(y_node, feed_dict=feed_dict)
         return y_eval
+
+    @staticmethod
+    def get_losses():
+        """ List the names of all available loss functions.
+
+        Returns:
+          list of all valid loss names
+        """
+        return NeuralNetwork.get_losses()
+
+    @staticmethod
+    def get_activations():
+        """ List the names of all available activation functions.
+
+        Returns:
+          list of all valid activation names
+        """
+        return list(NeuralNetwork.get_activations().keys())
