@@ -4,13 +4,13 @@
 
 .PHONY: wheel
 
-wheel: @PACKAGE@-@PACKAGE_VERSION@-py3-none-any.whl
+wheel: tati-@PACKAGE_VERSION@-py3-none-any.whl
 
-@PACKAGE@-@PACKAGE_VERSION@-py3-none-any.whl: setup.py
+tati-@PACKAGE_VERSION@-py3-none-any.whl: setup.py
 	$(MAKE) prefix=$(abs_builddir)/build/inst -C .. install-strip && \
 	$(PYTHON) setup.py bdist_wheel -d .
 
-wheel-check: @PACKAGE@-@PACKAGE_VERSION@-py3-none-any.whl tests/userguide/testsuite.log tests/simulation/testsuite.log
+wheel-check: tati-@PACKAGE_VERSION@-py3-none-any.whl tests/userguide/testsuite.log tests/simulation/testsuite.log
 
 check-logs: wheel-check
 	rm -rf _install && $(MKDIR_P) _install && cd _install && \

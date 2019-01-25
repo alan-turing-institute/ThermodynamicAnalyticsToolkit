@@ -48,7 +48,9 @@ import fastentrypoints
 # These variables come from automake.
 subst = dict(prefix=os.path.abspath('build/inst'))
 subst['exec_prefix'] = Template('@exec_prefix@').substitute(**subst)
+SRCDIR = Template('@abs_top_srcdir@').substitute(**subst)
 BINDIR = Template('@bindir@').substitute(**subst)
+DOCDIR = Template('$prefix/share/doc').substitute(**subst)
 LIBEXECDIR = Template('@libexecdir@').substitute(**subst)
 PYTHONDIR = Template('@pythondir@').substitute(**subst)
 VERSION = '@PACKAGE_VERSION@'
@@ -119,9 +121,12 @@ def get_entry_points():
     }
     return entry_points
 
+with open(SRCDIR+"/README.md", "r") as fh:
+    long_description = fh.read()
+
 setup(
     # name of the project (becomes prefix of wheel archive)
-    name='thermodynamicanalyticstoolkit',
+    name='tati',
 
     # license of project
     license='GPL-3',
@@ -130,10 +135,10 @@ setup(
     version=VERSION,
 
     # generate description from __doc__ string
-    description=__doc__.strip().split('\n')[0],
+    description="ThermodynamicAnalyticsToolkit - analyze loss manifolds of neural networks",
 
     # generate longer description from __doc__ string
-    long_description='\n'.join(__doc__.strip().split('\n')[1:]).strip(),
+    long_description=long_description,
 
     # who are the authors, i.e. who wrote the code
     author='TATi Team',
@@ -162,7 +167,7 @@ setup(
     ],
 
     # package can be safely installed and run from zip
-    zip_safe=True,
+    zip_safe=False,
 
     # list of space-separated keywords to allow to find the package
     keywords="",
@@ -173,7 +178,7 @@ setup(
     # topic-specific URLs
     project_urls={
         "Bug Tracker": "https://github.com/alan-turing-institute/ThermodynamicAnalyticsToolkit/issues",
-        "Documentation": "",
+        "Documentation": "https://thermodynamicanalyticstoolkit.github.io/",
         "Source Code": "https://github.com/alan-turing-institute/ThermodynamicAnalyticsToolkit/tree",
     },
 
@@ -182,7 +187,10 @@ setup(
     
     # Set the root src folder to find_packages(), here the folder give as 
     # prefix to `make install`
-    package_dir={'': PYTHONDIR},
+    package_dir={'': PYTHONDIR, 'tati.doc': DOCDIR},
+
+    # adding documentaton as package_data
+    package_data={'tati.doc': [glob(DOCDIR+'/**/*.pdf'), glob(DOCDIR+'/**/*.html')]},
 
     # automatically find all packages used inside project
     packages=find_namespace_packages(PYTHONDIR),
@@ -202,7 +210,7 @@ setup(
         'numpy>=1.7',
         'pandas',
         'scipy',
-        'sklearn',
+        'scikit-learn',
         'tensorflow>=1.4.1',
     ],
     
