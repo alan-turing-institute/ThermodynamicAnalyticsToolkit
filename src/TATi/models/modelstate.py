@@ -209,6 +209,10 @@ class ModelState:
                     with tf.name_scope(name_scope):
                         trainables = tf.get_collection_ref(self.trainables[i])
                         for var in fixed_variables:
+                            if var is None:
+                                raise ValueError(
+                                    "Cannot find " + names[fixed_variables.index(var)] + " in walker " + str(i) + "." +
+                                    " Have you checked the spelling, e.g., output/biases/Variable:0?")
                             removed_vars = fix_parameter_in_collection(trainables, var, name_scope+"'s trainables")
                             # make sure we remove one per walker
                             if len(removed_vars) != 1:
@@ -602,6 +606,8 @@ class ModelState:
             if len(a) <= 1:
                 continue
             b=a.split("=", 2)
+            if len(b) != 2:
+                raise ValueError("Given parameter assignments "+str(_string)+" do not contain enough (\"=\") separators.")
             names.append(b[0])
             values.append(np.fromstring(b[1], dtype=float, sep=","))
         return names, values

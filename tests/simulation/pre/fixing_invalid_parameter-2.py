@@ -16,20 +16,19 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-### all tests  on the simulation module
+### 
 
-AT_INIT([Simulation tests])
-#AT_TESTED($awk)
+import numpy as np
+import TATi.simulation as tati
 
-# Use colored output with new-enough Autotest.
-m4_ifdef([AT_COLOR_TESTS], [AT_COLOR_TESTS])
+# wrong spelling of variable
+nn = tati(
+    input_dimension=2,
+    output_dimension=1,
+    fix_parameters="output/bias/Variable:0=0.",
+    seed=426,
+    verbose=2
+)
 
-# various small test scripts
-m4_include(testsuite-accessing_dataset.at)
-m4_include(testsuite-accessing_network_without_dataset.at)
-m4_include(testsuite-changing_network.at)
-m4_include(testsuite-ensemblequasinewton_reference.at)
-m4_include(testsuite-fixing_invalid_parameter.at)
-m4_include(testsuite-HMC_reference.at)
-m4_include(testsuite-multiple_walkers.at)
-m4_include(testsuite-parameters_access.at)
+# throws because "test" is not a valid parameter name
+nn.dataset = [np.asarray([[0,0]], dtype=np.float32), np.asarray([[1]], dtype=np.int32)]

@@ -13,6 +13,7 @@ TESTSCRIPTS += \
 	$(srcdir)/testsuite-accessing_network_without_dataset.at \
 	$(srcdir)/testsuite-changing_network.at \
 	$(srcdir)/testsuite-ensemblequasinewton_reference.at \
+	$(srcdir)/testsuite-fixing_invalid_parameter.at \
 	$(srcdir)/testsuite-HMC_reference.at \
 	$(srcdir)/testsuite-multiple_walkers.at \
 	$(srcdir)/testsuite-parameters_access.at
