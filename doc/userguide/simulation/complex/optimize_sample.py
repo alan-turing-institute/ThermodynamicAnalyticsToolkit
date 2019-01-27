@@ -33,5 +33,5 @@ nn.set_options(
 sampling_data = nn.sample()
 
 print("Sample results")
-print(np.asarray(sampling_data.run_info[0:10]))
-print(np.asarray(sampling_data.trajectory[0:10]))
+print(sampling_data.run_info[0:10])
+print(sampling_data.trajectory[0:10])

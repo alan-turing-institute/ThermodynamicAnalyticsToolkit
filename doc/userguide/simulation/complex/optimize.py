@@ -14,6 +14,6 @@ nn = tati(
 training_data = nn.fit()
 
 print("Train results")
-print(np.asarray(training_data.run_info[-10::]))
-print(np.asarray(training_data.trajectory[-10:]))
-print(np.asarray(training_data.averages[-10:]))
+print(training_data.run_info[-10:])
+print(training_data.trajectory[-10:])
+print(training_data.averages[-10:])

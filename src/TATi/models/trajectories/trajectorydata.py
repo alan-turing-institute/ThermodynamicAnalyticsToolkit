@@ -18,6 +18,9 @@
 #
 ### 
 
+import numpy as np
+import pandas as pd
+
 class TrajectoryData(object):
     """This class is a simple structure that combines three pandas dataframes
     with information on a trajectory.
@@ -40,3 +43,40 @@ class TrajectoryData(object):
             self.averages = averages[0]
         else:
             self.averages = averages
+
+        if self.run_info is not None:
+            self.run_info = TrajectoryData.to_numeric(self.run_info)
+        if self.trajectory is not None:
+            self.trajectory = TrajectoryData.to_numeric(self.trajectory)
+        if self.averages is not None:
+            self.averages = TrajectoryData.to_numeric(self.averages)
+
+    @staticmethod
+    def _to_numeric_single_df(df):
+        df = df.apply(pd.to_numeric)
+        for name in ['id', 'step', 'epoch']:
+            if name in df.columns:
+                df[[name]] = df[[name]].astype(np.int64)
+        return df
+
+    @staticmethod
+    def to_numeric(df):
+        """ Convert the dataframe obtained from sampling or training to the
+        correct dtypes.
+
+        Notes:
+          This needs to be able to deal with lists of dataframes from multiple
+           walkers as well.
+
+        Args:
+          df: either single or list of multiple DataFrame's.
+
+        Returns:
+          modified instance of single DataFrame or list thereof
+        """
+        if isinstance(df, list):
+            for i in range(len(df)):
+                df[i] = TrajectoryData._to_numeric_single_df(df[i])
+            return df
+        else:
+            return TrajectoryData._to_numeric_single_df(df)
