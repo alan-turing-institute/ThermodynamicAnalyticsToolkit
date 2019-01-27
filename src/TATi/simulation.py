@@ -227,7 +227,7 @@ class Simulation(object):
         Returns:
           True - present, False - not
         """
-        if self._nn is None:
+        if self._nn.nn is None:
             raise AttributeError("Neural network has not been constructed, dataset provided?")
 
     def set_options(self, **kwargs):

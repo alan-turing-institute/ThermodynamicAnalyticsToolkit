@@ -16,19 +16,14 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-### all tests  on the simulation module
+### test on accessing the not constructed network
 
-AT_INIT([Simulation tests])
-#AT_TESTED($awk)
+AT_SETUP([Simulation - accessing network without dataset fails])
+AT_KEYWORDS([python simulation network])
 
-# Use colored output with new-enough Autotest.
-m4_ifdef([AT_COLOR_TESTS], [AT_COLOR_TESTS])
+AT_CHECK([../../../run \
+	${abs_top_srcdir}/tests/simulation/pre/accessing_network_without_dataset.py\
+], 1, [stdout], [stderr])
 
-# various small test scripts
-m4_include(testsuite-accessing_dataset.at)
-m4_include(testsuite-accessing_network_without_dataset.at)
-m4_include(testsuite-changing_network.at)
-m4_include(testsuite-ensemblequasinewton_reference.at)
-m4_include(testsuite-HMC_reference.at)
-m4_include(testsuite-multiple_walkers.at)
-m4_include(testsuite-parameters_access.at)
+AT_CLEANUP
+

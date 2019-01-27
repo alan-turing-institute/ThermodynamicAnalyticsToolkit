@@ -16,19 +16,13 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-### all tests  on the simulation module
+### 
 
-AT_INIT([Simulation tests])
-#AT_TESTED($awk)
+import TATi.simulation as tati
 
-# Use colored output with new-enough Autotest.
-m4_ifdef([AT_COLOR_TESTS], [AT_COLOR_TESTS])
+nn = tati(
+    seed=426,
+)
 
-# various small test scripts
-m4_include(testsuite-accessing_dataset.at)
-m4_include(testsuite-accessing_network_without_dataset.at)
-m4_include(testsuite-changing_network.at)
-m4_include(testsuite-ensemblequasinewton_reference.at)
-m4_include(testsuite-HMC_reference.at)
-m4_include(testsuite-multiple_walkers.at)
-m4_include(testsuite-parameters_access.at)
+# throws because network is not constructed yet
+print(nn.num_parameters())

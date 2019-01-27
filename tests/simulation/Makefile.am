@@ -10,6 +10,7 @@ TESTSCRIPTS =
 TESTSCRIPTS += \
 	$(srcdir)/testsuite.at \
 	$(srcdir)/testsuite-accessing_dataset.at \
+	$(srcdir)/testsuite-accessing_network_without_dataset.at \
 	$(srcdir)/testsuite-changing_network.at \
 	$(srcdir)/testsuite-ensemblequasinewton_reference.at \
 	$(srcdir)/testsuite-HMC_reference.at \
