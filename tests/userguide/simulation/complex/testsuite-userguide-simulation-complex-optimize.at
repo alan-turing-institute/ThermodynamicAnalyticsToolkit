@@ -29,7 +29,7 @@ AT_CHECK([cp -f ${abs_top_srcdir}/tests/userguide/simulation/complex/pre/dataset
 AT_CHECK([../../../run \
 	${abs_top_srcdir}/doc/userguide/simulation/complex/optimize.py
 ], 0, [stdout], [stderr])
-AT_CHECK([grep " 10." stdout], 0, [ignore], [ignore])
+AT_CHECK([grep " 1000." stdout], 0, [ignore], [ignore])
 
 AT_CLEANUP
 
