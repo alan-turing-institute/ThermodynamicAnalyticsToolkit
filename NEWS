@@ -1,3 +1,14 @@
+v0.9.4
+======
+
+- Simulation has get_losses() and get_activations() with list of valid names.
+- TrajectoryData's dataframes' columns now all have correct dtype.
+- TATiLossFunctionSampler may resample trajectory in subspace.
+- Refactored TATiLossFunctionSampler extensively, introduced SamplingModes.
+- TATi can now be installed as PyPI (wheel) package, i.e. pip install tati.
+- smaller fixes to userguide.
+- FIX: Rewite of Model class broke check for present nn in Simulation.
+
 v0.9.3
 ======
 
