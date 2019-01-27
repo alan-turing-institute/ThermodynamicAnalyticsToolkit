@@ -61,6 +61,7 @@ TESTSCRIPTS += \
 	$(srcdir)/simulation/testsuite-userguide-simulation-fix_parameter.at \
 	$(srcdir)/simulation/testsuite-userguide-simulation-get_activations.at \
 	$(srcdir)/simulation/testsuite-userguide-simulation-get_losses.at \
+	$(srcdir)/simulation/testsuite-userguide-simulation-get_options.at \
 	$(srcdir)/simulation/testsuite-userguide-simulation-requesting_momenta.at \
 	$(srcdir)/simulation/testsuite-userguide-simulation-requesting_parameters.at \
 	$(srcdir)/simulation/testsuite-userguide-simulation-sample.at \

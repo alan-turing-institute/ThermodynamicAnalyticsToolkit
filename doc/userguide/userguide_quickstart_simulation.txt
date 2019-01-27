@@ -146,6 +146,14 @@ batch_data_file_type:      type of the files to read input from
 
 This will print a general help listing all available options.
 
+Use `get_options()` to get a dict of all options or to request the currently set
+value of a specific option. Moreover, use `set_options()` to modify them.
+
+[source,python]
+---------------
+include::simulation/get_options.py[]
+---------------
+
 [[quickstart.simulation.setup]]
 Setup
 ^^^^^

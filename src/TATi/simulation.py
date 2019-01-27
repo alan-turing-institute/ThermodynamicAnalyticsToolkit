@@ -231,6 +231,21 @@ class Simulation(object):
         if self._nn.nn is None:
             raise AttributeError("Neural network has not been constructed, dataset provided?")
 
+    def get_options(self, name=None):
+        """ Getter to the current set of options or to the value of a specific
+        option of \a name is given.
+
+        Args:
+          name: name of option whose value to get or none for dict containing all
+
+        Returns:
+          current set of options used by this instance
+        """
+        if name is None:
+            return self._options
+        else:
+            return self._options.get(name)
+
     def set_options(self, **kwargs):
         """Resets some of the options to new values given by the keyword
         dictionary in `kwargs`.
