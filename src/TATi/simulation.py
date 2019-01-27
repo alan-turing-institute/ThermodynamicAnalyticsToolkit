@@ -569,13 +569,14 @@ class Simulation(object):
 
     @dataset.setter
     def dataset(self, value):
-        """Evaluates accuracy on a new dataset `dataset`
+        """Setter for a new dataset `value`
         
         Note:
             This sets the `dataset` as the new dataset replacing the old one.
 
-        Returns:
-            accuracy for `dataset`
+        Args:
+          value: either a string representing a filename to a dataset file
+            or a list [features, labels] representing each numpy arrays.
 
         """
         if isinstance(value, str) or \
