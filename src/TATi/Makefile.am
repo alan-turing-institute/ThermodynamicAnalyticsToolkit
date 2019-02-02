@@ -9,6 +9,7 @@ SUBDIRS = \
     models/networks \
     models/parameters \
     models/trajectories \
+    optimizers \
     options \
     runtime \
     samplers \
