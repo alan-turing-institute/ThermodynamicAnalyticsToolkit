@@ -77,9 +77,10 @@ class TrajectoryState(object):
         Returns:
 
         """
-        static_vars_float = ["current_kinetic", "kinetic_energy", \
+        static_vars_float = ["learning_rate_current",
+                             "current_kinetic", "kinetic_energy", \
                              "old_total_energy", "inertia", "momenta", "gradients", "virials", "noise"]
-        static_vars_int64 = ["accepted", "rejected"]
+        static_vars_int64 = ["accepted", "rejected", "learning_rate_current_dim"]
         for i in range(self.FLAGS.number_walkers):
             with tf.variable_scope("var_walker"+str(i+1), reuse=self.resources_created):
                 with tf.variable_scope("accumulate", reuse=self.resources_created):
@@ -143,9 +144,10 @@ class TrajectoryState(object):
           with placeholders for assigners (required for HMC)
 
         """
-        static_vars_float = ["current_kinetic", "kinetic_energy", \
+        static_vars_float = ["learning_rate_current", \
+                             "current_kinetic", "kinetic_energy", \
                              "old_total_energy", "inertia", "momenta", "gradients", "virials", "noise"]
-        static_vars_int64 = ["accepted", "rejected"]
+        static_vars_int64 = ["accepted", "rejected", "learning_rate_current_dim"]
         static_var_dict = {}
         zero_assigner_dict = {}
         assigner_dict = {}
@@ -173,7 +175,8 @@ class TrajectoryState(object):
         return static_var_dict, zero_assigner_dict, assigner_dict, placeholder_dict
 
     def _zero_state_variables(self, session, method):
-        if method in ["GradientDescent",
+        if method in ["BarzilaiBorweinGradientDescent",
+                      "GradientDescent",
                       "StochasticGradientLangevinDynamics",
                       "GeometricLangevinAlgorithm_1stOrder",
                       "GeometricLangevinAlgorithm_2ndOrder",
@@ -181,8 +184,10 @@ class TrajectoryState(object):
                       "HamiltonianMonteCarlo_2ndOrder",
                       "BAOAB",
                       "CovarianceControlledAdaptiveLangevinThermostat"]:
-            check_kinetic, check_inertia, check_momenta, check_gradients, check_virials, check_noise = \
+            check_lr, check_lr_dim, check_kinetic, check_inertia, check_momenta, check_gradients, check_virials, check_noise = \
                 session.run([
+                    self.zero_assigner["learning_rate_current"],
+                    self.zero_assigner["learning_rate_current_dim"],
                     self.zero_assigner["kinetic_energy"],
                     self.zero_assigner["inertia"],
                     self.zero_assigner["momenta"],
@@ -190,6 +195,8 @@ class TrajectoryState(object):
                     self.zero_assigner["virials"],
                     self.zero_assigner["noise"]])
             for walker_index in range(self.FLAGS.number_walkers):
+                assert (abs(check_lr[walker_index]) < 1e-10)
+                assert (abs(check_lr_dim[walker_index]) == 0)
                 assert (abs(check_kinetic[walker_index]) < 1e-10)
                 assert (abs(check_inertia[walker_index]) < 1e-10)
                 assert (abs(check_momenta[walker_index]) < 1e-10)

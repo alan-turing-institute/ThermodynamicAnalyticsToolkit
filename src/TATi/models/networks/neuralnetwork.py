@@ -26,6 +26,7 @@ import tensorflow as tf
 from TATi.samplers.dynamics.baoabsampler import BAOABSampler
 from TATi.samplers.dynamics.geometriclangevinalgorithmfirstordersampler import GeometricLangevinAlgorithmFirstOrderSampler
 from TATi.samplers.dynamics.geometriclangevinalgorithmsecondordersampler import GeometricLangevinAlgorithmSecondOrderSampler
+from TATi.optimizers.barzilaiborweingradientdescent import BarzilaiBorweinGradientDescent
 from TATi.optimizers.gradientdescent import GradientDescent
 from TATi.samplers.dynamics.hamiltonianmontecarlosamplerfirstordersampler import HamiltonianMonteCarloSamplerFirstOrderSampler
 from TATi.samplers.dynamics.hamiltonianmontecarlosamplersecondordersampler import HamiltonianMonteCarloSamplerSecondOrderSampler
@@ -413,11 +414,12 @@ class NeuralNetwork(object):
             # DON'T add placeholders only sometimes, e.g. when only a specific optimizer
             # requires it. Always add them and only sometimes use them!
             learning_rate = tf.placeholder(dds_basetype, name="learning_rate")
-            tf.summary.scalar('learning_rate', learning_rate)
             self.placeholder_nodes['learning_rate'] = learning_rate
 
             if optimizer_method == "GradientDescent":
                 optimizer = GradientDescent(learning_rate)
+            elif optimizer_method == "BarzilaiBorweinGradientDescent":
+                optimizer = BarzilaiBorweinGradientDescent(learning_rate)
             else:
                 raise NotImplementedError("Unknown optimizer_method")
             if len(prior) != 0:

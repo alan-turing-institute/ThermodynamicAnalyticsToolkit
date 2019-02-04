@@ -1,0 +1,61 @@
+////
+#
+#    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
+#    Copyright (C) 2018 The University of Edinburgh
+#    The TATi authors, see file AUTHORS, have asserted their moral rights.
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+////
+
+[[reference.optimizers]]
+Optimizers
+~~~~~~~~~~
+
+Optimizers in TATi primarily serve the purpose of finding a good starting
+position for the samplers.
+
+To this end, only a few tensorflow's optimizers are currently directly
+supported.
+
+- (Stochastic) Gradient Descent
+- Gradient Descent with step width calculated following Barzilai-Borwein
+
+[[reference.optimizers.gd]]
+Gradient Descent
+^^^^^^^^^^^^^^^^
+
+*optimizer*: +GradientDescent+
+
+The step update is:
+latexmath:[$\theta^{n+1} = \theta^{n} - \nabla  U(\theta) \Delta t$],
+
+
+[[reference.optimizers.bbgd]]
+Gradient Descent with Barzilai-Borwein step width
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+*optimizer*: +BarzilaiBorweinGradientDescent+
+
+The update step is the same as for <<reference.optimizers.gd>>. However, the
+learning rate latexmath:[$\Delta t$] is modified as, see <<Barzilai1988>>,
+
+latexmath:[$\Delta t = \frac{ (\theta^{n} - \theta^{n-1})\cdot(\nabla  U(\theta^{n})- \nabla  U(\theta^{n-1})) }{ |(\nabla  U(\theta^{n})- \nabla  U(\theta^{n-1})|^2 }$].
+
+where the learning rate is bounded in the interval [1e-10,1e+10] to ensure
+numerical stability. If the above calculation should be invalid, the default
+learning rate latexmath:[$\Delta t$] is used.
+
+NOTE: At the moment, this is only implemented for <<GD>>, not for <<SGD>>.
+See <<Tan2016>> for a proposed SGD-BB method.

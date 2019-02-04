@@ -39,6 +39,9 @@ m4_include([DataOptimizer/Options/testsuite-dataoptimizer-options-progress.at])
 m4_include([DataOptimizer/Options/testsuite-dataoptimizer-options-sql_db.at])
 m4_include([DataOptimizer/Options/testsuite-dataoptimizer-options-summaries_path.at])
 
+# optimizer algorithms
+m4_include([DataOptimizer/Optimizers/testsuite-dataoptimizer-optimizers.at])
+
 # Saving and restoring models
 m4_include([DataOptimizer/SavingRestoring/testsuite-dataoptimizer-saving_restoring.at])
 

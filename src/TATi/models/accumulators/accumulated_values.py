@@ -41,6 +41,9 @@ class AccumulatedValues(object):
         self.momenta = None
         self.inertia = None
 
+        # only for Optimizers
+        self.learning_rate_current = None
+
         # only for HMC
         self.total_energy = []
         self.old_total_energy = None
@@ -50,7 +53,8 @@ class AccumulatedValues(object):
         self.rejected = 0
 
     def evaluate(self, sess, method, static_vars):
-        if method in ["GradientDescent",
+        if method in ["BarzilaiBorweinGradientDescent",
+                      "GradientDescent",
                       "StochasticGradientLangevinDynamics",
                       "GeometricLangevinAlgorithm_1stOrder",
                       "GeometricLangevinAlgorithm_2ndOrder",
@@ -58,12 +62,19 @@ class AccumulatedValues(object):
                       "HamiltonianMonteCarlo_2ndOrder",
                       "BAOAB",
                       "CovarianceControlledAdaptiveLangevinThermostat"]:
-            if method == "StochasticGradientLangevinDynamics" or method == "GradientDescent":
-                self.gradients, self.virials, self.noise = \
+            if method == "StochasticGradientLangevinDynamics" or "GradientDescent" in method:
+                self.gradients, self.virials, self.noise, temp, temp_dim = \
                     sess.run([
                         static_vars["gradients"],
                         static_vars["virials"],
-                        static_vars["noise"]])
+                        static_vars["noise"],
+                        static_vars["learning_rate_current"],
+                        static_vars["learning_rate_current_dim"]])
+                if "GradientDescent" in method:
+                    self.learning_rate_current = temp
+                    for i in range(len(temp)):
+                        if temp_dim[i] != 0:
+                            self.learning_rate_current[i] = self.learning_rate_current[i]/temp_dim[i]
             elif "HamiltonianMonteCarlo" in method:
                 # when HMC accepts, it overwrites `old_total_energy` with the updated value
                 # hence, we cannot see the old value in output any more. Therefore, we

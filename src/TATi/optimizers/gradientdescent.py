@@ -151,6 +151,9 @@ class GradientDescent(tf.train.GradientDescentOptimizer):
             lb_repell = tf.zeros(shape=var.shape, dtype=var.dtype.base_dtype)
         return ub_repell, lb_repell
 
+    def _get_learning_rate(self, grad, var):
+        return math_ops.cast(self._learning_rate_t, var.dtype.base_dtype)
+
     def _apply_dense(self, grad, var):
         """Add scaled gradient and train as usual
 
@@ -161,8 +164,16 @@ class GradientDescent(tf.train.GradientDescentOptimizer):
         Returns:
 
         """
-        lr_t = math_ops.cast(self._learning_rate_t, var.dtype.base_dtype)
-        scaled_gradient = lr_t * grad
+        self._learning_rate_tensor = self._get_learning_rate(grad, var)
+        var_size = tf.size(var, out_type=tf.int64)
+        with tf.variable_scope("accumulate", reuse=True):
+            lr_current = tf.get_variable("learning_rate_current", dtype=dds_basetype)
+            learning_rate_current_assign = tf.assign_add(
+                lr_current, math_ops.cast(var_size, var.dtype.base_dtype) * self._learning_rate_tensor)
+            lr_current_dim = tf.get_variable("learning_rate_current_dim", dtype=tf.int64)
+            learning_rate_current_dim_assign = tf.assign_add(lr_current_dim, var_size)
+
+        scaled_gradient = tf.Print(self._learning_rate_tensor * grad, [self._learning_rate_tensor], "learning rate:")
         with tf.variable_scope("accumulate", reuse=True):
             gradient_global = tf.get_variable("gradients", dtype=dds_basetype)
             gradient_global_t = tf.assign_add(gradient_global, tf.reduce_sum(tf.multiply(scaled_gradient, scaled_gradient)))
@@ -174,7 +185,8 @@ class GradientDescent(tf.train.GradientDescentOptimizer):
         prior_force = (ub_repell + lb_repell)
 
         # make sure virial and gradients are evaluated before we update variables
-        with tf.control_dependencies([virial_global_t, gradient_global_t]):
+        with tf.control_dependencies([virial_global_t, gradient_global_t,
+                                      learning_rate_current_assign, learning_rate_current_dim_assign]):
             control_group_gradient_descent_t = super(GradientDescent, self)._apply_dense(grad+prior_force, var)
 
         # note: these are evaluated in any order, use control_dependencies if required

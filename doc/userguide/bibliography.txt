@@ -23,6 +23,11 @@
 Literature
 ----------
 
+- [[Barzilai1988] Barzilai, J., & Borwein, J. M. (1988).
+Two-Point Step Size Gradient Methods.
+IMA Journal of Numerical Analysis, 8(1), 141–148. 
+http://doi.org/10.1093/imanum/8.1.141
+
 - [[Bishop2006]] Bishop, Christopher M. (2006).
 Pattern Recognition and Machine Learning.
 Springer Scienice+Business Media, LLC.
@@ -88,6 +93,10 @@ In C. Cortes and N. D. Lawrence and D. D. Lee and M. Sugiyama and R. Garnett (Ed
 Advances in Neural Information Processing Systems 28 (pp. 37–45).
 Curran Associates, Inc.
 http://doi.org/10.1515/jip-2012-0071
+
+- [[Tan2016]] Tan, C., Ma, S., Dai, Y.-H., & Qian, Y. (2016).
+Barzilai-Borwein Step Size for Stochastic Gradient Descent, 1–17.
+Retrieved from http://arxiv.org/abs/1605.04131
 
 - [[Trstanova2016]] Trstanova, Z. (2016).
 Mathematical and Algorithmic Analysis of Modified Langevin Dynamics.
