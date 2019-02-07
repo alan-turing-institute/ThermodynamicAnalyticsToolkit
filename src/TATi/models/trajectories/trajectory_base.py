@@ -267,15 +267,16 @@ class TrajectoryBase(object):
             step_range = range(self.state.FLAGS.max_steps)
 
         for current_step in step_range:
-            # get next batch of data
-            features, labels = dataset_dict["input_pipeline"].next_batch(session)
-            # logging.debug("batch is x: "+str(features[:])+", y: "+str(labels[:]))
+            if current_step == 0 or self.state.FLAGS.batch_size != self.state.FLAGS.dimension:
+                # get next batch of data
+                features, labels = dataset_dict["input_pipeline"].next_batch(session)
+                # logging.debug("batch is x: "+str(features[:])+", y: "+str(labels[:]))
 
-            # update feed_dict for this step
-            feed_dict.update({
-                dataset_dict["xinput"]: features,
-                dataset_dict["true_labels"]: labels
-            })
+                # update feed_dict for this step
+                feed_dict.update({
+                    dataset_dict["xinput"]: features,
+                    dataset_dict["true_labels"]: labels
+                })
             self.update_feed_dict(feed_dict, placeholder_nodes, current_step)
 
             # some extra operations just before the actual update step
