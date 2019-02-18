@@ -38,11 +38,14 @@ class CovarianceControlledAdaptiveLangevinThermostat(GeometricLangevinAlgorithmS
     Returns:
 
     """
-    def __init__(self, covariance_blending, step_width, inverse_temperature, friction_constant, sigma, sigmaA,
+    def __init__(self, calculate_accumulates, covariance_blending, step_width,
+                 inverse_temperature, friction_constant, sigma, sigmaA,
                  seed=None, use_locking=False, name='CovarianceControlledAdaptiveLangevinThermostat'):
         """Init function for this class.
 
         Args:
+          calculate_accumulates: whether accumulates (gradient norm, noise, norm, kinetic energy, ...) are calculated
+            every step (extra work but required for run info dataframe/file and averages dataframe/file)
           covariance_blending: covariance identity blending value eta to use in creating the preconditioning matrix
           step_width: step width for gradient, also affects inject noise
           inverse_temperature: scale for gradients
@@ -56,8 +59,9 @@ class CovarianceControlledAdaptiveLangevinThermostat(GeometricLangevinAlgorithmS
         Returns:
 
         """
-        super(CovarianceControlledAdaptiveLangevinThermostat, self).__init__(covariance_blending, step_width, inverse_temperature,
-                                                                             friction_constant, seed, use_locking, name)
+        super(CovarianceControlledAdaptiveLangevinThermostat, self).__init__(
+            calculate_accumulates, covariance_blending, step_width,
+            inverse_temperature, friction_constant, seed, use_locking, name)
         self._sigma = sigma
         self._sigmaA = sigmaA
 
@@ -103,6 +107,9 @@ class CovarianceControlledAdaptiveLangevinThermostat(GeometricLangevinAlgorithmS
         # get number of parameters (for this layer)
         precondition_matrix, grad = self._pick_grad(grads_and_vars, var)
         dim = math_ops.cast(tf.size(var), dds_basetype)
+
+        # conditional whether to calculate accumulates or not
+        do_accumulates_t = math_ops.cast(self._calculate_accumulates_t, bool)
 
         sigma_t = math_ops.cast(self._sigma_t, var.dtype.base_dtype)
         sigmaA_t = math_ops.cast(self._sigmaA_t, var.dtype.base_dtype)

@@ -239,12 +239,19 @@ class TrajectoryBase(object):
         self.trajectory.init_writer(self.trajectory_writer)
         self.accumulated_values.reset()
 
+        # state whether accumulates need to be computed or not
+        do_accumulates = ((self.config_map["do_write_averages_file"] or return_averages) or
+                          (self.config_map["do_write_run_file"] or return_run_info))
+
         # place in feed dict: We have to supply all placeholders (regardless of
         # which the employed optimizer/sampler actually requires) because of the evaluated
         # summary! All of the placeholder nodes are also summary nodes.
         feed_dict = {}
         for walker_index in range(self.state.FLAGS.number_walkers):
             feed_dict.update(self.state._create_default_feed_dict_with_constants(walker_index))
+            feed_dict.update({
+                self.state.nn[walker_index].placeholder_nodes["calculate_accumulates"]: do_accumulates,
+            })
 
         self.zero_extra_nodes(session)
 

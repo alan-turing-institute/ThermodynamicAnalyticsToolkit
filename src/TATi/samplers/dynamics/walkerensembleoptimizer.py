@@ -129,11 +129,13 @@ class WalkerEnsembleOptimizer(Optimizer):
     Returns:
 
     """
-    def __init__(self, covariance_blending, use_locking=False,
+    def __init__(self, calculate_accumulates, covariance_blending, use_locking=False,
                  name='WalkerEnsembleOptimizer'):
         """Init function for this class.
 
         Args:
+          calculate_accumulates: whether accumulates (gradient norm, noise, norm, kinetic energy, ...) are calculated
+            every step (extra work but required for run info dataframe/file and averages dataframe/file)
           covariance_blending: covariance identity blending value eta to use in creating the preconditioning matrix
           use_locking: whether to lock in the context of multi-threaded operations (Default value = False)
           name: internal name of optimizer (Default value = 'WalkerEnsembleOptimizer')
@@ -142,6 +144,7 @@ class WalkerEnsembleOptimizer(Optimizer):
 
         """
         super(WalkerEnsembleOptimizer, self).__init__(use_locking, name)
+        self._calculate_accumulates = calculate_accumulates
         self._covariance_blending = covariance_blending
         self.EQN_update = None
 
@@ -155,6 +158,7 @@ class WalkerEnsembleOptimizer(Optimizer):
 
         """
         super(WalkerEnsembleOptimizer, self)._prepare()
+        self._calculate_accumulates_t = ops.convert_to_tensor(self._calculate_accumulates, name="calculate_accumulates")
         self._covariance_blending_t = ops.convert_to_tensor(self._covariance_blending, name="covariance_blending")
 
     def compute_and_check_gradients(self, loss, var_list=None,

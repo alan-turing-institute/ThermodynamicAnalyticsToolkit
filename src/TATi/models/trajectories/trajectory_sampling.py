@@ -143,6 +143,7 @@ class TrajectorySampling(TrajectoryBase):
                 raise NotImplementedError(
                     "HamiltonianMonteCarlo implementation has not been properly tested with multiple walkers.")
 
+            self.state.nn[i]._prepare_global_placeholders()
             self.sampler.append(self.state.nn[i]._prepare_sampler(
                 model.loss[i], sampling_method=self.state.FLAGS.sampler,
                 seed=walker_seed, prior=prior,

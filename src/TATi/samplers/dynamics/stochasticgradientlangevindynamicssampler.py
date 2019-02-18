@@ -42,11 +42,14 @@ class StochasticGradientLangevinDynamicsSampler(WalkerEnsembleOptimizer):
     Returns:
 
     """
-    def __init__(self, covariance_blending, step_width, inverse_temperature,
+    def __init__(self, calculate_accumulates, covariance_blending, step_width,
+                 inverse_temperature,
                  seed=None, use_locking=False, name='SGLD'):
         """Init function for this class.
 
         Args:
+          calculate_accumulates: whether accumulates (gradient norm, noise, norm, kinetic energy, ...) are calculated
+            every step (extra work but required for run info dataframe/file and averages dataframe/file)
           covariance_blending: covariance identity blending value eta to use in creating the preconditioning matrix
           step_width: step width for gradient, also affects inject noise
           inverse_temperature: scale for gradients
@@ -57,8 +60,8 @@ class StochasticGradientLangevinDynamicsSampler(WalkerEnsembleOptimizer):
         Returns:
 
         """
-        super(StochasticGradientLangevinDynamicsSampler, self).__init__(covariance_blending,
-                                                                        use_locking, name)
+        super(StochasticGradientLangevinDynamicsSampler, self).__init__(
+            calculate_accumulates, covariance_blending, use_locking, name)
         self._step_width = step_width
         self._seed = seed
         self.random_noise = None
@@ -234,6 +237,9 @@ class StochasticGradientLangevinDynamicsSampler(WalkerEnsembleOptimizer):
         step_width_t, inverse_temperature_t, random_noise_t = self._prepare_dense(grad, var)
         # \nabla V (q^n ) \Delta t
         scaled_gradient = step_width_t * grad
+
+        # conditional whether to calculate accumulates or not
+        do_accumulates_t = math_ops.cast(self._calculate_accumulates_t, bool)
 
         with tf.variable_scope("accumulate", reuse=True):
             gradient_global = tf.get_variable("gradients", dtype=dds_basetype)

@@ -38,11 +38,14 @@ class GeometricLangevinAlgorithmFirstOrderSampler(StochasticGradientLangevinDyna
     Returns:
 
     """
-    def __init__(self, covariance_blending, step_width, inverse_temperature, friction_constant,
+    def __init__(self, calculate_accumulates, covariance_blending, step_width,
+                 inverse_temperature, friction_constant,
                  seed=None, use_locking=False, name='GLA_1stOrder'):
         """Init function for this class.
 
         Args:
+          calculate_accumulates: whether accumulates (gradient norm, noise, norm, kinetic energy, ...) are calculated
+            every step (extra work but required for run info dataframe/file and averages dataframe/file)
           covariance_blending: covariance identity blending value eta to use in creating the preconditioning matrix
           step_width: step width for gradient, also affects inject noise
           inverse_temperature: scale for gradients
@@ -54,9 +57,9 @@ class GeometricLangevinAlgorithmFirstOrderSampler(StochasticGradientLangevinDyna
         Returns:
 
         """
-        super(GeometricLangevinAlgorithmFirstOrderSampler, self).__init__(covariance_blending,
-                                                                          step_width, inverse_temperature,
-                                                                          seed, use_locking, name)
+        super(GeometricLangevinAlgorithmFirstOrderSampler, self).__init__(
+            calculate_accumulates, covariance_blending, step_width,
+            inverse_temperature, seed, use_locking, name)
         self._friction_constant = friction_constant
 
     def _prepare(self):
@@ -109,6 +112,9 @@ class GeometricLangevinAlgorithmFirstOrderSampler(StochasticGradientLangevinDyna
         friction_constant_t = math_ops.cast(self._friction_constant_t, var.dtype.base_dtype)
         step_width_t, inverse_temperature_t, random_noise_t = self._prepare_dense(grad, var)
         momentum = self.get_slot(var, "momentum")
+
+        # conditional whether to calculate accumulates or not
+        do_accumulates_t = math_ops.cast(self._calculate_accumulates_t, bool)
 
         # \nabla V (q^n ) \Delta t + prior constraining force
         scaled_gradient = step_width_t * grad

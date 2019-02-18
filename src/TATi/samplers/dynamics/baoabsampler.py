@@ -37,11 +37,14 @@ class BAOABSampler(GeometricLangevinAlgorithmFirstOrderSampler):
     Returns:
 
     """
-    def __init__(self, covariance_blending, step_width, inverse_temperature, friction_constant,
+    def __init__(self, calculate_accumulates, covariance_blending,
+                 step_width, inverse_temperature, friction_constant,
                  seed=None, use_locking=False, name='BAOAB'):
         """Init function for this class.
 
         Args:
+          calculate_accumulates: whether accumulates (gradient norm, noise, norm, kinetic energy, ...) are calculated
+            every step (extra work but required for run info dataframe/file and averages dataframe/file)
           covariance_blending: covariance identity blending value eta to use in creating the preconditioning matrix
           step_width: step width for gradient, also affects inject noise
           inverse_temperature: scale for gradients
@@ -53,8 +56,9 @@ class BAOABSampler(GeometricLangevinAlgorithmFirstOrderSampler):
         Returns:
 
         """
-        super(BAOABSampler, self).__init__(covariance_blending, step_width, inverse_temperature,
-                                           friction_constant, seed, use_locking, name)
+        super(BAOABSampler, self).__init__(calculate_accumulates, covariance_blending, step_width,
+                                           inverse_temperature, friction_constant,
+                                           seed, use_locking, name)
 
 
     '''
@@ -230,6 +234,9 @@ class BAOABSampler(GeometricLangevinAlgorithmFirstOrderSampler):
         precondition_matrix, grad = self._pick_grad(grads_and_vars, var)
         friction_constant_t = math_ops.cast(self._friction_constant_t, var.dtype.base_dtype)
         step_width_t, inverse_temperature_t, random_noise_t = self._prepare_dense(grad, var)
+
+        # conditional whether to calculate accumulates or not
+        do_accumulates_t = math_ops.cast(self._calculate_accumulates_t, bool)
 
         # tilde_half_pn = p^{n}
         momentum = self.get_slot(var, "momentum")

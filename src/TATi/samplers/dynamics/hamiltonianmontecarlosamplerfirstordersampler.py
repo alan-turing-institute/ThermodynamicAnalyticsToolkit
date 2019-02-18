@@ -38,10 +38,14 @@ class HamiltonianMonteCarloSamplerFirstOrderSampler(StochasticGradientLangevinDy
     Returns:
 
     """
-    def __init__(self, covariance_blending, step_width, inverse_temperature, loss, current_step, next_eval_step, accept_seed, seed=None, use_locking=False, name='HamiltonianMonteCarlo_1stOrder'):
+    def __init__(self, calculate_accumulates, covariance_blending, step_width,
+                 inverse_temperature, loss, current_step, next_eval_step, accept_seed,
+                 seed=None, use_locking=False, name='HamiltonianMonteCarlo_1stOrder'):
         """Init function for this class.
 
         Args:
+          calculate_accumulates: whether accumulates (gradient norm, noise, norm, kinetic energy, ...) are calculated
+            every step (extra work but required for run info dataframe/file and averages dataframe/file)
           covariance_blending: covariance identity blending value eta to use in creating the preconditioning matrix
           step_width: step width for gradient
           inverse_temperature: scale for noise
@@ -56,9 +60,9 @@ class HamiltonianMonteCarloSamplerFirstOrderSampler(StochasticGradientLangevinDy
         Returns:
 
         """
-        super(HamiltonianMonteCarloSamplerFirstOrderSampler, self).__init__(covariance_blending,
-                                                                            step_width, inverse_temperature,
-                                                                            seed, use_locking, name)
+        super(HamiltonianMonteCarloSamplerFirstOrderSampler, self).__init__(
+            calculate_accumulates, covariance_blending, step_width,
+            inverse_temperature, seed, use_locking, name)
         self._accept_seed = accept_seed
         self._current_step = current_step
         self._next_eval_step = next_eval_step
