@@ -238,20 +238,15 @@ class StochasticGradientLangevinDynamicsSampler(WalkerEnsembleOptimizer):
         # \nabla V (q^n ) \Delta t
         scaled_gradient = step_width_t * grad
 
-        # conditional whether to calculate accumulates or not
-        do_accumulates_t = math_ops.cast(self._calculate_accumulates_t, bool)
-
-        with tf.variable_scope("accumulate", reuse=True):
-            gradient_global = tf.get_variable("gradients", dtype=dds_basetype)
-            gradient_global_t = tf.assign_add(gradient_global, tf.reduce_sum(tf.multiply(scaled_gradient, scaled_gradient)))
-            # configurational temperature
-            virial_global = tf.get_variable("virials", dtype=dds_basetype)
-            virial_global_t = tf.assign_add(virial_global, tf.reduce_sum(tf.multiply(grad, var)))
+        gradient_global_t = self._get_accumulate_conditional("gradients",
+            lambda: self._accumulate_norm("gradients", scaled_gradient))
+        virial_global_t = self._get_accumulate_conditional("virials",
+            lambda: self._accumulate_scalar_product("virials", grad, var))
 
         scaled_noise = tf.sqrt(2.*step_width_t/inverse_temperature_t) * random_noise_t
-        with tf.variable_scope("accumulate", reuse=True):
-            noise_global = tf.get_variable("noise", dtype=dds_basetype)
-            noise_global_t = tf.assign_add(noise_global, tf.reduce_sum(tf.multiply(scaled_noise, scaled_noise)))
+        # conditionally calculate norm of noise
+        noise_global_t = self._get_accumulate_conditional("noise",
+            lambda: self._accumulate_norm("noise", scaled_noise))
 
         # prior force act directly on var
         ub_repell, lb_repell = self._apply_prior(var)

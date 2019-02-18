@@ -108,9 +108,6 @@ class CovarianceControlledAdaptiveLangevinThermostat(GeometricLangevinAlgorithmS
         precondition_matrix, grad = self._pick_grad(grads_and_vars, var)
         dim = math_ops.cast(tf.size(var), dds_basetype)
 
-        # conditional whether to calculate accumulates or not
-        do_accumulates_t = math_ops.cast(self._calculate_accumulates_t, bool)
-
         sigma_t = math_ops.cast(self._sigma_t, var.dtype.base_dtype)
         sigmaA_t = math_ops.cast(self._sigmaA_t, var.dtype.base_dtype)
         step_width_t, inverse_temperature_t, random_noise_t = self._prepare_dense(grad, var)
@@ -134,34 +131,26 @@ class CovarianceControlledAdaptiveLangevinThermostat(GeometricLangevinAlgorithmS
 
         scaled_gradient = step_width_t * grad
 
-        with tf.variable_scope("accumulate", reuse=True):
-            gradient_global = tf.get_variable("gradients", dtype=dds_basetype)
-            gradient_global_t = tf.assign_add(gradient_global, tf.reduce_sum(tf.multiply(scaled_gradient, scaled_gradient)))
-            # configurational temperature
-            virial_global = tf.get_variable("virials", dtype=dds_basetype)
-            virial_global_t = tf.assign_add(virial_global, tf.reduce_sum(tf.multiply(grad, var)))
+        gradient_global_t = self._get_accumulate_conditional("gradients",
+            lambda: self._accumulate_norm("gradients", scaled_gradient))
+        virial_global_t = self._get_accumulate_conditional("virials",
+            lambda: self._accumulate_scalar_product("virials", grad, var))
 
         # p = step.B(p, f, 0.5 * self.dt)
         momentum_final_step_t = momentum - 0.5 * scaled_gradient
 
-        with tf.variable_scope("accumulate", reuse=True):
-            # inertia
-            inertia_global = tf.get_variable("inertia", dtype=dds_basetype)
-            inertia_global_t = tf.assign_add(inertia_global, tf.reduce_sum(tf.multiply(momentum_final_step_t, var)))
+        inertia_global_t = self._get_accumulate_conditional("inertia",
+            lambda: self._accumulate_scalar_product("inertia", momentum_final_step_t, var))
 
         # 1/2 * p^{n}^t * p^{n}
         momentum_sq = 0.5 * tf.reduce_sum(tf.multiply(momentum_final_step_t, momentum_final_step_t))
 
-        # p^{n+1} = \alpha_{\Delta t} p^{n+1} + \sqrt{ \frac{1-\alpha^2_{\Delta t}}{\beta} M } G^n
-        with tf.variable_scope("accumulate", reuse=True):
-            momentum_global = tf.get_variable("momenta", dtype=dds_basetype)
-            momentum_global_t = tf.assign_add(momentum_global, 2.0*momentum_sq)
-
         # as the loss evaluated with train_step is the "old" (not updated) loss, we
         # therefore also need to the use the old momentum for the kinetic energy
-        with tf.variable_scope("accumulate", reuse=True):
-            kinetic_energy = tf.get_variable("kinetic_energy", dtype=dds_basetype)
-            kinetic_energy_t = tf.assign_add(kinetic_energy, momentum_sq)
+        kinetic_energy_t = self._get_accumulate_conditional("kinetic_energy",
+            lambda: self._accumulate_value("kinetic_energy", momentum_sq, 0.5))
+        momentum_global_t = self._get_accumulate_conditional("momenta",
+            lambda: self._accumulate_value("momenta", momentum_sq))
 
         #p = step.B(p, f, 0.5 * self.dt) + sigma * np.random.rand(p.shape[0]) * 0.5 * step_width_t
         momentum_half_step_t = momentum_final_step_t - 0.5 * scaled_gradient
@@ -247,10 +236,15 @@ class CovarianceControlledAdaptiveLangevinThermostat(GeometricLangevinAlgorithmS
         # p = p + sigma * np.random.randn(p.shape[0]) * 0.5 * self.dt
         momentum_final_step_plus_noise_t = momentum_final_step_t + scaled_noise
 
-        with tf.control_dependencies([if_block_t, total_noise]):
-            with tf.variable_scope("accumulate", reuse=True):
-                noise_global = tf.get_variable("noise", dtype=dds_basetype)
-                noise_global_t = noise_global.assign_add(tf.reduce_sum(total_noise))
+        def _accumulate_total_noise():
+            with tf.control_dependencies([if_block_t, total_noise]):
+                with tf.variable_scope("accumulate", reuse=True):
+                    noise_global = tf.get_variable("noise", dtype=dds_basetype)
+                    with tf.control_dependencies([noise_global.assign_add(tf.reduce_sum(total_noise))]):
+                        return tf.identity(noise_global)
+
+        # conditionally calculate norm of noise
+        noise_global_t = self._get_accumulate_conditional("noise", _accumulate_total_noise)
 
         # NOTE: adhere to ordering of node evaluation here!
         return control_flow_ops.group(*[virial_global_t, inertia_global_t, gradient_global_t,

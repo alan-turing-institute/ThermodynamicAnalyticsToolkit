@@ -145,41 +145,21 @@ class HamiltonianMonteCarloSamplerFirstOrderSampler(StochasticGradientLangevinDy
         if "lower_boundary" in prior or "upper_boundary" in prior:
             raise NotImplementedError("HMC does not support priors in its current state")
 
-    @staticmethod
-    def _add_gradient_contribution(scaled_gradient):
-        with tf.variable_scope("accumulate", reuse=True):
-            gradient_global = tf.get_variable("gradients", dtype=dds_basetype)
-            gradient_global_t = tf.assign_add(
-                gradient_global,
-                tf.reduce_sum(tf.multiply(scaled_gradient, scaled_gradient)))
-            return gradient_global_t
+    def _add_gradient_contribution(self, scaled_gradient):
+        return self._get_accumulate_conditional("gradients",
+            lambda: self._accumulate_norm("gradients", scaled_gradient))
 
-    @staticmethod
-    def _add_virial_contribution(grad, var):
-        with tf.variable_scope("accumulate", reuse=True):
-            # configurational temperature
-            virial_global = tf.get_variable("virials", dtype=dds_basetype)
-            virial_global_t = tf.assign_add(
-                virial_global,
-                tf.reduce_sum(tf.multiply(grad, var)))
-        return virial_global_t
+    def _add_virial_contribution(self, grad, var):
+        return self._get_accumulate_conditional("virials",
+            lambda: self._accumulate_scalar_product("virials", grad, var))
 
-    @staticmethod
-    def _add_inertia_contribution(momentum_half_step_t, var):
-        with tf.variable_scope("accumulate", reuse=True):
-            # inertia
-            inertia_global = tf.get_variable("inertia", dtype=dds_basetype)
-            inertia_global_t = tf.assign_add(
-                inertia_global,
-                tf.reduce_sum(tf.multiply(momentum_half_step_t, var)))
-        return inertia_global_t
+    def _add_inertia_contribution(self, momentum_half_step_t, var):
+        return self._get_accumulate_conditional("inertia",
+            lambda: self._accumulate_scalar_product("inertia", momentum_half_step_t, var))
 
-    @staticmethod
-    def _add_momentum_contribution(momentum_sq):
-        with tf.variable_scope("accumulate", reuse=True):
-            momentum_global = tf.get_variable("momenta", dtype=dds_basetype)
-            momentum_global_t = tf.assign_add(momentum_global, momentum_sq)
-        return momentum_global_t
+    def _add_momentum_contribution(self, momentum_sq):
+        return self._get_accumulate_conditional("momenta",
+            lambda: self._accumulate_value("momenta", momentum_sq))
 
     @staticmethod
     def _add_kinetic_energy_contribution(momentum_sq):

@@ -159,6 +159,7 @@ class WalkerEnsembleOptimizer(Optimizer):
         """
         super(WalkerEnsembleOptimizer, self)._prepare()
         self._calculate_accumulates_t = ops.convert_to_tensor(self._calculate_accumulates, name="calculate_accumulates")
+        self.do_accumulates_t = math_ops.cast(self._calculate_accumulates_t, bool)
         self._covariance_blending_t = ops.convert_to_tensor(self._covariance_blending, name="covariance_blending")
 
     def compute_and_check_gradients(self, loss, var_list=None,
@@ -178,6 +179,84 @@ class WalkerEnsembleOptimizer(Optimizer):
                 % ([str(v) for _, v in grads_and_vars], loss))
 
         return grads_and_vars
+
+    def _accumulate_norm(self, name, vector, prefactor=1.):
+        """ Adds nodes to compute the norm for the given vector assigned to
+        an accumulate variable
+
+        Args:
+          name: name of accumulate variable
+          vector: vector whose norm to compute
+          prefactor: prefactor for norm on storing in accumulate
+
+        Returns:
+          node of the accumulate variable with enforced update on evaluation
+        """
+        with tf.variable_scope("accumulate", reuse=True):
+            accumulate_global = tf.get_variable(name, dtype=dds_basetype)
+            with tf.control_dependencies([tf.assign_add(
+                    accumulate_global,
+                    prefactor * tf.reduce_sum(tf.multiply(vector, vector)))]):
+                return tf.identity(accumulate_global)
+
+    def _accumulate_value(self, name, value, prefactor=1.):
+        """ Adds nodes to assign value times prefactor to
+        an accumulate variable
+
+        Args:
+          name: name of accumulate variable
+          value: ref to node whose value to accumulate
+          prefactor: prefactor for norm on storing in accumulate
+
+        Returns:
+          node of the accumulate variable with enforced update on evaluation
+        """
+        with tf.variable_scope("accumulate", reuse=True):
+            accumulate_global = tf.get_variable(name, dtype=dds_basetype)
+            with tf.control_dependencies([tf.assign_add(
+                    accumulate_global,
+                    prefactor * value)]):
+                return tf.identity(accumulate_global)
+
+    def _accumulate_scalar_product(self, name, vector_lhs, vector_rhs):
+        """ Adds nodes to compute the norm for the given vector assigned to
+        an accumulate variable
+
+        Args:
+          name: name of accumulate variable
+          vector_lhs: left hand side vector
+          vector_rhs: right hand side vector
+
+        Returns:
+          node of the accumulate variable with enforced update on evaluation
+        """
+        with tf.variable_scope("accumulate", reuse=True):
+            accumulate_global = tf.get_variable(name, dtype=dds_basetype)
+            with tf.control_dependencies([tf.assign_add(
+                    accumulate_global,
+                    tf.reduce_sum(tf.multiply(vector_lhs, vector_rhs)))]):
+                return tf.identity(accumulate_global)
+
+    def _get_accumulate_conditional(self, name, callable):
+        """ Creates a  tensorflow.cond  based on whether  calculate_accumulates
+        is true or not.
+
+        Args:
+          name: name of accumulate variable
+          callable: function to update accumulate
+
+        Returns:
+          conditional node that returns the respective accumulates variable
+          either updated or not.
+        """
+        def do_noop():
+            with tf.variable_scope("accumulate", reuse=True):
+                variable_global = tf.get_variable(name, dtype=dds_basetype)
+                return tf.identity(variable_global)
+
+        return tf.cond(
+            tf.equal(True, self.do_accumulates_t),
+            callable, do_noop)
 
     def apply_gradients(self, walkers_grads_and_vars, index, global_step=None, name=None):
         """Apply gradients to variables.

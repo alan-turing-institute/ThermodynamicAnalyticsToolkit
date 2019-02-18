@@ -133,9 +133,9 @@ class HamiltonianMonteCarloSamplerSecondOrderSampler(HamiltonianMonteCarloSample
             redrawn_momentum, integrated_momentum)
         momentum_sq = tf.reduce_sum(tf.multiply(momentum_kinetic_energy_t,momentum_kinetic_energy_t))
 
-        momentum_global_t = HamiltonianMonteCarloSamplerFirstOrderSampler._add_momentum_contribution(momentum_sq)
-        inertia_global_t = HamiltonianMonteCarloSamplerFirstOrderSampler._add_inertia_contribution(momentum_kinetic_energy_t, var)
-        kinetic_energy_t = HamiltonianMonteCarloSamplerFirstOrderSampler._add_kinetic_energy_contribution(momentum_sq)
+        momentum_global_t = self._add_momentum_contribution(momentum_sq)
+        inertia_global_t = self._add_inertia_contribution(momentum_kinetic_energy_t, var)
+        kinetic_energy_t = self._add_kinetic_energy_contribution(momentum_sq)
 
         return momentum_second_step_block_t, momentum_global_t, inertia_global_t, kinetic_energy_t
 
