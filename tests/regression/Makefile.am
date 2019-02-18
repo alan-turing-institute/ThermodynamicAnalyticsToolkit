@@ -66,6 +66,7 @@ TESTSCRIPTS += \
 	$(srcdir)/DataOptimizer/Datasets/testsuite-dataoptimizer-datasets-twoclusters.at \
 	$(srcdir)/DataOptimizer/Datasets/testsuite-dataoptimizer-datasets-twospirals.at \
 	$(srcdir)/DataOptimizer/Options/testsuite-dataoptimizer-options-batch_size.at \
+	$(srcdir)/DataOptimizer/Options/testsuite-dataoptimizer-options-do_accumulates.at \
 	$(srcdir)/DataOptimizer/Options/testsuite-dataoptimizer-options-do_hessians.at \
 	$(srcdir)/DataOptimizer/Options/testsuite-dataoptimizer-options-every_nth.at \
 	$(srcdir)/DataOptimizer/Options/testsuite-dataoptimizer-options-learning_rate.at \
