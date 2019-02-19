@@ -18,6 +18,7 @@
 #
 ### 
 
+import math
 import numpy as np
 
 from TATi.common import setup_csv_file
@@ -29,14 +30,33 @@ class AverageTrajectoryWriter(object):
     output_width = 8
     output_precision = 8
 
-    def __init__(self, trajectory):
+    def __init__(self, trajectory, loss=None, inverse_temperature=None):
+        """
+
+        Args:
+          trajectory: trajectory to average
+          loss: None or loss values to obtain average weighted by exponential
+            function of negative of inverse_temperature times loss
+          inverse_temperature: inverse temperature coefficient
+        """
         if isinstance(trajectory, ParsedTrajectory):
             self._trajectory = trajectory.get_trajectory()
         else:
             self._trajectory = trajectory
         self.number_dof = len(self._trajectory[0,:])
-        self.average_params = [np.average(self._trajectory[0:, i]) for i in range(self.number_dof)]
-        self.variance_params = [np.var(self._trajectory[0:, i]) for i in range(self.number_dof)]
+        weights = None
+        if loss is not None and inverse_temperature is not None:
+            number_steps = loss.shape[0]
+            assert( self._trajectory.shape[0] == number_steps)
+            weights = np.zeros((number_steps), dtype=self._trajectory.dtype)
+            for i in range(number_steps):
+                weights[i] = math.exp(-inverse_temperature*loss[i])
+        self.average_params = [np.average(self._trajectory[0:, i], weights=weights)
+                               for i in range(self.number_dof)]
+        self.variance_params = [np.average(
+            (self._trajectory[0:, i] - self.average_params[i]) ** 2,
+            weights=weights)
+            for i in range(self.number_dof)]
         #print("First ten parameters are converged to the following values:")
         #print(str(self.average_params[0:10]))
         #print(str(self.variance_params[0:10]))

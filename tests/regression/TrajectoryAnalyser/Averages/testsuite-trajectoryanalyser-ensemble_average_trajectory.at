@@ -1,0 +1,78 @@
+#
+#    ThermodynamicAnalyticsToolkit - analyze loss manifolds of neural networks
+#    Copyright (C) 2017 The University of Edinburgh
+#    The TATi authors, see file AUTHORS, have asserted their moral rights.
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+### 
+
+AT_SETUP([Analyser - ensemble average trajectory])
+AT_KEYWORDS([tatianalyser averages ensemble_average_trajectory])
+
+# analyse a trajectory that was created by:
+# (Two clusters dataset with two inputs nodes, single output, linear activation)
+# TATiSampler \
+# --run_file run-two_clusters-dim_500-gamma_10-beta_1e4-max_steps_1000-noise_0.1-linear-seed_426.csv
+# --data_type 2 \
+# --dimension 500 \
+# --friction_constant 10 \
+# --inverse_temperatur 1e4 \
+# --max_steps 1000 \
+# --noise 0.1 \
+# --output_activation linear \
+# --seed 426 \
+# --trajectory_file trajectory-two_clusters-dim_500-gamma_10-beta_1e4-max_steps_1000-noise_0.1-linear-seed_426.csv
+#
+
+AT_CHECK([../../../TATiAnalyser \
+    ensemble_average_trajectory \
+    --average_trajectory_file ensemble_average_trajectory_1e-3.csv \
+    --drop_burnin 10 \
+    --every_nth 1 \
+    --inverse_temperature 1e-3 \
+    --steps 10 \
+    --trajectory_file ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/Averages/pre/trajectory-two_clusters-dim_500-gamma_10-beta_1e4-max_steps_1000-noise_0.1-linear-seed_426.csv
+], 0, [stdout], [stderr])
+
+AT_CHECK([../../../TATiAnalyser \
+    ensemble_average_trajectory \
+    --average_trajectory_file ensemble_average_trajectory_1.csv \
+    --drop_burnin 10 \
+    --every_nth 1 \
+    --inverse_temperature 1 \
+    --steps 10 \
+    --trajectory_file ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/Averages/pre/trajectory-two_clusters-dim_500-gamma_10-beta_1e4-max_steps_1000-noise_0.1-linear-seed_426.csv
+], 0, [stdout], [stderr])
+
+AT_CHECK([../../../TATiAnalyser \
+    ensemble_average_trajectory \
+    --average_trajectory_file ensemble_average_trajectory_1e3.csv \
+    --drop_burnin 10 \
+    --every_nth 1 \
+    --inverse_temperature 1e3 \
+    --steps 10 \
+    --trajectory_file ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/Averages/pre/trajectory-two_clusters-dim_500-gamma_10-beta_1e4-max_steps_1000-noise_0.1-linear-seed_426.csv
+], 0, [stdout], [stderr])
+
+# only three parameters in total plus header
+AT_CHECK([wc -l ensemble_average_trajectory_1e-3.csv | grep "4"], 0, [ignore], [ignore])
+AT_CHECK([wc -l ensemble_average_trajectory_1.csv | grep "4"], 0, [ignore], [ignore])
+AT_CHECK([wc -l ensemble_average_trajectory_1e3.csv | grep "4"], 0, [ignore], [ignore])
+AT_CHECK([diff ensemble_average_trajectory_1e-3.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/Averages/post/ensemble_average_trajectory_1e-3.csv], 0, [ignore], [ignore])
+AT_CHECK([diff ensemble_average_trajectory_1.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/Averages/post/ensemble_average_trajectory_1.csv], 0, [ignore], [ignore])
+AT_CHECK([diff ensemble_average_trajectory_1e3.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/Averages/post/ensemble_average_trajectory_1e3.csv], 0, [ignore], [ignore])
+
+AT_CLEANUP
+

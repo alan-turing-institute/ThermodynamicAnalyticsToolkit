@@ -117,6 +117,7 @@ TESTSCRIPTS += \
 	$(srcdir)/TrajectoryAnalyser/testsuite-trajectoryanalyser.at \
 	$(srcdir)/TrajectoryAnalyser/testsuite-trajectoryanalyser-simple.at \
 	$(srcdir)/TrajectoryAnalyser/Averages/testsuite-trajectoryanalyser-averages.at \
+	$(srcdir)/TrajectoryAnalyser/Averages/testsuite-trajectoryanalyser-ensemble_average_trajectory.at \
 	$(srcdir)/TrajectoryAnalyser/Covariance/testsuite-trajectoryanalyser-covariance.at \
 	$(srcdir)/TrajectoryAnalyser/Covariance/testsuite-trajectoryanalyser-covariance-gaussian_mixture.at \
 	$(srcdir)/TrajectoryAnalyser/Covariance/testsuite-trajectoryanalyser-covariance-gaussian_mixture-walker_individual.at \
