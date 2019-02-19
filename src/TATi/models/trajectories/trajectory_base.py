@@ -311,8 +311,7 @@ class TrajectoryBase(object):
             # accumulate averages
             self.update_averages(current_step)
 
-            if current_step % self.state.FLAGS.every_nth == 0:
-                self.accumulated_values.time_elapsed_per_nth_step = self.state._get_elapsed_time_per_nth_step(current_step)
+            self.update_timing(current_step, extra_values)
 
             for walker_index in range(self.state.FLAGS.number_walkers):
                 self.run_info.accumulate_nth_step(current_step, walker_index, self.accumulated_values)
@@ -372,6 +371,10 @@ class TrajectoryBase(object):
 
     def update_values(self, current_step, session, test_nodes, feed_dict, extra_values, parameter_list):
         pass
+
+    def update_timing(self, current_step, _):
+        if current_step % self.state.FLAGS.every_nth == 0:
+            self.accumulated_values.time_elapsed_per_nth_step = self.state._get_elapsed_time_per_nth_step(current_step)
 
     @staticmethod
     def filter_execute_return_values(run_info, trajectory, averages):
