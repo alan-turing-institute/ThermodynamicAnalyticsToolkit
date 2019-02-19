@@ -1,4 +1,4 @@
-SUBDIRS=src tests doc
+SUBDIRS=src tests doc wheel
 
 AUTOMAKE_OPTIONS = subdir-objects
 
