@@ -106,7 +106,6 @@ def main(_):
     options.exclude_parameters = get_list_from_string(options.exclude_parameters)
 
     # prepare which mode to use
-    print(SamplingModes.list_modes())
     sampler = SamplingModes.create(options.mode, network_model, options)
     if sampler is None:
         logging.critical("The mode name "+options.mode+" is not known.")
