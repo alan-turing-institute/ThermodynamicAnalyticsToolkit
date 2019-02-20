@@ -116,3 +116,6 @@ class ParsedTrajectory(object):
         return self.df_trajectory[
                    self.df_trajectory['id'] == walker_index].iloc[
                self.start::self.every_nth, index:].values
+
+    def __str__(self):
+        return str(self.df_trajectory)
