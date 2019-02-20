@@ -232,12 +232,28 @@ information such as total, kinetic, and potential energy in
 +average_run.csv+. Also, we have the averages over the degrees of
 freedom in +average_trajectories.csv+.
 
+This second file contains two rows (together with a header line) in CSV format.
+The first row (step 0) represents the averages while the second row (step 1)
+represents th variance of each parameter.
+
+The *loss* column is the average over all loss values. If an
+*inverse_temperature* has been given, then it is the ensemble average, i.e.
+each loss (and parameter set) is weighted not equivalently (unit weight) but by
+latexmath:[$exp(-\beta L)$].
+
+In general, taking such an average is only useful if the trajectory has
+remained essentially within a single minimum. If the loss manifold has the
+overall shape of a large funnel with lots of local minima at the bottom, this
+may be feasible as well. Use a covariance analysis and `TATiLossFunctionSampler`
+in directions of eigenvalues of the resulting covariance matrix whose magnitude
+is large to find out.
+
 [NOTE]
 ====
 Averages depend crucially on the number of steps we average over. I.e.
-the more points we throw away, the less accurate it becomes. In other
-words, if large accuracy is required, the averages file (if it contains
-the value of interest) is a better place to look for.
+the more points we throw away (option *every_nth*), the less accurate it
+becomes. In other words, if large accuracy is required, the averages file (if
+it contains the value of interest) is a better place to look for.
 ====
 
 [[quickstart.cmdline.analysing.covariance]]
@@ -252,7 +268,7 @@ include::cmdline/analyse_covariance.sh[]
 ---------------
 
 Here, we simply give the respective options to write the covariance matrix,
-its eigenvectors and eigenvalzes to CSV files. We drop the first 100 steps
+its eigenvectors and eigenvalues to CSV files. We drop the first 100 steps
 and take only every 10th step into account.
 
 The covariance eigenvectors give use the directions of strong and weak
@@ -284,8 +300,9 @@ eigenvector components in one direction and the trajectory steps in the
 other. Additionally, it contains the parameters at the steps and also
 the loss and the kernel matrix entry.
 
-Note that again the all values up till step *100* are dropped and only
-every 10th trajectory point is considered afterwards.
+Note that again the all values up till step *100* are dropped (due to option
+*drop_burnin*) and only every 10th trajectory point (due to option *every_nth*)
+is considered afterwards.
 
 There are two methods available. Here, we have used the simpler (and
 less accurate) (plain old) 'vanilla' method. The other is called 'TMDMap'.

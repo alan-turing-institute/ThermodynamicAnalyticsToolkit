@@ -67,9 +67,9 @@ AT_CHECK([../../../TATiAnalyser \
 ], 0, [stdout], [stderr])
 
 # only three parameters in total plus header
-AT_CHECK([wc -l ensemble_average_trajectory_1e-3.csv | grep "4"], 0, [ignore], [ignore])
-AT_CHECK([wc -l ensemble_average_trajectory_1.csv | grep "4"], 0, [ignore], [ignore])
-AT_CHECK([wc -l ensemble_average_trajectory_1e3.csv | grep "4"], 0, [ignore], [ignore])
+AT_CHECK([wc -l ensemble_average_trajectory_1e-3.csv | grep "3"], 0, [ignore], [ignore])
+AT_CHECK([wc -l ensemble_average_trajectory_1.csv | grep "3"], 0, [ignore], [ignore])
+AT_CHECK([wc -l ensemble_average_trajectory_1e3.csv | grep "3"], 0, [ignore], [ignore])
 AT_CHECK([diff ensemble_average_trajectory_1e-3.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/Averages/post/ensemble_average_trajectory_1e-3.csv], 0, [ignore], [ignore])
 AT_CHECK([diff ensemble_average_trajectory_1.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/Averages/post/ensemble_average_trajectory_1.csv], 0, [ignore], [ignore])
 AT_CHECK([diff ensemble_average_trajectory_1e3.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/Averages/post/ensemble_average_trajectory_1e3.csv], 0, [ignore], [ignore])
