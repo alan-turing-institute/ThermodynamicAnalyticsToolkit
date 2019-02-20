@@ -172,7 +172,7 @@ class AnalyserModules(object):
     def _analyse_average_trajectory(self):
         trajectory = self.get_stage_results("parse_trajectory_file")[0]
         if self.FLAGS.average_trajectory_file is not None:
-            averagewriter = AverageTrajectoryWriter(trajectory.get_trajectory())
+            averagewriter = AverageTrajectoryWriter(trajectory)
             averagewriter.write(self.FLAGS.average_trajectory_file)
 
     def _analyse_covariance(self):
