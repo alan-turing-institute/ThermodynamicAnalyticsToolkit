@@ -50,6 +50,7 @@ class TrajectorySamplingHamiltonian(TrajectorySampling):
     """
     def __init__(self, trajectory_state):
         super(TrajectorySamplingHamiltonian, self).__init__(trajectory_state)
+        self._internal_nth = 0
 
     def _set_HMC_placeholders(self, HMC_placeholder_nodes, current_step, step_widths, HD_steps, HMC_steps, feed_dict):
         """Updates feed_dict with extra values for HMC
@@ -237,6 +238,9 @@ class TrajectorySamplingHamiltonian(TrajectorySampling):
         # remember rejected whose change indicates when to reset state
         array["last_rejected"] = session.run(self.state.static_vars["rejected"])
 
+        # reset internal nth counter to get time per every nth right
+        self._internal_nth = 0
+
         return array
 
     def extra_evaluation_before_step(self, current_step, session, placeholder_nodes, test_nodes, feed_dict, extra_values):
@@ -350,6 +354,16 @@ class TrajectorySamplingHamiltonian(TrajectorySampling):
                 # accumulate averages and other information
                 if current_step >= self.state.FLAGS.burn_in_steps:
                     self.averages.accumulate_each_step(current_step, walker_index, self.accumulated_values)
+
+    def update_timing(self, current_step, extra_values):
+        # timing is measured with respect to walker 0
+        if ((len(extra_values["HMC_steps"]) > 0) and (current_step != extra_values["HMC_steps"][0])):
+            # HMC (_next_eval_step is non-empty) outside evaluation step
+            return
+        self._internal_nth +=1
+        if self._internal_nth == self.state.FLAGS.every_nth:
+            self.accumulated_values.time_elapsed_per_nth_step = self.state._get_elapsed_time_per_nth_step(current_step)
+            self._internal_nth = 0
 
     def update_averages(self, current_step):
         """Do not update averages in each step for HMC.

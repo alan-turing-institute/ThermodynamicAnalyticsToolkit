@@ -32,7 +32,7 @@ class AccumulatedValues(object):
         self.weights = None
         self.biases = None
 
-        self.time_elapsed_per_nth_step = None
+        self.time_elapsed_per_nth_step = 0.
 
         self.gradients = None
         self.virials = None
