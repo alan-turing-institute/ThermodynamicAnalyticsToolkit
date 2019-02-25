@@ -72,7 +72,7 @@ class AveragesAccumulator(Accumulator):
             self.accumulated_loss_denominator[walker_index] += exp(
                 - self._inverse_temperature * values.loss[walker_index])
             self.accumulated_virials[walker_index] += values.virials[walker_index]
-            if self._method != "StochasticGradientLangevinDynamics" and self._method != "GradientDescent":
+            if self._method != "StochasticGradientLangevinDynamics" and "GradientDescent" not in self._method:
                 self.accumulated_kinetic_energy[walker_index] += values.kinetic_energy[walker_index]
                 if self.accumulated_steps > 1:
                     inertia_secant = (values.inertia[walker_index] - self.last_inertia[walker_index])
@@ -102,7 +102,7 @@ class AveragesAccumulator(Accumulator):
         averages_line = [walker_index, values.global_step[walker_index], current_step] \
                         + ['{:{width}.{precision}e}'.format(values.loss[walker_index], width=self.output_width,
                                                             precision=self.output_precision)]
-        if self._method != "GradientDescent":
+        if "GradientDescent" not in self._method:
             averages_line += ['{:{width}.{precision}e}'.format(average_loss, width=self.output_width,
                                                                 precision=self.output_precision)]
 

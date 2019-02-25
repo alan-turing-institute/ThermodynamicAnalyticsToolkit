@@ -85,6 +85,7 @@ userguide_files = \
 	$(srcdir)/userguide_reference_examples.txt \
 	$(srcdir)/userguide_reference_examples_harmonic_oscillator.txt \
 	$(srcdir)/userguide_reference_implementing_sampler.txt \
+	$(srcdir)/userguide_reference_optimizers.txt \
 	$(srcdir)/userguide_reference_samplers.txt \
 	$(srcdir)/userguide_reference_simulation.txt \
 	$(PYTHON_EXAMPLES)

@@ -55,12 +55,15 @@ class TrajectoryTraining(TrajectoryBase):
 
     def get_run_header(self):
         """Prepares the distinct header for the run file for training"""
-        return ['id', 'step', 'epoch', 'accuracy', 'loss', 'time_per_nth_step', 'scaled_gradient', 'virial']
+        header = ['id', 'step', 'epoch', 'accuracy', 'loss', 'time_per_nth_step', 'scaled_gradient', 'virial']
+        if self.get_methodname() == "BarzilaiBorweinGradientDescent":
+            header += ['learning_rate']
+        return header
 
     def get_averages_header(self):
         """Prepares the distinct header for the averages file for sampling"""
         header = super(TrajectoryTraining, self).get_averages_header()
-        if self.state.FLAGS.optimizer == "GradientDescent":
+        if "GradientDescent" in self.state.FLAGS.optimizer:
             header += ['average_virials']
         return header
 

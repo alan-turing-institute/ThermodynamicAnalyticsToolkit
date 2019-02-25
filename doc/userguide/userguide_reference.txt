@@ -114,6 +114,8 @@ include::userguide_reference_samplers.txt[]
 
 include::userguide_reference_implementing_sampler.txt[]
 
+include::userguide_reference_optimizers.txt[]
+
 include::userguide_reference_simulation.txt[]
 
 [[reference.parallelization]]

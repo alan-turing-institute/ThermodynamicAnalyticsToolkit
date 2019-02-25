@@ -42,8 +42,8 @@ class GradientDescent(tf.train.GradientDescentOptimizer):
         Args:
           calculate_accumulates: whether accumulates (gradient norm, noise, norm, kinetic energy, ...) are calculated
             every step (extra work but required for run info dataframe/file and averages dataframe/file)
-          learning_rate: param use_locking:
-          name:  (Default value = 'GradientDescent')
+          learning_rate: learning rate scales the gradient
+          name:  name of optimizer method (Default value = 'GradientDescent')
           use_locking:  (Default value = False)
 
         Returns:
@@ -216,6 +216,9 @@ class GradientDescent(tf.train.GradientDescentOptimizer):
             tf.equal(True, self.do_accumulates_t),
             callable, do_noop)
 
+    def _get_learning_rate(self, grad, var):
+        return math_ops.cast(self._learning_rate_t, var.dtype.base_dtype)
+
     def _apply_dense(self, grad, var):
         """Add scaled gradient and train as usual
 
@@ -226,12 +229,16 @@ class GradientDescent(tf.train.GradientDescentOptimizer):
         Returns:
 
         """
-        # conditional whether to calculate accumulates or not
-        do_accumulates_t = math_ops.cast(self._calculate_accumulates_t, bool)
+        self._learning_rate_tensor = self._get_learning_rate(grad, var)
+        var_size = tf.size(var, out_type=tf.int64)
+        with tf.variable_scope("accumulate", reuse=True):
+            lr_current = tf.get_variable("learning_rate_current", dtype=dds_basetype)
+            learning_rate_current_assign = tf.assign_add(
+                lr_current, math_ops.cast(var_size, var.dtype.base_dtype) * self._learning_rate_tensor)
+            lr_current_dim = tf.get_variable("learning_rate_current_dim", dtype=tf.int64)
+            learning_rate_current_dim_assign = tf.assign_add(lr_current_dim, var_size)
 
-        lr_t = math_ops.cast(self._learning_rate_t, var.dtype.base_dtype)
-        scaled_gradient = lr_t * grad
-
+        scaled_gradient = tf.Print(self._learning_rate_tensor * grad, [self._learning_rate_tensor], "learning rate:")
         gradient_global_t = self._get_accumulate_conditional("gradients",
             lambda: self._accumulate_norm("gradients", scaled_gradient))
         virial_global_t = self._get_accumulate_conditional("virials",
@@ -242,7 +249,8 @@ class GradientDescent(tf.train.GradientDescentOptimizer):
         prior_force = (ub_repell + lb_repell)
 
         # make sure virial and gradients are evaluated before we update variables
-        with tf.control_dependencies([virial_global_t, gradient_global_t]):
+        with tf.control_dependencies([virial_global_t, gradient_global_t,
+                                      learning_rate_current_assign, learning_rate_current_dim_assign]):
             control_group_gradient_descent_t = super(GradientDescent, self)._apply_dense(grad+prior_force, var)
 
         # note: these are evaluated in any order, use control_dependencies if required

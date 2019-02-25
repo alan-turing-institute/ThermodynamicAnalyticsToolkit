@@ -54,10 +54,13 @@ class RuninfoAccumulator(Accumulator):
                    + ['{:{width}.{precision}e}'.format(values.time_elapsed_per_nth_step, width=self.output_width,
                                                        precision=self.output_precision)]
 
-        if self._method == "StochasticGradientLangevinDynamics" or self._method == "GradientDescent":
+        if self._method == "StochasticGradientLangevinDynamics" or "GradientDescent" in self._method:
             run_line += ['{:{width}.{precision}e}'.format(x, width=self.output_width,
                                                           precision=self.output_precision)
                          for x in [sqrt(values.gradients[walker_index]), abs(0.5 * values.virials[walker_index])]]
+            if self._method == "BarzilaiBorweinGradientDescent":
+                run_line += ['{:{width}.{precision}e}'.format(values.learning_rate_current[walker_index], width=self.output_width,
+                                                              precision=self.output_precision)]
             if self._method == "StochasticGradientLangevinDynamics":
                 run_line += ['{:{width}.{precision}e}'.format(sqrt(values.noise[walker_index]), width=self.output_width,
                                                               precision=self.output_precision)]
@@ -94,7 +97,8 @@ class RuninfoAccumulator(Accumulator):
         if super(RuninfoAccumulator, self).accumulate_nth_step(current_step, walker_index):
             if self._config_map["do_write_run_file"] or self._return_run_info:
                 run_line = []
-                if self._method in ["GradientDescent",
+                if self._method in ["BarzilaiBorweinGradientDescent",
+                                    "GradientDescent",
                                     "StochasticGradientLangevinDynamics",
                                     "GeometricLangevinAlgorithm_1stOrder",
                                     "GeometricLangevinAlgorithm_2ndOrder",
