@@ -38,13 +38,15 @@ class HamiltonianMonteCarloSamplerSecondOrderSampler(HamiltonianMonteCarloSample
     Returns:
 
     """
-    def __init__(self,
+    def __init__(self, calculate_accumulates,
                  covariance_blending, step_width, inverse_temperature,
                  loss, current_step, next_eval_step, hd_steps, accept_seed,
                  seed=None, use_locking=False, name='HamiltonianMonteCarlo_2ndOrder'):
         """Init function for this class.
 
         Args:
+          calculate_accumulates: whether accumulates (gradient norm, noise, norm, kinetic energy, ...) are calculated
+            every step (extra work but required for run info dataframe/file and averages dataframe/file)
           covariance_blending: covariance identity blending value eta to use in creating the preconditioning matrix
           step_width: placeholder for step width for gradient
           inverse_temperature: placeholder for scale for noise
@@ -61,7 +63,7 @@ class HamiltonianMonteCarloSamplerSecondOrderSampler(HamiltonianMonteCarloSample
 
         """
         super(HamiltonianMonteCarloSamplerSecondOrderSampler, self).__init__(
-            covariance_blending, step_width, inverse_temperature,
+            calculate_accumulates, covariance_blending, step_width, inverse_temperature,
             loss, current_step, next_eval_step, accept_seed,
             seed, use_locking, name)
         self._hd_steps = hd_steps
@@ -131,9 +133,9 @@ class HamiltonianMonteCarloSamplerSecondOrderSampler(HamiltonianMonteCarloSample
             redrawn_momentum, integrated_momentum)
         momentum_sq = tf.reduce_sum(tf.multiply(momentum_kinetic_energy_t,momentum_kinetic_energy_t))
 
-        momentum_global_t = HamiltonianMonteCarloSamplerFirstOrderSampler._add_momentum_contribution(momentum_sq)
-        inertia_global_t = HamiltonianMonteCarloSamplerFirstOrderSampler._add_inertia_contribution(momentum_kinetic_energy_t, var)
-        kinetic_energy_t = HamiltonianMonteCarloSamplerFirstOrderSampler._add_kinetic_energy_contribution(momentum_sq)
+        momentum_global_t = self._add_momentum_contribution(momentum_sq)
+        inertia_global_t = self._add_inertia_contribution(momentum_kinetic_energy_t, var)
+        kinetic_energy_t = self._add_kinetic_energy_contribution(momentum_sq)
 
         return momentum_second_step_block_t, momentum_global_t, inertia_global_t, kinetic_energy_t
 

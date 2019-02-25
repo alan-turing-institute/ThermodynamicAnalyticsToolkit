@@ -239,12 +239,20 @@ class TrajectoryBase(object):
         self.trajectory.init_writer(self.trajectory_writer)
         self.accumulated_values.reset()
 
+        # state whether accumulates need to be computed or not
+        do_accumulates = self.state.FLAGS.do_accumulates and \
+                         ((self.config_map["do_write_averages_file"] or return_averages) or
+                         (self.config_map["do_write_run_file"] or return_run_info))
+
         # place in feed dict: We have to supply all placeholders (regardless of
         # which the employed optimizer/sampler actually requires) because of the evaluated
         # summary! All of the placeholder nodes are also summary nodes.
         feed_dict = {}
         for walker_index in range(self.state.FLAGS.number_walkers):
             feed_dict.update(self.state._create_default_feed_dict_with_constants(walker_index))
+            feed_dict.update({
+                self.state.nn[walker_index].placeholder_nodes["calculate_accumulates"]: do_accumulates,
+            })
 
         self.zero_extra_nodes(session)
 
@@ -281,8 +289,11 @@ class TrajectoryBase(object):
             # some extra operations just before the actual update step
             self.extra_evaluation_before_step(current_step, session, placeholder_nodes, test_nodes, feed_dict, extra_values)
 
-            # zero kinetic energy and other variables
-            self.state._zero_state_variables(session, self.get_methodname())
+            # zero kinetic energy and other variables (HMC needs kinetic energy)
+            if do_accumulates or self.get_methodname() in [
+                      "HamiltonianMonteCarlo_1stOrder",
+                      "HamiltonianMonteCarlo_2ndOrder"]:
+                self.state._zero_state_variables(session, self.get_methodname())
 
             # get the weights and biases as otherwise the loss won't match
             # tf first computes loss, then gradient, then performs variable update

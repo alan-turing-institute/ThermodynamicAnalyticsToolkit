@@ -85,6 +85,7 @@ class Simulation(object):
         "covariance_blending": ["network"],
         "diffusion_map_method": [], # only used in python code
         "directions_file": [],
+        "do_accumulates": [],
         "do_hessians": ["network"],
         "dropout": ["network"],
         "every_nth": [],            # only used in python code

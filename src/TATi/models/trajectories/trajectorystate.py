@@ -266,6 +266,7 @@ class TrajectoryState(object):
 
         # add other options that are present in any case
         param_dict.update({
+            "calculate_accumulates": False,
             "current_step": 0,
             "keep_probability": self.FLAGS.dropout if self.FLAGS.dropout is not None else 0.})
 

@@ -111,7 +111,8 @@ with open(params.output_file, "w") as of:
 			nn.xinput: features,
 			nn.nn[0].placeholder_nodes["y_"]: labels,
 			nn.nn[0].placeholder_nodes["learning_rate"]: FLAGS.step_width,
-			nn.nn[0].placeholder_nodes["keep_probability"]: 1.
+			nn.nn[0].placeholder_nodes["keep_probability"]: 1.,
+        	nn.nn[0].placeholder_nodes["calculate_accumulates"]: True
 		}
 
 		# train step

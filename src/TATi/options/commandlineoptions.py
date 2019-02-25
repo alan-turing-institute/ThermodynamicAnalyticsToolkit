@@ -240,6 +240,9 @@ class CommandlineOptions(PythonOptions):
                           help='CSV file name to write ensemble averages information such as average kinetic, potential, virial.')
         self._add_option('--burn_in_steps', type=int, default=0,
                           help='Number of initial steps to discard for averages ("burn in")')
+        self._add_option('--do_accumulates', type=str2bool, default=True,
+                          help='Allows to override accumulate calculation to avoid extra computations,"+\
+                           " affects run info and averages file contents.')
         self._add_option('--every_nth', type=int, default=1,
                           help='Store only every nth trajectory (and run) point to files, e.g. 10')
         self._add_option('--inter_ops_threads', type=int, default=1,

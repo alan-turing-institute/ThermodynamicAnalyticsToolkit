@@ -32,6 +32,7 @@ m4_include([DataOptimizer/Reproducibility/testsuite-dataoptimizer-reproducibilit
 
 # tests on options
 m4_include([DataOptimizer/Options/testsuite-dataoptimizer-options-batch_size.at])
+m4_include([DataOptimizer/Options/testsuite-dataoptimizer-options-do_accumulates.at])
 m4_include([DataOptimizer/Options/testsuite-dataoptimizer-options-do_hessians.at])
 m4_include([DataOptimizer/Options/testsuite-dataoptimizer-options-every_nth.at])
 m4_include([DataOptimizer/Options/testsuite-dataoptimizer-options-learning_rate.at])

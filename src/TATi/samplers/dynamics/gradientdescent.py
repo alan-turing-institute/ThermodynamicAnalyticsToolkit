@@ -35,10 +35,13 @@ class GradientDescent(tf.train.GradientDescentOptimizer):
 
     """
 
-    def __init__(self, learning_rate, use_locking=False, name='GradientDescent'):
+    def __init__(self, calculate_accumulates, learning_rate,
+                 use_locking=False, name='GradientDescent'):
         """Init function to get access to learning rate.
 
         Args:
+          calculate_accumulates: whether accumulates (gradient norm, noise, norm, kinetic energy, ...) are calculated
+            every step (extra work but required for run info dataframe/file and averages dataframe/file)
           learning_rate: param use_locking:
           name:  (Default value = 'GradientDescent')
           use_locking:  (Default value = False)
@@ -47,6 +50,7 @@ class GradientDescent(tf.train.GradientDescentOptimizer):
 
         """
         super(GradientDescent, self).__init__(learning_rate, use_locking, name)
+        self._calculate_accumulates = calculate_accumulates
         self._learning_rate = learning_rate
         self.scaled_gradient = None
         self.upper_boundary = None
@@ -57,6 +61,8 @@ class GradientDescent(tf.train.GradientDescentOptimizer):
     def _prepare(self):
         """Convert internal learning_rate to proper tensor."""
         self._learning_rate_t = ops.convert_to_tensor(self._learning_rate, name="learning_rate")
+        self._calculate_accumulates_t = ops.convert_to_tensor(self._calculate_accumulates, name="calculate_accumulates")
+        self.do_accumulates_t = math_ops.cast(self._calculate_accumulates_t, bool)
         super(GradientDescent, self)._prepare()
 
     def set_prior(self, prior):
@@ -151,6 +157,65 @@ class GradientDescent(tf.train.GradientDescentOptimizer):
             lb_repell = tf.zeros(shape=var.shape, dtype=var.dtype.base_dtype)
         return ub_repell, lb_repell
 
+    def _accumulate_norm(self, name, vector, prefactor=1.):
+        """ Adds nodes to compute the norm for the given vector assigned to
+        an accumulate variable
+
+        Args:
+          name: name of accumulate variable
+          vector: vector whose norm to compute
+          prefactor: prefactor for norm on storing in accumulate
+
+        Returns:
+          node of the accumulate variable with enforced update on evaluation
+        """
+        with tf.variable_scope("accumulate", reuse=True):
+            accumulate_global = tf.get_variable(name, dtype=dds_basetype)
+            with tf.control_dependencies([tf.assign_add(
+                    accumulate_global,
+                    prefactor * tf.reduce_sum(tf.multiply(vector, vector)))]):
+                return tf.identity(accumulate_global)
+
+    def _accumulate_scalar_product(self, name, vector_lhs, vector_rhs):
+        """ Adds nodes to compute the norm for the given vector assigned to
+        an accumulate variable
+
+        Args:
+          name: name of accumulate variable
+          vector_lhs: left hand side vector
+          vector_rhs: right hand side vector
+
+        Returns:
+          node of the accumulate variable with enforced update on evaluation
+        """
+        with tf.variable_scope("accumulate", reuse=True):
+            accumulate_global = tf.get_variable(name, dtype=dds_basetype)
+            with tf.control_dependencies([tf.assign_add(
+                    accumulate_global,
+                    tf.reduce_sum(tf.multiply(vector_lhs, vector_rhs)))]):
+                return tf.identity(accumulate_global)
+
+    def _get_accumulate_conditional(self, name, callable):
+        """ Creates a  tensorflow.cond  based on whether  calculate_accumulates
+        is true or not.
+
+        Args:
+          name: name of accumulate variable
+          callable: function to update accumulate
+
+        Returns:
+          conditional node that returns the respective accumulates variable
+          either updated or not.
+        """
+        def do_noop():
+            with tf.variable_scope("accumulate", reuse=True):
+                variable_global = tf.get_variable(name, dtype=dds_basetype)
+                return tf.identity(variable_global)
+
+        return tf.cond(
+            tf.equal(True, self.do_accumulates_t),
+            callable, do_noop)
+
     def _apply_dense(self, grad, var):
         """Add scaled gradient and train as usual
 
@@ -161,13 +226,16 @@ class GradientDescent(tf.train.GradientDescentOptimizer):
         Returns:
 
         """
+        # conditional whether to calculate accumulates or not
+        do_accumulates_t = math_ops.cast(self._calculate_accumulates_t, bool)
+
         lr_t = math_ops.cast(self._learning_rate_t, var.dtype.base_dtype)
         scaled_gradient = lr_t * grad
-        with tf.variable_scope("accumulate", reuse=True):
-            gradient_global = tf.get_variable("gradients", dtype=dds_basetype)
-            gradient_global_t = tf.assign_add(gradient_global, tf.reduce_sum(tf.multiply(scaled_gradient, scaled_gradient)))
-            virial_global = tf.get_variable("virials", dtype=dds_basetype)
-            virial_global_t = tf.assign_add(virial_global, tf.reduce_sum(tf.multiply(grad, var)))
+
+        gradient_global_t = self._get_accumulate_conditional("gradients",
+            lambda: self._accumulate_norm("gradients", scaled_gradient))
+        virial_global_t = self._get_accumulate_conditional("virials",
+            lambda: self._accumulate_scalar_product("virials", grad, var))
 
         # prior force act directly on var
         ub_repell, lb_repell = self._apply_prior(var)

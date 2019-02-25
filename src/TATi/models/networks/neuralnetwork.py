@@ -227,6 +227,37 @@ class NeuralNetwork(object):
         tf.summary.scalar('accuracy', accuracy)
         return accuracy
 
+    def _prepare_global_placeholders(self):
+        """ Adds placeholders that are used by both optimizers and samplers.
+
+        Args:
+
+        Returns:
+          None
+        """
+        # placeholder to control whether to additionally compute accumulates
+        if "calculate_accumulates" not in self.placeholder_nodes.keys():
+            calculate_accumulates = tf.placeholder(bool, name="calculate_accumulates")
+            self.placeholder_nodes["calculate_accumulates"] = calculate_accumulates
+
+    def _get_global_placeholder(self, name):
+        """ Returns a created global placeholder.
+
+        If it fails we re-throw the exception after adding an error message.
+
+        Args:
+          name: name of placeholder node
+
+        Returns:
+          ref to requested placeholder.
+        """
+        try:
+            return self.placeholder_nodes[name]
+        except KeyError:
+            logging.critical("Missing placeholder '"+name+"', has it not been created yet?")
+            raise ()
+        return None
+
     def _prepare_global_step(self):
         """Adds the global_step node to the graph.
 
@@ -261,6 +292,7 @@ class NeuralNetwork(object):
         Returns:
 
         """
+        self._prepare_global_placeholders()
         global_step = self._prepare_global_step()
         sampler = self._prepare_sampler(loss, sampling_method,
                                         seed, prior, sigma, sigmaA)
@@ -314,16 +346,18 @@ class NeuralNetwork(object):
             tf.summary.scalar('covariance_blending', covariance_blending)
             self.placeholder_nodes['covariance_blending'] = covariance_blending
 
+            calculate_accumulates = self._get_global_placeholder("calculate_accumulates")
+
             if sampling_method == "StochasticGradientLangevinDynamics":
-                sampler = StochasticGradientLangevinDynamicsSampler(covariance_blending,
+                sampler = StochasticGradientLangevinDynamicsSampler(calculate_accumulates, covariance_blending,
                                                                     step_width, inverse_temperature,
                                                                     seed=seed)
             elif sampling_method == "GeometricLangevinAlgorithm_1stOrder":
-                sampler = GeometricLangevinAlgorithmFirstOrderSampler(covariance_blending,
+                sampler = GeometricLangevinAlgorithmFirstOrderSampler(calculate_accumulates, covariance_blending,
                                                                       step_width, inverse_temperature, friction_constant,
                                                                       seed=seed)
             elif sampling_method == "GeometricLangevinAlgorithm_2ndOrder":
-                sampler = GeometricLangevinAlgorithmSecondOrderSampler(covariance_blending,
+                sampler = GeometricLangevinAlgorithmSecondOrderSampler(calculate_accumulates, covariance_blending,
                                                                        step_width, inverse_temperature, friction_constant,
                                                                        seed=seed)
             elif "HamiltonianMonteCarlo" in sampling_method:
@@ -332,21 +366,21 @@ class NeuralNetwork(object):
                 accept_seed = int(np.random.uniform(low=0,high=67108864))
                 if sampling_method  == "HamiltonianMonteCarlo_1stOrder":
                     sampler = HamiltonianMonteCarloSamplerFirstOrderSampler(
-                        covariance_blending, step_width, inverse_temperature, loss,
+                        calculate_accumulates, covariance_blending, step_width, inverse_temperature, loss,
                         current_step, next_eval_step, accept_seed=accept_seed, seed=seed)
                 elif sampling_method == "HamiltonianMonteCarlo_2ndOrder":
                     sampler = HamiltonianMonteCarloSamplerSecondOrderSampler(
-                        covariance_blending, step_width, inverse_temperature,
+                        calculate_accumulates, covariance_blending, step_width, inverse_temperature,
                         loss, current_step, next_eval_step, hd_steps,
                         accept_seed=accept_seed, seed=seed)
                 else:
                     raise NotImplementedError("The HMC sampler %s is unknown" % (sampling_method))
             elif sampling_method == "BAOAB":
-                sampler = BAOABSampler(covariance_blending,
+                sampler = BAOABSampler(calculate_accumulates, covariance_blending,
                                        step_width, inverse_temperature, friction_constant,
                                        seed=seed)
             elif sampling_method == "CovarianceControlledAdaptiveLangevinThermostat":
-                sampler = CCAdLSampler(covariance_blending,
+                sampler = CCAdLSampler(calculate_accumulates, covariance_blending,
                                        step_width, inverse_temperature, friction_constant,
                                        sigma=sigma, sigmaA=sigmaA, seed=seed)
             else:
@@ -390,6 +424,7 @@ class NeuralNetwork(object):
         Returns:
 
         """
+        self._prepare_global_placeholders()
         global_step = self._prepare_global_step()
         optimizer = self._prepare_optimizer(loss, optimizer_method, prior)
         self._finalize_train_method(loss, optimizer, global_step)
@@ -416,8 +451,10 @@ class NeuralNetwork(object):
             tf.summary.scalar('learning_rate', learning_rate)
             self.placeholder_nodes['learning_rate'] = learning_rate
 
+            calculate_accumulates = self._get_global_placeholder("calculate_accumulates")
+
             if optimizer_method == "GradientDescent":
-                optimizer = GradientDescent(learning_rate)
+                optimizer = GradientDescent(calculate_accumulates, learning_rate)
             else:
                 raise NotImplementedError("Unknown optimizer_method")
             if len(prior) != 0:

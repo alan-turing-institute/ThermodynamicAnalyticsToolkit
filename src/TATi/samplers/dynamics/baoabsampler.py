@@ -37,11 +37,14 @@ class BAOABSampler(GeometricLangevinAlgorithmFirstOrderSampler):
     Returns:
 
     """
-    def __init__(self, covariance_blending, step_width, inverse_temperature, friction_constant,
+    def __init__(self, calculate_accumulates, covariance_blending,
+                 step_width, inverse_temperature, friction_constant,
                  seed=None, use_locking=False, name='BAOAB'):
         """Init function for this class.
 
         Args:
+          calculate_accumulates: whether accumulates (gradient norm, noise, norm, kinetic energy, ...) are calculated
+            every step (extra work but required for run info dataframe/file and averages dataframe/file)
           covariance_blending: covariance identity blending value eta to use in creating the preconditioning matrix
           step_width: step width for gradient, also affects inject noise
           inverse_temperature: scale for gradients
@@ -53,8 +56,9 @@ class BAOABSampler(GeometricLangevinAlgorithmFirstOrderSampler):
         Returns:
 
         """
-        super(BAOABSampler, self).__init__(covariance_blending, step_width, inverse_temperature,
-                                           friction_constant, seed, use_locking, name)
+        super(BAOABSampler, self).__init__(calculate_accumulates, covariance_blending, step_width,
+                                           inverse_temperature, friction_constant,
+                                           seed, use_locking, name)
 
 
     '''
@@ -243,24 +247,20 @@ class BAOABSampler(GeometricLangevinAlgorithmFirstOrderSampler):
 
         # --- calc kinetic energy: next_qn -> qn, next_pn -> pn, next_gn -> gn
         # 1/2 * p^{n}^t * p^{n}
-        momentum_sq = 0.5 * tf.reduce_sum(tf.multiply(momentum_half_step_t, momentum_half_step_t))
-        with tf.variable_scope("accumulate", reuse=True):
-            kinetic_energy = tf.get_variable("kinetic_energy", dtype=dds_basetype)
-            kinetic_energy_t = tf.assign_add(kinetic_energy, momentum_sq)
+        gradient_global_t = self._get_accumulate_conditional("gradients",
+            lambda: self._accumulate_norm("gradients", scaled_gradient))
+        virial_global_t = self._get_accumulate_conditional("virials",
+            lambda: self._accumulate_scalar_product("virials", grad, var))
 
-        with tf.variable_scope("accumulate", reuse=True):
-            gradient_global = tf.get_variable("gradients", dtype=dds_basetype)
-            gradient_global_t = tf.assign_add(gradient_global, tf.reduce_sum(tf.multiply(scaled_gradient, scaled_gradient)))
-            # configurational temperature
-            virial_global = tf.get_variable("virials", dtype=dds_basetype)
-            virial_global_t = tf.assign_add(virial_global, tf.reduce_sum(tf.multiply(grad, var)))
+        # 1/2 * p^{n}^t * p^{n}
+        momentum_sq = tf.reduce_sum(tf.multiply(momentum_half_step_t, momentum_half_step_t))
+        kinetic_energy_t = self._get_accumulate_conditional("kinetic_energy",
+            lambda: self._accumulate_value("kinetic_energy", momentum_sq, 0.5))
+        momentum_global_t = self._get_accumulate_conditional("momenta",
+            lambda: self._accumulate_value("momenta", momentum_sq))
 
-        with tf.variable_scope("accumulate", reuse=True):
-            momentum_global = tf.get_variable("momenta", dtype=dds_basetype)
-            momentum_global_t = tf.assign_add(momentum_global, tf.reduce_sum(tf.multiply(momentum_half_step_t, momentum_half_step_t)))
-            # inertia
-            inertia_global = tf.get_variable("inertia", dtype=dds_basetype)
-            inertia_global_t = tf.assign_add(inertia_global, tf.reduce_sum(tf.multiply(momentum_half_step_t, var)))
+        inertia_global_t = self._get_accumulate_conditional("inertia",
+            lambda: self._accumulate_scalar_product("inertia", momentum_half_step_t, var))
 
         # half_pn = B(pn, gn, h/2)
         momentum_full_step_t = \
@@ -283,10 +283,11 @@ class BAOABSampler(GeometricLangevinAlgorithmFirstOrderSampler):
         alpha_t = tf.exp(-friction_constant_t * step_width_t)
         scaled_noise = tf.sqrt((1.-tf.pow(alpha_t, 2))/inverse_temperature_t) * random_noise_t
         rescaled_noise = scaled_noise/alpha_t
-        with tf.variable_scope("accumulate", reuse=True):
-            noise_global = tf.get_variable("noise", dtype=dds_basetype)
-            noise_global_t = tf.assign_add(noise_global,
-                                           tf.reduce_sum(tf.multiply(rescaled_noise, rescaled_noise)))
+
+        # conditionally calculate norm of noise
+        noise_global_t = self._get_accumulate_conditional("noise",
+            lambda: self._accumulate_norm("noise", rescaled_noise))
+
         momentum_noise_step_t = alpha_t * momentum_full_step_t + scaled_noise
         if len(grads_and_vars) != 1:
             preconditioned_momentum_noise_step_t = tf.reshape(

@@ -68,6 +68,8 @@ class PythonOptions(Options):
                                 "analysis: vanilla, TMDap, pydiffmap",
         "directions_file": "CSV file name to parse directions spanning subspace to "+ \
                            "project trajectories onto",
+        "do_accumulates": "allows to force not to compute accumulates (gradients, kinetic energy, ...) "+ \
+                       "for faster computation. Renders some columns in run info and averages zero.",
         "do_hessians": "whether to add hessian evaluation nodes to graph, used "+ \
                        "by optimzier and explorer",
         "dropout": "Keep probability for sampleing dropout, e.g. 0.9",
@@ -151,6 +153,7 @@ class PythonOptions(Options):
         "covariance_blending": 0.,
         "diffusion_map_method": "vanilla",
         "directions_file": None,
+        "do_accumulates": True,
         "do_hessians": False,
         "dropout": None,
         "every_nth": 1,
@@ -206,6 +209,7 @@ class PythonOptions(Options):
         "covariance_blending": float,
         "diffusion_map_method": str,
         "directions_file": str,
+        "do_accumulates": bool,
         "do_hessians": bool,
         "dropout": float,
         "every_nth": int,

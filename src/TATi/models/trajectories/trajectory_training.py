@@ -43,6 +43,7 @@ class TrajectoryTraining(TrajectoryBase):
         self._init_accumulator(self.state.FLAGS.optimizer)
 
     def _print_parameters(self, session, feed_dict):
+        print(feed_dict)
         for walker_index in range(self.state.FLAGS.number_walkers):
             logging.info("Dependent walker #"+str(walker_index))
             deltat = session.run(self.state.nn[walker_index].get_list_of_nodes(
@@ -70,10 +71,14 @@ class TrajectoryTraining(TrajectoryBase):
         # setup training/sampling
         self.optimizer = []
         for i in range(self.state.FLAGS.number_walkers):
+            self.state.nn[i]._prepare_global_placeholders()
             with tf.variable_scope("var_walker" + str(i + 1)):
-                self.optimizer.append(self.state.nn[i].add_train_method(
+                global_step = self.state.nn[i]._prepare_global_step()
+                self.optimizer.append(self.state.nn[i]._prepare_optimizer(
                     model.loss[i], optimizer_method=self.state.FLAGS.optimizer,
                     prior=prior))
+                self.state.nn[i]._finalize_train_method(
+                    model.loss[i], self.optimizer[-1], global_step)
 
     @staticmethod
     def filter_execute_return_values(run_info, trajectory, averages):
