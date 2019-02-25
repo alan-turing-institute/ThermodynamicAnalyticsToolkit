@@ -13,7 +13,7 @@ all: py_filter
 precusor-doxygen-doc: py_filter
 
 clean-local:
-	rm $(DX_CLEANFILES)
+	rm -f $(DX_CLEANFILES)
 
 distclean-local:
 

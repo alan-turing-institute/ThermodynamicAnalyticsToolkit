@@ -56,46 +56,46 @@ PYTHON_EXAMPLES = \
 	$(srcdir)/simulation/supply_dataset_csv.py
 
 programmersguide_files = \
-	bibliography.txt \
-	glossary.txt \
-	programmersguide.txt \
-	programmersguide_computational_graph.txt \
-	programmersguide_debugging_tips.txt \
-	programmersguide_extensions_samplers.txt \
-	programmersguide_neural_networks.txt \
-	programmersguide_tati_buildsystem.txt \
-	programmersguide_tati_structure.txt \
-	programmersguide_tati_versioncontrol.txt \
-	programmersguide_tensorflow.txt \
-	programmersguide_tensorflow_flaws.txt
+	$(srcdir)/bibliography.txt \
+	$(srcdir)/glossary.txt \
+	$(srcdir)/programmersguide.txt \
+	$(srcdir)/programmersguide_computational_graph.txt \
+	$(srcdir)/programmersguide_debugging_tips.txt \
+	$(srcdir)/programmersguide_extensions_samplers.txt \
+	$(srcdir)/programmersguide_neural_networks.txt \
+	$(srcdir)/programmersguide_tati_buildsystem.txt \
+	$(srcdir)/programmersguide_tati_structure.txt \
+	$(srcdir)/programmersguide_tati_versioncontrol.txt \
+	$(srcdir)/programmersguide_tensorflow.txt \
+	$(srcdir)/programmersguide_tensorflow_flaws.txt
 
 roadmap_files = \
-	roadmap.txt
+	$(srcdir)/roadmap.txt
 
 userguide_files = \
-	bibliography.txt \
-	glossary.txt \
-	userguide.txt \
-	userguide_introduction.txt \
-	userguide_quickstart_cmdline.txt \
-	userguide_quickstart_sampling.txt \
-	userguide_quickstart_simulation.txt \
-	userguide_quickstart.txt \
-	userguide_reference.txt \
-	userguide_reference_examples.txt \
-	userguide_reference_examples_harmonic_oscillator.txt \
-	userguide_reference_implementing_sampler.txt \
-	userguide_reference_samplers.txt \
-	userguide_reference_simulation.txt \
+	$(srcdir)/bibliography.txt \
+	$(srcdir)/glossary.txt \
+	$(srcdir)/userguide.txt \
+	$(srcdir)/userguide_introduction.txt \
+	$(srcdir)/userguide_quickstart_cmdline.txt \
+	$(srcdir)/userguide_quickstart_sampling.txt \
+	$(srcdir)/userguide_quickstart_simulation.txt \
+	$(srcdir)/userguide_quickstart.txt \
+	$(srcdir)/userguide_reference.txt \
+	$(srcdir)/userguide_reference_examples.txt \
+	$(srcdir)/userguide_reference_examples_harmonic_oscillator.txt \
+	$(srcdir)/userguide_reference_implementing_sampler.txt \
+	$(srcdir)/userguide_reference_samplers.txt \
+	$(srcdir)/userguide_reference_simulation.txt \
 	$(PYTHON_EXAMPLES)
 
 EXTRA_DIST = \
 	cmdline \
 	pictures \
 	python \
-	$(programmersguide_DEPENDENCIES) \
-	$(roadmap_DEPENDENCIES) \
-	$(userguide_DEPENDENCIES)
+	$(programmersguide_files) \
+	$(roadmap_files) \
+	$(userguide_files)
 
 versionfile = $(srcdir)/.git-version
 version = $(shell cat $(versionfile))
