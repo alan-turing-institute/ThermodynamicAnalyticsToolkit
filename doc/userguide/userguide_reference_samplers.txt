@@ -85,10 +85,11 @@ Implements a Stochastic Gradient Langevin Dynamics Sampler in the form of a
 TensorFlow Optimizer, overriding `tensorflow.python.training.Optimizer`.
 
 The step update is:
-latexmath:[$\theta^{n+1} = \theta^{n} - \beta \nabla  U(\theta) \Delta t + \sqrt{\Delta t} G^n$],
+latexmath:[$\theta^{n+1} = \theta^{n} - \nabla  U(\theta) \Delta t + \sqrt{\frac{2\Delta t} {\beta}} G^n$],
 where
 latexmath:[$\beta$] is the inverse temperature coefficient, latexmath:[$\Delta t$] is the (discretization)
-step width and latexmath:[$\theta$] is the parameter vector and latexmath:[$U(\theta)$] the energy or loss function.
+step width and latexmath:[$\theta$] is the parameter vector, latexmath:[$U(\theta)$] the energy or loss function,
+and latexmath:[$G\sim N (0, 1)$].
 
 .Table of parameters for SGLD
 [width="80%",cols="3,^2",options="header"]
