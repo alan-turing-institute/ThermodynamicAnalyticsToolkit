@@ -296,6 +296,12 @@ We conclude this section with some general advice on resolving performance issue
 - Parallel load is not everything. The dataset pipeline will produce much more
   parallel load but is not necessarily faster than the in-memory pipeline. The
 	essential measure is **steps/second**.
+- In case you do not need any extra information such as norm of gradients,
+  noise, momentum, kinetic energy and so forth, then you may set
+	'do_accumulates' to False (or 0 on the cmd-line). This will deactivate these
+	extra calculations, rendering the associated columns in the averages and run
+	info files/data frames zero. This gives about 20-25% decrease in runtime
+	depending on the network and dataset/batch size.
 
 [[reference.miscellaneous]]
 Miscellaneous
