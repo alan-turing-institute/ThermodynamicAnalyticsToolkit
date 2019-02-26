@@ -1,0 +1,58 @@
+#
+#    ThermodynamicAnalyticsToolkit - explore high-dimensional manifold of neural networks
+#    Copyright (C) 2018 The University of Edinburgh
+#    The TATi authors, see file AUTHORS, have asserted their moral rights.
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+###
+
+AT_SETUP([Checking for presence of every userguide example in its Makefile])
+AT_KEYWORDS([codecheck userguide example Makefile])
+ok=""
+okdir=""
+echo `pwd`
+echo "${#ok[*]} are ok to not be contained in Makefile.am: ${ok[*]}."
+for folder in cmdline python simulation
+do
+  liste=`find ${abs_top_srcdir}/doc/userguide/$folder -name '*.py'; find ${abs_top_srcdir}/doc/userguide/$folder -name '*.sh'`
+  for file in $liste
+  do
+    # check whether its one of the excluded ones
+    found=0
+    for item in $okdir
+    do
+      if test "`dirname $file`" == "${abs_top_srcdir}/doc/userguide/$folder/$item"
+      then
+    found=1
+      break
+    fi
+    done
+    # skip other specific files from 3rd party source or created ones
+    for item in $ok
+    do
+      if test "$item" == "`basename $file`"
+      then
+        found=1
+        break
+    fi
+    done
+    # if not, check whether it contains the include
+    filename=`echo $file | sed -e "s#${abs_top_srcdir}/doc/userguide/$folder/*##g"`
+    if test $found -eq 0
+    then
+      AT_CHECK([egrep "$filename" ${abs_top_srcdir}/doc/userguide/Makefile.am], 0, [ignore], [ignore], [echo "Could not find userguide example $folder/$filename in doc/userguide/Makefile.am."])
+    fi
+  done
+done
+AT_CLEANUP

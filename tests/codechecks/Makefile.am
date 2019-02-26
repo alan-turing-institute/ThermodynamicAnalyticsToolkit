@@ -6,7 +6,8 @@ TESTSCRIPTS = \
 	$(srcdir)/testsuite-date_in_dox.at \
 	$(srcdir)/testsuite-project-disclaimer.at \
 	$(srcdir)/testsuite-asciidocs-in-makefile.at \
-	$(srcdir)/testsuite-testsuite-in-makefile.at
+	$(srcdir)/testsuite-testsuite-in-makefile.at \
+	$(srcdir)/testsuite-userguide-examples-in-makefile.at
 
 DISTCLEANFILES = atconfig
 

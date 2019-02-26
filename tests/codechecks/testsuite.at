@@ -37,3 +37,5 @@ m4_include(testsuite-project-disclaimer.at)
 m4_include(testsuite-asciidocs-in-makefile.at)
 
 m4_include(testsuite-testsuite-in-makefile.at)
+
+m4_include(testsuite-userguide-examples-in-makefile.at)

@@ -1,5 +1,6 @@
 PYTHON_EXAMPLES = \
 	$(srcdir)/cmdline/analyse_average.sh \
+	$(srcdir)/cmdline/analyse_covariance.sh \
 	$(srcdir)/cmdline/analyse_diffmap.sh \
 	$(srcdir)/cmdline/analyse_free_energy.sh \
 	$(srcdir)/cmdline/exploring.sh \
@@ -14,6 +15,7 @@ PYTHON_EXAMPLES = \
 	$(srcdir)/cmdline/sample.sh \
 	$(srcdir)/cmdline/write_dataset.sh \
 	$(srcdir)/python/analyse_averages.py \
+	$(srcdir)/python/analyse_covariance.py \
 	$(srcdir)/python/analyse_diffmap.py \
 	$(srcdir)/python/eval_loss_gradient.py \
 	$(srcdir)/python/explore.py \
@@ -33,6 +35,7 @@ PYTHON_EXAMPLES = \
 	$(srcdir)/simulation/complex/sample.py \
 	$(srcdir)/simulation/complex/supply_dataset.py \
 	$(srcdir)/simulation/examples/harmonic_oscillator_dataset.py \
+	$(srcdir)/simulation/examples/harmonic_oscillator_plotting.py \
 	$(srcdir)/simulation/examples/harmonic_oscillator_sampling.py \
 	$(srcdir)/simulation/change_dataset_array.py \
 	$(srcdir)/simulation/change_dataset_csv.py \
@@ -43,6 +46,10 @@ PYTHON_EXAMPLES = \
 	$(srcdir)/simulation/evaluate_loss.py \
 	$(srcdir)/simulation/evaluate_predict.py \
 	$(srcdir)/simulation/fit.py \
+	$(srcdir)/simulation/fix_parameter.py \
+	$(srcdir)/simulation/get_activations.py \
+	$(srcdir)/simulation/get_losses.py \
+	$(srcdir)/simulation/get_options.py \
 	$(srcdir)/simulation/initializing_momenta.py \
 	$(srcdir)/simulation/requesting_parameters.py \
 	$(srcdir)/simulation/requesting_momenta.py \
