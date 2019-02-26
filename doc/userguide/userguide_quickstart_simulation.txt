@@ -399,7 +399,9 @@ stochasticity/noise to the training but for the advantage of smaller runtime.
 +
 defines the scaling of the gradients in each training step, i.e. the
 learning rate. Values too large may miss the minimum, values too small
-need longer to reach it.
+need longer to reach it. For automatic picking of the *learning_rate*, use
+'BarzilaiBorweinGradientDescent'. This however is not compatible with
+mini-batching at the moment as it requires exact gradients.
 
 * 'max_steps'
 +
@@ -409,7 +411,11 @@ gives the amount of training steps to be performed.
 +
 defines the method to use for training. Here, we use Gradient Descent
 (in case 'batch_size' is smaller than dimension, then we actually have
-Stochastic Gradient Descent).
+Stochastic Gradient Descent). Alternatively, you
+'BarzilaiBorweinGradientDescent' is also available. There the secant equation
+is solved in a minimal l2 error fashion which allows to automatically determine
+a suitable step width. This *learning_rate* is then only used for the initial
+guess and as a fall-back.
 
 * 'seed'
 +

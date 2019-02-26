@@ -26,8 +26,7 @@ Optimizers
 Optimizers in TATi primarily serve the purpose of finding a good starting
 position for the samplers.
 
-To this end, only a few tensorflow's optimizers are currently directly
-supported.
+To this end, only a few optimizers are currently implemented.
 
 - (Stochastic) Gradient Descent
 - Gradient Descent with step width calculated following Barzilai-Borwein
@@ -37,6 +36,10 @@ Gradient Descent
 ^^^^^^^^^^^^^^^^
 
 *optimizer*: +GradientDescent+
+
+This implementation directly calls upon Tensorflow's `GradientDescentOptimizer`.
+It is slightly modified for additional book-keeping of norms of gradients and
+the virial (this can be deactivated setting 'do_accumulates' to *False*).
 
 The step update is:
 latexmath:[$\theta^{n+1} = \theta^{n} - \nabla  U(\theta) \Delta t$],
@@ -58,4 +61,5 @@ numerical stability. If the above calculation should be invalid, the default
 learning rate latexmath:[$\Delta t$] is used.
 
 NOTE: At the moment, this is only implemented for <<GD>>, not for <<SGD>>.
-See <<Tan2016>> for a proposed SGD-BB method.
+See <<Tan2016>> for a proposed SGD-BB method. It is not suitable for
+mini-batching as the secant computation relies on exact gradients.
