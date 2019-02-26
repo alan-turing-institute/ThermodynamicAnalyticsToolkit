@@ -1,3 +1,19 @@
+v0.9.5
+======
+
+- Added jupyter notebooks with a guided tour through TATi.
+- Added Dockerfile for putting TATi in docker container.
+- Added analysis capability for ensemble averaging.
+- FIX: SGLD formula in userguide was incorrect.
+- Added GradientDescent optimizer with Barzilai-Borwein learning rate picker.
+- Accumulation of norms of gradients, noise, momentum, ... is made optional
+  and can be fully switched off for performance reasons.
+- Optimizers have been moved into distinct module/folder.
+- several smaller fixes preventing the distributed tarball from compiling.
+- small runtime improvements.
+- FIX: time_per_nth_step column in run info file/dataframe was wrong when 
+  using HMC.
+
 v0.9.4
 ======
 
