@@ -50,8 +50,8 @@ AT_CHECK([../../../TATiAnalyser \
 AT_CHECK([wc -l average_run.csv | grep "11"], 0, [ignore], [ignore])
 AT_CHECK([diff average_run.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/Averages/post/average_run.csv], 0, [ignore], [ignore])
 
-# only three parameters in total plus header
-AT_CHECK([wc -l average_trajectory.csv | grep "4"], 0, [ignore], [ignore])
+# only two rows (average, variance) plus header
+AT_CHECK([wc -l average_trajectory.csv | grep "3"], 0, [ignore], [ignore])
 AT_CHECK([diff average_trajectory.csv ${abs_top_srcdir}/tests/regression/TrajectoryAnalyser/Averages/post/average_trajectory.csv], 0, [ignore], [ignore])
 
 AT_CLEANUP

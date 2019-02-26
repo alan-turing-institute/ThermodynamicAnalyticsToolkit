@@ -35,18 +35,19 @@ class TrajectorySubspaceReSampler(TrajectoryReSampler):
     Returns:
 
     """
-    def __init__(self, network_model, exclude_parameters, trajectory):
+    def __init__(self, network_model, exclude_parameters, steps, trajectory):
         super(TrajectorySubspaceReSampler, self).__init__(
             network_model=network_model, exclude_parameters=exclude_parameters,
-            trajectory=trajectory)
+            steps=steps, trajectory=trajectory)
         self.degrees = None
         self.directions = None
 
     @classmethod
-    def from_files(cls, network_model, exclude_parameters, trajectory_file, directions_file):
+    def from_files(cls, network_model, exclude_parameters, steps,
+                   trajectory_file, directions_file):
         instance = cls.from_trajectory_file(
             network_model=network_model, exclude_parameters=exclude_parameters,
-            trajectory_file=trajectory_file)
+            steps=steps, trajectory_file=trajectory_file)
         instance._parse_directions_file(directions_file)
         return instance
 

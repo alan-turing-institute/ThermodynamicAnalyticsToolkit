@@ -744,7 +744,28 @@ heeds additional options such as neglecting burn in steps or taking only
 Next, we instantiate the `AverageTrajectoryWriter` module. It computes
 the averages and variance of each parameter, whose result we print.
 
-NOTE: This is only useful if the trajectory remains within a single minimum.
+`AverageTrajectoryWriter` can also write the values to a file. Then, two
+rows are written (together with a header line) in CSV format. The first row
+(step 0) represents the averages while the second row (step 1) represents the
+variance of each parameter.
+
+The *loss* column is the average over all loss values. If an
+*inverse_temperature* has been given, then it is the ensemble average, i.e.
+each loss (and parameter set) is weighted not equivalently but by
+latexmath:[$exp(-\beta L)$].
+
+In general, taking such an average is only useful if the trajectory has
+remained essentially within a single minimum. If the loss manifold has the
+overall shape of a large funnel with lots of local minima at the bottom, this
+may be feasible as well.
+
+[NOTE]
+====
+Averages depend crucially on the number of steps we average over. I.e.
+the more points we throw away (option *every_nth*), the less accurate it
+becomes. In other words, if large accuracy is required, the averages data frame
+(if it contains the value of interest) is a better place to look for.
+====
 
 [[quickstart.simulation.analysis.covariance]]
 Covariance

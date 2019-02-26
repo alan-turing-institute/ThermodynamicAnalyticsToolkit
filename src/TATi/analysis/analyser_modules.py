@@ -55,8 +55,10 @@ class AnalyserModules(object):
     # for each module "foobar", there needs to be a function analyse_foobar()
     # and the other way round: all functions analyse_...() need to be enlisted
     # here to be executable by TATiAnalyser.
-    analysis_modules = ("parse_run_file", "parse_trajectory_file", "average_energies", "average_trajectory",
-                        "covariance", "covariance_per_walker", "diffusion_map", "free_energy_levelsets", "free_energy_histograms",
+    analysis_modules = ("parse_run_file", "parse_trajectory_file",
+                        "average_energies", "average_trajectory", "ensemble_average_trajectory",
+                        "covariance", "covariance_per_walker",
+                        "diffusion_map", "free_energy_levelsets", "free_energy_histograms",
                         "integrated_autocorrelation_time_covariance", "integrated_autocorrelation_time_covariance_per_walker")
 
     # list all dependencies between the different analysis modules, i.e. what
@@ -67,6 +69,7 @@ class AnalyserModules(object):
         "parse_trajectory_file": [],
         "average_energies": ["parse_run_file"],
         "average_trajectory": ["parse_trajectory_file"],
+        "ensemble_average_trajectory": ["parse_trajectory_file"],
         "covariance": ["parse_trajectory_file"],
         "covariance_per_walker": ["parse_trajectory_file"],
         "diffusion_map": ["parse_trajectory_file"],
@@ -83,6 +86,7 @@ class AnalyserModules(object):
         "parse_trajectory_file": [None],
         "average_energies": [None],
         "average_trajectory": [None],
+        "ensemble_average_trajectory": [None],
         "covariance": [None],
         "covariance_per_walker": [None],
         "diffusion_map": [None],
@@ -172,7 +176,16 @@ class AnalyserModules(object):
     def _analyse_average_trajectory(self):
         trajectory = self.get_stage_results("parse_trajectory_file")[0]
         if self.FLAGS.average_trajectory_file is not None:
-            averagewriter = AverageTrajectoryWriter(trajectory.get_trajectory())
+            averagewriter = AverageTrajectoryWriter(trajectory)
+            averagewriter.write(self.FLAGS.average_trajectory_file)
+
+    def _analyse_ensemble_average_trajectory(self):
+        trajectory = self.get_stage_results("parse_trajectory_file")[0]
+        if self.FLAGS.average_trajectory_file is not None:
+            averagewriter = AverageTrajectoryWriter(
+                trajectory.get_trajectory(),
+                loss=trajectory.get_loss(),
+                inverse_temperature=self.FLAGS.inverse_temperature)
             averagewriter.write(self.FLAGS.average_trajectory_file)
 
     def _analyse_covariance(self):

@@ -145,11 +145,10 @@ class SamplingModes(object):
         :param trajectory_file: trajectory file name
         :return: created sampler object
         """
-        if len(options.parse_steps) != 0:
-            logging.warning("Option parse_steps is not used when sampling in mode trajectory.")
         sampler = TrajectoryReSampler.from_trajectory_file(
                 network_model=network_model,
                 exclude_parameters=options.exclude_parameters,
+                steps=options.parse_steps,
                 trajectory_file=trajectory_file)
         sampler.setup_start()
         return sampler
@@ -164,13 +163,12 @@ class SamplingModes(object):
         :param trajectory_file: trajectory file name
         :return: created sampler object
         """
-        if len(options.parse_steps) != 0:
-            logging.warning("Option parse_steps is not used when sampling in mode trajectory.")
         if len(options.directions_file) is None:
             raise ValueError("Mode 'trajectory_subgrid' requires set directions_file.")
         sampler = TrajectorySubspaceReSampler.from_files(
                 network_model=network_model,
                 exclude_parameters=options.exclude_parameters,
+                steps=options.parse_steps,
                 trajectory_file=trajectory_file,
                 directions_file=options.directions_file)
         sampler.setup_start()

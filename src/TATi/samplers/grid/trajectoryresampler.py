@@ -36,17 +36,21 @@ class TrajectoryReSampler(Sampler):
     Returns:
 
     """
-    def __init__(self, network_model, exclude_parameters, trajectory):
+    def __init__(self, network_model, exclude_parameters, steps, trajectory):
         super(TrajectoryReSampler, self).__init__(network_model=network_model,
                                                   exclude_parameters=exclude_parameters)
         self.trajectory = trajectory
-        self.steps = self.trajectory.get_step_indices()
+        if steps is None or (not isinstance(steps, list) or len(steps) == 0):
+            self.steps = self.trajectory.get_step_indices()
+        else:
+            self.steps = steps
 
     @classmethod
-    def from_trajectory_file(cls, network_model, exclude_parameters, trajectory_file):
+    def from_trajectory_file(cls, network_model, exclude_parameters, steps, trajectory_file):
         trajectory = ParsedTrajectory(trajectory_file)
         return cls(network_model=network_model,
                    exclude_parameters=exclude_parameters,
+                   steps=steps,
                    trajectory=trajectory)
 
     def get_max_steps(self):

@@ -25,6 +25,7 @@ m4_include([TrajectoryAnalyser/testsuite-trajectoryanalyser-simple.at])
 
 # test on computing averages over runtime and trajectories
 m4_include([TrajectoryAnalyser/Averages/testsuite-trajectoryanalyser-averages.at])
+m4_include([TrajectoryAnalyser/Averages/testsuite-trajectoryanalyser-ensemble_average_trajectory.at])
 
 # tests on covariance analysis
 m4_include([TrajectoryAnalyser/Covariance/testsuite-trajectoryanalyser-covariance.at])
