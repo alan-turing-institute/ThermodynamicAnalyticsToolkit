@@ -10,6 +10,8 @@ both a rapid prototyping platform for new sampling methods and also an analysis
 framework to understand the intricacies of the loss manifold in terms of
 averages, covariance, diffusion maps, and free energy.
 
+Please take a look at the extensive [userguide](https://alan-turing-institute.github.io/ThermodynamicAnalyticsToolkit/).
+
 Dependencies
 ------------
 
@@ -43,7 +45,7 @@ Installation
 ------------
 
 Please refer to the userguide (see the 
-[releases](https://github.com/alan-turing-institute/ThermodynamicAnalyticsToolkit/releases) on github) 
+[releases](https://github.com/alan-turing-institute/ThermodynamicAnalyticsToolkit/releases) on github or [as html version](https://alan-turing-institute.github.io/ThermodynamicAnalyticsToolkit/)) 
 for installation instructions.
 
 Alternatively, the userguide PDF is also contained in the release tarballs in 
