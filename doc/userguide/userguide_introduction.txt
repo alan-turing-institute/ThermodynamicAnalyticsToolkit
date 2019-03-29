@@ -97,6 +97,14 @@ Installation
 In the following we explain the installation procedure to get
 ThermodynamicAnalyticsToolkit up and running.
 
+The easiest way to tati is through
+````
+pip install tati
+````
+
+If you want to install from a cloned repository or from a release tarball, then
+read on.
+
 [[introduction.installation.requirements]]
 Installation requirements
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -220,10 +228,14 @@ print(tati.__version__)
 Installation procedure
 ^^^^^^^^^^^^^^^^^^^^^^
 
-Installation comes in two flavors: either via a tarball or a cloned repository.
+Installation comes in three flavors: as a PyPI package, or through either via
+a tarball or a cloned repository.
+
+In general, the PyPI (`pip`) packages are strongly recommended, especially if
+you only want to use the software.
 
 The tarball releases are recommended if you only plan to use TATi and do not
-intend modifying its code. If, however, you need to use a development branch,
+intend ito modify its code. If, however, you need to use a development branch,
 then you have to clone from the repository.
 
 In general, this package is distributed via autotools, "compiled" and installed via

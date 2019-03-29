@@ -44,7 +44,13 @@ Finally, there are some optional python packages:
 Installation
 ------------
 
-Please refer to the userguide (see the 
+Use one of the following ways:
+
+- `pip install tati`
+- Grab latest [release](https://github.com/alan-turing-institute/ThermodynamicAnalyticsToolkit/releases), extract and `configure --prefix=<your choice>`, `make`, `make install`
+- `git clone https://github.com/alan-turing-institute/ThermodynamicAnalyticsToolkit.git` and `configure --prefix=<your choice>`, `make`, `make install`.
+
+For more information please refer to the userguide (see the 
 [releases](https://github.com/alan-turing-institute/ThermodynamicAnalyticsToolkit/releases) on github or [as html version](https://alan-turing-institute.github.io/ThermodynamicAnalyticsToolkit/)) 
 for installation instructions.
 
@@ -55,12 +61,12 @@ and are perfectly human-readable, see **doc/userguide/introduction.txt**.
 As a last fall-back have a look at INSTALL for general instructions on how to
 installing a package maintained by autotools, automake.
 
-When cloning from github please call the bootstrap.sh script (requiring
+When cloning from github please call the `./bootstrap.sh` script (requiring
 installed autotools and automake packages).
 
 NOTE: If you only want to *use* the package and *do not plan to submit code*, 
-it is strongly advised to *use the "release" tarballs* instead of cloning the 
-repository directly.
+it is strongly advised to *use the PyPI package (using `pip`) or the "release" 
+tarballs* instead of cloning the repository directly.
 
 Documentation
 -------------
