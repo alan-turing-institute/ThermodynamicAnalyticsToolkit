@@ -46,9 +46,10 @@ Installation
 
 Use one of the following ways:
 
-- `pip install tati`
-- Grab latest [release](https://github.com/alan-turing-institute/ThermodynamicAnalyticsToolkit/releases), extract and `configure --prefix=<your choice>`, `make`, `make install`
-- `git clone https://github.com/alan-turing-institute/ThermodynamicAnalyticsToolkit.git` and `configure --prefix=<your choice>`, `make`, `make install`.
+- Docker: `docker run --name tati -p 8888:8888 frederikheber/tati:latest` ([Description](https://cloud.docker.com/repository/docker/frederikheber/tati)
+- PyPI: `pip install tati`
+- tarball: Grab latest [release](https://github.com/alan-turing-institute/ThermodynamicAnalyticsToolkit/releases), extract and `configure --prefix=<your choice>`, `make`, `make install`
+- GitHub: `git clone https://github.com/alan-turing-institute/ThermodynamicAnalyticsToolkit.git` and `configure --prefix=<your choice>`, `make`, `make install`.
 
 For more information please refer to the userguide (see the 
 [releases](https://github.com/alan-turing-institute/ThermodynamicAnalyticsToolkit/releases) on github or [as html version](https://alan-turing-institute.github.io/ThermodynamicAnalyticsToolkit/)) 
