@@ -35,6 +35,8 @@ TESTSCRIPTS += \
 	$(srcdir)/python/testsuite-userguide-python-plot_optimize.at \
 	$(srcdir)/python/testsuite-userguide-python-sample.at \
 	$(srcdir)/python/testsuite-userguide-python-supply_dataset.at \
+	$(srcdir)/python/testsuite-userguide-python-tati_version.at \
+	$(srcdir)/python/testsuite-userguide-python-tf_helloworld.at \
 	$(srcdir)/python/testsuite-userguide-python-writing_data.at \
 	$(srcdir)/simulation/complex/testsuite-userguide-simulation-complex.at \
 	$(srcdir)/simulation/complex/testsuite-userguide-simulation-complex-eval_loss_gradient.at \

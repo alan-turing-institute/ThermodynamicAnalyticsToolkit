@@ -194,21 +194,12 @@ installation instructions.
 Henceforth, we assume that there is a working tensorflow on your system,
 i.e. inside the python3 shell
 
+[source, python]
 ---------------
-import tensorflow as tf
----------------
-
-does _not_ throw an error.
-
-Moreover,
-
----------------
-a=tf.constant("Hello world")
-sess=tf.Session()
-sess.run(a)
+include::python/tf_helloworld.py[]
 ---------------
 
-should print ``Hello world'' or something similar.
+should print ``Hello world'' or similar.
 
 [TIP]
 =========================
@@ -216,10 +207,9 @@ You can check the version of your *tensorflow* installation at any time
 by inspecting `print(tf.__version__)`.
 
 Similarly, TATi's version can be obtained through
+[source,python]
 ---------------
-import tati
-
-print(tati.__version__)
+include::python/tati_version.py[]
 ---------------
 =========================
 

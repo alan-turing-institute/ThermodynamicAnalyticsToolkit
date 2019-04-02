@@ -25,6 +25,8 @@ PYTHON_EXAMPLES = \
 	$(srcdir)/python/plot_optimize.py \
 	$(srcdir)/python/sample.py \
 	$(srcdir)/python/supply_dataset.py \
+	$(srcdir)/python/tati_version.py \
+	$(srcdir)/python/tf_helloworld.py \
 	$(srcdir)/python/writing_data.py \
 	$(srcdir)/simulation/complex/eval_loss_gradient.py \
 	$(srcdir)/simulation/complex/fix_parameter.py \
